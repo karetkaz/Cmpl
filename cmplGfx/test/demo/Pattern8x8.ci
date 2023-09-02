@@ -66,7 +66,7 @@ int onEvent(int action, int button, int x, int y) {
 
 	if (action == Window.MOUSE_PRESS || action == Window.MOUSE_MOTION) {
 		if (!edit || button == 0) {
-			return 0;
+			return Window.timeoutMax;
 		}
 
 		int i = x * 8 / img.width();;
@@ -129,7 +129,7 @@ int onEvent(int action, int button, int x, int y) {
 		}
 	}
 	else if (action != Window.WINDOW_INIT) {
-		return 0;
+		return Window.timeoutMax;
 	}
 
 //	 img.fill(0x008080);// Win9x
@@ -165,6 +165,7 @@ int onEvent(int action, int button, int x, int y) {
 			}
 		}
 	}
+	return Window.timeoutMax;
 }
 
 Window.show(img, onEvent);

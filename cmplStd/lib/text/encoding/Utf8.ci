@@ -1,70 +1,86 @@
-// todo: untested: Utf-8 reader
+/// Utf-8 decoder
 struct Utf8Reader: TextReader {
-	// convert utf-8 bytes to unicodes
+	// convert utf-8 bytes to unicode codepoints
 	int decode(Utf8Reader this, unicode chars[]) {
-		inline read(ByteReader this) = ByteReader.read(this); // fixme: function lookup with no args
-
+		byte buff[1] = {0};
+		byte ext[3] = {0};
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
-			int value = reader.read();
-			if (value < 0) {
+			if (reader.read(buff) <= 0) {
 				// end of stream
-				return i > 0 ? i : value;
+				return i;
 			}
 
-			if ((value & 0x80) == 0) {
-				// value = value;
+			if ((buff[0] & 0x80) == 0) {
+				chars[i] = buff[0];
 			}
-			else if ((value & 0xe0) == 0xc0) {
-				int val1 = reader.read() & 0x3f;
-				value = (value & 31) << 6 | val1;
+			else if ((buff[0] & 0xe0) == 0xc0) {
+				if (reader.read(ext[...1]) != 1) {
+					error("invalid codepoint");
+					return i;
+				}
+				assert((ext[0] & 0b11000000) == 0b10000000, "10xxxxxx");
+				chars[i] = (buff[0] & 0x1f) << 6 | (ext[0] & 0x3f);
 			}
-			else if ((value & 0xf0) == 0xe0) {
-				int val1 = reader.read() & 0x3f;
-				int val2 = reader.read() & 0x3f;
-				value = (value & 15) << 12 | val1 << 6| val2;
+			else if ((buff[0] & 0xf0) == 0xe0) {
+				if (reader.read(ext[...2]) != 2) {
+					error("invalid codepoint");
+					return i;
+				}
+				assert((ext[0] & 0b11000000) == 0b10000000, "10xxxxxx");
+				assert((ext[1] & 0b11000000) == 0b10000000, "10xxxxxx");
+				chars[i] = (buff[0] & 0x0f) << 12 | (ext[0] & 0x3f) << 6 | (ext[1] & 0x3f);
 			}
-			else if ((value & 0xf8) == 0xf0) {
-				int val1 = reader.read() & 0x3f;
-				int val2 = reader.read() & 0x3f;
-				int val3 = reader.read() & 0x3f;
-				value = (value & 7) << 18 | val1 << 12 | val2 << 6 | val3;
+			else if ((buff[0] & 0xf8) == 0xf0) {
+				if (reader.read(ext[...3]) != 3) {
+					error("invalid codepoint");
+					return i;
+				}
+				assert((ext[0] & 0b11000000) == 0b10000000, "10xxxxxx");
+				assert((ext[1] & 0b11000000) == 0b10000000, "10xxxxxx");
+				assert((ext[2] & 0b11000000) == 0b10000000, "10xxxxxx");
+				chars[i] = (buff[0] & 0x07) << 18 | (ext[0] & 0x3f) << 12 | (ext[1] & 0x3f) << 6 | (ext[2] & 0x3f);
 			}
-			chars[i] = value;
 		}
 		return chars.length;
 	}
 }
 
-// todo: untested: Utf-8 writer
+/// Utf-8 encoder
+// adapted from: https://github.com/devatrun/sutfcpplib/blob/main/include/sutfcpplib/utf_codepoint.h#L287
 struct Utf8Writer: TextWriter {
-	// convert characters to utf-8 bytes
+	// convert unicode codepoints to utf-8 bytes
 	void encode(Utf8Writer this, unicode chars[]) {
 		ByteWriter writer = this.writer;
-		byte bytes[4] = {};
 		for (int i = 0; i < chars.length; i += 1) {
-			unicode chr = chars[i];
+			unicode cp = chars[i];
 
-			if (chr < 0x80) {
-				bytes[0] = chr;
+			if (cp < 0x80) {
+				byte bytes[1] = {cp};
 				writer.write(bytes[...1]);
 			}
-			else if (chr < 0x800) {
-				bytes[0] = (chr & 0x7c0) >> 6 | 0xc0;
-				bytes[1] = chr & 0x3f | 0x80;
+			else if (cp < 0x800) {
+				byte bytes[2] = {
+					0b11000000 | (cp >> 6);
+					0b10000000 | (cp & 0b00111111);
+				};
 				writer.write(bytes[...2]);
 			}
-			else if (chr < 0xe000) {
-				bytes[0] = (chr & 0xf000) >> 12 | 0xe0;
-				bytes[1] = (chr & 0xfc) >> 6 | 0x80;
-				bytes[2] = chr & 0x3f | 0x80;
+			else if (cp < 0x10000) {
+				byte bytes[3] = {
+					0b11100000 | (cp >> 12);
+					0b10000000 | ((cp >> 6) & 0b00111111);
+					0b10000000 | (cp & 0b00111111);
+				};
 				writer.write(bytes[...3]);
 			}
-			else {
-				bytes[0] = (chr & 0x1c0000) >> 18 | 0xf0;
-				bytes[1] = (chr & 0x3f0) >> 12 | 0x80;
-				bytes[2] = (chr & 0xfc) >> 6 | 0x80;
-				bytes[3] = chr & 0x3f | 0x80;
+			else { /*if (cp < 0x110000)*/
+				byte bytes[4] = {
+					0b11110000 | (cp >> 18);
+					0b10000000 | ((cp >> 12) & 0b00111111);
+					0b10000000 | ((cp >> 6) & 0b00111111);
+					0b10000000 | (cp & 0b00111111);
+				};
 				writer.write(bytes[...4]);
 			}
 		}

@@ -65,7 +65,7 @@ int onEvent(int action, int button, int ex, int ey) {
 
 		// draw bezier curve
 		offs.drawBezier(x[0], y[0], x[1], y[1], x[2], y[2], bezierColor);
-		return 0;
+		return Window.timeoutMax;
 	}
 
 	// draw control lines
@@ -81,7 +81,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	// draw bezier curve
 	offs.drawBezier(x[0], y[0], x[1], y[1], x[3], y[3], x[2], y[2], bezierColor);
 
-	return 0;
+	return Window.timeoutMax;
 }
 
 Window.show(offs, onEvent);

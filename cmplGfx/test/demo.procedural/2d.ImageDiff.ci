@@ -49,13 +49,13 @@ int onEvent(int action, int button, int ex, int ey) {
 	}
 	if (action == Window.MOUSE_PRESS) {
 		image.copy(0, 0, image2, null);
-		return 0;
+		return Window.timeoutMax;
 	}
 	if (action == Window.MOUSE_RELEASE) {
 		image.copy(0, 0, image1, null);
-		return 0;
+		return Window.timeoutMax;
 	}
-	return 0;
+	return Window.timeoutMax;
 }
 
 Window.show(image, onEvent);

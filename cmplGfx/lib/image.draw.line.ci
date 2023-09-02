@@ -71,7 +71,6 @@ void drawLineIncl(Image image, int x0, int y0, int x1, int y1, uint32 color) {
 				image.set(x >> 16, y, color);
 				x += dx;
 			}
-			return;
 		}
 	}
 }

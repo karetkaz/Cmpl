@@ -2,16 +2,16 @@
 ---------- Compile: `/cmplStd/lib.ci`
 warn: variable `args` hides previous declaration
 debug: inline file: `cmplStd/lib.ci`
-cmplStd/lib.ci:13: debug: inline file: `cmplStd/lib/lang/Pointer.ci`
-cmplStd/lib/lang/Pointer.ci:7: warn: variable `inc(ptr: pointer, val: int32): pointer` hides previous declaration
-cmplStd/lib/lang/Pointer.ci:3: warn: previously defined here as `inc(ptr: pointer, val: int32): pointer`
-cmplStd/lib.ci:20: debug: inline file: `cmplStd/lib/lang/Debug.ci`
+cmplStd/lib.ci:18: debug: inline file: `cmplStd/lib/lang/Debug.ci`
 cmplStd/lib/lang/Debug.ci:64: warn: adding implicit cast variant[](null: pointer)
 cmplStd/lib/lang/Debug.ci:79: warn: adding implicit cast variant(message: char[*])
 cmplStd/lib/lang/Debug.ci:81: warn: adding implicit cast variant(expected: int32)
 cmplStd/lib/lang/Debug.ci:82: warn: adding implicit cast variant(returned: int32)
 cmplStd/lib/lang/Debug.ci:83: warn: adding implicit cast variant[](extras: variant[1])
-cmplStd/lib.ci:25: debug: inline file: `cmplStd/lib/math/Bits.ci`
+cmplStd/lib.ci:21: debug: inline file: `cmplStd/lib/lang/Pointer.ci`
+cmplStd/lib/lang/Pointer.ci:7: warn: variable `inc(ptr: pointer, val: int32): pointer` hides previous declaration
+cmplStd/lib/lang/Pointer.ci:3: warn: previously defined here as `inc(ptr: pointer, val: int32): pointer`
+cmplStd/lib.ci:24: debug: inline file: `cmplStd/lib/math/Bits.ci`
 cmplStd/lib/math/Bits.ci:37: warn: adding implicit cast uint64(lo: uint32)
 cmplStd/lib/math/Bits.ci:41: warn: adding implicit cast pointer(typename(uint32.zxt): typename)
 cmplStd/lib/math/Bits.ci:41: warn: adding implicit cast bool(preferNativeCalls: int64)
@@ -194,7 +194,7 @@ cmplStd/lib/math/Bits.ci:519: warn: adding implicit cast int32(x: uint8)
 cmplStd/lib/math/Bits.ci:519: warn: adding implicit cast uint8((((x) >> 2) & 51) | (((x) & 51) << 2): int32)
 cmplStd/lib/math/Bits.ci:520: warn: adding implicit cast int32(x: uint8)
 cmplStd/lib/math/Bits.ci:520: warn: adding implicit cast int32(x: uint8)
-cmplStd/lib.ci:26: debug: inline file: `cmplStd/lib/math/Math.ci`
+cmplStd/lib.ci:25: debug: inline file: `cmplStd/lib/math/Math.ci`
 cmplStd/lib/math/Math.ci:17: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Math.ci:18: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math/Math.ci:29: warn: adding implicit cast float64(0: int32)
@@ -389,7 +389,7 @@ cmplStd/lib/math/Math.ci:1047: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Math.ci:1047: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Math.ci:1051: warn: adding implicit cast float64(180: int32)
 cmplStd/lib/math/Math.ci:1054: warn: adding implicit cast float64(180: int32)
-cmplStd/lib.ci:27: debug: inline file: `cmplStd/lib/math/Fixed.ci`
+cmplStd/lib.ci:26: debug: inline file: `cmplStd/lib/math/Fixed.ci`
 cmplStd/lib/math/Fixed.ci:9: warn: adding implicit cast int32(2147483648: int64)
 cmplStd/lib/math/Fixed.ci:33: verbose: reference `precision_must_be_at_most_26_bits` is not defined
 cmplStd/lib/math/Fixed.ci:33: verbose: can not type check expression: `precision_must_be_at_most_26_bits`
@@ -976,11 +976,11 @@ cmplStd/lib/math/Fixed.ci:735: warn: adding implicit cast float64((1 << Fixed.pr
 cmplStd/lib/math/Fixed.ci:740: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Fixed.ci:743: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Fixed.ci:763: warn: adding implicit cast float64(value.value: int32)
-cmplStd/lib.ci:28: debug: inline file: `cmplStd/lib/math/Complex.ci`
+cmplStd/lib.ci:27: debug: inline file: `cmplStd/lib/math/Complex.ci`
 cmplStd/lib/math/Complex.ci:12: debug: using default field initializer: Complex.im := 0
 cmplStd/lib/math/Complex.ci:8: warn: adding implicit cast float64(0: int32)
-cmplStd/lib.ci:29: debug: inline file: `cmplStd/lib/math/Vector4f.ci`
-cmplStd/lib.ci:30: debug: inline file: `cmplStd/lib/math/Matrix4f.ci`
+cmplStd/lib.ci:28: debug: inline file: `cmplStd/lib/math/Vector4f.ci`
+cmplStd/lib.ci:29: debug: inline file: `cmplStd/lib/math/Matrix4f.ci`
 cmplStd/lib/math/Matrix4f.ci:111: warn: adding implicit cast float64(len: float32)
 cmplStd/lib/math/Matrix4f.ci:135: warn: adding implicit cast float32(1: int32)
 cmplStd/lib/math/Matrix4f.ci:167: warn: adding implicit cast float32(1: int32)
@@ -1017,8 +1017,8 @@ cmplStd/lib/math/Matrix4f.ci:207: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:207: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:207: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:207: warn: adding implicit cast float32(1: int32)
-cmplStd/lib.ci:31: debug: inline file: `cmplStd/lib/math/Vector2d.ci`
-cmplStd/lib.ci:40: debug: inline file: `cmplStd/lib/time/Timeunit.ci`
+cmplStd/lib.ci:30: debug: inline file: `cmplStd/lib/math/Vector2d.ci`
+cmplStd/lib.ci:39: debug: inline file: `cmplStd/lib/time/Timeunit.ci`
 cmplStd/lib/time/Timeunit.ci:4: warn: adding implicit cast Timeunit(1: int32)
 cmplStd/lib/time/Timeunit.ci:5: warn: adding implicit cast int64(1000: int32)
 warn: adding implicit cast Timeunit(1000: int64)
@@ -1034,22 +1034,22 @@ cmplStd/lib/time/Timeunit.ci:10: warn: adding implicit cast int64(24: int32)
 warn: adding implicit cast Timeunit(86400000000000: int64)
 cmplStd/lib/time/Timeunit.ci:27: warn: adding implicit cast float64((from / to): int64)
 cmplStd/lib/time/Timeunit.ci:30: warn: adding implicit cast float64((to / from): int64)
-cmplStd/lib.ci:41: debug: inline file: `cmplStd/lib/time/Duration.ci`
+cmplStd/lib.ci:40: debug: inline file: `cmplStd/lib/time/Duration.ci`
 cmplStd/lib/time/Duration.ci:8: warn: adding implicit cast Timeunit(Millis: int64)
-cmplStd/lib.ci:42: debug: inline file: `cmplStd/lib/time/Timestamp.ci`
+cmplStd/lib.ci:41: debug: inline file: `cmplStd/lib/time/Timestamp.ci`
 cmplStd/lib/time/Timestamp.ci:9: warn: adding implicit cast Timeunit(Millis: int64)
 cmplStd/lib/time/Timestamp.ci:56: warn: adding implicit cast int64(Timestamp.precision: Timeunit)
 cmplStd/lib/time/Timestamp.ci:74: warn: adding implicit cast int64(Timestamp.precision: Timeunit)
 cmplStd/lib/time/Timestamp.ci:80: warn: adding implicit cast int64(0: int32)
 cmplStd/lib/time/Timestamp.ci:96: warn: adding implicit cast int64(0: int32)
 cmplStd/lib/time/Timestamp.ci:115: warn: adding implicit cast Timeunit(Millis: int64)
-cmplStd/lib.ci:43: debug: inline file: `cmplStd/lib/time/Timezone.ci`
+cmplStd/lib.ci:42: debug: inline file: `cmplStd/lib/time/Timezone.ci`
 cmplStd/lib/time/Timezone.ci:14: warn: adding implicit cast int64(0: int32)
 cmplStd/lib/time/Timezone.ci:18: warn: adding implicit cast char[]("UTC": .cstr)
 cmplStd/lib/time/Timezone.ci:29: warn: adding implicit cast Timeunit(Hours: int64)
 cmplStd/lib/time/Timezone.ci:33: warn: adding implicit cast char[]("GMT+3": .cstr)
 cmplStd/lib/time/Timezone.ci:2: warn: padding `Timezone` with 4 bytes: (12 -> 16)
-cmplStd/lib.ci:44: debug: inline file: `cmplStd/lib/time/Datetime.ci`
+cmplStd/lib.ci:43: debug: inline file: `cmplStd/lib/time/Datetime.ci`
 cmplStd/lib/time/Datetime.ci:3: warn: adding implicit cast Month(1: int32)
 warn: adding implicit cast Month(2: int64)
 warn: adding implicit cast Month(3: int64)
@@ -1129,7 +1129,7 @@ cmplStd/lib/time/Datetime.ci:280: warn: adding implicit cast uint8(second: int32
 cmplStd/lib/time/Datetime.ci:281: warn: adding implicit cast uint16(millis: int32)
 cmplStd/lib/time/Datetime.ci:283: warn: adding implicit cast uint8(0: int32)
 cmplStd/lib/time/Datetime.ci:284: warn: adding implicit cast uint16(0: int32)
-cmplStd/lib.ci:48: debug: inline file: `cmplStd/lib/text/cstr.ci`
+cmplStd/lib.ci:47: debug: inline file: `cmplStd/lib/text/cstr.ci`
 cmplStd/lib/text/cstr.ci:5: warn: adding implicit cast pointer(str: char[*])
 cmplStd/lib/text/cstr.ci:37: warn: adding implicit cast int32(with[i]: char)
 cmplStd/lib/text/cstr.ci:65: warn: adding implicit cast int32(str[i]: char)
@@ -1148,7 +1148,7 @@ cmplStd/lib/text/cstr.ci:146: warn: adding implicit cast float64(-1: int32)
 cmplStd/lib/text/cstr.ci:149: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/text/cstr.ci:157: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/text/cstr.ci:158: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib.ci:49: debug: inline file: `cmplStd/lib/text/Format.ci`
+cmplStd/lib.ci:48: debug: inline file: `cmplStd/lib/text/Format.ci`
 cmplStd/lib/text/Format.ci:21: warn: adding implicit cast int32('%': char)
 cmplStd/lib/text/Format.ci:19: debug: using default field initializer: FormatFlags.trimDecimal := true
 cmplStd/lib/text/Format.ci:19: debug: using default field initializer: FormatFlags.precision := 10
@@ -1309,30 +1309,29 @@ cmplStd/lib/text/Format.ci:7: warn: adding implicit cast char(0: int32)
 cmplStd/lib/text/Format.ci:564: debug: using default field initializer: FormatFlags.width := 0
 cmplStd/lib/text/Format.ci:564: debug: using default field initializer: FormatFlags.precision := 10
 cmplStd/lib/text/Format.ci:564: debug: using default field initializer: FormatFlags.trimDecimal := true
-cmplStd/lib.ci:50: debug: inline file: `cmplStd/lib/text/stream/ByteStream.ci`
-cmplStd/lib/text/stream/ByteStream.ci:10: warn: adding implicit cast pointer(closeable.close: function)
-cmplStd/lib/text/stream/ByteStream.ci:28: warn: adding implicit cast uint8(0: int32)
-cmplStd/lib/text/stream/ByteStream.ci:32: warn: adding implicit cast int32(bytes[0]: uint8)
-cmplStd/lib/text/stream/ByteStream.ci:105: warn: Overriding virtual function: ByteReader.read(this: ByteReader, bytes: uint8[]): int32
-cmplStd/lib/text/stream/ByteStream.ci:114: warn: Overriding virtual function: Closeable.close(this: Closeable): void
-cmplStd/lib/text/stream/ByteStream.ci:127: warn: Creating virtual method for: ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32
-cmplStd/lib/text/stream/ByteStream.ci:131: warn: adding implicit cast int32(bytes.length: uint32)
-cmplStd/lib/text/stream/ByteStream.ci:141: warn: Creating virtual method for: ByteBuffer.read(this: ByteBuffer): int32
-cmplStd/lib/text/stream/ByteStream.ci:150: warn: Creating virtual method for: ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void
-cmplStd/lib/text/stream/ByteStream.ci:151: warn: adding implicit cast int32(bytes.length: uint32)
-cmplStd/lib/text/stream/ByteStream.ci:166: warn: adding implicit cast uint8[*](new: uint8[*])
-cmplStd/lib/text/stream/ByteStream.ci:170: warn: adding implicit cast int32(bytes.length: uint32)
-cmplStd/lib/text/stream/ByteStream.ci:176: warn: Creating virtual method for: ByteBuffer.flush(this: ByteBuffer): void
-cmplStd/lib/text/stream/ByteStream.ci:180: warn: Creating virtual method for: ByteBuffer.close(this: ByteBuffer): void
-cmplStd/lib/text/stream/ByteStream.ci:184: warn: adding implicit cast uint8[*](null: pointer)
-cmplStd/lib/text/stream/ByteStream.ci:121: warn: padding `ByteBuffer` with 4 bytes: (36 -> 40)
-cmplStd/lib.ci:51: debug: inline file: `cmplStd/lib/text/stream/TextStream.ci`
+cmplStd/lib.ci:49: debug: inline file: `cmplStd/lib/text/stream/ByteStream.ci`
+cmplStd/lib/text/stream/ByteStream.ci:8: warn: adding implicit cast pointer(this.close: function)
+cmplStd/lib/text/stream/ByteStream.ci:27: warn: adding implicit cast uint8(0: int32)
+cmplStd/lib/text/stream/ByteStream.ci:104: warn: Overriding virtual function: ByteReader.read(this: ByteReader, bytes: uint8[]): int32
+cmplStd/lib/text/stream/ByteStream.ci:113: warn: Overriding virtual function: Closeable.close(this: Closeable): void
+cmplStd/lib/text/stream/ByteStream.ci:126: warn: Creating virtual method for: ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32
+cmplStd/lib/text/stream/ByteStream.ci:130: warn: adding implicit cast int32(bytes.length: uint32)
+cmplStd/lib/text/stream/ByteStream.ci:140: warn: Creating virtual method for: ByteBuffer.read(this: ByteBuffer): int32
+cmplStd/lib/text/stream/ByteStream.ci:149: warn: Creating virtual method for: ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void
+cmplStd/lib/text/stream/ByteStream.ci:150: warn: adding implicit cast int32(bytes.length: uint32)
+cmplStd/lib/text/stream/ByteStream.ci:165: warn: adding implicit cast uint8[*](new: uint8[*])
+cmplStd/lib/text/stream/ByteStream.ci:169: warn: adding implicit cast int32(bytes.length: uint32)
+cmplStd/lib/text/stream/ByteStream.ci:175: warn: Creating virtual method for: ByteBuffer.flush(this: ByteBuffer): void
+cmplStd/lib/text/stream/ByteStream.ci:179: warn: Creating virtual method for: ByteBuffer.close(this: ByteBuffer): void
+cmplStd/lib/text/stream/ByteStream.ci:183: warn: adding implicit cast uint8[*](null: pointer)
+cmplStd/lib/text/stream/ByteStream.ci:120: warn: padding `ByteBuffer` with 4 bytes: (36 -> 40)
+cmplStd/lib.ci:50: debug: inline file: `cmplStd/lib/text/stream/TextStream.ci`
 cmplStd/lib/text/stream/TextStream.ci:19: warn: Overriding virtual function: Closeable.close(this: Closeable): void
-cmplStd/lib/text/stream/TextStream.ci:27: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib/text/stream/TextStream.ci:31: warn: adding implicit cast uint32(16777215: int32)
-cmplStd/lib/text/stream/TextStream.ci:68: warn: Creating virtual method for: TextWriter.flush(this: TextWriter): void
-cmplStd/lib/text/stream/TextStream.ci:73: warn: Overriding virtual function: Closeable.close(this: Closeable): void
-cmplStd/lib.ci:52: debug: inline file: `cmplStd/lib/text/encoding/binary/Base64.ci`
+cmplStd/lib/text/stream/TextStream.ci:26: warn: adding implicit cast uint32(0: int32)
+cmplStd/lib/text/stream/TextStream.ci:30: warn: adding implicit cast uint32(16777215: int32)
+cmplStd/lib/text/stream/TextStream.ci:67: warn: Creating virtual method for: TextWriter.flush(this: TextWriter): void
+cmplStd/lib/text/stream/TextStream.ci:72: warn: Overriding virtual function: Closeable.close(this: Closeable): void
+cmplStd/lib.ci:51: debug: inline file: `cmplStd/lib/text/encoding/binary/Base64.ci`
 cmplStd/lib/text/encoding/binary/Base64.ci:41: warn: Overriding virtual function: ByteWriter.write(this: ByteWriter, bytes: uint8[]): void
 cmplStd/lib/text/encoding/binary/Base64.ci:42: warn: adding implicit cast int32(length: uint32)
 cmplStd/lib/text/encoding/binary/Base64.ci:50: warn: adding implicit cast uint8('=': char)
@@ -1363,51 +1362,72 @@ cmplStd/lib/text/encoding/binary/Base64.ci:165: warn: adding implicit cast uint8
 cmplStd/lib/text/encoding/binary/Base64.ci:169: warn: adding implicit cast int32(data.length: uint32)
 cmplStd/lib/text/encoding/binary/Base64.ci:173: warn: adding implicit cast uint8('=': char)
 cmplStd/lib/text/encoding/binary/Base64.ci:190: warn: Overriding virtual function: Closeable.close(this: Closeable): void
-cmplStd/lib.ci:53: debug: inline file: `cmplStd/lib/text/encoding/Ascii.ci`
+cmplStd/lib.ci:52: debug: inline file: `cmplStd/lib/text/encoding/Ascii.ci`
 cmplStd/lib/text/encoding/Ascii.ci:4: warn: Overriding virtual function: TextReader.decode(this: TextReader, chars: uint32[]): int32
 cmplStd/lib/text/encoding/Ascii.ci:6: warn: adding implicit cast int32(chars.length: uint32)
-cmplStd/lib/text/encoding/Ascii.ci:12: warn: adding implicit cast uint32(value[0]: char)
+cmplStd/lib/text/encoding/Ascii.ci:12: warn: adding implicit cast uint32(value[0]: uint8)
 cmplStd/lib/text/encoding/Ascii.ci:21: warn: Overriding virtual function: TextWriter.encode(this: TextWriter, chars: uint32[]): void
 cmplStd/lib/text/encoding/Ascii.ci:23: warn: adding implicit cast int32(chars.length: uint32)
-cmplStd/lib/text/encoding/Ascii.ci:24: warn: adding implicit cast char(chars[i]: uint32)
-cmplStd/lib.ci:54: debug: inline file: `cmplStd/lib/text/encoding/Utf8.ci`
+cmplStd/lib/text/encoding/Ascii.ci:24: warn: adding implicit cast uint8(chars[i]: uint32)
+cmplStd/lib.ci:53: debug: inline file: `cmplStd/lib/text/encoding/Utf8.ci`
 cmplStd/lib/text/encoding/Utf8.ci:4: warn: Overriding virtual function: TextReader.decode(this: TextReader, chars: uint32[]): int32
+cmplStd/lib/text/encoding/Utf8.ci:5: warn: adding implicit cast uint8(0: int32)
+cmplStd/lib/text/encoding/Utf8.ci:6: warn: adding implicit cast uint8(0: int32)
 cmplStd/lib/text/encoding/Utf8.ci:8: warn: adding implicit cast int32(chars.length: uint32)
-cmplStd/lib/text/encoding/Utf8.ci:33: warn: adding implicit cast uint32(value: int32)
-cmplStd/lib/text/encoding/Utf8.ci:42: warn: Overriding virtual function: TextWriter.encode(this: TextWriter, chars: uint32[]): void
-cmplStd/lib/text/encoding/Utf8.ci:45: warn: adding implicit cast int32(chars.length: uint32)
-cmplStd/lib/text/encoding/Utf8.ci:48: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:49: warn: adding implicit cast uint8(chr: uint32)
-cmplStd/lib/text/encoding/Utf8.ci:52: warn: adding implicit cast uint32(2048: int32)
-cmplStd/lib/text/encoding/Utf8.ci:53: warn: adding implicit cast uint32(1984: int32)
-cmplStd/lib/text/encoding/Utf8.ci:53: warn: adding implicit cast uint32(192: int32)
-cmplStd/lib/text/encoding/Utf8.ci:53: warn: adding implicit cast uint8((chr & (1984)) >> 6 | (192): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:54: warn: adding implicit cast uint32(63: int32)
-cmplStd/lib/text/encoding/Utf8.ci:54: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:54: warn: adding implicit cast uint8(chr & (63) | (128): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:57: warn: adding implicit cast uint32(57344: int32)
-cmplStd/lib/text/encoding/Utf8.ci:58: warn: adding implicit cast uint32(61440: int32)
-cmplStd/lib/text/encoding/Utf8.ci:58: warn: adding implicit cast uint32(224: int32)
-cmplStd/lib/text/encoding/Utf8.ci:58: warn: adding implicit cast uint8((chr & (61440)) >> 12 | (224): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:59: warn: adding implicit cast uint32(252: int32)
-cmplStd/lib/text/encoding/Utf8.ci:59: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:59: warn: adding implicit cast uint8((chr & (252)) >> 6 | (128): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:60: warn: adding implicit cast uint32(63: int32)
-cmplStd/lib/text/encoding/Utf8.ci:60: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:60: warn: adding implicit cast uint8(chr & (63) | (128): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:64: warn: adding implicit cast uint32(1835008: int32)
-cmplStd/lib/text/encoding/Utf8.ci:64: warn: adding implicit cast uint32(240: int32)
-cmplStd/lib/text/encoding/Utf8.ci:64: warn: adding implicit cast uint8((chr & (1835008)) >> 18 | (240): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:65: warn: adding implicit cast uint32(1008: int32)
-cmplStd/lib/text/encoding/Utf8.ci:65: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:65: warn: adding implicit cast uint8((chr & (1008)) >> 12 | (128): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:66: warn: adding implicit cast uint32(252: int32)
-cmplStd/lib/text/encoding/Utf8.ci:66: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:66: warn: adding implicit cast uint8((chr & (252)) >> 6 | (128): uint32)
-cmplStd/lib/text/encoding/Utf8.ci:67: warn: adding implicit cast uint32(63: int32)
-cmplStd/lib/text/encoding/Utf8.ci:67: warn: adding implicit cast uint32(128: int32)
-cmplStd/lib/text/encoding/Utf8.ci:67: warn: adding implicit cast uint8(chr & (63) | (128): uint32)
-cmplStd/lib.ci:64: debug: inline file: `cmplStd/lib/math/Easing.ci`
+cmplStd/lib/text/encoding/Utf8.ci:14: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:15: warn: adding implicit cast uint32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:17: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:22: warn: adding implicit cast int32(ext[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:23: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:23: warn: adding implicit cast int32(ext[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:23: warn: adding implicit cast uint32(((buff[0]) & 31) << 6 | ((ext[0]) & 63): int32)
+cmplStd/lib/text/encoding/Utf8.ci:25: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:30: warn: adding implicit cast int32(ext[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:31: warn: adding implicit cast int32(ext[1]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:32: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:32: warn: adding implicit cast int32(ext[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:32: warn: adding implicit cast int32(ext[1]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:32: warn: adding implicit cast uint32(((buff[0]) & 15) << 12 | ((ext[0]) & 63) << 6 | ((ext[1]) & 63): int32)
+cmplStd/lib/text/encoding/Utf8.ci:34: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:39: warn: adding implicit cast int32(ext[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:40: warn: adding implicit cast int32(ext[1]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:41: warn: adding implicit cast int32(ext[2]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:42: warn: adding implicit cast int32(buff[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:42: warn: adding implicit cast int32(ext[0]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:42: warn: adding implicit cast int32(ext[1]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:42: warn: adding implicit cast int32(ext[2]: uint8)
+cmplStd/lib/text/encoding/Utf8.ci:42: warn: adding implicit cast uint32(((buff[0]) & 7) << 18 | ((ext[0]) & 63) << 12 | ((ext[1]) & 63) << 6 | ((ext[2]) & 63): int32)
+cmplStd/lib/text/encoding/Utf8.ci:53: warn: Overriding virtual function: TextWriter.encode(this: TextWriter, chars: uint32[]): void
+cmplStd/lib/text/encoding/Utf8.ci:55: warn: adding implicit cast int32(chars.length: uint32)
+cmplStd/lib/text/encoding/Utf8.ci:58: warn: adding implicit cast uint32(128: int32)
+cmplStd/lib/text/encoding/Utf8.ci:59: warn: adding implicit cast uint8(cp: uint32)
+cmplStd/lib/text/encoding/Utf8.ci:62: warn: adding implicit cast uint32(2048: int32)
+cmplStd/lib/text/encoding/Utf8.ci:64: warn: adding implicit cast int32((cp >> 6): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:65: warn: adding implicit cast uint32(63: int32)
+cmplStd/lib/text/encoding/Utf8.ci:65: warn: adding implicit cast int32((cp & (63)): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:64: warn: adding implicit cast uint8(192 | ((cp >> 6)): int32)
+cmplStd/lib/text/encoding/Utf8.ci:65: warn: adding implicit cast uint8(128 | ((cp & (63))): int32)
+cmplStd/lib/text/encoding/Utf8.ci:69: warn: adding implicit cast uint32(65536: int32)
+cmplStd/lib/text/encoding/Utf8.ci:71: warn: adding implicit cast int32((cp >> 12): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:72: warn: adding implicit cast uint32(63: int32)
+cmplStd/lib/text/encoding/Utf8.ci:72: warn: adding implicit cast int32(((cp >> 6) & (63)): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:73: warn: adding implicit cast uint32(63: int32)
+cmplStd/lib/text/encoding/Utf8.ci:73: warn: adding implicit cast int32((cp & (63)): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:71: warn: adding implicit cast uint8(224 | ((cp >> 12)): int32)
+cmplStd/lib/text/encoding/Utf8.ci:72: warn: adding implicit cast uint8(128 | (((cp >> 6) & (63))): int32)
+cmplStd/lib/text/encoding/Utf8.ci:73: warn: adding implicit cast uint8(128 | ((cp & (63))): int32)
+cmplStd/lib/text/encoding/Utf8.ci:79: warn: adding implicit cast int32((cp >> 18): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:80: warn: adding implicit cast uint32(63: int32)
+cmplStd/lib/text/encoding/Utf8.ci:80: warn: adding implicit cast int32(((cp >> 12) & (63)): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:81: warn: adding implicit cast uint32(63: int32)
+cmplStd/lib/text/encoding/Utf8.ci:81: warn: adding implicit cast int32(((cp >> 6) & (63)): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:82: warn: adding implicit cast uint32(63: int32)
+cmplStd/lib/text/encoding/Utf8.ci:82: warn: adding implicit cast int32((cp & (63)): uint32)
+cmplStd/lib/text/encoding/Utf8.ci:79: warn: adding implicit cast uint8(240 | ((cp >> 18)): int32)
+cmplStd/lib/text/encoding/Utf8.ci:80: warn: adding implicit cast uint8(128 | (((cp >> 12) & (63))): int32)
+cmplStd/lib/text/encoding/Utf8.ci:81: warn: adding implicit cast uint8(128 | (((cp >> 6) & (63))): int32)
+cmplStd/lib/text/encoding/Utf8.ci:82: warn: adding implicit cast uint8(128 | ((cp & (63))): int32)
+cmplStd/lib.ci:63: debug: inline file: `cmplStd/lib/math/Easing.ci`
 cmplStd/lib/math/Easing.ci:32: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math/Easing.ci:32: warn: adding implicit cast float64(10: int32)
 cmplStd/lib/math/Easing.ci:32: warn: adding implicit cast float64(0: int32)
@@ -1442,7 +1462,7 @@ cmplStd/lib/math/Easing.ci:110: warn: adding implicit cast pointer(ease: functio
 cmplStd/lib/math/Easing.ci:113: warn: adding implicit cast float64(2: int32)
 cmplStd/lib/math/Easing.ci:114: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math/Easing.ci:114: warn: adding implicit cast float64(1: int32)
-cmplStd/lib.ci:66: debug: inline file: `cmplStd/lib/math/Polynomial.ci`
+cmplStd/lib.ci:65: debug: inline file: `cmplStd/lib/math/Polynomial.ci`
 cmplStd/lib/math/Polynomial.ci:9: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Polynomial.ci:10: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math/Polynomial.ci:14: warn: Overriding virtual function: TextWriter.Writeable.write(this: Writeable, writer: TextWriter): void
@@ -1704,6 +1724,12 @@ cmplStd/lib/text/stream/TextStream.ci:151: warn: uninitialized variable `.result
 cmplStd/lib/text/stream/TextStream.ci:151: warn: uninitialized variable `.result`
 cmplStd/lib/lang/Debug.ci:45: warn: no code will be generated for statement: 0
 cmplStd/lib/lang/Debug.ci:41: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:43: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:43: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:43: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:43: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:43: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:43: warn: no code will be generated for statement: 0
 cmplStd/lib/math/Polynomial.ci:26: warn: uninitialized variable `.result`
 cmplStd/lib/math/Polynomial.ci:30: warn: uninitialized variable `.result`
 cmplStd/lib/math/Polynomial.ci:35: warn: uninitialized variable `.result`
@@ -2356,7 +2382,7 @@ float64.print.flagSpace: int64 {
 .name: 'flagSpace'
 .owner: float64.print(out: char[], value: float64, flags: int32, width: int32, precision: int32): int32
 .doc: '@builtin'
-.value: 8
+.value: 4
 }
 float64.print.flagHash: int64 {
 .kind: static const i64
@@ -2365,7 +2391,7 @@ float64.print.flagHash: int64 {
 .name: 'flagHash'
 .owner: float64.print(out: char[], value: float64, flags: int32, width: int32, precision: int32): int32
 .doc: '@builtin'
-.value: 4
+.value: 8
 }
 float64.print.flagZero: int64 {
 .kind: static const i64
@@ -2374,7 +2400,7 @@ float64.print.flagZero: int64 {
 .name: 'flagZero'
 .owner: float64.print(out: char[], value: float64, flags: int32, width: int32, precision: int32): int32
 .doc: '@builtin'
-.value: 8
+.value: 16
 }
 pointer: typename {
 .kind: static const typename(ref)
@@ -4117,24 +4143,12 @@ double: typename {
 .file: 'cmplStd/lib.ci:11'
 .value: float64
 }
-inc(ptr: pointer, val: int32): pointer: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'inc'
-.file: 'cmplStd/lib/lang/Pointer.ci:3'
-.param .result: pointer (size: 4, cast: ref)
-.param ptr: pointer (size: 4, cast: ref)
-.param val: int32 (size: 4, cast: i32)
-.doc: 'Returns the pointer incremented with the given value'
-.value: pointer(emit(pointer(ptr), int32(val), add.i32))
-}
 sizeof(type: typename): int32: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'sizeof'
-.file: 'cmplStd/lib.ci:16'
+.file: 'cmplStd/lib.ci:14'
 .param .result: int32 (size: 4, cast: i32)
 .param type: typename (size: 4, cast: ref)
 .doc: 'Returns the size of the given type'
@@ -4515,6 +4529,18 @@ assertEq(expected: int32, returned: int32): void: function {
 .param returned: int32 (size: 4, cast: i32)
 .doc: 'abort execution if the returned value is not equal to the expected value'
 .value: assertEq(expected, returned, null)
+}
+inc(ptr: pointer, val: int32): pointer: function {
+.kind: inline
+.base: `function`
+.size: 0
+.name: 'inc'
+.file: 'cmplStd/lib/lang/Pointer.ci:3'
+.param .result: pointer (size: 4, cast: ref)
+.param ptr: pointer (size: 4, cast: ref)
+.param val: int32 (size: 4, cast: i32)
+.doc: 'Returns the pointer incremented with the given value'
+.value: pointer(emit(pointer(ptr), int32(val), add.i32))
 }
 Bits: typename {
 .kind: static const typename(void)
@@ -23460,6 +23486,7 @@ Closeable: object {
 .name: 'Closeable'
 .file: 'cmplStd/lib/text/stream/ByteStream.ci:2'
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -23478,49 +23505,50 @@ Closeable.close(this: Closeable): void: function {
 .param this: Closeable (size: 4, cast: variable(ref))
 .doc: 'Release the resources hold by this object.'
 }
-close(closeable: Closeable): void: function {
+Closeable.closeSafe(this: Closeable): void: function {
 .kind: static function
 .base: `function`
 .size: 33
-.name: 'close'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:9'
+.name: 'closeSafe'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:7'
+.owner: Closeable
 .param .result: void (size: 0, cast: variable(void))
-.param closeable: Closeable (size: 4, cast: variable(ref))
-.doc: 'Extension method to safely call the close method'
+.param this: Closeable (size: 4, cast: variable(ref))
 .value: {
-	if ((closeable.close) == null) {
+	if ((this.close) == null) {
 		return;
 	}
-	closeable.close(closeable);
+	this.close(this);
 }
 .instructions: (33 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:10: (18 bytes): if ((closeable.close) == null)
-	<close>  : dup.x32 sp(1)
-	<close+?>: inc.i32(+4)
-	<close+?>: load.i32
-	<close+?>: load.ref <?> ;null
-	<close+?>: ceq.i32
-	<close+?>: jz +5
-	cmplStd/lib/text/stream/ByteStream.ci:12: (1 byte): return;
-	<close+?>: ret
-	cmplStd/lib/text/stream/ByteStream.ci:14: (14 bytes): closeable.close(closeable);
-	<close+?>: dup.x32 sp(1)
-	<close+?>: dup.x32 sp(2)
-	<close+?>: inc.i32(+4)
-	<close+?>: load.i32
-	<close+?>: call
-	<close+?>: inc.sp(-4)
-	<close+?>: ret
+	cmplStd/lib/text/stream/ByteStream.ci:8: (18 bytes): if ((this.close) == null)
+	<closeSafe>  : dup.x32 sp(1)
+	<closeSafe+?>: inc.i32(+4)
+	<closeSafe+?>: load.i32
+	<closeSafe+?>: load.ref <?> ;null
+	<closeSafe+?>: ceq.i32
+	<closeSafe+?>: jz +5
+	cmplStd/lib/text/stream/ByteStream.ci:10: (1 byte): return;
+	<closeSafe+?>: ret
+	cmplStd/lib/text/stream/ByteStream.ci:12: (14 bytes): this.close(this);
+	<closeSafe+?>: dup.x32 sp(1)
+	<closeSafe+?>: dup.x32 sp(2)
+	<closeSafe+?>: inc.i32(+4)
+	<closeSafe+?>: load.i32
+	<closeSafe+?>: call
+	<closeSafe+?>: inc.sp(-4)
+	<closeSafe+?>: ret
 }
 ByteReader: Closeable {
 .kind: static const typename(ref)
 .base: `Closeable`
 .size: 12
 .name: 'ByteReader'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:18'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:17'
 .field read: function (size: 4, cast: variable(ref))
-.field read: function (size: 61, cast: static function)
+.field read: function (size: 59, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -23533,7 +23561,7 @@ ByteReader.read(this: ByteReader, bytes: uint8[]): int32: function {
 .base: `function`
 .size: 4
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:24'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:23'
 .owner: ByteReader
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteReader (size: 4, cast: variable(ref))
@@ -23545,9 +23573,9 @@ in case there is an error -1 should be returned'
 ByteReader.read(this: ByteReader): int32: function {
 .kind: static function
 .base: `function`
-.size: 61
+.size: 59
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:27'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:26'
 .owner: ByteReader
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteReader (size: 4, cast: variable(ref))
@@ -23559,16 +23587,16 @@ ByteReader.read(this: ByteReader): int32: function {
 	if (read(this, bytes) <= 0) {
 		return .result := -1;
 	}
-	return .result := (bytes[0]) & 255;
+	return .result := bytes[0];
 }
-.instructions: (61 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:28: (10 bytes): bytes: uint8[1] := {...}
+.instructions: (59 bytes)
+	cmplStd/lib/text/stream/ByteStream.ci:27: (10 bytes): bytes: uint8[1] := {...}
 	<read>  : inc.sp(+4)
-	cmplStd/lib/text/stream/ByteStream.ci:28: (6 bytes): bytes[0] := (0);
+	cmplStd/lib/text/stream/ByteStream.ci:27: (6 bytes): bytes[0] := (0);
 	<read+?>: load.z32
 	<read+?>: load.sp(+4)
 	<read+?>: store.i8
-	cmplStd/lib/text/stream/ByteStream.ci:29: (37 bytes): if (read(this, bytes) <= 0)
+	cmplStd/lib/text/stream/ByteStream.ci:28: (37 bytes): if (read(this, bytes) <= 0)
 	<read+?>: load.z32
 	<read+?>: dup.x32 sp(3)
 	<read+?>: load.c32 1
@@ -23579,15 +23607,14 @@ ByteReader.read(this: ByteReader): int32: function {
 	<read+?>: load.z32
 	<read+?>: cgt.i32
 	<read+?>: jnz +16
-	cmplStd/lib/text/stream/ByteStream.ci:30: (12 bytes): return .result := -1;
+	cmplStd/lib/text/stream/ByteStream.ci:29: (12 bytes): return .result := -1;
 	<read+?>: load.c32 -1
 	<read+?>: set.x32 sp(4)
 	<read+?>: inc.sp(-4)
 	<read+?>: ret
-	cmplStd/lib/text/stream/ByteStream.ci:32: (14 bytes): return .result := (bytes[0]) & 255;
+	cmplStd/lib/text/stream/ByteStream.ci:31: (12 bytes): return .result := bytes[0];
 	<read+?>: load.sp(+0)
 	<read+?>: load.iu8
-	<read+?>: b32.and 0xff
 	<read+?>: set.x32 sp(4)
 	<read+?>: inc.sp(-4)
 	<read+?>: ret
@@ -23597,12 +23624,13 @@ ByteWriter: Closeable {
 .base: `Closeable`
 .size: 16
 .name: 'ByteWriter'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:45'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:44'
 .field write: function (size: 4, cast: variable(ref))
 .field flush: function (size: 4, cast: variable(ref))
 .field write: function (size: 42, cast: static function)
-.field write: function (size: 112, cast: static function)
+.field copy: function (size: 112, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -23615,7 +23643,7 @@ ByteWriter.write(this: ByteWriter, bytes: uint8[]): void: function {
 .base: `function`
 .size: 4
 .name: 'write'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:49'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:48'
 .owner: ByteWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteWriter (size: 4, cast: variable(ref))
@@ -23628,7 +23656,7 @@ ByteWriter.flush(this: ByteWriter): void: function {
 .base: `function`
 .size: 4
 .name: 'flush'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:54'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:53'
 .owner: ByteWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteWriter (size: 4, cast: variable(ref))
@@ -23640,7 +23668,7 @@ ByteWriter.write(this: ByteWriter, oneByte: uint8): void: function {
 .base: `function`
 .size: 42
 .name: 'write'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:57'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:56'
 .owner: ByteWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteWriter (size: 4, cast: variable(ref))
@@ -23653,14 +23681,14 @@ ByteWriter.write(this: ByteWriter, oneByte: uint8): void: function {
 	return .result := this.write(this, bytes);
 }
 .instructions: (42 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:58: (14 bytes): bytes: uint8[1] := {...}
+	cmplStd/lib/text/stream/ByteStream.ci:57: (14 bytes): bytes: uint8[1] := {...}
 	<write>  : inc.sp(+4)
-	cmplStd/lib/text/stream/ByteStream.ci:58: (10 bytes): bytes[0] := oneByte;
+	cmplStd/lib/text/stream/ByteStream.ci:57: (10 bytes): bytes[0] := oneByte;
 	<write+?>: load.sp(+8)
 	<write+?>: load.iu8
 	<write+?>: load.sp(+4)
 	<write+?>: store.i8
-	cmplStd/lib/text/stream/ByteStream.ci:59: (28 bytes): return .result := this.write(this, bytes);
+	cmplStd/lib/text/stream/ByteStream.ci:58: (28 bytes): return .result := this.write(this, bytes);
 	<write+?>: dup.x32 sp(3)
 	<write+?>: load.c32 1
 	<write+?>: load.sp(+8)
@@ -23672,19 +23700,19 @@ ByteWriter.write(this: ByteWriter, oneByte: uint8): void: function {
 	<write+?>: inc.sp(-4)
 	<write+?>: ret
 }
-ByteWriter.write(this: ByteWriter, reader: ByteReader): int32: function {
+ByteWriter.copy(this: ByteWriter, reader: ByteReader): int32: function {
 .kind: static function
 .base: `function`
 .size: 112
-.name: 'write'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:77'
+.name: 'copy'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:76'
 .owner: ByteWriter
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteWriter (size: 4, cast: variable(ref))
 .param reader: ByteReader (size: 4, cast: variable(ref))
 .doc: 'Copy all bytes from the reader to the writer'
 .value: {
-	buffer: uint8[1024] := {
+	buffer: uint8[4096] := {
 	};
 	result: int32 := 0;
 	for ( ; ; ) {
@@ -23698,74 +23726,75 @@ ByteWriter.write(this: ByteWriter, reader: ByteReader): int32: function {
 	return .result := result;
 }
 .instructions: (112 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:78: (4 bytes): buffer: uint8[1024] := {...}
-	<write>  : inc.sp(+1024)
-	cmplStd/lib/text/stream/ByteStream.ci:79: (1 byte): result: int32 := 0
-	<write+?>: load.z32
-	cmplStd/lib/text/stream/ByteStream.ci:80: (95 bytes): for ( ; ; )
-	<write+?>: jmp +91
-	cmplStd/lib/text/stream/ByteStream.ci:81: (30 bytes): read: int32 := reader.read(reader, buffer)
-	<write+?>: load.z32
-	<write+?>: load.sp(+1036)
-	<write+?>: load.i32
-	<write+?>: load.c32 1024
-	<write+?>: load.sp(+16)
-	<write+?>: load.sp(+1048)
-	<write+?>: load.i32
-	<write+?>: inc.i32(+8)
-	<write+?>: load.i32
-	<write+?>: call
-	<write+?>: inc.sp(-12)
-	cmplStd/lib/text/stream/ByteStream.ci:82: (20 bytes): if (read <= 0)
-	<write+?>: dup.x32 sp(0)
-	<write+?>: load.z32
-	<write+?>: cgt.i32
-	<write+?>: jnz +16
-	cmplStd/lib/text/stream/ByteStream.ci:83: (12 bytes): return .result := result;
-	<write+?>: dup.x32 sp(1)
-	<write+?>: load.sp(+1048)
-	<write+?>: store.i32
-	<write+?>: inc.sp(-1032)
-	<write+?>: ret
-	cmplStd/lib/text/stream/ByteStream.ci:85: (26 bytes): this.write(this, buffer[...read]);
-	<write+?>: load.sp(+1040)
-	<write+?>: load.i32
-	<write+?>: dup.x32 sp(1)
-	<write+?>: load.sp(+16)
-	<write+?>: load.sp(+1052)
-	<write+?>: load.i32
-	<write+?>: inc.i32(+8)
-	<write+?>: load.i32
-	<write+?>: call
-	<write+?>: inc.sp(-12)
-	cmplStd/lib/text/stream/ByteStream.ci:86: (7 bytes): result := result + read;
-	<write+?>: dup.x32 sp(1)
-	<write+?>: dup.x32 sp(1)
-	<write+?>: add.i32
-	<write+?>: set.x32 sp(2)
-	<write+?>: inc.sp(-4)
+	cmplStd/lib/text/stream/ByteStream.ci:77: (4 bytes): buffer: uint8[4096] := {...}
+	<copy>  : inc.sp(+4096)
+	cmplStd/lib/text/stream/ByteStream.ci:78: (1 byte): result: int32 := 0
+	<copy+?>: load.z32
+	cmplStd/lib/text/stream/ByteStream.ci:79: (95 bytes): for ( ; ; )
+	<copy+?>: jmp +91
+	cmplStd/lib/text/stream/ByteStream.ci:80: (30 bytes): read: int32 := reader.read(reader, buffer)
+	<copy+?>: load.z32
+	<copy+?>: load.sp(+4108)
+	<copy+?>: load.i32
+	<copy+?>: load.c32 4096
+	<copy+?>: load.sp(+16)
+	<copy+?>: load.sp(+4120)
+	<copy+?>: load.i32
+	<copy+?>: inc.i32(+8)
+	<copy+?>: load.i32
+	<copy+?>: call
+	<copy+?>: inc.sp(-12)
+	cmplStd/lib/text/stream/ByteStream.ci:81: (20 bytes): if (read <= 0)
+	<copy+?>: dup.x32 sp(0)
+	<copy+?>: load.z32
+	<copy+?>: cgt.i32
+	<copy+?>: jnz +16
+	cmplStd/lib/text/stream/ByteStream.ci:82: (12 bytes): return .result := result;
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: load.sp(+4120)
+	<copy+?>: store.i32
+	<copy+?>: inc.sp(-4104)
+	<copy+?>: ret
+	cmplStd/lib/text/stream/ByteStream.ci:84: (26 bytes): this.write(this, buffer[...read]);
+	<copy+?>: load.sp(+4112)
+	<copy+?>: load.i32
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: load.sp(+16)
+	<copy+?>: load.sp(+4124)
+	<copy+?>: load.i32
+	<copy+?>: inc.i32(+8)
+	<copy+?>: load.i32
+	<copy+?>: call
+	<copy+?>: inc.sp(-12)
+	cmplStd/lib/text/stream/ByteStream.ci:85: (7 bytes): result := result + read;
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: add.i32
+	<copy+?>: set.x32 sp(2)
+	<copy+?>: inc.sp(-4)
 	:: (4 bytes)
-	<write+?>: jmp -87
-	cmplStd/lib/text/stream/ByteStream.ci:88: (12 bytes): return .result := result;
-	<write+?>: dup.x32 sp(0)
-	<write+?>: load.sp(+1044)
-	<write+?>: store.i32
-	<write+?>: inc.sp(-1028)
-	<write+?>: ret
+	<copy+?>: jmp -87
+	cmplStd/lib/text/stream/ByteStream.ci:87: (12 bytes): return .result := result;
+	<copy+?>: dup.x32 sp(0)
+	<copy+?>: load.sp(+4116)
+	<copy+?>: store.i32
+	<copy+?>: inc.sp(-4100)
+	<copy+?>: ret
 }
 CopyReader: ByteReader {
 .kind: static const typename(ref)
 .base: `ByteReader`
 .size: 20
 .name: 'CopyReader'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:100'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:99'
 .field source: ByteReader (size: 4, cast: const variable(ref))
 .field clone: ByteWriter (size: 4, cast: const variable(ref))
 .field read: function (size: 56, cast: static function)
-.field close: function (size: 29, cast: static function)
+.field close: function (size: 35, cast: static function)
 .field read: function (size: 4, cast: variable(ref))
-.field read: function (size: 61, cast: static function)
+.field read: function (size: 59, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -23777,7 +23806,7 @@ CopyReader.source: ByteReader {
 .base: `ByteReader`
 .size: 4
 .name: 'source'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:101'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:100'
 .owner: CopyReader
 }
 CopyReader.clone: ByteWriter {
@@ -23785,7 +23814,7 @@ CopyReader.clone: ByteWriter {
 .base: `ByteWriter`
 .size: 4
 .name: 'clone'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:102'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:101'
 .owner: CopyReader
 }
 CopyReader.read(this: CopyReader, bytes: uint8[]): int32: function {
@@ -23793,7 +23822,7 @@ CopyReader.read(this: CopyReader, bytes: uint8[]): int32: function {
 .base: `function`
 .size: 56
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:105'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:104'
 .owner: CopyReader
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: CopyReader (size: 4, cast: variable(ref))
@@ -23809,7 +23838,7 @@ in case there is an error -1 should be returned'
 	return .result := result;
 }
 .instructions: (56 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:106: (17 bytes): result: int32 := read(this.source, bytes)
+	cmplStd/lib/text/stream/ByteStream.ci:105: (17 bytes): result: int32 := read(this.source, bytes)
 	<read>  : load.z32
 	<read+?>: dup.x32 sp(4)
 	<read+?>: inc.i32(+12)
@@ -23818,12 +23847,12 @@ in case there is an error -1 should be returned'
 	<read+?>: dup.x32 sp(7)
 	<read+?>: call
 	<read+?>: inc.sp(-12)
-	cmplStd/lib/text/stream/ByteStream.ci:107: (36 bytes): if (result > 0)
+	cmplStd/lib/text/stream/ByteStream.ci:106: (36 bytes): if (result > 0)
 	<read+?>: dup.x32 sp(0)
 	<read+?>: load.z32
 	<read+?>: cgt.i32
 	<read+?>: jz +32
-	cmplStd/lib/text/stream/ByteStream.ci:108: (28 bytes): this.clone.write(this.clone, bytes[...result]);
+	cmplStd/lib/text/stream/ByteStream.ci:107: (28 bytes): this.clone.write(this.clone, bytes[...result]);
 	<read+?>: dup.x32 sp(4)
 	<read+?>: inc.i32(+16)
 	<read+?>: load.i32
@@ -23836,37 +23865,37 @@ in case there is an error -1 should be returned'
 	<read+?>: load.i32
 	<read+?>: call
 	<read+?>: inc.sp(-12)
-	cmplStd/lib/text/stream/ByteStream.ci:110: (3 bytes): return .result := result;
+	cmplStd/lib/text/stream/ByteStream.ci:109: (3 bytes): return .result := result;
 	<read+?>: set.x32 sp(5)
 	<read+?>: ret
 }
 CopyReader.close(this: CopyReader): void: function {
 .kind: static function
 .base: `function`
-.size: 29
+.size: 35
 .name: 'close'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:114'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:113'
 .owner: CopyReader
 .param .result: void (size: 0, cast: variable(void))
 .param this: CopyReader (size: 4, cast: variable(ref))
 .doc: 'Release the resources hold by this object.'
 .value: {
-	close(this.source);
-	close(this.clone);
+	Closeable.closeSafe(this.source);
+	Closeable.closeSafe(this.clone);
 }
-.instructions: (29 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:115: (14 bytes): close(this.source);
+.instructions: (35 bytes)
+	cmplStd/lib/text/stream/ByteStream.ci:114: (17 bytes): Closeable.closeSafe(this.source);
 	<close>  : dup.x32 sp(1)
 	<close+?>: inc.i32(+12)
 	<close+?>: load.i32
-	<close+?>: dup.x32 sp(2)
+	<close+?>: load.ref <?> ;Closeable.closeSafe(this: Closeable): void
 	<close+?>: call
 	<close+?>: inc.sp(-4)
-	cmplStd/lib/text/stream/ByteStream.ci:116: (14 bytes): close(this.clone);
+	cmplStd/lib/text/stream/ByteStream.ci:115: (17 bytes): Closeable.closeSafe(this.clone);
 	<close+?>: dup.x32 sp(1)
 	<close+?>: inc.i32(+16)
 	<close+?>: load.i32
-	<close+?>: dup.x32 sp(2)
+	<close+?>: load.ref <?> ;Closeable.closeSafe(this: Closeable): void
 	<close+?>: call
 	<close+?>: inc.sp(-4)
 	<close+?>: ret
@@ -23876,7 +23905,7 @@ ByteBuffer: typename {
 .base: `typename`
 .size: 40
 .name: 'ByteBuffer'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:121'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:120'
 .field position: int32 (size: 4, cast: variable(i32))
 .field capacity: int32 (size: 4, cast: variable(i32))
 .field length: int32 (size: 4, cast: variable(i32))
@@ -23897,7 +23926,7 @@ ByteBuffer.position: int32 {
 .base: `int32`
 .size: 4
 .name: 'position'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:122'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:121'
 .owner: ByteBuffer
 .value: 0
 }
@@ -23906,7 +23935,7 @@ ByteBuffer.capacity: int32 {
 .base: `int32`
 .size: 4
 .name: 'capacity'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:123'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:122'
 .owner: ByteBuffer
 .value: 32
 }
@@ -23915,7 +23944,7 @@ ByteBuffer.length: int32 {
 .base: `int32`
 .size: 4
 .name: 'length'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:124'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:123'
 .owner: ByteBuffer
 .value: 0
 }
@@ -23924,7 +23953,7 @@ ByteBuffer.buffer: uint8[*] {
 .base: `uint8[*]`
 .size: 4
 .name: 'buffer'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:125'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:124'
 .owner: ByteBuffer
 .value: pointer.alloc(null, capacity)
 }
@@ -23933,7 +23962,7 @@ ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32: function {
 .base: `function`
 .size: 75
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:127'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:126'
 .owner: ByteBuffer
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -23952,27 +23981,27 @@ ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32: function {
 	return .result := bytes.length;
 }
 .instructions: (75 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:128: (17 bytes): if (this.position >= this.length)
+	cmplStd/lib/text/stream/ByteStream.ci:127: (17 bytes): if (this.position >= this.length)
 	<read>  : dup.x32 sp(3)
 	<read+?>: dup.x32 sp(6)
 	<read+?>: clt.i32
 	<read+?>: jnz +12
-	cmplStd/lib/text/stream/ByteStream.ci:129: (8 bytes): return .result := -1;
+	cmplStd/lib/text/stream/ByteStream.ci:128: (8 bytes): return .result := -1;
 	<read+?>: load.c32 -1
 	<read+?>: set.x32 sp(14)
 	<read+?>: ret
-	cmplStd/lib/text/stream/ByteStream.ci:131: (54 bytes): for (i: int32 := 0; i < (bytes.length); i := i + 1)
+	cmplStd/lib/text/stream/ByteStream.ci:130: (54 bytes): for (i: int32 := 0; i < (bytes.length); i := i + 1)
 	<read+?>: load.z32
 	<read+?>: jmp +40
-	cmplStd/lib/text/stream/ByteStream.ci:132: (12 bytes): if (this.position >= this.length)
+	cmplStd/lib/text/stream/ByteStream.ci:131: (12 bytes): if (this.position >= this.length)
 	<read+?>: dup.x32 sp(4)
 	<read+?>: dup.x32 sp(7)
 	<read+?>: clt.i32
 	<read+?>: jnz +7
-	cmplStd/lib/text/stream/ByteStream.ci:133: (3 bytes): return .result := i;
+	cmplStd/lib/text/stream/ByteStream.ci:132: (3 bytes): return .result := i;
 	<read+?>: set.x32 sp(14)
 	<read+?>: ret
-	cmplStd/lib/text/stream/ByteStream.ci:135: (12 bytes): bytes[i] := this.buffer[this.position];
+	cmplStd/lib/text/stream/ByteStream.ci:134: (12 bytes): bytes[i] := this.buffer[this.position];
 	<read+?>: dup.x32 sp(7)
 	<read+?>: dup.x32 sp(5)
 	<read+?>: add.i32
@@ -23981,19 +24010,19 @@ ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32: function {
 	<read+?>: dup.x32 sp(2)
 	<read+?>: add.i32
 	<read+?>: store.i8
-	cmplStd/lib/text/stream/ByteStream.ci:136: (8 bytes): this.position := this.position + 1;
+	cmplStd/lib/text/stream/ByteStream.ci:135: (8 bytes): this.position := this.position + 1;
 	<read+?>: dup.x32 sp(4)
 	<read+?>: inc.i32(+1)
 	<read+?>: set.x32 sp(5)
-	cmplStd/lib/text/stream/ByteStream.ci:131: (4 bytes): i := i + 1
+	cmplStd/lib/text/stream/ByteStream.ci:130: (4 bytes): i := i + 1
 	<read+?>: inc.i32(+1)
-	cmplStd/lib/text/stream/ByteStream.ci:131: (9 bytes): i < (bytes.length)
+	cmplStd/lib/text/stream/ByteStream.ci:130: (9 bytes): i < (bytes.length)
 	<read+?>: dup.x32 sp(0)
 	<read+?>: dup.x32 sp(4)
 	<read+?>: clt.i32
 	<read+?>: jnz -41
 	<read+?>: inc.sp(-4)
-	cmplStd/lib/text/stream/ByteStream.ci:138: (4 bytes): return .result := bytes.length;
+	cmplStd/lib/text/stream/ByteStream.ci:137: (4 bytes): return .result := bytes.length;
 	<read+?>: mov.x32 sp(13, 2)
 	<read+?>: ret
 }
@@ -24002,7 +24031,7 @@ ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32: function {
 .base: `function`
 .size: 4
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:127'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:126'
 .owner: ByteBuffer
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24014,7 +24043,7 @@ ByteBuffer.read(this: ByteBuffer): int32: function {
 .base: `function`
 .size: 34
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:141'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:140'
 .owner: ByteBuffer
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24027,25 +24056,25 @@ ByteBuffer.read(this: ByteBuffer): int32: function {
 	return .result := result;
 }
 .instructions: (34 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:142: (17 bytes): if (this.position >= this.length)
+	cmplStd/lib/text/stream/ByteStream.ci:141: (17 bytes): if (this.position >= this.length)
 	<read>  : dup.x32 sp(1)
 	<read+?>: dup.x32 sp(4)
 	<read+?>: clt.i32
 	<read+?>: jnz +12
-	cmplStd/lib/text/stream/ByteStream.ci:143: (8 bytes): return .result := -1;
+	cmplStd/lib/text/stream/ByteStream.ci:142: (8 bytes): return .result := -1;
 	<read+?>: load.c32 -1
 	<read+?>: set.x32 sp(12)
 	<read+?>: ret
-	cmplStd/lib/text/stream/ByteStream.ci:145: (6 bytes): result: int32 := this.buffer[this.position]
+	cmplStd/lib/text/stream/ByteStream.ci:144: (6 bytes): result: int32 := this.buffer[this.position]
 	<read+?>: dup.x32 sp(4)
 	<read+?>: dup.x32 sp(2)
 	<read+?>: add.i32
 	<read+?>: load.iu8
-	cmplStd/lib/text/stream/ByteStream.ci:146: (8 bytes): this.position := this.position + 1;
+	cmplStd/lib/text/stream/ByteStream.ci:145: (8 bytes): this.position := this.position + 1;
 	<read+?>: dup.x32 sp(2)
 	<read+?>: inc.i32(+1)
 	<read+?>: set.x32 sp(3)
-	cmplStd/lib/text/stream/ByteStream.ci:147: (3 bytes): return .result := result;
+	cmplStd/lib/text/stream/ByteStream.ci:146: (3 bytes): return .result := result;
 	<read+?>: set.x32 sp(12)
 	<read+?>: ret
 }
@@ -24054,7 +24083,7 @@ ByteBuffer.read(this: ByteBuffer): int32: function {
 .base: `function`
 .size: 4
 .name: 'read'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:141'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:140'
 .owner: ByteBuffer
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24065,7 +24094,7 @@ ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void: function {
 .base: `function`
 .size: 154
 .name: 'write'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:150'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:149'
 .owner: ByteBuffer
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24090,40 +24119,40 @@ ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void: function {
 	}
 }
 .instructions: (154 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:151: (5 bytes): size: int32 := this.position + (bytes.length)
+	cmplStd/lib/text/stream/ByteStream.ci:150: (5 bytes): size: int32 := this.position + (bytes.length)
 	<write>  : dup.x32 sp(3)
 	<write+?>: dup.x32 sp(3)
 	<write+?>: add.i32
-	cmplStd/lib/text/stream/ByteStream.ci:152: (102 bytes): if (size >= this.capacity)
+	cmplStd/lib/text/stream/ByteStream.ci:151: (102 bytes): if (size >= this.capacity)
 	<write+?>: dup.x32 sp(0)
 	<write+?>: dup.x32 sp(6)
 	<write+?>: clt.i32
 	<write+?>: jnz +97
-	cmplStd/lib/text/stream/ByteStream.ci:154: (10 bytes): this.capacity := this.capacity * 2;
+	cmplStd/lib/text/stream/ByteStream.ci:153: (10 bytes): this.capacity := this.capacity * 2;
 	<write+?>: dup.x32 sp(5)
 	<write+?>: load.c32 2
 	<write+?>: mul.i32
 	<write+?>: set.x32 sp(6)
-	cmplStd/lib/text/stream/ByteStream.ci:155: (25 bytes): if (size > 2 * this.capacity)
+	cmplStd/lib/text/stream/ByteStream.ci:154: (25 bytes): if (size > 2 * this.capacity)
 	<write+?>: dup.x32 sp(0)
 	<write+?>: load.c32 2
 	<write+?>: dup.x32 sp(7)
 	<write+?>: mul.i32
 	<write+?>: cgt.i32
 	<write+?>: jz +14
-	cmplStd/lib/text/stream/ByteStream.ci:157: (10 bytes): this.capacity := size * 2;
+	cmplStd/lib/text/stream/ByteStream.ci:156: (10 bytes): this.capacity := size * 2;
 	<write+?>: dup.x32 sp(0)
 	<write+?>: load.c32 2
 	<write+?>: mul.i32
 	<write+?>: set.x32 sp(6)
-	cmplStd/lib/text/stream/ByteStream.ci:161: (11 bytes): new: uint8[*] := pointer.alloc(null, this.capacity)
+	cmplStd/lib/text/stream/ByteStream.ci:160: (11 bytes): new: uint8[*] := pointer.alloc(null, this.capacity)
 	<write+?>: load.ref <?> ;null
 	<write+?>: dup.x32 sp(6)
 	<write+?>: nfc(13) ;pointer.alloc(ptr: pointer, size: int32): pointer
-	cmplStd/lib/text/stream/ByteStream.ci:162: (34 bytes): for (i: int32 := 0; i < this.position; i := i + 1)
+	cmplStd/lib/text/stream/ByteStream.ci:161: (34 bytes): for (i: int32 := 0; i < this.position; i := i + 1)
 	<write+?>: load.z32
 	<write+?>: jmp +20
-	cmplStd/lib/text/stream/ByteStream.ci:163: (12 bytes): new[i] := this.buffer[i];
+	cmplStd/lib/text/stream/ByteStream.ci:162: (12 bytes): new[i] := this.buffer[i];
 	<write+?>: dup.x32 sp(9)
 	<write+?>: dup.x32 sp(1)
 	<write+?>: add.i32
@@ -24132,15 +24161,15 @@ ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void: function {
 	<write+?>: dup.x32 sp(2)
 	<write+?>: add.i32
 	<write+?>: store.i8
-	cmplStd/lib/text/stream/ByteStream.ci:162: (4 bytes): i := i + 1
+	cmplStd/lib/text/stream/ByteStream.ci:161: (4 bytes): i := i + 1
 	<write+?>: inc.i32(+1)
-	cmplStd/lib/text/stream/ByteStream.ci:162: (9 bytes): i < this.position
+	cmplStd/lib/text/stream/ByteStream.ci:161: (9 bytes): i < this.position
 	<write+?>: dup.x32 sp(0)
 	<write+?>: dup.x32 sp(7)
 	<write+?>: clt.i32
 	<write+?>: jnz -21
 	<write+?>: inc.sp(-4)
-	cmplStd/lib/text/stream/ByteStream.ci:165: (11 bytes): pointer.alloc(this.buffer, 0);
+	cmplStd/lib/text/stream/ByteStream.ci:164: (11 bytes): pointer.alloc(this.buffer, 0);
 	<write+?>: dup.x32 sp(8)
 	<write+?>: load.z32
 	<write+?>: nfc(13) ;pointer.alloc(ptr: pointer, size: int32): pointer
@@ -24148,7 +24177,7 @@ ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void: function {
 	<write+?>: set.x32 sp(8)
 	<write+?>: load.z32
 	<write+?>: jmp +28
-	cmplStd/lib/text/stream/ByteStream.ci:171: (12 bytes): this.buffer[this.position] := bytes[i];
+	cmplStd/lib/text/stream/ByteStream.ci:170: (12 bytes): this.buffer[this.position] := bytes[i];
 	<write+?>: dup.x32 sp(3)
 	<write+?>: dup.x32 sp(1)
 	<write+?>: add.i32
@@ -24157,13 +24186,13 @@ ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void: function {
 	<write+?>: dup.x32 sp(7)
 	<write+?>: add.i32
 	<write+?>: store.i8
-	cmplStd/lib/text/stream/ByteStream.ci:172: (8 bytes): this.position := this.position + 1;
+	cmplStd/lib/text/stream/ByteStream.ci:171: (8 bytes): this.position := this.position + 1;
 	<write+?>: dup.x32 sp(5)
 	<write+?>: inc.i32(+1)
 	<write+?>: set.x32 sp(6)
-	cmplStd/lib/text/stream/ByteStream.ci:170: (4 bytes): i := i + 1
+	cmplStd/lib/text/stream/ByteStream.ci:169: (4 bytes): i := i + 1
 	<write+?>: inc.i32(+1)
-	cmplStd/lib/text/stream/ByteStream.ci:170: (9 bytes): i < (bytes.length)
+	cmplStd/lib/text/stream/ByteStream.ci:169: (9 bytes): i < (bytes.length)
 	<write+?>: dup.x32 sp(0)
 	<write+?>: dup.x32 sp(5)
 	<write+?>: clt.i32
@@ -24177,7 +24206,7 @@ ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void: function {
 .base: `function`
 .size: 4
 .name: 'write'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:150'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:149'
 .owner: ByteBuffer
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24189,7 +24218,7 @@ ByteBuffer.flush(this: ByteBuffer): void: function {
 .base: `function`
 .size: 1
 .name: 'flush'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:176'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:175'
 .owner: ByteBuffer
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24203,7 +24232,7 @@ ByteBuffer.flush(this: ByteBuffer): void: function {
 .base: `function`
 .size: 4
 .name: 'flush'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:176'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:175'
 .owner: ByteBuffer
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24214,7 +24243,7 @@ ByteBuffer.close(this: ByteBuffer): void: function {
 .base: `function`
 .size: 28
 .name: 'close'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:180'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:179'
 .owner: ByteBuffer
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24226,21 +24255,21 @@ ByteBuffer.close(this: ByteBuffer): void: function {
 	this.length := 0;
 }
 .instructions: (28 bytes)
-	cmplStd/lib/text/stream/ByteStream.ci:182: (11 bytes): pointer.alloc(this.buffer, 0);
+	cmplStd/lib/text/stream/ByteStream.ci:181: (11 bytes): pointer.alloc(this.buffer, 0);
 	<close>  : dup.x32 sp(4)
 	<close+?>: load.z32
 	<close+?>: nfc(13) ;pointer.alloc(ptr: pointer, size: int32): pointer
 	<close+?>: inc.sp(-4)
-	cmplStd/lib/text/stream/ByteStream.ci:184: (7 bytes): this.buffer := (null);
+	cmplStd/lib/text/stream/ByteStream.ci:183: (7 bytes): this.buffer := (null);
 	<close+?>: load.ref <?> ;null
 	<close+?>: set.x32 sp(5)
-	cmplStd/lib/text/stream/ByteStream.ci:185: (3 bytes): this.position := 0;
+	cmplStd/lib/text/stream/ByteStream.ci:184: (3 bytes): this.position := 0;
 	<close+?>: load.z32
 	<close+?>: set.x32 sp(2)
-	cmplStd/lib/text/stream/ByteStream.ci:186: (3 bytes): this.capacity := 0;
+	cmplStd/lib/text/stream/ByteStream.ci:185: (3 bytes): this.capacity := 0;
 	<close+?>: load.z32
 	<close+?>: set.x32 sp(3)
-	cmplStd/lib/text/stream/ByteStream.ci:187: (3 bytes): this.length := 0;
+	cmplStd/lib/text/stream/ByteStream.ci:186: (3 bytes): this.length := 0;
 	<close+?>: load.z32
 	<close+?>: set.x32 sp(4)
 	<close+?>: ret
@@ -24250,7 +24279,7 @@ ByteBuffer.close(this: ByteBuffer): void: function {
 .base: `function`
 .size: 4
 .name: 'close'
-.file: 'cmplStd/lib/text/stream/ByteStream.ci:180'
+.file: 'cmplStd/lib/text/stream/ByteStream.ci:179'
 .owner: ByteBuffer
 .param .result: void (size: 0, cast: variable(void))
 .param this: ByteBuffer (size: 40, cast: variable(val))
@@ -24272,9 +24301,10 @@ TextReader: Closeable {
 .file: 'cmplStd/lib/text/stream/TextStream.ci:7'
 .field reader: ByteReader (size: 4, cast: const variable(ref))
 .field decode: function (size: 4, cast: variable(ref))
-.field close: function (size: 15, cast: static function)
+.field close: function (size: 18, cast: static function)
 .field decode: function (size: 55, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -24308,7 +24338,7 @@ in case there is an error -1 should be returned'
 TextReader.close(this: TextReader): void: function {
 .kind: static function
 .base: `function`
-.size: 15
+.size: 18
 .name: 'close'
 .file: 'cmplStd/lib/text/stream/TextStream.ci:19'
 .owner: TextReader
@@ -24316,14 +24346,14 @@ TextReader.close(this: TextReader): void: function {
 .param this: TextReader (size: 4, cast: variable(ref))
 .doc: 'Release the resources hold by this object.'
 .value: {
-	close(this.reader);
+	Closeable.closeSafe(this.reader);
 }
-.instructions: (15 bytes)
-	cmplStd/lib/text/stream/TextStream.ci:22: (14 bytes): close(this.reader);
+.instructions: (18 bytes)
+	cmplStd/lib/text/stream/TextStream.ci:21: (17 bytes): Closeable.closeSafe(this.reader);
 	<close>  : dup.x32 sp(1)
 	<close+?>: inc.i32(+8)
 	<close+?>: load.i32
-	<close+?>: dup.x32 sp(2)
+	<close+?>: load.ref <?> ;Closeable.closeSafe(this: Closeable): void
 	<close+?>: call
 	<close+?>: inc.sp(-4)
 	<close+?>: ret
@@ -24333,7 +24363,7 @@ TextReader.decode(this: TextReader): int32: function {
 .base: `function`
 .size: 55
 .name: 'decode'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:26'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:25'
 .owner: TextReader
 .param .result: int32 (size: 4, cast: variable(i32))
 .param this: TextReader (size: 4, cast: variable(ref))
@@ -24348,12 +24378,12 @@ TextReader.decode(this: TextReader): int32: function {
 	return .result := chars[0] & (16777215);
 }
 .instructions: (55 bytes)
-	cmplStd/lib/text/stream/TextStream.ci:27: (7 bytes): chars: uint32[1] := {...}
+	cmplStd/lib/text/stream/TextStream.ci:26: (7 bytes): chars: uint32[1] := {...}
 	<decode>  : inc.sp(+4)
-	cmplStd/lib/text/stream/TextStream.ci:27: (3 bytes): chars[0] := (0);
+	cmplStd/lib/text/stream/TextStream.ci:26: (3 bytes): chars[0] := (0);
 	<decode+?>: load.z32
 	<decode+?>: set.x32 sp(1)
-	cmplStd/lib/text/stream/TextStream.ci:28: (37 bytes): if (decode(this, chars) <= 0)
+	cmplStd/lib/text/stream/TextStream.ci:27: (37 bytes): if (decode(this, chars) <= 0)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(3)
 	<decode+?>: load.c32 1
@@ -24364,12 +24394,12 @@ TextReader.decode(this: TextReader): int32: function {
 	<decode+?>: load.z32
 	<decode+?>: cgt.i32
 	<decode+?>: jnz +16
-	cmplStd/lib/text/stream/TextStream.ci:29: (12 bytes): return .result := -1;
+	cmplStd/lib/text/stream/TextStream.ci:28: (12 bytes): return .result := -1;
 	<decode+?>: load.c32 -1
 	<decode+?>: set.x32 sp(4)
 	<decode+?>: inc.sp(-4)
 	<decode+?>: ret
-	cmplStd/lib/text/stream/TextStream.ci:31: (11 bytes): return .result := chars[0] & (16777215);
+	cmplStd/lib/text/stream/TextStream.ci:30: (11 bytes): return .result := chars[0] & (16777215);
 	<decode+?>: dup.x32 sp(0)
 	<decode+?>: b32.and 0xffffff
 	<decode+?>: set.x32 sp(4)
@@ -24381,14 +24411,14 @@ TextWriter: Closeable {
 .base: `Closeable`
 .size: 36
 .name: 'TextWriter'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:49'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:48'
 .field Writeable: object (size: 8, cast: static const typename(ref))
 .field writer: ByteWriter (size: 4, cast: const variable(ref))
 .field format: FormatFlags (size: 16, cast: const variable(val))
 .field encode: function (size: 4, cast: variable(ref))
 .field flush: function (size: 25, cast: static function)
 .field flush: function (size: 4, cast: const variable(ref))
-.field close: function (size: 15, cast: static function)
+.field close: function (size: 18, cast: static function)
 .field write: function (size: 30, cast: static function)
 .field write: function (size: 46, cast: static function)
 .field write: function (size: 67, cast: static function)
@@ -24401,8 +24431,9 @@ TextWriter: Closeable {
 .field write: function (size: 20, cast: static function)
 .field writeln: function (size: 29, cast: static function)
 .field writeln: function (size: 35, cast: static function)
-.field write: function (size: 107, cast: static function)
+.field copy: function (size: 107, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -24415,7 +24446,7 @@ TextWriter.Writeable: object {
 .base: `object`
 .size: 8
 .name: 'Writeable'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:51'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:50'
 .owner: TextWriter
 .field write: function (size: 4, cast: variable(ref))
 .field .type: typename (size: 4, cast: const variable(ref))
@@ -24430,7 +24461,7 @@ TextWriter.Writeable.write(this: Writeable, writer: TextWriter): void: function 
 .base: `function`
 .size: 4
 .name: 'write'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:53'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:52'
 .owner: TextWriter.Writeable
 .param .result: void (size: 0, cast: variable(void))
 .param this: TextWriter.Writeable (size: 4, cast: variable(ref))
@@ -24441,7 +24472,7 @@ TextWriter.writer: ByteWriter {
 .base: `ByteWriter`
 .size: 4
 .name: 'writer'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:57'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:56'
 .owner: TextWriter
 .doc: '@public'
 }
@@ -24450,7 +24481,7 @@ TextWriter.format: FormatFlags {
 .base: `FormatFlags`
 .size: 16
 .name: 'format'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:60'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:59'
 .owner: TextWriter
 .doc: 'default formatter'
 }
@@ -24459,7 +24490,7 @@ TextWriter.encode(this: TextWriter, chars: uint32[]): void: function {
 .base: `function`
 .size: 4
 .name: 'encode'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:65'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:64'
 .owner: TextWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: TextWriter (size: 4, cast: variable(ref))
@@ -24472,7 +24503,7 @@ TextWriter.flush(this: TextWriter): void: function {
 .base: `function`
 .size: 25
 .name: 'flush'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:68'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:67'
 .owner: TextWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: TextWriter (size: 4, cast: variable(ref))
@@ -24480,7 +24511,7 @@ TextWriter.flush(this: TextWriter): void: function {
 	this.writer.flush(this.writer);
 }
 .instructions: (25 bytes)
-	cmplStd/lib/text/stream/TextStream.ci:69: (24 bytes): this.writer.flush(this.writer);
+	cmplStd/lib/text/stream/TextStream.ci:68: (24 bytes): this.writer.flush(this.writer);
 	<flush>  : dup.x32 sp(1)
 	<flush+?>: inc.i32(+8)
 	<flush+?>: load.i32
@@ -24498,7 +24529,7 @@ TextWriter.flush(this: TextWriter): void: function {
 .base: `function`
 .size: 4
 .name: 'flush'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:68'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:67'
 .owner: TextWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: TextWriter (size: 4, cast: variable(ref))
@@ -24507,22 +24538,22 @@ TextWriter.flush(this: TextWriter): void: function {
 TextWriter.close(this: TextWriter): void: function {
 .kind: static function
 .base: `function`
-.size: 15
+.size: 18
 .name: 'close'
-.file: 'cmplStd/lib/text/stream/TextStream.ci:73'
+.file: 'cmplStd/lib/text/stream/TextStream.ci:72'
 .owner: TextWriter
 .param .result: void (size: 0, cast: variable(void))
 .param this: TextWriter (size: 4, cast: variable(ref))
 .doc: 'Release the resources hold by this object.'
 .value: {
-	close(this.writer);
+	Closeable.closeSafe(this.writer);
 }
-.instructions: (15 bytes)
-	cmplStd/lib/text/stream/TextStream.ci:74: (14 bytes): close(this.writer);
+.instructions: (18 bytes)
+	cmplStd/lib/text/stream/TextStream.ci:74: (17 bytes): Closeable.closeSafe(this.writer);
 	<close>  : dup.x32 sp(1)
 	<close+?>: inc.i32(+8)
 	<close+?>: load.i32
-	<close+?>: dup.x32 sp(2)
+	<close+?>: load.ref <?> ;Closeable.closeSafe(this: Closeable): void
 	<close+?>: call
 	<close+?>: inc.sp(-4)
 	<close+?>: ret
@@ -25010,11 +25041,11 @@ TextWriter.writeln(this: TextWriter, value: Writeable): TextWriter: function {
 	<writeln+?>: set.x32 sp(4)
 	<writeln+?>: ret
 }
-TextWriter.write(writer: TextWriter, reader: TextReader): int32: function {
+TextWriter.copy(writer: TextWriter, reader: TextReader): int32: function {
 .kind: static function
 .base: `function`
 .size: 107
-.name: 'write'
+.name: 'copy'
 .file: 'cmplStd/lib/text/stream/TextStream.ci:168'
 .owner: TextWriter
 .param .result: int32 (size: 4, cast: variable(i32))
@@ -25042,57 +25073,57 @@ output.write(input);'
 }
 .instructions: (107 bytes)
 	cmplStd/lib/text/stream/TextStream.ci:169: (4 bytes): buffer: uint32[1024] := {...}
-	<write>  : inc.sp(+4096)
+	<copy>  : inc.sp(+4096)
 	cmplStd/lib/text/stream/TextStream.ci:170: (1 byte): result: int32 := 0
-	<write+?>: load.z32
+	<copy+?>: load.z32
 	cmplStd/lib/text/stream/TextStream.ci:171: (90 bytes): for ( ; ; )
-	<write+?>: jmp +86
+	<copy+?>: jmp +86
 	cmplStd/lib/text/stream/TextStream.ci:172: (30 bytes): n: int32 := reader.decode(reader, buffer)
-	<write+?>: load.z32
-	<write+?>: load.sp(+4108)
-	<write+?>: load.i32
-	<write+?>: load.c32 1024
-	<write+?>: load.sp(+16)
-	<write+?>: load.sp(+4120)
-	<write+?>: load.i32
-	<write+?>: inc.i32(+12)
-	<write+?>: load.i32
-	<write+?>: call
-	<write+?>: inc.sp(-12)
+	<copy+?>: load.z32
+	<copy+?>: load.sp(+4108)
+	<copy+?>: load.i32
+	<copy+?>: load.c32 1024
+	<copy+?>: load.sp(+16)
+	<copy+?>: load.sp(+4120)
+	<copy+?>: load.i32
+	<copy+?>: inc.i32(+12)
+	<copy+?>: load.i32
+	<copy+?>: call
+	<copy+?>: inc.sp(-12)
 	cmplStd/lib/text/stream/TextStream.ci:173: (20 bytes): if (n <= 0)
-	<write+?>: dup.x32 sp(0)
-	<write+?>: load.z32
-	<write+?>: cgt.i32
-	<write+?>: jnz +16
+	<copy+?>: dup.x32 sp(0)
+	<copy+?>: load.z32
+	<copy+?>: cgt.i32
+	<copy+?>: jnz +16
 	cmplStd/lib/text/stream/TextStream.ci:174: (12 bytes): return .result := result;
-	<write+?>: dup.x32 sp(1)
-	<write+?>: load.sp(+4120)
-	<write+?>: store.i32
-	<write+?>: inc.sp(-4104)
-	<write+?>: ret
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: load.sp(+4120)
+	<copy+?>: store.i32
+	<copy+?>: inc.sp(-4104)
+	<copy+?>: ret
 	cmplStd/lib/text/stream/TextStream.ci:176: (21 bytes): encode(writer, buffer[...n]);
-	<write+?>: load.sp(+4112)
-	<write+?>: load.i32
-	<write+?>: dup.x32 sp(1)
-	<write+?>: load.sp(+16)
-	<write+?>: load.sp(+4104)
-	<write+?>: load.i32
-	<write+?>: call
-	<write+?>: inc.sp(-12)
+	<copy+?>: load.sp(+4112)
+	<copy+?>: load.i32
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: load.sp(+16)
+	<copy+?>: load.sp(+4104)
+	<copy+?>: load.i32
+	<copy+?>: call
+	<copy+?>: inc.sp(-12)
 	cmplStd/lib/text/stream/TextStream.ci:177: (7 bytes): result := result + n;
-	<write+?>: dup.x32 sp(1)
-	<write+?>: dup.x32 sp(1)
-	<write+?>: add.i32
-	<write+?>: set.x32 sp(2)
-	<write+?>: inc.sp(-4)
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: dup.x32 sp(1)
+	<copy+?>: add.i32
+	<copy+?>: set.x32 sp(2)
+	<copy+?>: inc.sp(-4)
 	:: (4 bytes)
-	<write+?>: jmp -82
+	<copy+?>: jmp -82
 	cmplStd/lib/text/stream/TextStream.ci:179: (12 bytes): return .result := result;
-	<write+?>: dup.x32 sp(0)
-	<write+?>: load.sp(+4116)
-	<write+?>: store.i32
-	<write+?>: inc.sp(-4100)
-	<write+?>: ret
+	<copy+?>: dup.x32 sp(0)
+	<copy+?>: load.sp(+4116)
+	<copy+?>: store.i32
+	<copy+?>: inc.sp(-4100)
+	<copy+?>: ret
 }
 Base64Encoder: ByteWriter {
 .kind: static const typename(ref)
@@ -25114,8 +25145,9 @@ Base64Encoder: ByteWriter {
 .field write: function (size: 4, cast: variable(ref))
 .field flush: function (size: 4, cast: variable(ref))
 .field write: function (size: 42, cast: static function)
-.field write: function (size: 112, cast: static function)
+.field copy: function (size: 112, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -25949,8 +25981,9 @@ Base64Decoder: ByteReader {
 .field read: function (size: 345, cast: static function)
 .field close: function (size: 58, cast: static function)
 .field read: function (size: 4, cast: variable(ref))
-.field read: function (size: 61, cast: static function)
+.field read: function (size: 59, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -26485,9 +26518,10 @@ AsciiReader: TextReader {
 .field decode: function (size: 97, cast: static function)
 .field reader: ByteReader (size: 4, cast: const variable(ref))
 .field decode: function (size: 4, cast: variable(ref))
-.field close: function (size: 15, cast: static function)
+.field close: function (size: 18, cast: static function)
 .field decode: function (size: 55, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -26511,9 +26545,9 @@ in case there is an error -1 should be returned'
 .value: {
 	reader: ByteReader := this.reader;
 	for (i: int32 := 0; i < (chars.length); i := i + 1) {
-		value: char[1] := {
+		value: uint8[1] := {
 		};
-		if (reader.read(reader, value) < 0) {
+		if (reader.read(reader, value) <= 0) {
 			return .result := i;
 		}
 		chars[i] := (value[0]);
@@ -26528,9 +26562,9 @@ in case there is an error -1 should be returned'
 	cmplStd/lib/text/encoding/Ascii.ci:6: (82 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
 	<decode+?>: load.z32
 	<decode+?>: jmp +68
-	cmplStd/lib/text/encoding/Ascii.ci:7: (4 bytes): value: char[1] := {...}
+	cmplStd/lib/text/encoding/Ascii.ci:7: (4 bytes): value: uint8[1] := {...}
 	<decode+?>: inc.sp(+4)
-	cmplStd/lib/text/encoding/Ascii.ci:8: (38 bytes): if (reader.read(reader, value) < 0)
+	cmplStd/lib/text/encoding/Ascii.ci:8: (38 bytes): if (reader.read(reader, value) <= 0)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(3)
 	<decode+?>: load.c32 1
@@ -26541,15 +26575,15 @@ in case there is an error -1 should be returned'
 	<decode+?>: call
 	<decode+?>: inc.sp(-12)
 	<decode+?>: load.z32
-	<decode+?>: clt.i32
-	<decode+?>: jz +12
+	<decode+?>: cgt.i32
+	<decode+?>: jnz +12
 	cmplStd/lib/text/encoding/Ascii.ci:10: (8 bytes): return .result := i;
 	<decode+?>: mov.x32 sp(7, 1)
 	<decode+?>: inc.sp(-12)
 	<decode+?>: ret
 	cmplStd/lib/text/encoding/Ascii.ci:12: (14 bytes): chars[i] := (value[0]);
 	<decode+?>: load.sp(+0)
-	<decode+?>: load.is8
+	<decode+?>: load.iu8
 	<decode+?>: dup.x32 sp(5)
 	<decode+?>: dup.x32 sp(3)
 	<decode+?>: mad.u32 4
@@ -26581,7 +26615,7 @@ AsciiWriter: TextWriter {
 .field encode: function (size: 4, cast: variable(ref))
 .field flush: function (size: 25, cast: static function)
 .field flush: function (size: 4, cast: const variable(ref))
-.field close: function (size: 15, cast: static function)
+.field close: function (size: 18, cast: static function)
 .field write: function (size: 30, cast: static function)
 .field write: function (size: 46, cast: static function)
 .field write: function (size: 67, cast: static function)
@@ -26594,8 +26628,9 @@ AsciiWriter: TextWriter {
 .field write: function (size: 20, cast: static function)
 .field writeln: function (size: 29, cast: static function)
 .field writeln: function (size: 35, cast: static function)
-.field write: function (size: 107, cast: static function)
+.field copy: function (size: 107, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
@@ -26618,7 +26653,7 @@ the method must encode and write all the characters from the `chars` array'
 .value: {
 	writer: ByteWriter := this.writer;
 	for (i: int32 := 0; i < (chars.length); i := i + 1) {
-		value: char[1] := {
+		value: uint8[1] := {
 			value[0] := (chars[i]);
 		};
 		writer.write(writer, value);
@@ -26632,7 +26667,7 @@ the method must encode and write all the characters from the `chars` array'
 	cmplStd/lib/text/encoding/Ascii.ci:23: (67 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
 	<encode+?>: load.z32
 	<encode+?>: jmp +53
-	cmplStd/lib/text/encoding/Ascii.ci:24: (18 bytes): value: char[1] := {...}
+	cmplStd/lib/text/encoding/Ascii.ci:24: (18 bytes): value: uint8[1] := {...}
 	<encode+?>: inc.sp(+4)
 	cmplStd/lib/text/encoding/Ascii.ci:24: (14 bytes): value[0] := (chars[i]);
 	<encode+?>: dup.x32 sp(4)
@@ -26668,22 +26703,24 @@ Utf8Reader: TextReader {
 .size: 16
 .name: 'Utf8Reader'
 .file: 'cmplStd/lib/text/encoding/Utf8.ci:2'
-.field decode: function (size: 322, cast: static function)
+.field decode: function (size: 936, cast: static function)
 .field reader: ByteReader (size: 4, cast: const variable(ref))
 .field decode: function (size: 4, cast: variable(ref))
-.field close: function (size: 15, cast: static function)
+.field close: function (size: 18, cast: static function)
 .field decode: function (size: 55, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
 .field as: function (size: 0, cast: static const inline)
 .field type: function (size: 0, cast: static const inline)
+.doc: 'Utf-8 decoder'
 }
 Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32: function {
 .kind: static function
 .base: `function`
-.size: 322
+.size: 936
 .name: 'decode'
 .file: 'cmplStd/lib/text/encoding/Utf8.ci:4'
 .owner: Utf8Reader
@@ -26694,186 +26731,374 @@ Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32: function {
 the method must return the number of characters decoded from the stream into the `chars` array
 in case there is an error -1 should be returned'
 .value: {
-	read(this: ByteReader): int32 := ByteReader.read(this);
+	buff: uint8[1] := {
+		buff[0] := (0);
+	};
+	ext: uint8[3] := {
+		ext[0] := (0);
+	};
 	reader: ByteReader := this.reader;
 	for (i: int32 := 0; i < (chars.length); i := i + 1) {
-		value: int32 := read(reader);
-		if (value < 0) {
-			return .result := i > 0 ? i : value;
+		if (reader.read(reader, buff) <= 0) {
+			return .result := i;
 		}
-		if ((value & 128) == 0) ;
-		else if ((value & 224) == 192) {
-			val1: int32 := read(reader) & 63;
-			value := (value & 31) << 6 | val1;
+		if (((buff[0]) & 128) == 0) {
+			chars[i] := (buff[0]);
 		}
-		else if ((value & 240) == 224) {
-			val1: int32 := read(reader) & 63;
-			val2: int32 := read(reader) & 63;
-			value := (value & 15) << 12 | val1 << 6 | val2;
+		else if (((buff[0]) & 224) == 192) {
+			if (reader.read(reader, ext[...1]) != 1) {
+				error("invalid codepoint");
+				return .result := i;
+			}
+			assert(((ext[0]) & 192) == 128, "10xxxxxx");
+			chars[i] := (((buff[0]) & 31) << 6 | ((ext[0]) & 63));
 		}
-		else if ((value & 248) == 240) {
-			val1: int32 := read(reader) & 63;
-			val2: int32 := read(reader) & 63;
-			val3: int32 := read(reader) & 63;
-			value := (value & 7) << 18 | val1 << 12 | val2 << 6 | val3;
+		else if (((buff[0]) & 240) == 224) {
+			if (reader.read(reader, ext[...2]) != 2) {
+				error("invalid codepoint");
+				return .result := i;
+			}
+			assert(((ext[0]) & 192) == 128, "10xxxxxx");
+			assert(((ext[1]) & 192) == 128, "10xxxxxx");
+			chars[i] := (((buff[0]) & 15) << 12 | ((ext[0]) & 63) << 6 | ((ext[1]) & 63));
 		}
-		chars[i] := (value);
+		else if (((buff[0]) & 248) == 240) {
+			if (reader.read(reader, ext[...3]) != 3) {
+				error("invalid codepoint");
+				return .result := i;
+			}
+			assert(((ext[0]) & 192) == 128, "10xxxxxx");
+			assert(((ext[1]) & 192) == 128, "10xxxxxx");
+			assert(((ext[2]) & 192) == 128, "10xxxxxx");
+			chars[i] := (((buff[0]) & 7) << 18 | ((ext[0]) & 63) << 12 | ((ext[1]) & 63) << 6 | ((ext[2]) & 63));
+		}
 	}
 	return .result := chars.length;
 }
-.instructions: (322 bytes)
+.instructions: (936 bytes)
+	cmplStd/lib/text/encoding/Utf8.ci:5: (10 bytes): buff: uint8[1] := {...}
+	<decode>  : inc.sp(+4)
+	cmplStd/lib/text/encoding/Utf8.ci:5: (6 bytes): buff[0] := (0);
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: store.i8
+	cmplStd/lib/text/encoding/Utf8.ci:6: (10 bytes): ext: uint8[3] := {...}
+	<decode+?>: inc.sp(+4)
+	cmplStd/lib/text/encoding/Utf8.ci:6: (6 bytes): ext[0] := (0);
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: store.i8
 	cmplStd/lib/text/encoding/Utf8.ci:7: (7 bytes): reader: ByteReader := this.reader
-	<decode>  : dup.x32 sp(3)
+	<decode+?>: dup.x32 sp(5)
 	<decode+?>: inc.i32(+8)
 	<decode+?>: load.i32
-	cmplStd/lib/text/encoding/Utf8.ci:8: (307 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
+	cmplStd/lib/text/encoding/Utf8.ci:8: (901 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
 	<decode+?>: load.z32
-	<decode+?>: jmp +293
-	cmplStd/lib/text/encoding/Utf8.ci:9: (13 bytes): value: int32 := read(reader)
+	<decode+?>: jmp +887
+	cmplStd/lib/text/encoding/Utf8.ci:9: (38 bytes): if (reader.read(reader, buff) <= 0)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(2)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
+	<decode+?>: load.c32 1
+	<decode+?>: load.sp(+24)
+	<decode+?>: dup.x32 sp(5)
+	<decode+?>: inc.i32(+8)
+	<decode+?>: load.i32
 	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	cmplStd/lib/text/encoding/Utf8.ci:10: (31 bytes): if (value < 0)
-	<decode+?>: dup.x32 sp(0)
-	<decode+?>: load.z32
-	<decode+?>: clt.i32
-	<decode+?>: jz +27
-	cmplStd/lib/text/encoding/Utf8.ci:12: (23 bytes): return .result := i > 0 ? i : value;
-	<decode+?>: dup.x32 sp(1)
+	<decode+?>: inc.sp(-12)
 	<decode+?>: load.z32
 	<decode+?>: cgt.i32
-	<decode+?>: jz +10
-	<decode+?>: dup.x32 sp(1)
-	<decode+?>: jmp +6
-	<decode+?>: dup.x32 sp(0)
-	<decode+?>: set.x32 sp(8)
-	<decode+?>: inc.sp(-12)
+	<decode+?>: jnz +12
+	cmplStd/lib/text/encoding/Utf8.ci:11: (8 bytes): return .result := i;
+	<decode+?>: mov.x32 sp(8, 0)
+	<decode+?>: inc.sp(-16)
 	<decode+?>: ret
-	cmplStd/lib/text/encoding/Utf8.ci:15: (226 bytes): if ((value & 128) == 0)
-	<decode+?>: dup.x32 sp(0)
+	cmplStd/lib/text/encoding/Utf8.ci:14: (841 bytes): if (((buff[0]) & 128) == 0)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: load.c32 128
 	<decode+?>: and.b32
 	<decode+?>: load.z32
 	<decode+?>: ceq.i32
-	<decode+?>: jnz +216
-	cmplStd/lib/text/encoding/Utf8.ci:18: (212 bytes): if ((value & 224) == 192)
-	<decode+?>: dup.x32 sp(0)
+	<decode+?>: jz +22
+	cmplStd/lib/text/encoding/Utf8.ci:15: (14 bytes): chars[i] := (buff[0]);
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
+	<decode+?>: dup.x32 sp(6)
+	<decode+?>: dup.x32 sp(2)
+	<decode+?>: mad.u32 4
+	<decode+?>: store.i32
+	<decode+?>: jmp +810
+	cmplStd/lib/text/encoding/Utf8.ci:17: (806 bytes): if (((buff[0]) & 224) == 192)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: load.c32 224
 	<decode+?>: and.b32
 	<decode+?>: load.c32 192
 	<decode+?>: ceq.i32
-	<decode+?>: jz +38
-	cmplStd/lib/text/encoding/Utf8.ci:19: (15 bytes): val1: int32 := read(reader) & 63
+	<decode+?>: jz +179
+	cmplStd/lib/text/encoding/Utf8.ci:18: (81 bytes): if (reader.read(reader, ext[...1]) != 1)
 	<decode+?>: load.z32
-	<decode+?>: dup.x32 sp(3)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
+	<decode+?>: dup.x32 sp(2)
+	<decode+?>: load.c32 1
+	<decode+?>: load.sp(+20)
+	<decode+?>: dup.x32 sp(5)
+	<decode+?>: inc.i32(+8)
+	<decode+?>: load.i32
 	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	<decode+?>: b32.and 0x3f
-	cmplStd/lib/text/encoding/Utf8.ci:20: (11 bytes): value := (value & 31) << 6 | val1;
-	<decode+?>: dup.x32 sp(1)
+	<decode+?>: inc.sp(-12)
+	<decode+?>: load.c32 1
+	<decode+?>: ceq.i32
+	<decode+?>: jnz +51
+	cmplStd/lib/text/encoding/Utf8.ci:19: (39 bytes): error("invalid codepoint");
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 19
+	<decode+?>: load.c32 -1
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"invalid codepoint"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:20: (8 bytes): return .result := i;
+	<decode+?>: mov.x32 sp(8, 0)
+	<decode+?>: inc.sp(-16)
+	<decode+?>: ret
+	cmplStd/lib/text/encoding/Utf8.ci:22: (64 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.sp(+8)
+	<decode+?>: load.iu8
+	<decode+?>: load.c32 192
+	<decode+?>: and.b32
+	<decode+?>: load.c32 128
+	<decode+?>: ceq.i32
+	<decode+?>: jz +8
+	<decode+?>: jmp +43
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 22
+	<decode+?>: load.c32 -2
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"10xxxxxx"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:23: (26 bytes): chars[i] := (((buff[0]) & 31) << 6 | ((ext[0]) & 63));
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: b32.and 0x1f
 	<decode+?>: b32.shl 0x06
-	<decode+?>: dup.x32 sp(1)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
+	<decode+?>: b32.and 0x3f
 	<decode+?>: or.b32
-	<decode+?>: set.x32 sp(2)
-	<decode+?>: inc.sp(-4)
-	<decode+?>: jmp +164
-	cmplStd/lib/text/encoding/Utf8.ci:22: (160 bytes): if ((value & 240) == 224)
-	<decode+?>: dup.x32 sp(0)
+	<decode+?>: dup.x32 sp(6)
+	<decode+?>: dup.x32 sp(2)
+	<decode+?>: mad.u32 4
+	<decode+?>: store.i32
+	<decode+?>: jmp +614
+	cmplStd/lib/text/encoding/Utf8.ci:25: (610 bytes): if (((buff[0]) & 240) == 224)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: load.c32 240
 	<decode+?>: and.b32
 	<decode+?>: load.c32 224
 	<decode+?>: ceq.i32
-	<decode+?>: jz +58
-	cmplStd/lib/text/encoding/Utf8.ci:23: (15 bytes): val1: int32 := read(reader) & 63
+	<decode+?>: jz +253
+	cmplStd/lib/text/encoding/Utf8.ci:26: (81 bytes): if (reader.read(reader, ext[...2]) != 2)
 	<decode+?>: load.z32
-	<decode+?>: dup.x32 sp(3)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
-	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	<decode+?>: b32.and 0x3f
-	cmplStd/lib/text/encoding/Utf8.ci:24: (15 bytes): val2: int32 := read(reader) & 63
-	<decode+?>: load.z32
-	<decode+?>: dup.x32 sp(4)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
-	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	<decode+?>: b32.and 0x3f
-	cmplStd/lib/text/encoding/Utf8.ci:25: (16 bytes): value := (value & 15) << 12 | val1 << 6 | val2;
 	<decode+?>: dup.x32 sp(2)
+	<decode+?>: load.c32 2
+	<decode+?>: load.sp(+20)
+	<decode+?>: dup.x32 sp(5)
+	<decode+?>: inc.i32(+8)
+	<decode+?>: load.i32
+	<decode+?>: call
+	<decode+?>: inc.sp(-12)
+	<decode+?>: load.c32 2
+	<decode+?>: ceq.i32
+	<decode+?>: jnz +51
+	cmplStd/lib/text/encoding/Utf8.ci:27: (39 bytes): error("invalid codepoint");
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 27
+	<decode+?>: load.c32 -1
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"invalid codepoint"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:28: (8 bytes): return .result := i;
+	<decode+?>: mov.x32 sp(8, 0)
+	<decode+?>: inc.sp(-16)
+	<decode+?>: ret
+	cmplStd/lib/text/encoding/Utf8.ci:30: (64 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.sp(+8)
+	<decode+?>: load.iu8
+	<decode+?>: load.c32 192
+	<decode+?>: and.b32
+	<decode+?>: load.c32 128
+	<decode+?>: ceq.i32
+	<decode+?>: jz +8
+	<decode+?>: jmp +43
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 30
+	<decode+?>: load.c32 -2
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"10xxxxxx"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:31: (64 bytes): assert(((ext[1]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.sp(+9)
+	<decode+?>: load.iu8
+	<decode+?>: load.c32 192
+	<decode+?>: and.b32
+	<decode+?>: load.c32 128
+	<decode+?>: ceq.i32
+	<decode+?>: jz +8
+	<decode+?>: jmp +43
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 31
+	<decode+?>: load.c32 -2
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"10xxxxxx"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:32: (36 bytes): chars[i] := (((buff[0]) & 15) << 12 | ((ext[0]) & 63) << 6 | ((ext[1]) & 63));
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: b32.and 0x0f
 	<decode+?>: b32.shl 0x0c
-	<decode+?>: dup.x32 sp(2)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
+	<decode+?>: b32.and 0x3f
 	<decode+?>: b32.shl 0x06
 	<decode+?>: or.b32
-	<decode+?>: dup.x32 sp(1)
+	<decode+?>: load.sp(+13)
+	<decode+?>: load.iu8
+	<decode+?>: b32.and 0x3f
 	<decode+?>: or.b32
-	<decode+?>: set.x32 sp(3)
-	<decode+?>: inc.sp(-8)
-	<decode+?>: jmp +92
-	cmplStd/lib/text/encoding/Utf8.ci:27: (88 bytes): if ((value & 248) == 240)
-	<decode+?>: dup.x32 sp(0)
+	<decode+?>: dup.x32 sp(6)
+	<decode+?>: dup.x32 sp(2)
+	<decode+?>: mad.u32 4
+	<decode+?>: store.i32
+	<decode+?>: jmp +344
+	cmplStd/lib/text/encoding/Utf8.ci:34: (340 bytes): if (((buff[0]) & 248) == 240)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: load.c32 248
 	<decode+?>: and.b32
 	<decode+?>: load.c32 240
 	<decode+?>: ceq.i32
-	<decode+?>: jz +74
-	cmplStd/lib/text/encoding/Utf8.ci:28: (15 bytes): val1: int32 := read(reader) & 63
+	<decode+?>: jz +323
+	cmplStd/lib/text/encoding/Utf8.ci:35: (81 bytes): if (reader.read(reader, ext[...3]) != 3)
 	<decode+?>: load.z32
-	<decode+?>: dup.x32 sp(3)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
-	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	<decode+?>: b32.and 0x3f
-	cmplStd/lib/text/encoding/Utf8.ci:29: (15 bytes): val2: int32 := read(reader) & 63
-	<decode+?>: load.z32
-	<decode+?>: dup.x32 sp(4)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
-	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	<decode+?>: b32.and 0x3f
-	cmplStd/lib/text/encoding/Utf8.ci:30: (15 bytes): val3: int32 := read(reader) & 63
-	<decode+?>: load.z32
+	<decode+?>: dup.x32 sp(2)
+	<decode+?>: load.c32 3
+	<decode+?>: load.sp(+20)
 	<decode+?>: dup.x32 sp(5)
-	<decode+?>: load.ref <?> ;ByteReader.read(this: ByteReader): int32
+	<decode+?>: inc.i32(+8)
+	<decode+?>: load.i32
 	<decode+?>: call
-	<decode+?>: inc.sp(-4)
-	<decode+?>: b32.and 0x3f
-	cmplStd/lib/text/encoding/Utf8.ci:31: (21 bytes): value := (value & 7) << 18 | val1 << 12 | val2 << 6 | val3;
-	<decode+?>: dup.x32 sp(3)
+	<decode+?>: inc.sp(-12)
+	<decode+?>: load.c32 3
+	<decode+?>: ceq.i32
+	<decode+?>: jnz +51
+	cmplStd/lib/text/encoding/Utf8.ci:36: (39 bytes): error("invalid codepoint");
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 36
+	<decode+?>: load.c32 -1
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"invalid codepoint"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:37: (8 bytes): return .result := i;
+	<decode+?>: mov.x32 sp(8, 0)
+	<decode+?>: inc.sp(-16)
+	<decode+?>: ret
+	cmplStd/lib/text/encoding/Utf8.ci:39: (64 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.sp(+8)
+	<decode+?>: load.iu8
+	<decode+?>: load.c32 192
+	<decode+?>: and.b32
+	<decode+?>: load.c32 128
+	<decode+?>: ceq.i32
+	<decode+?>: jz +8
+	<decode+?>: jmp +43
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 39
+	<decode+?>: load.c32 -2
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"10xxxxxx"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:40: (64 bytes): assert(((ext[1]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.sp(+9)
+	<decode+?>: load.iu8
+	<decode+?>: load.c32 192
+	<decode+?>: and.b32
+	<decode+?>: load.c32 128
+	<decode+?>: ceq.i32
+	<decode+?>: jz +8
+	<decode+?>: jmp +43
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 40
+	<decode+?>: load.c32 -2
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"10xxxxxx"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:41: (64 bytes): assert(((ext[2]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.sp(+10)
+	<decode+?>: load.iu8
+	<decode+?>: load.c32 192
+	<decode+?>: and.b32
+	<decode+?>: load.c32 128
+	<decode+?>: ceq.i32
+	<decode+?>: jz +8
+	<decode+?>: jmp +43
+	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
+	<decode+?>: load.c32 41
+	<decode+?>: load.c32 -2
+	<decode+?>: load.c32 128
+	<decode+?>: load.ref <?> ;"10xxxxxx"
+	<decode+?>: load.ref <?> ;pointer
+	<decode+?>: load.ref <?> ;null
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/lib/text/encoding/Utf8.ci:42: (46 bytes): chars[i] := (((buff[0]) & 7) << 18 | ((ext[0]) & 63) << 12 | ((ext[1]) & 63) << 6 | ((ext[2]) & 63));
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
 	<decode+?>: b32.and 0x07
 	<decode+?>: b32.shl 0x12
-	<decode+?>: dup.x32 sp(3)
+	<decode+?>: load.sp(+12)
+	<decode+?>: load.iu8
+	<decode+?>: b32.and 0x3f
 	<decode+?>: b32.shl 0x0c
 	<decode+?>: or.b32
-	<decode+?>: dup.x32 sp(2)
+	<decode+?>: load.sp(+13)
+	<decode+?>: load.iu8
+	<decode+?>: b32.and 0x3f
 	<decode+?>: b32.shl 0x06
 	<decode+?>: or.b32
-	<decode+?>: dup.x32 sp(1)
+	<decode+?>: load.sp(+14)
+	<decode+?>: load.iu8
+	<decode+?>: b32.and 0x3f
 	<decode+?>: or.b32
-	<decode+?>: set.x32 sp(4)
-	<decode+?>: inc.sp(-12)
-	cmplStd/lib/text/encoding/Utf8.ci:33: (11 bytes): chars[i] := (value);
-	<decode+?>: dup.x32 sp(0)
-	<decode+?>: dup.x32 sp(5)
-	<decode+?>: dup.x32 sp(3)
+	<decode+?>: dup.x32 sp(6)
+	<decode+?>: dup.x32 sp(2)
 	<decode+?>: mad.u32 4
 	<decode+?>: store.i32
-	<decode+?>: inc.sp(-4)
 	cmplStd/lib/text/encoding/Utf8.ci:8: (4 bytes): i := i + 1
 	<decode+?>: inc.i32(+1)
 	cmplStd/lib/text/encoding/Utf8.ci:8: (9 bytes): i < (chars.length)
 	<decode+?>: dup.x32 sp(0)
-	<decode+?>: dup.x32 sp(5)
+	<decode+?>: dup.x32 sp(7)
 	<decode+?>: clt.i32
-	<decode+?>: jnz -294
+	<decode+?>: jnz -888
 	<decode+?>: inc.sp(-4)
-	cmplStd/lib/text/encoding/Utf8.ci:35: (8 bytes): return .result := chars.length;
-	<decode+?>: mov.x32 sp(5, 3)
-	<decode+?>: inc.sp(-4)
+	cmplStd/lib/text/encoding/Utf8.ci:45: (8 bytes): return .result := chars.length;
+	<decode+?>: mov.x32 sp(7, 5)
+	<decode+?>: inc.sp(-12)
 	<decode+?>: ret
 }
 Utf8Writer: TextWriter {
@@ -26881,15 +27106,15 @@ Utf8Writer: TextWriter {
 .base: `TextWriter`
 .size: 36
 .name: 'Utf8Writer'
-.file: 'cmplStd/lib/text/encoding/Utf8.ci:40'
-.field encode: function (size: 369, cast: static function)
+.file: 'cmplStd/lib/text/encoding/Utf8.ci:51'
+.field encode: function (size: 367, cast: static function)
 .field Writeable: object (size: 8, cast: static const typename(ref))
 .field writer: ByteWriter (size: 4, cast: const variable(ref))
 .field format: FormatFlags (size: 16, cast: const variable(val))
 .field encode: function (size: 4, cast: variable(ref))
 .field flush: function (size: 25, cast: static function)
 .field flush: function (size: 4, cast: const variable(ref))
-.field close: function (size: 15, cast: static function)
+.field close: function (size: 18, cast: static function)
 .field write: function (size: 30, cast: static function)
 .field write: function (size: 46, cast: static function)
 .field write: function (size: 67, cast: static function)
@@ -26902,20 +27127,22 @@ Utf8Writer: TextWriter {
 .field write: function (size: 20, cast: static function)
 .field writeln: function (size: 29, cast: static function)
 .field writeln: function (size: 35, cast: static function)
-.field write: function (size: 107, cast: static function)
+.field copy: function (size: 107, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
+.field closeSafe: function (size: 33, cast: static function)
 .field .type: typename (size: 4, cast: const variable(ref))
 .field create: function (size: 0, cast: static const inline)
 .field destroy: function (size: 0, cast: static const inline)
 .field as: function (size: 0, cast: static const inline)
 .field type: function (size: 0, cast: static const inline)
+.doc: 'Utf-8 encoder'
 }
 Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void: function {
 .kind: static function
 .base: `function`
-.size: 369
+.size: 367
 .name: 'encode'
-.file: 'cmplStd/lib/text/encoding/Utf8.ci:42'
+.file: 'cmplStd/lib/text/encoding/Utf8.ci:53'
 .owner: Utf8Writer
 .param .result: void (size: 0, cast: variable(void))
 .param this: Utf8Writer (size: 4, cast: variable(ref))
@@ -26924,192 +27151,199 @@ Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void: function {
 the method must encode and write all the characters from the `chars` array'
 .value: {
 	writer: ByteWriter := this.writer;
-	bytes: uint8[4] := {
-	};
 	for (i: int32 := 0; i < (chars.length); i := i + 1) {
-		chr: uint32 := chars[i];
-		if (chr < (128)) {
-			bytes[0] := (chr);
+		cp: uint32 := chars[i];
+		if (cp < (128)) {
+			bytes: uint8[1] := {
+				bytes[0] := (cp);
+			};
 			writer.write(writer, bytes[...1]);
 		}
-		else if (chr < (2048)) {
-			bytes[0] := ((chr & (1984)) >> 6 | (192));
-			bytes[1] := (chr & (63) | (128));
+		else if (cp < (2048)) {
+			bytes: uint8[2] := {
+				bytes[0] := (192 | ((cp >> 6)));
+				bytes[1] := (128 | ((cp & (63))));
+			};
 			writer.write(writer, bytes[...2]);
 		}
-		else if (chr < (57344)) {
-			bytes[0] := ((chr & (61440)) >> 12 | (224));
-			bytes[1] := ((chr & (252)) >> 6 | (128));
-			bytes[2] := (chr & (63) | (128));
+		else if (cp < (65536)) {
+			bytes: uint8[3] := {
+				bytes[0] := (224 | ((cp >> 12)));
+				bytes[1] := (128 | (((cp >> 6) & (63))));
+				bytes[2] := (128 | ((cp & (63))));
+			};
 			writer.write(writer, bytes[...3]);
 		}
 		else {
-			bytes[0] := ((chr & (1835008)) >> 18 | (240));
-			bytes[1] := ((chr & (1008)) >> 12 | (128));
-			bytes[2] := ((chr & (252)) >> 6 | (128));
-			bytes[3] := (chr & (63) | (128));
+			bytes: uint8[4] := {
+				bytes[0] := (240 | ((cp >> 18)));
+				bytes[1] := (128 | (((cp >> 12) & (63))));
+				bytes[2] := (128 | (((cp >> 6) & (63))));
+				bytes[3] := (128 | ((cp & (63))));
+			};
 			writer.write(writer, bytes[...4]);
 		}
 	}
 }
-.instructions: (369 bytes)
-	cmplStd/lib/text/encoding/Utf8.ci:43: (7 bytes): writer: ByteWriter := this.writer
+.instructions: (367 bytes)
+	cmplStd/lib/text/encoding/Utf8.ci:54: (7 bytes): writer: ByteWriter := this.writer
 	<encode>  : dup.x32 sp(3)
 	<encode+?>: inc.i32(+8)
 	<encode+?>: load.i32
-	cmplStd/lib/text/encoding/Utf8.ci:44: (4 bytes): bytes: uint8[4] := {...}
-	<encode+?>: inc.sp(+4)
-	cmplStd/lib/text/encoding/Utf8.ci:45: (353 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
+	cmplStd/lib/text/encoding/Utf8.ci:55: (355 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
 	<encode+?>: load.z32
-	<encode+?>: jmp +339
-	cmplStd/lib/text/encoding/Utf8.ci:46: (9 bytes): chr: uint32 := chars[i]
-	<encode+?>: dup.x32 sp(4)
+	<encode+?>: jmp +341
+	cmplStd/lib/text/encoding/Utf8.ci:56: (9 bytes): cp: uint32 := chars[i]
+	<encode+?>: dup.x32 sp(3)
 	<encode+?>: dup.x32 sp(1)
 	<encode+?>: mad.u32 4
 	<encode+?>: load.i32
-	cmplStd/lib/text/encoding/Utf8.ci:48: (318 bytes): if (chr < (128))
+	cmplStd/lib/text/encoding/Utf8.ci:58: (320 bytes): if (cp < (128))
 	<encode+?>: dup.x32 sp(0)
 	<encode+?>: load.c32 128
 	<encode+?>: clt.u32
-	<encode+?>: jz +38
-	cmplStd/lib/text/encoding/Utf8.ci:49: (7 bytes): bytes[0] := (chr);
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.sp(+12)
+	<encode+?>: jz +46
+	cmplStd/lib/text/encoding/Utf8.ci:59: (11 bytes): bytes: uint8[1] := {...}
+	<encode+?>: inc.sp(+4)
+	cmplStd/lib/text/encoding/Utf8.ci:59: (7 bytes): bytes[0] := (cp);
+	<encode+?>: dup.x32 sp(1)
+	<encode+?>: load.sp(+4)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:50: (23 bytes): writer.write(writer, bytes[...1]);
+	cmplStd/lib/text/encoding/Utf8.ci:60: (23 bytes): writer.write(writer, bytes[...1]);
 	<encode+?>: dup.x32 sp(3)
 	<encode+?>: load.c32 1
-	<encode+?>: load.sp(+16)
+	<encode+?>: load.sp(+8)
 	<encode+?>: dup.x32 sp(6)
 	<encode+?>: inc.i32(+8)
 	<encode+?>: load.i32
 	<encode+?>: call
 	<encode+?>: inc.sp(-12)
-	<encode+?>: jmp +276
-	cmplStd/lib/text/encoding/Utf8.ci:52: (272 bytes): if (chr < (2048))
+	<encode+?>: inc.sp(-4)
+	<encode+?>: jmp +270
+	cmplStd/lib/text/encoding/Utf8.ci:62: (266 bytes): if (cp < (2048))
 	<encode+?>: dup.x32 sp(0)
 	<encode+?>: load.c32 2048
 	<encode+?>: clt.u32
-	<encode+?>: jz +67
-	cmplStd/lib/text/encoding/Utf8.ci:53: (21 bytes): bytes[0] := ((chr & (1984)) >> 6 | (192));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 1984
-	<encode+?>: and.b32
-	<encode+?>: b32.shr 0x06
+	<encode+?>: jz +69
+	cmplStd/lib/text/encoding/Utf8.ci:63: (34 bytes): bytes: uint8[2] := {...}
+	<encode+?>: inc.sp(+4)
+	cmplStd/lib/text/encoding/Utf8.ci:64: (15 bytes): bytes[0] := (192 | ((cp >> 6)));
 	<encode+?>: load.c32 192
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.shr 0x06
 	<encode+?>: or.b32
-	<encode+?>: load.sp(+12)
+	<encode+?>: load.sp(+4)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:54: (15 bytes): bytes[1] := (chr & (63) | (128));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: b32.and 0x3f
+	cmplStd/lib/text/encoding/Utf8.ci:65: (15 bytes): bytes[1] := (128 | ((cp & (63))));
 	<encode+?>: load.c32 128
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.and 0x3f
 	<encode+?>: or.b32
-	<encode+?>: load.sp(+13)
+	<encode+?>: load.sp(+5)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:55: (23 bytes): writer.write(writer, bytes[...2]);
+	cmplStd/lib/text/encoding/Utf8.ci:67: (23 bytes): writer.write(writer, bytes[...2]);
 	<encode+?>: dup.x32 sp(3)
 	<encode+?>: load.c32 2
-	<encode+?>: load.sp(+16)
+	<encode+?>: load.sp(+8)
 	<encode+?>: dup.x32 sp(6)
 	<encode+?>: inc.i32(+8)
 	<encode+?>: load.i32
 	<encode+?>: call
 	<encode+?>: inc.sp(-12)
-	<encode+?>: jmp +201
-	cmplStd/lib/text/encoding/Utf8.ci:57: (197 bytes): if (chr < (57344))
+	<encode+?>: inc.sp(-4)
+	<encode+?>: jmp +193
+	cmplStd/lib/text/encoding/Utf8.ci:69: (189 bytes): if (cp < (65536))
 	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 57344
+	<encode+?>: load.c32 65536
 	<encode+?>: clt.u32
-	<encode+?>: jz +88
-	cmplStd/lib/text/encoding/Utf8.ci:58: (21 bytes): bytes[0] := ((chr & (61440)) >> 12 | (224));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 61440
-	<encode+?>: and.b32
-	<encode+?>: b32.shr 0x0c
+	<encode+?>: jz +86
+	cmplStd/lib/text/encoding/Utf8.ci:70: (51 bytes): bytes: uint8[3] := {...}
+	<encode+?>: inc.sp(+4)
+	cmplStd/lib/text/encoding/Utf8.ci:71: (15 bytes): bytes[0] := (224 | ((cp >> 12)));
 	<encode+?>: load.c32 224
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.shr 0x0c
 	<encode+?>: or.b32
-	<encode+?>: load.sp(+12)
+	<encode+?>: load.sp(+4)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:59: (21 bytes): bytes[1] := ((chr & (252)) >> 6 | (128));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 252
-	<encode+?>: and.b32
+	cmplStd/lib/text/encoding/Utf8.ci:72: (17 bytes): bytes[1] := (128 | (((cp >> 6) & (63))));
+	<encode+?>: load.c32 128
+	<encode+?>: dup.x32 sp(2)
 	<encode+?>: b32.shr 0x06
-	<encode+?>: load.c32 128
-	<encode+?>: or.b32
-	<encode+?>: load.sp(+13)
-	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:60: (15 bytes): bytes[2] := (chr & (63) | (128));
-	<encode+?>: dup.x32 sp(0)
 	<encode+?>: b32.and 0x3f
-	<encode+?>: load.c32 128
 	<encode+?>: or.b32
-	<encode+?>: load.sp(+14)
+	<encode+?>: load.sp(+5)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:61: (23 bytes): writer.write(writer, bytes[...3]);
+	cmplStd/lib/text/encoding/Utf8.ci:73: (15 bytes): bytes[2] := (128 | ((cp & (63))));
+	<encode+?>: load.c32 128
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.and 0x3f
+	<encode+?>: or.b32
+	<encode+?>: load.sp(+6)
+	<encode+?>: store.i8
+	cmplStd/lib/text/encoding/Utf8.ci:75: (23 bytes): writer.write(writer, bytes[...3]);
 	<encode+?>: dup.x32 sp(3)
 	<encode+?>: load.c32 3
-	<encode+?>: load.sp(+16)
+	<encode+?>: load.sp(+8)
 	<encode+?>: dup.x32 sp(6)
 	<encode+?>: inc.i32(+8)
 	<encode+?>: load.i32
 	<encode+?>: call
 	<encode+?>: inc.sp(-12)
-	<encode+?>: jmp +105
-	cmplStd/lib/text/encoding/Utf8.ci:64: (21 bytes): bytes[0] := ((chr & (1835008)) >> 18 | (240));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 1835008
-	<encode+?>: and.b32
-	<encode+?>: b32.shr 0x12
+	<encode+?>: inc.sp(-4)
+	<encode+?>: jmp +99
+	cmplStd/lib/text/encoding/Utf8.ci:78: (68 bytes): bytes: uint8[4] := {...}
+	<encode+?>: inc.sp(+4)
+	cmplStd/lib/text/encoding/Utf8.ci:79: (15 bytes): bytes[0] := (240 | ((cp >> 18)));
 	<encode+?>: load.c32 240
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.shr 0x12
 	<encode+?>: or.b32
-	<encode+?>: load.sp(+12)
+	<encode+?>: load.sp(+4)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:65: (21 bytes): bytes[1] := ((chr & (1008)) >> 12 | (128));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 1008
-	<encode+?>: and.b32
+	cmplStd/lib/text/encoding/Utf8.ci:80: (17 bytes): bytes[1] := (128 | (((cp >> 12) & (63))));
+	<encode+?>: load.c32 128
+	<encode+?>: dup.x32 sp(2)
 	<encode+?>: b32.shr 0x0c
-	<encode+?>: load.c32 128
-	<encode+?>: or.b32
-	<encode+?>: load.sp(+13)
-	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:66: (21 bytes): bytes[2] := ((chr & (252)) >> 6 | (128));
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: load.c32 252
-	<encode+?>: and.b32
-	<encode+?>: b32.shr 0x06
-	<encode+?>: load.c32 128
-	<encode+?>: or.b32
-	<encode+?>: load.sp(+14)
-	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:67: (15 bytes): bytes[3] := (chr & (63) | (128));
-	<encode+?>: dup.x32 sp(0)
 	<encode+?>: b32.and 0x3f
-	<encode+?>: load.c32 128
 	<encode+?>: or.b32
-	<encode+?>: load.sp(+15)
+	<encode+?>: load.sp(+5)
 	<encode+?>: store.i8
-	cmplStd/lib/text/encoding/Utf8.ci:68: (23 bytes): writer.write(writer, bytes[...4]);
+	cmplStd/lib/text/encoding/Utf8.ci:81: (17 bytes): bytes[2] := (128 | (((cp >> 6) & (63))));
+	<encode+?>: load.c32 128
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.shr 0x06
+	<encode+?>: b32.and 0x3f
+	<encode+?>: or.b32
+	<encode+?>: load.sp(+6)
+	<encode+?>: store.i8
+	cmplStd/lib/text/encoding/Utf8.ci:82: (15 bytes): bytes[3] := (128 | ((cp & (63))));
+	<encode+?>: load.c32 128
+	<encode+?>: dup.x32 sp(2)
+	<encode+?>: b32.and 0x3f
+	<encode+?>: or.b32
+	<encode+?>: load.sp(+7)
+	<encode+?>: store.i8
+	cmplStd/lib/text/encoding/Utf8.ci:84: (23 bytes): writer.write(writer, bytes[...4]);
 	<encode+?>: dup.x32 sp(3)
 	<encode+?>: load.c32 4
-	<encode+?>: load.sp(+16)
+	<encode+?>: load.sp(+8)
 	<encode+?>: dup.x32 sp(6)
 	<encode+?>: inc.i32(+8)
 	<encode+?>: load.i32
 	<encode+?>: call
 	<encode+?>: inc.sp(-12)
 	<encode+?>: inc.sp(-4)
-	cmplStd/lib/text/encoding/Utf8.ci:45: (4 bytes): i := i + 1
-	<encode+?>: inc.i32(+1)
-	cmplStd/lib/text/encoding/Utf8.ci:45: (9 bytes): i < (chars.length)
-	<encode+?>: dup.x32 sp(0)
-	<encode+?>: dup.x32 sp(6)
-	<encode+?>: clt.i32
-	<encode+?>: jnz -340
 	<encode+?>: inc.sp(-4)
-	<encode+?>: inc.sp(-8)
+	cmplStd/lib/text/encoding/Utf8.ci:55: (4 bytes): i := i + 1
+	<encode+?>: inc.i32(+1)
+	cmplStd/lib/text/encoding/Utf8.ci:55: (9 bytes): i < (chars.length)
+	<encode+?>: dup.x32 sp(0)
+	<encode+?>: dup.x32 sp(5)
+	<encode+?>: clt.i32
+	<encode+?>: jnz -342
+	<encode+?>: inc.sp(-4)
+	<encode+?>: inc.sp(-4)
 	<encode+?>: ret
 }
 Easing: typename {
@@ -35679,7 +35913,6 @@ mul: Complex {
 .field byte: typename (size: 0, cast: inline)
 .field float: typename (size: 0, cast: inline)
 .field double: typename (size: 0, cast: inline)
-.field inc: function (size: 0, cast: inline)
 .field sizeof: function (size: 0, cast: inline)
 .field verbose: function (size: 0, cast: inline)
 .field verbose: function (size: 0, cast: inline)
@@ -35705,6 +35938,7 @@ mul: Complex {
 .field assert: function (size: 0, cast: inline)
 .field assertEq: function (size: 103, cast: static function)
 .field assertEq: function (size: 0, cast: inline)
+.field inc: function (size: 0, cast: inline)
 .field Bits: typename (size: 0, cast: static const typename(void))
 .field Math: typename (size: 0, cast: static const typename(void))
 .field Fixed: typename (size: 8, cast: static const typename(val))
@@ -35862,7 +36096,6 @@ mul: Complex {
 .field format: function (size: 25, cast: static function)
 .field append: function (size: 31, cast: static function)
 .field Closeable: object (size: 8, cast: static const typename(ref))
-.field close: function (size: 33, cast: static function)
 .field ByteReader: Closeable (size: 12, cast: static const typename(ref))
 .field ByteWriter: Closeable (size: 16, cast: static const typename(ref))
 .field CopyReader: ByteReader (size: 20, cast: static const typename(ref))
@@ -36585,12 +36818,6 @@ mul: Complex {
 		byte: typename := uint8;
 		float: typename := float32;
 		double: typename := float64;
-		static if (int32 == int32) {
-			inc(ptr: pointer, val: int32): pointer := pointer(emit(pointer(ptr), int32(val), add.i32));
-		}
-		static if (int32 == int64) {
-			inc(ptr: pointer, val: int32): pointer := pointer(emit(pointer(ptr), int32(val), add.i64));
-		}
 		sizeof(type: typename): int32 := typename.size(type);
 		static if (typename(raise) == function) {
 			verbose(const message: char[*], const inspect: variant): void := raise(raise.verbose, raise.noTrace, message, inspect);
@@ -36640,6 +36867,12 @@ mul: Complex {
 				raise(raise.abort, raise.defTrace, "assertion failed", details);
 			};
 			assertEq(expected: int32, returned: int32): void := assertEq(expected, returned, null);
+		}
+		static if (int32 == int32) {
+			inc(ptr: pointer, val: int32): pointer := pointer(emit(pointer(ptr), int32(val), add.i32));
+		}
+		static if (int32 == int64) {
+			inc(ptr: pointer, val: int32): pointer := pointer(emit(pointer(ptr), int32(val), add.i64));
 		}
 		static const Bits: struct {
 			static signed(value: uint8): int8 := int8(value);
@@ -39819,17 +40052,17 @@ mul: Complex {
 		};
 		static const Closeable: struct {
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
 			static const as(this: object, type: typename): pointer := nfc(9);
 			static const type(this: object): typename := nfc(10);
-		};
-		static close(closeable: Closeable): void := {
-			if ((closeable.close) == null) {
-				return;
-			}
-			closeable.close(closeable);
 		};
 		static const ByteReader: struct {
 			read(this: ByteReader, bytes: uint8[]): int32;
@@ -39840,9 +40073,15 @@ mul: Complex {
 				if (read(this, bytes) <= 0) {
 					return .result := -1;
 				}
-				return .result := (bytes[0]) & 255;
+				return .result := bytes[0];
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -39858,8 +40097,8 @@ mul: Complex {
 				};
 				return .result := this.write(this, bytes);
 			};
-			static write(this: ByteWriter, reader: ByteReader): int32 := {
-				buffer: uint8[1024] := {
+			static copy(this: ByteWriter, reader: ByteReader): int32 := {
+				buffer: uint8[4096] := {
 				};
 				result: int32 := 0;
 				for ( ; ; ) {
@@ -39873,6 +40112,12 @@ mul: Complex {
 				return .result := result;
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -39890,8 +40135,8 @@ mul: Complex {
 				return .result := result;
 			};
 			static close(this: CopyReader): void := {
-				close(this.source);
-				close(this.clone);
+				Closeable.closeSafe(this.source);
+				Closeable.closeSafe(this.clone);
 			};
 			read(this: ByteReader, bytes: uint8[]): int32;
 			static read(this: ByteReader): int32 := {
@@ -39901,9 +40146,15 @@ mul: Complex {
 				if (read(this, bytes) <= 0) {
 					return .result := -1;
 				}
-				return .result := (bytes[0]) & 255;
+				return .result := bytes[0];
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -39975,7 +40226,7 @@ mul: Complex {
 			const reader: ByteReader;
 			decode(this: TextReader, chars: uint32[]): int32;
 			static close(this: TextReader): void := {
-				close(this.reader);
+				Closeable.closeSafe(this.reader);
 			};
 			static decode(this: TextReader): int32 := {
 				chars: uint32[1] := {
@@ -39987,6 +40238,12 @@ mul: Complex {
 				return .result := chars[0] & (16777215);
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40010,7 +40267,7 @@ mul: Complex {
 			};
 			const flush(this: TextWriter): void := flush;
 			static close(this: TextWriter): void := {
-				close(this.writer);
+				Closeable.closeSafe(this.writer);
 			};
 			static write(this: TextWriter, value: char[]): TextWriter := {
 				this.writer.write(this.writer, value);
@@ -40074,7 +40331,7 @@ mul: Complex {
 			static writeln(this: TextWriter, value: Writeable): TextWriter := {
 				return .result := writeln(write(this, value));
 			};
-			static write(writer: TextWriter, reader: TextReader): int32 := {
+			static copy(writer: TextWriter, reader: TextReader): int32 := {
 				buffer: uint32[1024] := {
 				};
 				result: int32 := 0;
@@ -40089,6 +40346,12 @@ mul: Complex {
 				return .result := result;
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40200,8 +40463,8 @@ mul: Complex {
 				};
 				return .result := this.write(this, bytes);
 			};
-			static write(this: ByteWriter, reader: ByteReader): int32 := {
-				buffer: uint8[1024] := {
+			static copy(this: ByteWriter, reader: ByteReader): int32 := {
+				buffer: uint8[4096] := {
 				};
 				result: int32 := 0;
 				for ( ; ; ) {
@@ -40215,6 +40478,12 @@ mul: Complex {
 				return .result := result;
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40522,9 +40791,15 @@ mul: Complex {
 				if (read(this, bytes) <= 0) {
 					return .result := -1;
 				}
-				return .result := (bytes[0]) & 255;
+				return .result := bytes[0];
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40535,9 +40810,9 @@ mul: Complex {
 			static decode(this: AsciiReader, chars: uint32[]): int32 := {
 				reader: ByteReader := this.reader;
 				for (i: int32 := 0; i < (chars.length); i := i + 1) {
-					value: char[1] := {
+					value: uint8[1] := {
 					};
-					if (reader.read(reader, value) < 0) {
+					if (reader.read(reader, value) <= 0) {
 						return .result := i;
 					}
 					chars[i] := (value[0]);
@@ -40547,7 +40822,7 @@ mul: Complex {
 			const reader: ByteReader;
 			decode(this: TextReader, chars: uint32[]): int32;
 			static close(this: TextReader): void := {
-				close(this.reader);
+				Closeable.closeSafe(this.reader);
 			};
 			static decode(this: TextReader): int32 := {
 				chars: uint32[1] := {
@@ -40559,6 +40834,12 @@ mul: Complex {
 				return .result := chars[0] & (16777215);
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40569,7 +40850,7 @@ mul: Complex {
 			static encode(this: TextWriter, chars: uint32[]): void := {
 				writer: ByteWriter := this.writer;
 				for (i: int32 := 0; i < (chars.length); i := i + 1) {
-					value: char[1] := {
+					value: uint8[1] := {
 						value[0] := (chars[i]);
 					};
 					writer.write(writer, value);
@@ -40591,7 +40872,7 @@ mul: Complex {
 			};
 			const flush(this: TextWriter): void := flush;
 			static close(this: TextWriter): void := {
-				close(this.writer);
+				Closeable.closeSafe(this.writer);
 			};
 			static write(this: TextWriter, value: char[]): TextWriter := {
 				this.writer.write(this.writer, value);
@@ -40655,7 +40936,7 @@ mul: Complex {
 			static writeln(this: TextWriter, value: Writeable): TextWriter := {
 				return .result := writeln(write(this, value));
 			};
-			static write(writer: TextWriter, reader: TextReader): int32 := {
+			static copy(writer: TextWriter, reader: TextReader): int32 := {
 				buffer: uint32[1024] := {
 				};
 				result: int32 := 0;
@@ -40670,6 +40951,12 @@ mul: Complex {
 				return .result := result;
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40678,37 +40965,54 @@ mul: Complex {
 		};
 		static const Utf8Reader: struct {
 			static decode(this: Utf8Reader, chars: uint32[]): int32 := {
-				read(this: ByteReader): int32 := ByteReader.read(this);
+				buff: uint8[1] := {
+					buff[0] := (0);
+				};
+				ext: uint8[3] := {
+					ext[0] := (0);
+				};
 				reader: ByteReader := this.reader;
 				for (i: int32 := 0; i < (chars.length); i := i + 1) {
-					value: int32 := read(reader);
-					if (value < 0) {
-						return .result := i > 0 ? i : value;
+					if (reader.read(reader, buff) <= 0) {
+						return .result := i;
 					}
-					if ((value & 128) == 0) ;
-					else if ((value & 224) == 192) {
-						val1: int32 := read(reader) & 63;
-						value := (value & 31) << 6 | val1;
+					if (((buff[0]) & 128) == 0) {
+						chars[i] := (buff[0]);
 					}
-					else if ((value & 240) == 224) {
-						val1: int32 := read(reader) & 63;
-						val2: int32 := read(reader) & 63;
-						value := (value & 15) << 12 | val1 << 6 | val2;
+					else if (((buff[0]) & 224) == 192) {
+						if (reader.read(reader, ext[...1]) != 1) {
+							error("invalid codepoint");
+							return .result := i;
+						}
+						assert(((ext[0]) & 192) == 128, "10xxxxxx");
+						chars[i] := (((buff[0]) & 31) << 6 | ((ext[0]) & 63));
 					}
-					else if ((value & 248) == 240) {
-						val1: int32 := read(reader) & 63;
-						val2: int32 := read(reader) & 63;
-						val3: int32 := read(reader) & 63;
-						value := (value & 7) << 18 | val1 << 12 | val2 << 6 | val3;
+					else if (((buff[0]) & 240) == 224) {
+						if (reader.read(reader, ext[...2]) != 2) {
+							error("invalid codepoint");
+							return .result := i;
+						}
+						assert(((ext[0]) & 192) == 128, "10xxxxxx");
+						assert(((ext[1]) & 192) == 128, "10xxxxxx");
+						chars[i] := (((buff[0]) & 15) << 12 | ((ext[0]) & 63) << 6 | ((ext[1]) & 63));
 					}
-					chars[i] := (value);
+					else if (((buff[0]) & 248) == 240) {
+						if (reader.read(reader, ext[...3]) != 3) {
+							error("invalid codepoint");
+							return .result := i;
+						}
+						assert(((ext[0]) & 192) == 128, "10xxxxxx");
+						assert(((ext[1]) & 192) == 128, "10xxxxxx");
+						assert(((ext[2]) & 192) == 128, "10xxxxxx");
+						chars[i] := (((buff[0]) & 7) << 18 | ((ext[0]) & 63) << 12 | ((ext[1]) & 63) << 6 | ((ext[2]) & 63));
+					}
 				}
 				return .result := chars.length;
 			};
 			const reader: ByteReader;
 			decode(this: TextReader, chars: uint32[]): int32;
 			static close(this: TextReader): void := {
-				close(this.reader);
+				Closeable.closeSafe(this.reader);
 			};
 			static decode(this: TextReader): int32 := {
 				chars: uint32[1] := {
@@ -40720,6 +41024,12 @@ mul: Complex {
 				return .result := chars[0] & (16777215);
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -40729,30 +41039,36 @@ mul: Complex {
 		static const Utf8Writer: struct {
 			static encode(this: Utf8Writer, chars: uint32[]): void := {
 				writer: ByteWriter := this.writer;
-				bytes: uint8[4] := {
-				};
 				for (i: int32 := 0; i < (chars.length); i := i + 1) {
-					chr: uint32 := chars[i];
-					if (chr < (128)) {
-						bytes[0] := (chr);
+					cp: uint32 := chars[i];
+					if (cp < (128)) {
+						bytes: uint8[1] := {
+							bytes[0] := (cp);
+						};
 						writer.write(writer, bytes[...1]);
 					}
-					else if (chr < (2048)) {
-						bytes[0] := ((chr & (1984)) >> 6 | (192));
-						bytes[1] := (chr & (63) | (128));
+					else if (cp < (2048)) {
+						bytes: uint8[2] := {
+							bytes[0] := (192 | ((cp >> 6)));
+							bytes[1] := (128 | ((cp & (63))));
+						};
 						writer.write(writer, bytes[...2]);
 					}
-					else if (chr < (57344)) {
-						bytes[0] := ((chr & (61440)) >> 12 | (224));
-						bytes[1] := ((chr & (252)) >> 6 | (128));
-						bytes[2] := (chr & (63) | (128));
+					else if (cp < (65536)) {
+						bytes: uint8[3] := {
+							bytes[0] := (224 | ((cp >> 12)));
+							bytes[1] := (128 | (((cp >> 6) & (63))));
+							bytes[2] := (128 | ((cp & (63))));
+						};
 						writer.write(writer, bytes[...3]);
 					}
 					else {
-						bytes[0] := ((chr & (1835008)) >> 18 | (240));
-						bytes[1] := ((chr & (1008)) >> 12 | (128));
-						bytes[2] := ((chr & (252)) >> 6 | (128));
-						bytes[3] := (chr & (63) | (128));
+						bytes: uint8[4] := {
+							bytes[0] := (240 | ((cp >> 18)));
+							bytes[1] := (128 | (((cp >> 12) & (63))));
+							bytes[2] := (128 | (((cp >> 6) & (63))));
+							bytes[3] := (128 | ((cp & (63))));
+						};
 						writer.write(writer, bytes[...4]);
 					}
 				}
@@ -40773,7 +41089,7 @@ mul: Complex {
 			};
 			const flush(this: TextWriter): void := flush;
 			static close(this: TextWriter): void := {
-				close(this.writer);
+				Closeable.closeSafe(this.writer);
 			};
 			static write(this: TextWriter, value: char[]): TextWriter := {
 				this.writer.write(this.writer, value);
@@ -40837,7 +41153,7 @@ mul: Complex {
 			static writeln(this: TextWriter, value: Writeable): TextWriter := {
 				return .result := writeln(write(this, value));
 			};
-			static write(writer: TextWriter, reader: TextReader): int32 := {
+			static copy(writer: TextWriter, reader: TextReader): int32 := {
 				buffer: uint32[1024] := {
 				};
 				result: int32 := 0;
@@ -40852,6 +41168,12 @@ mul: Complex {
 				return .result := result;
 			};
 			close(this: Closeable): void;
+			static closeSafe(this: Closeable): void := {
+				if ((this.close) == null) {
+					return;
+				}
+				this.close(this);
+			};
 			const .type: typename;
 			static const create(type: typename): pointer := nfc(7);
 			static const destroy(this: object): void := nfc(8);
@@ -49613,29 +49935,33 @@ cmplStd/lib/text/Format.ci:501: DatetimeFormat.format: function(<DatetimeFormat.
 cmplStd/lib/text/Format.ci:298: DatetimeFormat: typename(<DatetimeFormat>)
 cmplStd/lib/text/Format.ci:507: format: function(<format>)
 cmplStd/lib/text/Format.ci:563: append: function(<append>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/stream/ByteStream.ci:2: Closeable: typename(<Closeable>)
-cmplStd/lib/text/stream/ByteStream.ci:9: close: function(<close>)
-cmplStd/lib/text/stream/ByteStream.ci:27: ByteReader.read: function(<ByteReader.read>)
-cmplStd/lib/text/stream/ByteStream.ci:18: ByteReader: typename(<ByteReader>)
-cmplStd/lib/text/stream/ByteStream.ci:57: ByteWriter.write: function(<ByteWriter.write>)
-cmplStd/lib/text/stream/ByteStream.ci:77: ByteWriter.write: function(<ByteWriter.write>)
-cmplStd/lib/text/stream/ByteStream.ci:45: ByteWriter: typename(<ByteWriter>)
-cmplStd/lib/text/stream/ByteStream.ci:105: CopyReader.read: function(<CopyReader.read>)
-cmplStd/lib/text/stream/ByteStream.ci:114: CopyReader.close: function(<CopyReader.close>)
-cmplStd/lib/text/stream/ByteStream.ci:27: ByteReader.read: function(<ByteReader.read>)
-cmplStd/lib/text/stream/ByteStream.ci:100: CopyReader: typename(<CopyReader>)
-cmplStd/lib/text/stream/ByteStream.ci:127: ByteBuffer.read: function(<ByteBuffer.read>)
-cmplStd/lib/text/stream/ByteStream.ci:141: ByteBuffer.read: function(<ByteBuffer.read>)
-cmplStd/lib/text/stream/ByteStream.ci:150: ByteBuffer.write: function(<ByteBuffer.write>)
-cmplStd/lib/text/stream/ByteStream.ci:176: ByteBuffer.flush: function(<ByteBuffer.flush>)
-cmplStd/lib/text/stream/ByteStream.ci:180: ByteBuffer.close: function(<ByteBuffer.close>)
-cmplStd/lib/text/stream/ByteStream.ci:121: ByteBuffer: typename(<ByteBuffer>)
+cmplStd/lib/text/stream/ByteStream.ci:26: ByteReader.read: function(<ByteReader.read>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
+cmplStd/lib/text/stream/ByteStream.ci:17: ByteReader: typename(<ByteReader>)
+cmplStd/lib/text/stream/ByteStream.ci:56: ByteWriter.write: function(<ByteWriter.write>)
+cmplStd/lib/text/stream/ByteStream.ci:76: ByteWriter.copy: function(<ByteWriter.copy>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
+cmplStd/lib/text/stream/ByteStream.ci:44: ByteWriter: typename(<ByteWriter>)
+cmplStd/lib/text/stream/ByteStream.ci:104: CopyReader.read: function(<CopyReader.read>)
+cmplStd/lib/text/stream/ByteStream.ci:113: CopyReader.close: function(<CopyReader.close>)
+cmplStd/lib/text/stream/ByteStream.ci:26: ByteReader.read: function(<ByteReader.read>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
+cmplStd/lib/text/stream/ByteStream.ci:99: CopyReader: typename(<CopyReader>)
+cmplStd/lib/text/stream/ByteStream.ci:126: ByteBuffer.read: function(<ByteBuffer.read>)
+cmplStd/lib/text/stream/ByteStream.ci:140: ByteBuffer.read: function(<ByteBuffer.read>)
+cmplStd/lib/text/stream/ByteStream.ci:149: ByteBuffer.write: function(<ByteBuffer.write>)
+cmplStd/lib/text/stream/ByteStream.ci:175: ByteBuffer.flush: function(<ByteBuffer.flush>)
+cmplStd/lib/text/stream/ByteStream.ci:179: ByteBuffer.close: function(<ByteBuffer.close>)
+cmplStd/lib/text/stream/ByteStream.ci:120: ByteBuffer: typename(<ByteBuffer>)
 cmplStd/lib/text/stream/TextStream.ci:19: TextReader.close: function(<TextReader.close>)
-cmplStd/lib/text/stream/TextStream.ci:26: TextReader.decode: function(<TextReader.decode>)
+cmplStd/lib/text/stream/TextStream.ci:25: TextReader.decode: function(<TextReader.decode>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/stream/TextStream.ci:7: TextReader: typename(<TextReader>)
-cmplStd/lib/text/stream/TextStream.ci:51: TextWriter.Writeable: typename(<TextWriter.Writeable>)
-cmplStd/lib/text/stream/TextStream.ci:68: TextWriter.flush: function(<TextWriter.flush>)
-cmplStd/lib/text/stream/TextStream.ci:73: TextWriter.close: function(<TextWriter.close>)
+cmplStd/lib/text/stream/TextStream.ci:50: TextWriter.Writeable: typename(<TextWriter.Writeable>)
+cmplStd/lib/text/stream/TextStream.ci:67: TextWriter.flush: function(<TextWriter.flush>)
+cmplStd/lib/text/stream/TextStream.ci:72: TextWriter.close: function(<TextWriter.close>)
 cmplStd/lib/text/stream/TextStream.ci:78: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:84: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:90: TextWriter.write: function(<TextWriter.write>)
@@ -49648,29 +49974,33 @@ cmplStd/lib/text/stream/TextStream.ci:133: TextWriter.write: function(<TextWrite
 cmplStd/lib/text/stream/TextStream.ci:140: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:146: TextWriter.writeln: function(<TextWriter.writeln>)
 cmplStd/lib/text/stream/TextStream.ci:151: TextWriter.writeln: function(<TextWriter.writeln>)
-cmplStd/lib/text/stream/TextStream.ci:168: TextWriter.write: function(<TextWriter.write>)
-cmplStd/lib/text/stream/TextStream.ci:49: TextWriter: typename(<TextWriter>)
+cmplStd/lib/text/stream/TextStream.ci:168: TextWriter.copy: function(<TextWriter.copy>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
+cmplStd/lib/text/stream/TextStream.ci:48: TextWriter: typename(<TextWriter>)
 cmplStd/lib/text/encoding/binary/Base64.ci:3: Base64Encoder.lookup: uint8[]([64] {65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, ...})
 cmplStd/lib/text/encoding/binary/Base64.ci:16: Base64Encoder.flushBuffer: function(<Base64Encoder.flushBuffer>)
 cmplStd/lib/text/encoding/binary/Base64.ci:41: Base64Encoder.write: function(<Base64Encoder.write>)
 cmplStd/lib/text/encoding/binary/Base64.ci:124: Base64Encoder.flush: function(<Base64Encoder.flush>)
 cmplStd/lib/text/encoding/binary/Base64.ci:129: Base64Encoder.close: function(<Base64Encoder.close>)
-cmplStd/lib/text/stream/ByteStream.ci:57: ByteWriter.write: function(<ByteWriter.write>)
-cmplStd/lib/text/stream/ByteStream.ci:77: ByteWriter.write: function(<ByteWriter.write>)
+cmplStd/lib/text/stream/ByteStream.ci:56: ByteWriter.write: function(<ByteWriter.write>)
+cmplStd/lib/text/stream/ByteStream.ci:76: ByteWriter.copy: function(<ByteWriter.copy>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/encoding/binary/Base64.ci:2: Base64Encoder: typename(<Base64Encoder>)
 cmplStd/lib/text/encoding/binary/Base64.ci:136: Base64Decoder.lookup: int32[256]([256] {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ...})
 cmplStd/lib/text/encoding/binary/Base64.ci:162: Base64Decoder.read: function(<Base64Decoder.read>)
 cmplStd/lib/text/encoding/binary/Base64.ci:190: Base64Decoder.close: function(<Base64Decoder.close>)
-cmplStd/lib/text/stream/ByteStream.ci:27: ByteReader.read: function(<ByteReader.read>)
+cmplStd/lib/text/stream/ByteStream.ci:26: ByteReader.read: function(<ByteReader.read>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/encoding/binary/Base64.ci:135: Base64Decoder: typename(<Base64Decoder>)
 cmplStd/lib/text/encoding/Ascii.ci:4: AsciiReader.decode: function(<AsciiReader.decode>)
 cmplStd/lib/text/stream/TextStream.ci:19: TextReader.close: function(<TextReader.close>)
-cmplStd/lib/text/stream/TextStream.ci:26: TextReader.decode: function(<TextReader.decode>)
+cmplStd/lib/text/stream/TextStream.ci:25: TextReader.decode: function(<TextReader.decode>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/encoding/Ascii.ci:2: AsciiReader: typename(<AsciiReader>)
 cmplStd/lib/text/encoding/Ascii.ci:21: AsciiWriter.encode: function(<AsciiWriter.encode>)
-cmplStd/lib/text/stream/TextStream.ci:51: TextWriter.Writeable: typename(<TextWriter.Writeable>)
-cmplStd/lib/text/stream/TextStream.ci:68: TextWriter.flush: function(<TextWriter.flush>)
-cmplStd/lib/text/stream/TextStream.ci:73: TextWriter.close: function(<TextWriter.close>)
+cmplStd/lib/text/stream/TextStream.ci:50: TextWriter.Writeable: typename(<TextWriter.Writeable>)
+cmplStd/lib/text/stream/TextStream.ci:67: TextWriter.flush: function(<TextWriter.flush>)
+cmplStd/lib/text/stream/TextStream.ci:72: TextWriter.close: function(<TextWriter.close>)
 cmplStd/lib/text/stream/TextStream.ci:78: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:84: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:90: TextWriter.write: function(<TextWriter.write>)
@@ -49683,16 +50013,18 @@ cmplStd/lib/text/stream/TextStream.ci:133: TextWriter.write: function(<TextWrite
 cmplStd/lib/text/stream/TextStream.ci:140: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:146: TextWriter.writeln: function(<TextWriter.writeln>)
 cmplStd/lib/text/stream/TextStream.ci:151: TextWriter.writeln: function(<TextWriter.writeln>)
-cmplStd/lib/text/stream/TextStream.ci:168: TextWriter.write: function(<TextWriter.write>)
+cmplStd/lib/text/stream/TextStream.ci:168: TextWriter.copy: function(<TextWriter.copy>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/encoding/Ascii.ci:19: AsciiWriter: typename(<AsciiWriter>)
 cmplStd/lib/text/encoding/Utf8.ci:4: Utf8Reader.decode: function(<Utf8Reader.decode>)
 cmplStd/lib/text/stream/TextStream.ci:19: TextReader.close: function(<TextReader.close>)
-cmplStd/lib/text/stream/TextStream.ci:26: TextReader.decode: function(<TextReader.decode>)
+cmplStd/lib/text/stream/TextStream.ci:25: TextReader.decode: function(<TextReader.decode>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
 cmplStd/lib/text/encoding/Utf8.ci:2: Utf8Reader: typename(<Utf8Reader>)
-cmplStd/lib/text/encoding/Utf8.ci:42: Utf8Writer.encode: function(<Utf8Writer.encode>)
-cmplStd/lib/text/stream/TextStream.ci:51: TextWriter.Writeable: typename(<TextWriter.Writeable>)
-cmplStd/lib/text/stream/TextStream.ci:68: TextWriter.flush: function(<TextWriter.flush>)
-cmplStd/lib/text/stream/TextStream.ci:73: TextWriter.close: function(<TextWriter.close>)
+cmplStd/lib/text/encoding/Utf8.ci:53: Utf8Writer.encode: function(<Utf8Writer.encode>)
+cmplStd/lib/text/stream/TextStream.ci:50: TextWriter.Writeable: typename(<TextWriter.Writeable>)
+cmplStd/lib/text/stream/TextStream.ci:67: TextWriter.flush: function(<TextWriter.flush>)
+cmplStd/lib/text/stream/TextStream.ci:72: TextWriter.close: function(<TextWriter.close>)
 cmplStd/lib/text/stream/TextStream.ci:78: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:84: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:90: TextWriter.write: function(<TextWriter.write>)
@@ -49705,8 +50037,9 @@ cmplStd/lib/text/stream/TextStream.ci:133: TextWriter.write: function(<TextWrite
 cmplStd/lib/text/stream/TextStream.ci:140: TextWriter.write: function(<TextWriter.write>)
 cmplStd/lib/text/stream/TextStream.ci:146: TextWriter.writeln: function(<TextWriter.writeln>)
 cmplStd/lib/text/stream/TextStream.ci:151: TextWriter.writeln: function(<TextWriter.writeln>)
-cmplStd/lib/text/stream/TextStream.ci:168: TextWriter.write: function(<TextWriter.write>)
-cmplStd/lib/text/encoding/Utf8.ci:40: Utf8Writer: typename(<Utf8Writer>)
+cmplStd/lib/text/stream/TextStream.ci:168: TextWriter.copy: function(<TextWriter.copy>)
+cmplStd/lib/text/stream/ByteStream.ci:7: Closeable.closeSafe: function(<Closeable.closeSafe>)
+cmplStd/lib/text/encoding/Utf8.ci:51: Utf8Writer: typename(<Utf8Writer>)
 cmplStd/lib/math/Easing.ci:6: Easing.linear: function(<Easing.linear>)
 cmplStd/lib/math/Easing.ci:11: Easing.quad: function(<Easing.quad>)
 cmplStd/lib/math/Easing.ci:16: Easing.cubic: function(<Easing.cubic>)
@@ -49969,13 +50302,13 @@ cmplStd/test/lang/reflect.ci:22: RecordSizeof: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:26: RecordSizeofExt: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:30: typeofRecord: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:31: nameOfRecord: char[*]("RecordSizeofExt")
-cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(589272)
+cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(590088)
 cmplStd/test/lang/reflect.ci:33: sizeOfRecord: int32(16)
 cmplStd/test/lang/reflect.ci:34: fileOfRecord: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:35: lineOfRecord: int32(26)
 cmplStd/test/lang/reflect.ci:37: typeofBase: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:38: nameOfBase: char[*]("RecordSizeof")
-cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(588952)
+cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(589768)
 cmplStd/test/lang/reflect.ci:40: sizeOfBase: int32(12)
 cmplStd/test/lang/reflect.ci:41: fileOfBase: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:42: lineOfBase: int32(22)
@@ -50496,18 +50829,18 @@ cmplStd/test/math/test.Complex.ci:21: mul: Complex({
 
 ---------- Memory usage:
 memory[all] @000000; size: 134217440(128.0 Mb)
-memory[used] @000000; size: 739967(722.6 Kb)
-memory[heap] @0b4a7f; size: 99923065(95.3 Mb)
+memory[used] @000000; size: 741407(724.0 Kb)
+memory[heap] @0b501f; size: 99921625(95.3 Mb)
 memory[stack] @3ffff40; size: 33554360(32.0 Mb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 687888(671.8 Kb)
-memory[code] @000000; size: 47429(46.3 Kb)
+memory[meta] @000000; size: 688704(672.6 Kb)
+memory[code] @000000; size: 48051(46.9 Kb)
 memory[data] @000000; size: 3756(3.7 Kb)
 
 ---------- Heap memory:
-memory[used] @0b4a90; size: 32(32.0 bytes)
-memory[used] @0b4ac0; size: 32(32.0 bytes)
-memory[free] @0b4af0; size: 99922928(95.3 Mb)
+memory[used] @0b5030; size: 32(32.0 bytes)
+memory[used] @0b5060; size: 32(32.0 bytes)
+memory[free] @0b5090; size: 99921488(95.3 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

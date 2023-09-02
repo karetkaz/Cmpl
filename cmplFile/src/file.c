@@ -66,7 +66,7 @@ static vmError FILE_close(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	if (file == rt->logFile) {
 		rt->api.raise(rt, raiseError, "can not close log file (not allowed)");
-		return nativeCallError;
+		return noError;
 	}
 	if (file == stdin || file == stdout || file == stderr) {
 		rt->api.raise(rt, raiseWarn, "closing standard file (in, out, err)");

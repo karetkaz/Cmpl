@@ -2,52 +2,21 @@
 #include "g3_math.h"
 
 enum {
-	draw_plot = 0x00000001,		//
-	draw_wire = 0x00000002,		//
-	draw_fill = 0x00000003,		//
-	draw_mode = 0x00000003,		// mask
+	draw_fill = 0x00000001,		// draw filled mesh
+	draw_wire = 0x00000002,		// draw wireframe
+	draw_plot = 0x00000004,		// draw points
+	draw_mode = 0x00000007,		// mask
 
-	zero_cbuf = 0x00000004,		// clear color buffer
-	zero_zbuf = 0x00000008,		// clear z buffer
+	keep_buff = 0x00000008,		// keep color and depth buffer
 
-	cull_back = 0x00000010,		// front face
-	cull_front= 0x00000020,		// back face
-	cull_all  = 0x00000030,		// back & front face
+	cull_back = 0x00000010,		// cull back faces
+	cull_front= 0x00000020,		// cull front faces
 	cull_mode = 0x00000030,		// enable culling
 
 	draw_tex  = 0x00000040,		// use texture
 	draw_lit  = 0x00000080,		// use lights
 	draw_box  = 0x00000100,		// draw bounding box
 };
-
-typedef struct texcol {
-	union {
-		struct {
-			uint16_t s;
-			uint16_t t;
-		};
-		struct {
-			uint16_t s;
-			uint16_t t;
-		} tex;
-		struct {
-			uint8_t b;
-			uint8_t g;
-			uint8_t r;
-			uint8_t a;
-		};
-		uint32_t val;
-		argb rgb;
-	};
-} *texcol;
-
-typedef struct GxMaterial {
-	struct vector emis;		// Emissive
-	struct vector ambi;		// Ambient
-	struct vector diff;		// Diffuse
-	struct vector spec;		// Specular
-	scalar spow;			// Shininess
-} *GxMaterial;
 
 typedef struct GxLight {
 	struct GxLight *next;
@@ -70,42 +39,63 @@ typedef struct GxLight {
 } *GxLight;
 
 typedef struct GxMesh {
-	GxImage texture; // texture map
-	struct GxMaterial mtl;	// back, fore?
+	// material
+	struct GxMeshMtl {
+		GxImage texture;		// texture map
+		struct vector emis;		// Emissive
+		struct vector ambi;		// Ambient
+		struct vector diff;		// Diffuse
+		struct vector spec;		// Specular
+		scalar spow;			// Shininess
+	} mtl;
 
-	size_t maxvtx, vtxcnt;	// vertices
-	size_t maxtri, tricnt;	// triangles
-	size_t maxseg, segcnt;	// polygons
-	//size_t maxgrp, grpcnt;	// groups
-	struct vector *pos;		// (x, y, z, 1) position
-	struct vector *nrm;		// (x, y, z, 0) normal
-	struct texcol *tex;		// (s, t, 0, 0) texture|color
+	// vertices
+	size_t maxvtx, vtxcnt;
+	struct GxMeshVtx {
+		struct vector p; // (x, y, z, 1) position
+		struct vector n; // (x, y, z, 0) normal
+		struct {
+			uint16_t s;
+			uint16_t t;
+		};
+	} *vtxptr;
 
-	struct tri {			// triangle list
-		// signed id;	// groupId
+	// triangles
+	size_t maxtri, tricnt;
+	struct GxMeshTri {
 		size_t i1;
 		size_t i2;
 		size_t i3;
 	} *triptr;
-	struct seg {			// line list
+
+	// polygons
+	size_t maxseg, segcnt;
+	struct GxMeshSeg {
 		size_t p1;
 		size_t p2;
 	} *segptr;
+
 	/* groups
-	struct grp {			// group list
+	size_t maxgrp, grpcnt;
+	struct GxMeshGrp {
 		signed t1;			// first triangle
 		signed t2;			// last triangle
 		signed parent;		// parent group of group
 		matrix transform;	// transformation matrix
 		GxImage map;		// texture map
-		GxMaterial mtl;	// back, fore?
-	} *grpptr; */
+		struct GxMeshMtl mtl;	// back, fore?
+	} *grpptr;
+	// */
 
 	uint32_t freeMesh:1;
 	uint32_t freeMap:1;
-	uint32_t hasTex:1;// := map != null
-	uint32_t hasNrm:1;// := nrm != null
+	uint32_t hasTex:1;
+	uint32_t hasNrm:1;
 } *GxMesh;
+
+typedef struct GxMeshVtx *GxMeshVtx;
+//typedef struct GxMeshTri *GxMeshTri;
+//typedef struct GxMeshSeg *GxMeshSeg;
 
 GxMesh createMesh(GxMesh recycle, size_t n);
 void destroyMesh(GxMesh msh);
@@ -189,13 +179,11 @@ static inline int addQuad(GxMesh msh, size_t p1, size_t p2, size_t p3, size_t p4
 	return addTri(msh, p1, p3, p4);
 }
 
-void drawLine3d(GxImage dst, vector p1, vector p2, uint32_t c);
-int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, int mode);
+int drawMesh(GxImage dst, GxMesh msh, camera cam, GxLight lights, int mode);
 
 // extract the planes (near, far, left, right, top, bottom) from the projection matrix
 void getFrustum(struct vector planes[6], matrix mat);
 
-// test if a point, sphere or triangle is inside or outside the frustum
-int testPoint(struct vector planes[6], vector p);
+// test if a sphere or triangle is inside or outside the frustum (to test a point use a sphere wit 0 radius)
 int testSphere(struct vector planes[6], vector p, scalar r);
 int testTriangle(struct vector planes[6], vector p1, vector p2, vector p3);

@@ -142,37 +142,46 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			break;
 
 		case SDL_FINGERDOWN:
-			*button = 1;
+			*button = event.tfinger.fingerId;
 			*x = event.tfinger.x * window->image->w;
 			*y = event.tfinger.y * window->image->h;
 			return FINGER_PRESS;
 
 		case SDL_FINGERUP:
-			*button = 1;
+			*button = event.tfinger.fingerId;
 			*x = event.tfinger.x * window->image->w;
 			*y = event.tfinger.y * window->image->h;
 			return FINGER_RELEASE;
 
 		case SDL_FINGERMOTION:
-			*button = 1;
+			*button = event.tfinger.fingerId;
 			*x = event.tfinger.x * window->image->w;
 			*y = event.tfinger.y * window->image->h;
 			return FINGER_MOTION;
 
 		case SDL_MOUSEBUTTONDOWN:
+			if (event.button.which == SDL_TOUCH_MOUSEID) {
+				return 0;
+			}
 			*button = event.button.button;
 			*x = event.button.x;
 			*y = event.button.y;
 			return MOUSE_PRESS;
 
 		case SDL_MOUSEBUTTONUP:
+			if (event.button.which == SDL_TOUCH_MOUSEID) {
+				return 0;
+			}
 			*button = event.button.button;
 			*x = event.button.x;
 			*y = event.button.y;
 			return MOUSE_RELEASE;
 
 		case SDL_MOUSEMOTION:
-			*button = event.button.button;
+			if (event.motion.which == SDL_TOUCH_MOUSEID) {
+				return 0;
+			}
+			*button = event.motion.state;
 			*x = event.motion.x;
 			*y = event.motion.y;
 			return MOUSE_MOTION;

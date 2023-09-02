@@ -9,7 +9,7 @@ if (ByteReader reader = FileReader(original)) {
 		wrap: 100;
 	};
 
-	encoder.write(reader);
+	encoder.copy(reader);
 	encoder.close();
 	writer.close();
 	reader.close();
@@ -21,7 +21,7 @@ if (ByteReader reader = FileReader(encoded)) {
 		reader: reader;
 	};
 
-	writer.write(decoder);
+	writer.copy(decoder);
 	decoder.close();
 	writer.close();
 	reader.close();

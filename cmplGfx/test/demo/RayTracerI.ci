@@ -117,7 +117,7 @@ mat4f mat = {};
 
 // returns the color of the ray-traced scene
 vec4f raytrace(vec4f xy) {
-	inline MAX_RAY_SHOTS = 1;
+	inline MAX_RAY_SHOTS = 10;
 
 	// calculate direction vector for this pixel
 	vec4f rayDir = normalize(mat.dph(vec4f(2 * xy.x - 1, -2 * xy.y + 1, -1, 0)));
@@ -212,7 +212,6 @@ int onEvent(int action, int button, int x, int y) {
 			things[i] = sphere;
 		}
 		camera = Camera.lookAt(vec4f(0, 0, 2), things[lookAt].position, vec4f(0, 1, 0));
-		// return -1;
 	}
 	else if (action == Window.KEY_PRESS) {
 		if (button == Window.KEY_CODE_ENTER) {
@@ -278,13 +277,13 @@ int onEvent(int action, int button, int x, int y) {
 		}
 
 		else {
-			return 0;
+			return Window.timeoutMax;
 		}
 	}
 	else if (action == Window.MOUSE_PRESS) {
 		ox = x;
 		oy = y;
-		return 0;
+		return Window.timeoutMax;
 	}
 	else if (action == Window.MOUSE_MOTION) {
 		int dx = x - ox;
@@ -313,7 +312,7 @@ int onEvent(int action, int button, int x, int y) {
 		}
 		else {
 			// no need to process event
-			return 0;
+			return Window.timeoutMax;
 		}
 		ox = x;
 		oy = y;
@@ -326,7 +325,7 @@ int onEvent(int action, int button, int x, int y) {
 	else if (action == Window.EVENT_TIMEOUT);
 	else {
 		// no need to process event
-		return 0;
+		return Window.timeoutMax;
 	}
 
 	// recalculate frame
@@ -334,7 +333,7 @@ int onEvent(int action, int button, int x, int y) {
 	image.eval(null, 0, 0, raytrace);
 	time = System.millis() - time;
 	debug("raytrace millis", time);
-	return 0;
+	return Window.timeoutMax;
 }
 
 Window.show(image, onEvent);

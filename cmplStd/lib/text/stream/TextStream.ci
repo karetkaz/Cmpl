@@ -17,9 +17,8 @@ struct TextReader: Closeable {
 
 	// override
 	void close(TextReader this) {
-		// by default close the stream.
-		// override if no need to close it.
-		this.reader.close();
+		// by default close the stream, override by need
+		Closeable.closeSafe(this.reader);
 	}
 
 	/// Read a single character from the stream, a negative number is returned in case of error
@@ -66,12 +65,13 @@ struct TextWriter: Closeable {
 
 	// override
 	void flush(TextWriter this) {
-		this.writer.flush(this.writer);
+		this.writer.flush();
 	}
 
 	// override
 	void close(TextWriter this) {
-		this.writer.close();
+		// by default close the stream, override by need
+		Closeable.closeSafe(this.writer);
 	}
 
 	/// Write an array of raw characters to the stream (no encoding)
@@ -165,7 +165,7 @@ struct TextWriter: Closeable {
 	 * TextReader input = Utf8Reader("in.txt");
 	 * output.write(input);
 	 */
-	static int write(TextWriter writer, TextReader reader) {
+	static int copy(TextWriter writer, TextReader reader) {
 		unicode buffer[1024] = {};
 		int result = 0;
 		for ( ; ; ) {

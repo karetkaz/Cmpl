@@ -228,7 +228,6 @@ false
 byte
 float
 double
-inc(ptr: pointer, val: int32): pointer # Returns the pointer incremented with the given value
 sizeof(type: typename): int32 # Returns the size of the given type
 verbose(message: char[*], inspect: variant): void # report message at `verbose` logging level
 verbose(message: char[*]): void # report message at `verbose` logging level
@@ -257,6 +256,7 @@ abort(message: char[*], inspect: NotEquals): void # abort execution displaying t
 assert(condition: bool, message: char[*], inspect: NotEquals): void # report message and abort the execution if the assertion condition fails (is false)
 assertEq(expected: int32, returned: int32, message: char[*]): void # abort execution if the returned value is not equal to the expected value
 assertEq(expected: int32, returned: int32): void # abort execution if the returned value is not equal to the expected value
+inc(ptr: pointer, val: int32): pointer # Returns the pointer incremented with the given value
 Bits # Utility functions manipulating binary representations
 Bits.signed(value: uint8): int8 # convert unsigned to signed integer
 Bits.signed(value: uint16): int16 # convert unsigned to signed integer
@@ -813,7 +813,7 @@ format(value: Datetime, output: char[], format: char[]): int32 # extension metho
 append(output: char[], pos: int32, value: int32): int32 # Append a number to the output at the given position
 Closeable # Represents the base class of closeable objects like files, streams, etc
 Closeable.close(this: Closeable): void # Release the resources hold by this object.
-close(closeable: Closeable): void # Extension method to safely call the close method
+Closeable.closeSafe(this: Closeable): void
 ByteReader # ByteReader can be used to read bytes from a stream (~= java:InputStream)
 ByteReader.read(this: ByteReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
 ByteReader.read(this: ByteReader): int32 # Read a single byte from the stream, a negative number is returned in case of error
@@ -821,7 +821,7 @@ ByteWriter # ByteWriter can be used to write bytes to a stream (~= java:OutputSt
 ByteWriter.write(this: ByteWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
 ByteWriter.flush(this: ByteWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
 ByteWriter.write(this: ByteWriter, oneByte: uint8): void # Write a single byte to the stream
-ByteWriter.write(this: ByteWriter, reader: ByteReader): int32 # Copy all bytes from the reader to the writer
+ByteWriter.copy(this: ByteWriter, reader: ByteReader): int32 # Copy all bytes from the reader to the writer
 CopyReader
 CopyReader.source
 CopyReader.clone
@@ -869,7 +869,7 @@ TextWriter.write(this: TextWriter, value: float64, flags: FormatFlags): TextWrit
 TextWriter.write(this: TextWriter, value: Writeable): TextWriter # Write the value of the writeable parameter
 TextWriter.writeln(this: TextWriter): TextWriter # Write a newline character
 TextWriter.writeln(this: TextWriter, value: Writeable): TextWriter # @public
-TextWriter.write(writer: TextWriter, reader: TextReader): int32 # Convert from one encoding to another one.\n@returns converted character count.\n\t * example: convert utf-8 encoded file to ascii\nTextWriter output = AsciiWriter("out.txt");\nTextReader input = Utf8Reader("in.txt");\noutput.write(input);
+TextWriter.copy(writer: TextWriter, reader: TextReader): int32 # Convert from one encoding to another one.\n@returns converted character count.\n\t * example: convert utf-8 encoded file to ascii\nTextWriter output = AsciiWriter("out.txt");\nTextReader input = Utf8Reader("in.txt");\noutput.write(input);
 Base64Encoder # Base64 encoder
 Base64Encoder.lookup
 Base64Encoder.writer # @public
@@ -893,9 +893,9 @@ AsciiReader # Ascii reader converts the given input by mapping every byte to a c
 AsciiReader.decode(this: AsciiReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
 AsciiWriter # Ascii Writer converts the given input by chopping each character to a byte
 AsciiWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
-Utf8Reader
+Utf8Reader # Utf-8 decoder
 Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
-Utf8Writer
+Utf8Writer # Utf-8 encoder
 Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
 Easing # Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
 Easing.linear(t: float64): float64 # @public
@@ -1022,6 +1022,7 @@ Mesh.open3ds(path: char[*]): Mesh # @builtin
 Mesh.saveObj(mesh: Mesh, path: char[*]): void # @builtin
 Mesh.normalize(mesh: Mesh, tolerance: float32, center: float32[3], resize: float32[3]): void # @builtin
 Mesh.addVertex(mesh: Mesh, x: float32, y: float32, z: float32): int32 # @builtin
+Mesh.addLine(mesh: Mesh, v1: int32, v2: int32): int32 # @builtin
 Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32): int32 # @builtin
 Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32, v4: int32): int32 # @builtin
 Mesh.setVertex(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool # @builtin
@@ -1032,10 +1033,10 @@ Mesh.diffuse(mesh: Mesh, r: float32, g: float32, b: float32): void # @builtin
 Mesh.specular(mesh: Mesh, r: float32, g: float32, b: float32): void # @builtin
 Mesh.shine(mesh: Mesh, value: float32): void # @builtin
 Mesh.texture(mesh: Mesh, texture: Image): void # @builtin
-Mesh.clearDepth # @builtin
-Mesh.clearColor # @builtin
+Mesh.keepBuffer # @builtin
 Mesh.cullBack # @builtin
 Mesh.cullFront # @builtin
+Mesh.cullMode # @builtin
 Mesh.drawPlot # @builtin
 Mesh.drawWire # @builtin
 Mesh.drawFill # @builtin
@@ -1220,6 +1221,29 @@ Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Cre
 blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
 colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel defined by the `roi` on the `image`
 colorMat(image: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
+Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
+Camera # Simple camera for 3d transformations and projection.
+Camera.position # @public
+Camera.forward # @public
+Camera.right # @public
+Camera.up # @public
+Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f # Create an orthographic(`fov` == 0) or perspective projection matrix
+Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera # Create a camera at the given `position` looking at the given `target`
+Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can be multiplied with the projection matrix
+Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # get the matrix of the camera multiplied with the projection matrix
+Camera.move(camera: Camera, direction: vec4f, amount: float32): void # Move the camera in the given `direction` with the given `amount`
+Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): void # Rotate the camera around `orbit` in the given `direction` with the given `amount`
+Window # @public
+Window.timeoutMax
+Window.timeoutFps(fps: float64): int64 # calculate the timeout based on the given fps
+Window.show(image: Image, onEvent(action: int32, button: int32, ex: int32, ey: int32): int32): void # Show the given `image` in a window and delegate the events to the `onEvent` callback
+Window.show(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(image0: Image, image1: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(image: Image): void # Show the image in a window
+Window.show(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
+Window.show(width: int32, height: int32, eval(in: vec4f): vec4f): void # Show the the procedural image generated by the `eval` function
+Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window
 Style # Style used to layout and draw text and views.
 Style.dark # Default dark theme color for background
 Style.light # Default light theme color for background
@@ -1495,27 +1519,6 @@ FxWidget(onProcess(widget: FxWidget): void, views: View[]): FxWidget # Create a 
 FxWidget(views: View[]): FxWidget # @public
 hasFocused(this: Layout, items: View[]): bool # @public
 hasPressed(this: Layout, items: View[]): bool # @public
-Window
+Window # @public
 Window.show(offscreen: Image, widget: Widget): void # Show the given `widget` in a window drawn to the `offscreen` image
 Window.show(widget: Widget): void # Show the given `widget` in a window
-Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
-Camera # Simple camera for 3d transformations and projection.
-Camera.position # @public
-Camera.forward # @public
-Camera.right # @public
-Camera.up # @public
-Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f # Create an orthographic(`fov` == 0) or perspective projection matrix
-Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera # Create a camera at the given `position` looking at the given `target`
-Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can be multiplied with the projection matrix
-Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # get the matrix of the camera multiplied with the projection matrix
-Camera.move(camera: Camera, direction: vec4f, amount: float32): void # Move the camera in the given `direction` with the given `amount`
-Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): void # Rotate the camera around `orbit` in the given `direction` with the given `amount`
-Window # @public
-Window.show(image: Image, onEvent(action: int32, button: int32, ex: int32, ey: int32): int32): void # Show the given `image` in a window and delegate the events to the `onEvent` callback
-Window.show(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
-Window.show(image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
-Window.show(image0: Image, image1: Image): void # Show the images in a window clicking on the window will select one of them
-Window.show(image: Image): void # Show the image in a window
-Window.show(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
-Window.show(width: int32, height: int32, eval(in: vec4f): vec4f): void # Show the the procedural image generated by the `eval` function
-Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window

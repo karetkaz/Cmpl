@@ -3,15 +3,14 @@ struct Closeable: object {
 
 	/// Release the resources hold by this object.
 	void close(Closeable this);
-}
 
-/// Extension method to safely call the close method
-void close(Closeable closeable) {
-	if (closeable.close == null) {
-		// close is disabled, stdout?
-		return;
+	static void closeSafe(Closeable this) {
+		if (this.close == null) {
+			// close is disabled, stdout?
+			return;
+		}
+		this.close(this);
 	}
-	closeable.close(closeable);
 }
 
 /// ByteReader can be used to read bytes from a stream (~= java:InputStream)
@@ -29,7 +28,7 @@ struct ByteReader: Closeable {
 		if (this.read(bytes) <= 0) {
 			return -1;
 		}
-		return bytes[0] & 255;
+		return bytes[0];
 	}
 
 	/* TODO: subclasses
@@ -74,8 +73,8 @@ struct ByteWriter: Closeable {
 	}// */
 
 	/// Copy all bytes from the reader to the writer
-	static int write(ByteWriter this, ByteReader reader) {
-		byte buffer[1024] = {};
+	static int copy(ByteWriter this, ByteReader reader) {
+		byte buffer[4096] = {};
 		int result = 0;
 		for ( ; ; ) {
 			int read = reader.read(buffer);
@@ -112,8 +111,8 @@ struct CopyReader: ByteReader {
 
 	// override
 	void close(CopyReader this) {
-		this.source.close();
-		this.clone.close();
+		Closeable.closeSafe(this.source);
+		Closeable.closeSafe(this.clone);
 	}
 }
 

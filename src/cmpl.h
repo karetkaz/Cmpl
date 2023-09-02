@@ -90,6 +90,7 @@ typedef enum {
 	raise_warn_var8 = 8,    // UNINITIALIZED_VARIABLE
 
 	raise_warn_typ2 = 2,    // WARN_STATIC_FIELD_ACCESS
+	raise_warn_gen2 = 2,    // WARN_VARIABLE_TYPE_INCOMPLETE
 	raise_warn_typ3 = 3,    // WARN_USING_BEST_OVERLOAD / PASS_ARG_BY_REFERENCE
 	raise_warn_typ4 = 4,    // WARN_USING_SIGNED_CAST / UNINITIALIZED_ARRAY
 	raise_warn_typ6 = 6,    // WARN_ADDING_IMPLICIT_CAST / WARN_USING_DEF_TYPE_INITIALIZER

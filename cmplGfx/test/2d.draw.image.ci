@@ -84,7 +84,7 @@ int onEvent(int action, int button, int x, int y) {
 		return animateSpeed;
 	}
 
-	return 0;
+	return Window.timeoutMax;
 }
 
 Window.show(offs, onEvent);

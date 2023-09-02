@@ -63,22 +63,18 @@ GxMesh createMesh(GxMesh recycle, size_t n) {
 	else {
 		free(recycle->triptr);
 		free(recycle->segptr);
-		free(recycle->pos);
-		free(recycle->nrm);
-		free(recycle->tex);
+		free(recycle->vtxptr);
 		if (recycle->freeMap) {
-			free(recycle->texture);
+			free(recycle->mtl.texture);
 		}
 		recycle->triptr = NULL;
 		recycle->segptr = NULL;
-		recycle->pos = NULL;
-		recycle->nrm = NULL;
-		recycle->tex = NULL;
-		recycle->texture = NULL;
+		recycle->vtxptr = NULL;
+		recycle->mtl.texture = NULL;
 	}
 
 	recycle->freeMap = 0;
-	recycle->texture = NULL;
+	recycle->mtl.texture = NULL;
 
 	if (n < 16) {
 		n = 16;
@@ -86,19 +82,17 @@ GxMesh createMesh(GxMesh recycle, size_t n) {
 
 	recycle->tricnt = 0;
 	recycle->maxtri = n;
-	recycle->triptr = malloc(sizeof(struct tri) * n);
+	recycle->triptr = malloc(sizeof(struct GxMeshTri) * n);
 
 	recycle->segcnt = 0;
 	recycle->maxseg = n;
-	recycle->segptr = malloc(sizeof(struct seg) * n);
+	recycle->segptr = malloc(sizeof(struct GxMeshSeg) * n);
 
 	recycle->vtxcnt = 0;
 	recycle->maxvtx = n;
-	recycle->pos = malloc(sizeof(struct vector) * n);
-	recycle->nrm = malloc(sizeof(struct vector) * n);
-	recycle->tex = malloc(sizeof(struct texcol) * n);
+	recycle->vtxptr = malloc(sizeof(struct GxMeshVtx) * n);
 
-	if (!recycle->triptr || !recycle->segptr || !recycle->pos || !recycle->nrm || !recycle->tex) {
+	if (!recycle->triptr || !recycle->segptr || !recycle->vtxptr) {
 		gx_debug("out of memory");
 		destroyMesh(recycle);
 		return NULL;
@@ -107,66 +101,64 @@ GxMesh createMesh(GxMesh recycle, size_t n) {
 	return recycle;
 }
 void destroyMesh(GxMesh msh) {
-	msh->maxtri = msh->tricnt = 0;
 	msh->maxvtx = msh->vtxcnt = 0;
-	free(msh->pos);
-	msh->pos = 0;
-	if (msh->nrm) {
-		free(msh->nrm);
-		msh->nrm = 0;
-	}
-	if (msh->tex) {
-		free(msh->tex);
-		msh->tex = 0;
-	}
-	if (msh->texture && msh->freeMap) {
-		msh->freeMap = 0;
-		free(msh->texture);
-		msh->texture = 0;
-	}
+	free(msh->vtxptr);
+	msh->vtxptr = NULL;
+
+	msh->maxtri = msh->tricnt = 0;
 	free(msh->triptr);
+	msh->triptr = NULL;
+
+	msh->maxseg = msh->segcnt = 0;
 	free(msh->segptr);
-	msh->triptr = 0;
+	msh->segptr = NULL;
+
+	if (msh->mtl.texture && msh->freeMap) {
+		msh->freeMap = 0;
+		free(msh->mtl.texture);
+		msh->mtl.texture = 0;
+	}
 
 	if (msh->freeMesh) {
 		free(msh);
 	}
 }
 
-static int getVtx(GxMesh msh, size_t idx) {
-	if (idx >= msh->maxvtx) {
+static GxMeshVtx getVtx(GxMesh msh, size_t idx) {
+	if (msh->maxvtx <= idx) {
 		msh->maxvtx = HIBIT(idx) * 2;
-		msh->pos = (vector)realloc(msh->pos, sizeof(struct vector) * msh->maxvtx);
-		msh->nrm = (vector)realloc(msh->nrm, sizeof(struct vector) * msh->maxvtx);
-		msh->tex = (texcol)realloc(msh->tex, sizeof(struct texcol) * msh->maxvtx);
-		if (!msh->pos || !msh->nrm || !msh->tex) {
-			return 0;
+		msh->vtxptr = realloc(msh->vtxptr, sizeof(struct GxMeshVtx) * msh->maxvtx);
+		if (msh->vtxptr == NULL) {
+			return NULL;
 		}
 	}
 	if (msh->vtxcnt <= idx) {
 		msh->vtxcnt = idx + 1;
 	}
-	return 1;
+	return msh->vtxptr + idx;
 }
 int setVtx(GxMesh msh, size_t idx, scalar *pos, scalar *nrm, scalar *tex) {
-	if (!getVtx(msh, idx)) {
+	GxMeshVtx vtx = getVtx(msh, idx);
+	if (vtx == NULL) {
 		return 0;
 	}
 	if (pos != NULL) {
-		msh->pos[idx].x = pos[0];
-		msh->pos[idx].y = pos[1];
-		msh->pos[idx].z = pos[2];
-		msh->pos[idx].w = 1;
+		vtx->p.x = pos[0];
+		vtx->p.y = pos[1];
+		vtx->p.z = pos[2];
+		vtx->p.w = 1;
 	}
 	if (nrm != NULL) {
-		msh->nrm[idx].x = nrm[0];
-		msh->nrm[idx].y = nrm[1];
-		msh->nrm[idx].z = nrm[2];
-		msh->nrm[idx].w = 0;
+		vtx->n.x = nrm[0];
+		vtx->n.y = nrm[1];
+		vtx->n.z = nrm[2];
+		vtx->n.w = 0;
+		msh->hasNrm = 1;
 	}
 	if (tex != NULL) {
-		msh->tex[idx].s = (uint16_t) (tex[0] * 65535);
-		msh->tex[idx].t = (uint16_t) (tex[1] * 65535);
+		vtx->s = (uint16_t) (tex[0] * 65535);
+		vtx->t = (uint16_t) (tex[1] * 65535);
+		msh->hasTex = 1;
 	}
 	return 1;
 }
@@ -180,7 +172,7 @@ int addSeg(GxMesh msh, size_t p1, size_t p2) {
 		if (msh->maxseg == 0) {
 			msh->maxseg = 16;
 		}
-		msh->segptr = (struct seg*)realloc(msh->segptr, sizeof(struct seg) * (msh->maxseg <<= 1));
+		msh->segptr = realloc(msh->segptr, sizeof(struct GxMeshSeg) * (msh->maxseg <<= 1));
 		if (!msh->segptr) {
 			return 0;
 		}
@@ -197,17 +189,8 @@ int addTri(GxMesh msh, size_t p1, size_t p2, size_t p3) {
 		return 0;
 	}
 
-//	#define H 1e-10
-//	if (vecdst(msh->pos + p1, msh->pos + p2) < H)
-//		return 1;
-//	if (vecdst(msh->pos + p1, msh->pos + p3) < H)
-//		return 1;
-//	if (vecdst(msh->pos + p2, msh->pos + p3) < H)
-//		return 1;
-//	#undef H
-
 	if (msh->tricnt >= msh->maxtri) {
-		msh->triptr = (struct tri*)realloc(msh->triptr, sizeof(struct tri) * (msh->maxtri <<= 1));
+		msh->triptr = realloc(msh->triptr, sizeof(struct GxMeshTri) * (msh->maxtri <<= 1));
 		if (msh->triptr == NULL) {
 			return 0;
 		}
@@ -220,14 +203,16 @@ int addTri(GxMesh msh, size_t p1, size_t p2, size_t p3) {
 }
 
 static int cmpVtx(GxMesh msh, size_t i, size_t j, scalar tolerance) {
-	scalar dif;
-	dif = msh->pos[i].x - msh->pos[j].x;
+	scalar dif = 0;
+	GxMeshVtx v1 = &msh->vtxptr[i];
+	GxMeshVtx v2 = &msh->vtxptr[j];
+	dif = v1->p.x - v2->p.x;
 	if (tolerance < (dif < 0 ? -dif : dif)) return 2;
-	dif = msh->pos[i].y - msh->pos[j].y;
+	dif = v1->p.y - v2->p.y;
 	if (tolerance < (dif < 0 ? -dif : dif)) return 2;
-	dif = msh->pos[i].z - msh->pos[j].z;
+	dif = v1->p.z - v2->p.z;
 	if (tolerance < (dif < 0 ? -dif : dif)) return 2;
-	return !(msh->tex && msh->tex[i].val == msh->tex[j].val);
+	return !(v1->s == v2->s && v1->t == v2->t);
 }
 
 struct Buffer {
@@ -235,7 +220,7 @@ struct Buffer {
 	size_t max;
 	size_t esz;
 };
-static void* createBuff(struct Buffer* buff, int idx) {
+static void* growBuff(struct Buffer* buff, int idx) {
 	size_t pos = idx * buff->esz;
 	if (pos >= buff->max) {
 		buff->max = pos << 1;
@@ -252,7 +237,7 @@ static void initBuff(struct Buffer* buff, int initSize, int elementSize) {
 	buff->ptr = 0;
 	buff->max = initSize;
 	buff->esz = elementSize;
-	createBuff(buff, initSize);
+	growBuff(buff, initSize);
 }
 
 static char* freadStr(char *buff, int maxLength, FILE *input) {
@@ -346,7 +331,7 @@ int readObj(GxMesh msh, const char *file) {
 			continue;
 		}
 		if ((ptr = readKVP(buff, "vt", NULL, ws))) {	// Texture vertices
-			float *vtx = createBuff(&texb, texi);
+			float *vtx = growBuff(&texb, texi);
 			if (vtx == NULL) {
 				gx_debug("out of memory");
 				break;
@@ -367,7 +352,7 @@ int readObj(GxMesh msh, const char *file) {
 			continue;
 		}
 		if ((ptr = readKVP(buff, "vn", NULL, ws))) {	// Vertex normals
-			float *vtx = createBuff(&nrmb, nrmi);
+			float *vtx = growBuff(&nrmb, nrmi);
 			if (vtx == NULL) {
 				gx_debug("out of memory");
 				break;
@@ -426,13 +411,13 @@ int readObj(GxMesh msh, const char *file) {
 				if (vt[i] > texi || vt[i] < 0) break;
 
 				if (texi) {
-					if (!setVtx(msh, v[i], NULL, NULL, createBuff(&texb, vt[i]))) {
+					if (!setVtx(msh, v[i], NULL, NULL, growBuff(&texb, vt[i]))) {
 						gx_debug("input error");
 						break;
 					}
 				}
 				if (nrmi) {
-					if (!setVtx(msh, v[i], NULL, createBuff(&nrmb, vn[i]), NULL)) {
+					if (!setVtx(msh, v[i], NULL, growBuff(&nrmb, vn[i]), NULL)) {
 						gx_debug("input error");
 						break;
 					}
@@ -786,36 +771,36 @@ int read3ds(GxMesh msh, const char *file) {
 		}
 	}
 
-	fclose (fin);
-	msh->hasNrm = 1;
 	normMesh(msh, 0, NULL, NULL);
+	msh->hasNrm = 1;
 	msh->hasTex = texi != 0;
 
+	fclose(fin);
 	return 1;
 }
 int saveObj(GxMesh msh, const char *file) {
 	FILE* out = fopen(file, "wt");
-
 	if (out == NULL) {
 		gx_debug("file open error: %s", file);
 		return 0;
 	}
 
 	for (size_t i = 0; i < msh->vtxcnt; ++i) {
-		vector pos = msh->pos + i;
-		vector nrm = msh->nrm + i;
-		scalar s = msh->tex[i].s / 65535.;
-		scalar t = msh->tex[i].t / 65535.;
 		if (msh->hasTex && msh->hasNrm) {
 			fprintf(out, "#vertex: %ld\n", (long) i);
 		}
 
-		fprintf(out, "v  %g %g %g\n", pos->x, pos->y, pos->z);
+		GxMeshVtx vtx = msh->vtxptr + i;
+		fprintf(out, "v  %g %g %g\n", vtx->p.x, vtx->p.y, vtx->p.z);
+
 		if (msh->hasTex) {
+			scalar s = vtx->s / 65535.;
+			scalar t = vtx->t / 65535.;
 			fprintf(out, "vt %f %f\n", s, -t);
 		}
+
 		if (msh->hasNrm) {
-			fprintf(out, "vn %f %f %f\n", nrm->x, nrm->y, nrm->z);
+			fprintf(out, "vn %f %f %f\n", vtx->n.x, vtx->n.y, vtx->n.z);
 		}
 	}
 
@@ -875,26 +860,26 @@ void bboxMesh(GxMesh msh, vector min, vector max) {
 		return;
 	}
 
-	*min = *max = msh->pos[0];
+	*min = *max = msh->vtxptr[0].p;
 
 	for (size_t i = 1; i < msh->vtxcnt; i += 1) {
-		vecmax(max, max, &msh->pos[i]);
-		vecmin(min, min, &msh->pos[i]);
+		vecmax(max, max, &msh->vtxptr[i].p);
+		vecmin(min, min, &msh->vtxptr[i].p);
 	}
 }
 
 void normMesh(GxMesh msh, scalar tolerance, vector recenter, vector resize) {
-
 	if (msh->vtxcnt == 0) {
 		return;
 	}
-	struct vector min = msh->pos[0];
-	struct vector max = msh->pos[0];
+	struct vector min = msh->vtxptr[0].p;
+	struct vector max = msh->vtxptr[0].p;
 
 	for (size_t i = 0; i < msh->vtxcnt; i += 1) {
-		vecldf(&msh->nrm[i], 0, 0, 0, 1);
-		vecmax(&max, &max, &msh->pos[i]);
-		vecmin(&min, &min, &msh->pos[i]);
+		GxMeshVtx vtx = msh->vtxptr + i;
+		vecldf(&vtx->n, 0, 0, 0, 1);
+		vecmax(&max, &max, &vtx->p);
+		vecmin(&min, &min, &vtx->p);
 	}
 
 	for (size_t i = 0; i < msh->tricnt; i += 1) {
@@ -902,10 +887,13 @@ void normMesh(GxMesh msh, scalar tolerance, vector recenter, vector resize) {
 		size_t i1 = msh->triptr[i].i1;
 		size_t i2 = msh->triptr[i].i2;
 		size_t i3 = msh->triptr[i].i3;
-		backface(&nrm, &msh->pos[i1], &msh->pos[i2], &msh->pos[i3]);
-		vecadd(&msh->nrm[i1], &msh->nrm[i1], &nrm);
-		vecadd(&msh->nrm[i2], &msh->nrm[i2], &nrm);
-		vecadd(&msh->nrm[i3], &msh->nrm[i3], &nrm);
+		GxMeshVtx v1 = msh->vtxptr + i1;
+		GxMeshVtx v2 = msh->vtxptr + i2;
+		GxMeshVtx v3 = msh->vtxptr + i3;
+		backface(&nrm, &v1->p, &v2->p, &v3->p);
+		vecadd(&v1->n, &v1->n, &nrm);
+		vecadd(&v2->n, &v2->n, &nrm);
+		vecadd(&v3->n, &v3->n, &nrm);
 	}
 
 	if (tolerance != 0) {
@@ -913,9 +901,9 @@ void normMesh(GxMesh msh, scalar tolerance, vector recenter, vector resize) {
 			for (size_t j = 0; j < i; j += 1) {
 				if (cmpVtx(msh, i, j, tolerance) < 2) {
 					struct vector nrm;
-					vecadd(&nrm, &msh->nrm[j], &msh->nrm[i]);
-					msh->nrm[i] = nrm;
-					msh->nrm[j] = nrm;
+					vecadd(&nrm, &msh->vtxptr[j].n, &msh->vtxptr[i].n);
+					msh->vtxptr[i].n = nrm;
+					msh->vtxptr[j].n = nrm;
 					break;
 				}
 			}
@@ -956,10 +944,11 @@ void normMesh(GxMesh msh, scalar tolerance, vector recenter, vector resize) {
 
 	// normalize normals, move
 	for (size_t i = 0; i < msh->vtxcnt; i += 1) {
-		vecsub(&msh->pos[i], &msh->pos[i], &move);
-		vecmul(&msh->pos[i], &msh->pos[i], &size);
-		msh->pos[i].w = 1;
-		vecnrm(&msh->nrm[i], &msh->nrm[i]);
-		msh->nrm[i].w = 0;
+		GxMeshVtx vtx = msh->vtxptr + i;
+		vecsub(&vtx->p, &vtx->p, &move);
+		vecmul(&vtx->p, &vtx->p, &size);
+		vtx->p.w = 1;
+		vecnrm(&vtx->n, &vtx->n);
+		vtx->n.w = 0;
 	}
 }

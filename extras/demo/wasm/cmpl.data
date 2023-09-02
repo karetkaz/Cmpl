@@ -138,12 +138,12 @@ inline "lib/image.blur.ci";
 inline "lib/color.lookup.ci";
 inline "lib/color.matrix.ci";
 
-inline "lib/micro.ui.ci";
-
 inline "lib/mesh.ci";
 inline "lib/camera.ci";
 
 inline "lib/window.ci";
+
+inline "lib/micro.ui.ci";
 /// Simple camera for 3d transformations and projection.
 struct Camera {
 	///@public
@@ -1090,7 +1090,6 @@ void drawLineIncl(Image image, int x0, int y0, int x1, int y1, uint32 color) {
 				image.set(x >> 16, y, color);
 				x += dx;
 			}
-			return;
 		}
 	}
 }
@@ -2611,6 +2610,7 @@ bool hasPressed(const Layout this, View items...) {
 	return false;
 }
 
+///@public
 static struct Window {
 	/// Show the given `widget` in a window drawn to the `offscreen` image
 	static void show(Image offscreen, Widget widget) {
@@ -2657,21 +2657,6 @@ static struct Window {
 			if (action == Window.WINDOW_LEAVE) {
 				// clear hovered state
 				return widget.clearState(Style.hovered);
-			}
-
-			if (action == Window.FINGER_PRESS) {
-				// finger press results also a mouse event
-				// skip the finger event
-				return false;
-			}
-			if (action == Window.FINGER_MOTION) {
-				// translate to mouse event
-				action = Window.MOUSE_MOTION;
-			}
-			if (action == Window.FINGER_RELEASE) {
-				// finger release results also a mouse event
-				// skip the finger event
-				return false;
 			}
 
 			if (action == Window.MOUSE_PRESS) {
@@ -2821,13 +2806,13 @@ static struct Window {
 		static int draw(WindowData window&, Widget widget) {
 			if (!widget.enabled) {
 				// widget is disabled, do not show it
-				return 0;
+				return Window.timeoutMax;
 			}
-			int64 timeout = 0;
+			int64 timeout = Window.timeoutMax;
 			if (window.timeout > 0) {
 				timeout = window.timeout - System.millis();
 				if (timeout < 0) {
-					timeout = 0;
+					timeout = Window.timeoutMax;
 				}
 			}
 
@@ -2850,10 +2835,27 @@ static struct Window {
 				return Window.quit();
 			}
 			Widget widget = win.widget;
+
+			if (action == Window.FINGER_PRESS) {
+				// translate to mouse event
+				action = Window.MOUSE_PRESS;
+				button = 1;
+			}
+			if (action == Window.FINGER_MOTION) {
+				// translate to mouse event
+				action = Window.MOUSE_MOTION;
+				button = 1;
+			}
+			if (action == Window.FINGER_RELEASE) {
+				// translate to mouse event
+				action = Window.MOUSE_RELEASE;
+				button = 1;
+			}
+
 			if (!win.dispatchEvent(widget, action, button, x, y)) {
 				// event not processed, wait for the next one
 				if (!widget.redraw) {
-					return 0;
+					return Window.timeoutMax;
 				}
 				return win.draw(widget);
 			}
@@ -4305,6 +4307,10 @@ void translateY(Rect rectangle&, int dy) {
 }
 ///@public
 static struct Window {
+	enum { timeoutMax: (1 << 31) - 1 }
+
+	/// calculate the timeout based on the given fps
+	inline timeoutFps(float64 fps) = int64(1000 / fps);
 
 /// Show the given `image` in a window and delegate the events to the `onEvent` callback
 void show(Image image, int onEvent(int action, int button, int ex, int ey)) {
@@ -4347,9 +4353,8 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 			} else {
 				data.offs.copy(0, 0, show, null);
 			}
-			return 0;
 		}
-		return 0;
+		return Window.timeoutMax;
 	}
 
 	Image offs = Image(width, height, image0.depth());
@@ -4410,7 +4415,7 @@ void show(int width, int height, int animationResolution, vec4f eval(vec4f in)) 
 				data.offs.eval(null, data.aspect, time, data.eval);
 				text.append(text.append(0, "Millis: "), System.millis() - now);
 				Window.setTitle(text);
-				return 0;
+				return Window.timeoutMax;
 			}
 			if (button == Window.KEY_CODE_TAB) {
 				data.lerp = !data.lerp;
@@ -4435,7 +4440,7 @@ void show(int width, int height, int animationResolution, vec4f eval(vec4f in)) 
 		data.fpsCount += 1;
 
 		// do not block for any input
-		return 1;
+		return 0;
 	}
 
 	if (animationResolution == 0) {
@@ -4481,7 +4486,7 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 		}
 	}
 
-	int next(int32 x, int mask) {
+	int nextInc(int32 x, int mask) {
 		int next = x & mask;
 
 		// add lowest bit of mask
@@ -4492,26 +4497,72 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 
 		return next | (x & ~mask);
 	}
+	int nextBit(int32 x, int mask) {
+		int next = x & mask;
+
+		if (next == 0) {
+			next = mask & -mask;
+		} else {
+			// add lowest bit of mask
+			next = (next + next) & mask;
+		}
+
+		return next | (x & ~mask);
+	}
 
 	static int onEvent(Data data&, int action, int button, int ex, int ey) {
 		static int ox = 0;
 		static int oy = 0;
 		static const float32 slow = 1 / 100f;
 		static const float32 fast = 5 / 100f;
-		if (action == Window.FINGER_MOTION) {
-			action = Window.MOUSE_MOTION;
-		}
-		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
-			// exit when releasing escape key
-			return Window.quit();
-		}
-		if (action == Window.KEY_PRESS) {
-			if (button == Window.KEY_CODE_ENTER) {
-				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
-				vec4f at = {x: 0, y: 0, z: 0, w: 1};
-				vec4f up = {x: 0, y: 1, z: 0, w: 1};
-				data.cam = Camera.lookAt(eye, at, up);
+
+		if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
+			Camera camera& = data.cam;
+			int dx = ex - ox;
+			int dy = ey - oy;
+
+			if (button == 1 || action == Window.FINGER_MOTION) {
+				// orbit around the origin: (x: 0, y: 0, z: 0)
+				vec4f orbit = vec4f(0, 0, 0);
+				camera.rotate(orbit, camera.up, dx * slow);
+				camera.rotate(orbit, camera.right, dy * slow);
 				data.updateCamera();
+			}
+			else if (button == 2) {
+				// rotate
+				vec4f orbit = camera.position;
+				camera.rotate(orbit, camera.up, -dx * slow);
+				camera.rotate(orbit, camera.right, -dy * slow);
+				data.updateCamera();
+			}
+			else if (button == 3) {
+				// move the camera back and forward
+				camera.move(camera.forward, dy * slow);
+				data.updateCamera();
+			}
+			else if (button == 4) {
+				// pan the camera
+				camera.move(camera.right, -dx * slow);
+				camera.move(camera.up, dy * slow);
+				data.updateCamera();
+			}
+			ox = ex;
+			oy = ey;
+		}
+		else if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
+			ox = ex;
+			oy = ey;
+			return Window.timeoutMax;
+		}
+		else if (action == Window.MOUSE_WHEEL) {
+			Camera camera& = data.cam;
+			camera.move(camera.forward, ey * fast);
+			data.updateCamera();
+		}
+
+		else if (action == Window.KEY_PRESS) {
+			if (button == Window.KEY_CODE_ENTER) {
+				return onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
 			}
 
 			else if (button == 'w') {
@@ -4586,53 +4637,25 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 				data.mode ^= Mesh.useTexture;
 			}
 			else if (button == '/') {
-				data.mode = next(data.mode, Mesh.cullBack | Mesh.cullFront);
+				data.mode = nextInc(data.mode, Mesh.cullMode);
 			}
 			else if (button == Window.KEY_CODE_TAB) {
-				data.mode = next(data.mode, Mesh.drawMode);
+				data.mode = nextBit(data.mode, Mesh.drawMode);
 			}
 		}
-		else if (action == Window.MOUSE_PRESS) {
-			ox = ex;
-			oy = ey;
-			return 0;
+		else if (action == Window.KEY_RELEASE) {
+			if (button == Window.KEY_CODE_ESC) {
+				// exit when releasing escape key
+				return Window.quit();
+			}
 		}
-		else if (action == Window.MOUSE_MOTION) {
-			Camera camera& = data.cam;
-			int dx = ex - ox;
-			int dy = ey - oy;
 
-			if (button == 1) {
-				// orbit around the origin: (x: 0, y: 0, z: 0)
-				vec4f orbit = vec4f(0, 0, 0);
-				camera.rotate(orbit, camera.up, dx * slow);
-				camera.rotate(orbit, camera.right, dy * slow);
-				data.updateCamera();
-			}
-			else if (button == 2) {
-				// rotate
-				vec4f orbit = camera.position;
-				camera.rotate(orbit, camera.up, -dx * slow);
-				camera.rotate(orbit, camera.right, -dy * slow);
-				data.updateCamera();
-			}
-			else if (button == 3) {
-				// move the camera back and forward
-				camera.move(camera.forward, dy * slow);
-				data.updateCamera();
-			}
-			else if (button == 4) {
-				// pan the camera
-				camera.move(camera.right, -dx * slow);
-				camera.move(camera.up, dy * slow);
-				data.updateCamera();
-			}
-			ox = ex;
-			oy = ey;
-		}
-		else if (action == Window.MOUSE_WHEEL) {
+		else if (action == Window.WINDOW_INIT) {
 			Camera camera& = data.cam;
-			camera.move(camera.forward, ey * fast);
+			vec4f eye = {x: 0, y: 0, z: 2, w: 1};
+			vec4f at = {x: 0, y: 0, z: 0, w: 1};
+			vec4f up = {x: 0, y: 1, z: 0, w: 1};
+			data.cam = Camera.lookAt(eye, at, up);
 			data.updateCamera();
 		}
 
@@ -4656,17 +4679,16 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 			data.fpsCount = 0;
 		}
 		data.fpsCount += 1;
-		return 0;
+		return Window.timeoutMax;
 	}
 
 	Data data = {
-		mode: Mesh.clearDepth | Mesh.clearColor | Mesh.useLights | Mesh.cullBack | Mesh.drawFill;
+		mode: Mesh.useLights | Mesh.cullBack | Mesh.drawFill;
 		offs: Image.create3d(w, h);
 		proj: Camera.projection(fovy, w / float32(h), 1, 100);
-		cam: Camera.lookAt(vec4f(0,0,2), vec4f(0), vec4f(0,1,0));
+		cam: {};
 		mesh: mesh;
 	};
-	data.updateCamera();
 	Window.show(data.offs, data, onEvent);
 	data.offs.destroy();
 }
@@ -4683,8 +4705,6 @@ inline byte = uint8;
 inline float = float32;
 inline double = float64;
 
-inline "lib/lang/Pointer.ci";       // pointer extension methods
-
 /// Returns the size of the given type
 inline sizeof(typename type) = typename.size(type);
 
@@ -4693,6 +4713,7 @@ static if (typename(raise) == function) {
 inline "lib/lang/Debug.ci";
 }
 
+inline "lib/lang/Pointer.ci";       // pointer extension methods
 
 // Math
 inline "lib/math/Bits.ci";
@@ -4704,8 +4725,8 @@ inline "lib/math/Matrix4f.ci";
 inline "lib/math/Vector2d.ci";
 //todo: inline "lib/math/Decimal.ci"?;
 //todo: inline "lib/math/Rational.ci"?;
-//todo: inline "lib/math/BigInteger.ci?"   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
-//todo: inline "lib/math/BigDecimal.ci?"   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
+//todo: inline "lib/math/BigInteger.ci"?;   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
+//todo: inline "lib/math/BigDecimal.ci"?;   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
 //todo: inline "lib/math/Perlin.ci"?;
 
 
@@ -9083,8 +9104,8 @@ struct AsciiReader: TextReader {
 	int decode(AsciiReader this, unicode chars[]) {
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
-			char value[1] = {};
-			if (reader.read(value) < 0) {
+			byte value[1] = {};
+			if (reader.read(value) <= 0) {
 				// end of stream
 				return i;
 			}
@@ -9100,78 +9121,94 @@ struct AsciiWriter: TextWriter {
 	void encode(TextWriter this, unicode chars[]) {
 		ByteWriter writer = this.writer;
 		for (int i = 0; i < chars.length; i += 1) {
-			char value[1] = {chars[i]};
+			byte value[1] = {chars[i]};
 			writer.write(value);
 		}
 	}
 }
-// todo: untested: Utf-8 reader
+/// Utf-8 decoder
 struct Utf8Reader: TextReader {
-	// convert utf-8 bytes to unicodes
+	// convert utf-8 bytes to unicode codepoints
 	int decode(Utf8Reader this, unicode chars[]) {
-		inline read(ByteReader this) = ByteReader.read(this); // fixme: function lookup with no args
-
+		byte buff[1] = {0};
+		byte ext[3] = {0};
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
-			int value = reader.read();
-			if (value < 0) {
+			if (reader.read(buff) <= 0) {
 				// end of stream
-				return i > 0 ? i : value;
+				return i;
 			}
 
-			if ((value & 0x80) == 0) {
-				// value = value;
+			if ((buff[0] & 0x80) == 0) {
+				chars[i] = buff[0];
 			}
-			else if ((value & 0xe0) == 0xc0) {
-				int val1 = reader.read() & 0x3f;
-				value = (value & 31) << 6 | val1;
+			else if ((buff[0] & 0xe0) == 0xc0) {
+				if (reader.read(ext[...1]) != 1) {
+					error("invalid codepoint");
+					return i;
+				}
+				assert((ext[0] & 0b11000000) == 0b10000000, "10xxxxxx");
+				chars[i] = (buff[0] & 0x1f) << 6 | (ext[0] & 0x3f);
 			}
-			else if ((value & 0xf0) == 0xe0) {
-				int val1 = reader.read() & 0x3f;
-				int val2 = reader.read() & 0x3f;
-				value = (value & 15) << 12 | val1 << 6| val2;
+			else if ((buff[0] & 0xf0) == 0xe0) {
+				if (reader.read(ext[...2]) != 2) {
+					error("invalid codepoint");
+					return i;
+				}
+				assert((ext[0] & 0b11000000) == 0b10000000, "10xxxxxx");
+				assert((ext[1] & 0b11000000) == 0b10000000, "10xxxxxx");
+				chars[i] = (buff[0] & 0x0f) << 12 | (ext[0] & 0x3f) << 6 | (ext[1] & 0x3f);
 			}
-			else if ((value & 0xf8) == 0xf0) {
-				int val1 = reader.read() & 0x3f;
-				int val2 = reader.read() & 0x3f;
-				int val3 = reader.read() & 0x3f;
-				value = (value & 7) << 18 | val1 << 12 | val2 << 6 | val3;
+			else if ((buff[0] & 0xf8) == 0xf0) {
+				if (reader.read(ext[...3]) != 3) {
+					error("invalid codepoint");
+					return i;
+				}
+				assert((ext[0] & 0b11000000) == 0b10000000, "10xxxxxx");
+				assert((ext[1] & 0b11000000) == 0b10000000, "10xxxxxx");
+				assert((ext[2] & 0b11000000) == 0b10000000, "10xxxxxx");
+				chars[i] = (buff[0] & 0x07) << 18 | (ext[0] & 0x3f) << 12 | (ext[1] & 0x3f) << 6 | (ext[2] & 0x3f);
 			}
-			chars[i] = value;
 		}
 		return chars.length;
 	}
 }
 
-// todo: untested: Utf-8 writer
+/// Utf-8 encoder
+// adapted from: https://github.com/devatrun/sutfcpplib/blob/main/include/sutfcpplib/utf_codepoint.h#L287
 struct Utf8Writer: TextWriter {
-	// convert characters to utf-8 bytes
+	// convert unicode codepoints to utf-8 bytes
 	void encode(Utf8Writer this, unicode chars[]) {
 		ByteWriter writer = this.writer;
-		byte bytes[4] = {};
 		for (int i = 0; i < chars.length; i += 1) {
-			unicode chr = chars[i];
+			unicode cp = chars[i];
 
-			if (chr < 0x80) {
-				bytes[0] = chr;
+			if (cp < 0x80) {
+				byte bytes[1] = {cp};
 				writer.write(bytes[...1]);
 			}
-			else if (chr < 0x800) {
-				bytes[0] = (chr & 0x7c0) >> 6 | 0xc0;
-				bytes[1] = chr & 0x3f | 0x80;
+			else if (cp < 0x800) {
+				byte bytes[2] = {
+					0b11000000 | (cp >> 6);
+					0b10000000 | (cp & 0b00111111);
+				};
 				writer.write(bytes[...2]);
 			}
-			else if (chr < 0xe000) {
-				bytes[0] = (chr & 0xf000) >> 12 | 0xe0;
-				bytes[1] = (chr & 0xfc) >> 6 | 0x80;
-				bytes[2] = chr & 0x3f | 0x80;
+			else if (cp < 0x10000) {
+				byte bytes[3] = {
+					0b11100000 | (cp >> 12);
+					0b10000000 | ((cp >> 6) & 0b00111111);
+					0b10000000 | (cp & 0b00111111);
+				};
 				writer.write(bytes[...3]);
 			}
-			else {
-				bytes[0] = (chr & 0x1c0000) >> 18 | 0xf0;
-				bytes[1] = (chr & 0x3f0) >> 12 | 0x80;
-				bytes[2] = (chr & 0xfc) >> 6 | 0x80;
-				bytes[3] = chr & 0x3f | 0x80;
+			else { /*if (cp < 0x110000)*/
+				byte bytes[4] = {
+					0b11110000 | (cp >> 18);
+					0b10000000 | ((cp >> 12) & 0b00111111);
+					0b10000000 | ((cp >> 6) & 0b00111111);
+					0b10000000 | (cp & 0b00111111);
+				};
 				writer.write(bytes[...4]);
 			}
 		}
@@ -9375,15 +9412,14 @@ struct Closeable: object {
 
 	/// Release the resources hold by this object.
 	void close(Closeable this);
-}
 
-/// Extension method to safely call the close method
-void close(Closeable closeable) {
-	if (closeable.close == null) {
-		// close is disabled, stdout?
-		return;
+	static void closeSafe(Closeable this) {
+		if (this.close == null) {
+			// close is disabled, stdout?
+			return;
+		}
+		this.close(this);
 	}
-	closeable.close(closeable);
 }
 
 /// ByteReader can be used to read bytes from a stream (~= java:InputStream)
@@ -9401,7 +9437,7 @@ struct ByteReader: Closeable {
 		if (this.read(bytes) <= 0) {
 			return -1;
 		}
-		return bytes[0] & 255;
+		return bytes[0];
 	}
 
 	/* TODO: subclasses
@@ -9446,8 +9482,8 @@ struct ByteWriter: Closeable {
 	}// */
 
 	/// Copy all bytes from the reader to the writer
-	static int write(ByteWriter this, ByteReader reader) {
-		byte buffer[1024] = {};
+	static int copy(ByteWriter this, ByteReader reader) {
+		byte buffer[4096] = {};
 		int result = 0;
 		for ( ; ; ) {
 			int read = reader.read(buffer);
@@ -9484,8 +9520,8 @@ struct CopyReader: ByteReader {
 
 	// override
 	void close(CopyReader this) {
-		this.source.close();
-		this.clone.close();
+		Closeable.closeSafe(this.source);
+		Closeable.closeSafe(this.clone);
 	}
 }
 
@@ -9578,9 +9614,8 @@ struct TextReader: Closeable {
 
 	// override
 	void close(TextReader this) {
-		// by default close the stream.
-		// override if no need to close it.
-		this.reader.close();
+		// by default close the stream, override by need
+		Closeable.closeSafe(this.reader);
 	}
 
 	/// Read a single character from the stream, a negative number is returned in case of error
@@ -9627,12 +9662,13 @@ struct TextWriter: Closeable {
 
 	// override
 	void flush(TextWriter this) {
-		this.writer.flush(this.writer);
+		this.writer.flush();
 	}
 
 	// override
 	void close(TextWriter this) {
-		this.writer.close();
+		// by default close the stream, override by need
+		Closeable.closeSafe(this.writer);
 	}
 
 	/// Write an array of raw characters to the stream (no encoding)
@@ -9726,7 +9762,7 @@ struct TextWriter: Closeable {
 	 * TextReader input = Utf8Reader("in.txt");
 	 * output.write(input);
 	 */
-	static int write(TextWriter writer, TextReader reader) {
+	static int copy(TextWriter writer, TextReader reader) {
 		unicode buffer[1024] = {};
 		int result = 0;
 		for ( ; ; ) {

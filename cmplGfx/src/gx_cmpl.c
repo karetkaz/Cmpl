@@ -746,7 +746,7 @@ static vmError surf_drawMesh(nfcContext ctx) {
 	GxMesh mesh = nextArg(ctx).ref;
 	int32_t mode = nextArg(ctx).i32;
 
-	reti32(ctx, drawMesh(surf, mesh, NULL, cam, lights, mode));
+	reti32(ctx, drawMesh(surf, mesh, cam, lights, mode));
 	return noError;
 }
 
@@ -824,18 +824,24 @@ static vmError mesh_addVertex(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_mesh_addFace3 = "int32 addFace(Mesh mesh, int32 v1, int32 v2, int32 v3)";
-static const char *const proto_mesh_addFace4 = "int32 addFace(Mesh mesh, int32 v1, int32 v2, int32 v3, int32 v4)";
+static const char *const proto_mesh_addLine = "int32 addLine(Mesh mesh, int32 v1, int32 v2)";
+static const char *const proto_mesh_addFace = "int32 addFace(Mesh mesh, int32 v1, int32 v2, int32 v3)";
+static const char *const proto_mesh_addQuad = "int32 addFace(Mesh mesh, int32 v1, int32 v2, int32 v3, int32 v4)";
 static vmError mesh_addFace(nfcContext ctx) {
 	GxMesh mesh = nextArg(ctx).ref;
 	int res = -1;
-	if (ctx->proto == proto_mesh_addFace3) {
+	if (ctx->proto == proto_mesh_addLine) {
+		int v1 = nextArg(ctx).i32;
+		int v2 = nextArg(ctx).i32;
+		res = addSeg(mesh, v1, v2);
+	}
+	if (ctx->proto == proto_mesh_addFace) {
 		int v1 = nextArg(ctx).i32;
 		int v2 = nextArg(ctx).i32;
 		int v3 = nextArg(ctx).i32;
 		res = addTri(mesh, v1, v2, v3);
 	}
-	if (ctx->proto == proto_mesh_addFace4) {
+	if (ctx->proto == proto_mesh_addQuad) {
 		int v1 = nextArg(ctx).i32;
 		int v2 = nextArg(ctx).i32;
 		int v3 = nextArg(ctx).i32;
@@ -940,10 +946,6 @@ static void mainLoopCallback(mainLoopArgs args) {
 		if (args->error != noError) {
 			return exitMainLoop(args);
 		}
-		if (timeout == 0) {
-			// todo: allow timeout of 0 milliseconds
-			timeout = INT32_MAX;
-		}
 	} else {
 		if (args->event.action == KEY_RELEASE && args->event.button == KEY_CODE_ESC) {
 			// if there is no callback, exit wit esc key
@@ -979,20 +981,17 @@ static vmError window_show(nfcContext ctx) {
 		if (error != noError) {
 			return error;
 		}
-		if (timeout == 0) {
-			timeout = INT32_MAX;
-		}
 	}
 	args.timeout = timeout + timeMillis();
 	flushWindow(args.window);
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop_arg((void*)mainLoopCallback, &args, 0, 1);
-#else
+	return noError;
+#endif
 	for ( ; args.event.action != WINDOW_CLOSE; ) {
 		mainLoopCallback(&args);
 	}
-#endif
 
 	if (args.callback != NULL) {
 		args.event.action = WINDOW_CLOSE;
@@ -1152,7 +1151,7 @@ static vmError mesh_material(nfcContext ctx) {
 	}
 
 	if (ctx->proto == proto_material_texture) {
-		mesh->texture = nextArg(ctx).ref;
+		mesh->mtl.texture = nextArg(ctx).ref;
 		return noError;
 	}
 
@@ -1586,8 +1585,9 @@ int cmplInit(rtContext rt) {
 		{mesh_save, proto_mesh_saveObj},
 		{mesh_normalize, proto_mesh_normalize},
 		{mesh_addVertex, proto_mesh_addVertex},
-		{mesh_addFace, proto_mesh_addFace3},
-		{mesh_addFace, proto_mesh_addFace4},
+		{mesh_addFace, proto_mesh_addLine},
+		{mesh_addFace, proto_mesh_addFace},
+		{mesh_addFace, proto_mesh_addQuad},
 		{mesh_setVertex, proto_mesh_setVertexPos},
 		{mesh_setVertex, proto_mesh_setVertexNrm},
 		{mesh_setVertex, proto_mesh_setVertexTex},
@@ -1638,12 +1638,12 @@ int cmplInit(rtContext rt) {
 		}
 
 		// clear color and depth buffers
-		rt->api.ccDefInt(cc, "clearDepth", zero_zbuf);
-		rt->api.ccDefInt(cc, "clearColor", zero_cbuf);
+		rt->api.ccDefInt(cc, "keepBuffer", keep_buff);
 
 		// backface culling
 		rt->api.ccDefInt(cc, "cullBack", cull_back);
 		rt->api.ccDefInt(cc, "cullFront", cull_front);
+		rt->api.ccDefInt(cc, "cullMode", cull_mode);
 
 		rt->api.ccDefInt(cc, "drawPlot", draw_plot);
 		rt->api.ccDefInt(cc, "drawWire", draw_wire);
