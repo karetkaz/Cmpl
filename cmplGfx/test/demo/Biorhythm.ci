@@ -148,10 +148,10 @@ int onEvent(int action, int button, int x, int y) {
 			scrollX += scrollSpeedX /= scrollSpeed;
 			scrollY += scrollSpeedY /= scrollSpeed;
 			// delay next scroll animation
-			return 20;
+			return Window.timeoutFps(60);
 		}
 	}
-	return 0;
+	return Window.timeoutMax;
 }
 /* References:
 http://lastunicorn.github.io/BioCalcJs/demo/index.html

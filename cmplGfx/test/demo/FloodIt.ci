@@ -55,10 +55,10 @@ int onEvent(int action, int button, int x, int y) {
 		int i = x * gridSize / displaySize;
 		int j = y * gridSize / displaySize;
 		if (i < 0 || i  >= gridSize) {
-			return;
+			return Window.timeoutMax;
 		}
 		if (j < 0 || j  >= gridSize) {
-			return;
+			return Window.timeoutMax;
 		}
 		int c = grid[i + j * gridSize];
 		if (flood(0, 0, grid[0], c)) {
@@ -76,7 +76,7 @@ int onEvent(int action, int button, int x, int y) {
 			image.fillRect(x, y, x + s, y + s, colors[c]);
 		}
 	}
-	return 0;
+	return Window.timeoutMax;
 }
 
 System.srand(System.time());

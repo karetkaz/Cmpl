@@ -668,9 +668,9 @@ static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *stack
 		FILE *out = usr->out;
 		const char **esc = usr->esc;
 		if ((ssize_t)callee < 0) {
-			printFmt(out, esc, "% I%d,%d,%d%s\n", ss, ticks, ctx->usedMem, -1, ss > 0 ? "," : "");
+			printFmt(out, esc, "%d,%d,%d%s", ticks, ctx->usedMem, -1, ss > 0 ? "," : "");
 		} else {
-			printFmt(out, esc, "% I%d,%d,%d%s\n", ss, ticks, ctx->usedMem, (vmOffs) callee, ",");
+			printFmt(out, esc, "%d,%d,%d,", ticks, ctx->usedMem, (vmOffs) callee);
 		}
 	}
 	(void)caller;

@@ -327,7 +327,7 @@ void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtVal
 #define WARN_VALUE_OVERFLOW "value overflow"
 #define WARN_EXPONENT_OVERFLOW "exponent overflow"
 
-#define WARN_FUNCTION_MARKED_STATIC "marking function to be static: `%T`"
+#define WARN_VARIABLE_TYPE_INCOMPLETE "emitted variable has incomplete type: %T"
 #define WARN_USING_BEST_OVERLOAD "using overload `%T` of %d declared symbols"
 #define WARN_USING_DEF_TYPE_INITIALIZER "using default type initializer: %T := %t"
 #define WARN_USING_DEF_FIELD_INITIALIZER "using default field initializer: %T := %t"

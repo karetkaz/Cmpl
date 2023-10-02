@@ -334,8 +334,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			// line comment
 			if (next == '/') {
 				chr = readChr(ctx);
-
-				if (skipChr(ctx, '/')) {
+				chr = readChr(ctx);
+				if (chr == '/') {
 					// '/// ...'
 					doc = ptr;
 				}
@@ -363,8 +363,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			// block comment
 			else if (next == '*') {
 				chr = readChr(ctx);
-
-				if (skipChr(ctx, chr)) {
+				chr = readChr(ctx);
+				if (chr == '*') {
 					// '/** ...'
 					if (peekChr(ctx) != '/') {
 						doc = ptr;

@@ -746,6 +746,22 @@ static inline void projv_mat(matrix dst, scalar fovy, scalar asp, scalar n, scal
 	}
 }
 
+static inline matrix viewport_mat(matrix dst, int width, int height, int depth) {
+	matidn(dst, 1);
+	// transform x: from [-1, 1] to [0, width]
+	dst->x.x = width / 2;
+	dst->x.w = width / 2;
+
+	// transform y: from [1, -1] to [0, height]
+	dst->y.y = height / -2;
+	dst->y.w = height / 2;
+
+	// transform z: from [-1, 1] to 24 bit depth buffer
+	dst->z.z = -depth / 2;
+	dst->z.w = depth / 2;
+
+	return dst;
+}
 
 static inline matrix matcpy(matrix dst, matrix src) {
 	*dst = *src;

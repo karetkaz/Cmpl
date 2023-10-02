@@ -96,7 +96,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	}
 
 	// sleep for a while
-	return 25;
+	return Window.timeoutFps(15);
 }
 
 Window.show(offs, onEvent);

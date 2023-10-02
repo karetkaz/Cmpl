@@ -4,8 +4,8 @@ struct AsciiReader: TextReader {
 	int decode(AsciiReader this, unicode chars[]) {
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
-			char value[1] = {};
-			if (reader.read(value) < 0) {
+			byte value[1] = {};
+			if (reader.read(value) <= 0) {
 				// end of stream
 				return i;
 			}
@@ -21,7 +21,7 @@ struct AsciiWriter: TextWriter {
 	void encode(TextWriter this, unicode chars[]) {
 		ByteWriter writer = this.writer;
 		for (int i = 0; i < chars.length; i += 1) {
-			char value[1] = {chars[i]};
+			byte value[1] = {chars[i]};
 			writer.write(value);
 		}
 	}

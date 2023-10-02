@@ -473,7 +473,7 @@ window.onkeydown = function(event) {
 
 function setContent(content, file, line, column) {
 	let contentSet = false;
-	if (content != null && content != editor.getValue()) {
+	if (content != null && content !== editor.getValue()) {
 		editor.setValue(content);
 		editor.clearHistory();
 		editor.markClean();
@@ -670,7 +670,7 @@ function shareInput() {
 	setStyle(document.body, 'output');
 	let content = editor.getValue();
 	terminal.append('decoded uri: ' + decodeURIComponent(window.location));
-	let hash = 'content=' + btoa(editor.getValue());
+	let hash = 'content=' + btoa(content);
 	if (params.path != null) {
 		hash = 'path=' + params.path + '&' + hash;
 	}

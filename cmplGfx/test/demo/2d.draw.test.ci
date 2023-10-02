@@ -200,7 +200,7 @@ int onEvent(int action, int button, int ex, int ey) {
 			offscreen.drawOval(x0, y0, x1, y1, 0);
 		}
 	}
-	return 0;
+	return Window.timeoutMax;
 }
 
 Window.show(offscreen, onEvent);

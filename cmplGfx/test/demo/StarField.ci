@@ -78,7 +78,7 @@ int onEvent(int action, int btn, int x, int y) {
 	}
 
 	drawStars(image);
-	return 20;
+	return Window.timeoutFps(30);
 }
 for (int i = 0; i < stars.length; i += 1) {
 	initStar(&stars[i]);

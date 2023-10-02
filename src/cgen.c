@@ -250,25 +250,28 @@ static ccKind genBranch(ccContext cc, astn ast) {
 
 /// Generate byte-code for variable declaration with initialization.
 static ccKind genDeclaration(ccContext cc, symn variable, ccKind get) {
-	rtContext rt = cc->rt;
-	astn varInit = variable->init;
-	ccKind varCast = refCast(variable);
-	size_t varOffset = stkOffset(rt, variable->size);
-
 	if (!isVariable(variable)) {
 		// function, struct, alias or enum declaration.
 		fatal(ERR_INTERNAL_ERROR);
 		return CAST_vid;
 	}
+
 	if (variable->size == 0) {
-		// function, struct, alias or enum declaration.
-		error(cc->rt, variable->file, variable->line, ERR_EMIT_VARIABLE, variable);
-		return CAST_vid;
+		if (variable->type == NULL || variable->type->size == 0) {
+			error(cc->rt, variable->file, variable->line, ERR_EMIT_VARIABLE, variable);
+			return CAST_vid;
+		}
+		warn(cc->rt, raise_warn_gen2, variable->file, variable->line, WARN_VARIABLE_TYPE_INCOMPLETE, variable);
+		variable->size = variable->type->size;
 	}
+	ccKind varCast = refCast(variable);
 	if (get != CAST_vid) {
 		logif(get != varCast, "%?s:%?u: %T(%K->%K)", variable->file, variable->line, variable, varCast, get);
 	}
 
+	rtContext rt = cc->rt;
+	astn varInit = variable->init;
+	size_t varOffset = stkOffset(rt, variable->size);
 	if (varInit == NULL) {
 		varInit = variable->type->init;
 		if (varInit != NULL) {

@@ -1282,17 +1282,6 @@ static symn promote(symn lht, symn rht) {
 				default:
 					break;
 
-				case CAST_val:
-					switch (castKind(lht)) {
-						default:
-							break;
-
-						case CAST_val:
-						case CAST_ref:
-							return lht;
-					}
-					break;
-
 				case CAST_ref:
 					switch (castKind(lht)) {
 						default:

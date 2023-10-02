@@ -166,7 +166,7 @@ int onEvent(int action, int button, int x, int y) {
 			}
 		}
 	}
-	return 0;
+	return Window.timeoutMax;
 }
 
 System.srand(System.time());

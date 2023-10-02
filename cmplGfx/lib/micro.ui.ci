@@ -1072,6 +1072,7 @@ bool hasPressed(const Layout this, View items...) {
 	return false;
 }
 
+///@public
 static struct Window {
 	/// Show the given `widget` in a window drawn to the `offscreen` image
 	static void show(Image offscreen, Widget widget) {
@@ -1118,21 +1119,6 @@ static struct Window {
 			if (action == Window.WINDOW_LEAVE) {
 				// clear hovered state
 				return widget.clearState(Style.hovered);
-			}
-
-			if (action == Window.FINGER_PRESS) {
-				// finger press results also a mouse event
-				// skip the finger event
-				return false;
-			}
-			if (action == Window.FINGER_MOTION) {
-				// translate to mouse event
-				action = Window.MOUSE_MOTION;
-			}
-			if (action == Window.FINGER_RELEASE) {
-				// finger release results also a mouse event
-				// skip the finger event
-				return false;
 			}
 
 			if (action == Window.MOUSE_PRESS) {
@@ -1282,13 +1268,13 @@ static struct Window {
 		static int draw(WindowData window&, Widget widget) {
 			if (!widget.enabled) {
 				// widget is disabled, do not show it
-				return 0;
+				return Window.timeoutMax;
 			}
-			int64 timeout = 0;
+			int64 timeout = Window.timeoutMax;
 			if (window.timeout > 0) {
 				timeout = window.timeout - System.millis();
 				if (timeout < 0) {
-					timeout = 0;
+					timeout = Window.timeoutMax;
 				}
 			}
 
@@ -1311,10 +1297,27 @@ static struct Window {
 				return Window.quit();
 			}
 			Widget widget = win.widget;
+
+			if (action == Window.FINGER_PRESS) {
+				// translate to mouse event
+				action = Window.MOUSE_PRESS;
+				button = 1;
+			}
+			if (action == Window.FINGER_MOTION) {
+				// translate to mouse event
+				action = Window.MOUSE_MOTION;
+				button = 1;
+			}
+			if (action == Window.FINGER_RELEASE) {
+				// translate to mouse event
+				action = Window.MOUSE_RELEASE;
+				button = 1;
+			}
+
 			if (!win.dispatchEvent(widget, action, button, x, y)) {
 				// event not processed, wait for the next one
 				if (!widget.redraw) {
-					return 0;
+					return Window.timeoutMax;
 				}
 				return win.draw(widget);
 			}

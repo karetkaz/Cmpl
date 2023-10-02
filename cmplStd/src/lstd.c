@@ -16,9 +16,9 @@
 enum PrintFlags {
 	minus = 1 << 0,  // '-'  Left-justify within the given field width; Right justification is the default (see width sub-specifier).
 	plus = 1 << 1,   // '+'  Forces to preceed the result with a plus or minus sign (+ or -) even for positive numbers. By default, only negative numbers are preceded with a - sign.
-	space = 1 << 3,  //	' '  If no sign is going to be written, a blank space is inserted before the value.
-	hash = 1 << 2,   // '#'  Used with o, x or X specifiers the value is preceeded with 0, 0x or 0X respectively for values different than zero. Used with a, A, e, E, f, F, g or G it forces the written output to contain a decimal point even if no more digits follow. By default, if no digits follow, no decimal point is written.
-	zero = 1 << 3,   // `0`  Left-pads the number with zeroes (0) instead of spaces when padding is specified (see width sub-specifier).
+	space = 1 << 2,  // ' '  If no sign is going to be written, a blank space is inserted before the value.
+	hash = 1 << 3,   // '#'  Used with o, x or X specifiers the value is preceeded with 0, 0x or 0X respectively for values different than zero. Used with a, A, e, E, f, F, g or G it forces the written output to contain a decimal point even if no more digits follow. By default, if no digits follow, no decimal point is written.
+	zero = 1 << 4,   // `0`  Left-pads the number with zeroes (0) instead of spaces when padding is specified (see width sub-specifier).
 	// https://cplusplus.com/reference/cstdio/printf/
 	// warning: flag ' ' is ignored when flag '+' is present [-Wformat]
 	// warning: flag '0' is ignored when flag '-' is present [-Wformat]

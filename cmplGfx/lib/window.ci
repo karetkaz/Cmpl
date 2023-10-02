@@ -1,5 +1,9 @@
 ///@public
 static struct Window {
+	enum { timeoutMax: (1 << 31) - 1 }
+
+	/// calculate the timeout based on the given fps
+	inline timeoutFps(float64 fps) = int64(1000 / fps);
 
 /// Show the given `image` in a window and delegate the events to the `onEvent` callback
 void show(Image image, int onEvent(int action, int button, int ex, int ey)) {
@@ -42,9 +46,8 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 			} else {
 				data.offs.copy(0, 0, show, null);
 			}
-			return 0;
 		}
-		return 0;
+		return Window.timeoutMax;
 	}
 
 	Image offs = Image(width, height, image0.depth());
@@ -105,7 +108,7 @@ void show(int width, int height, int animationResolution, vec4f eval(vec4f in)) 
 				data.offs.eval(null, data.aspect, time, data.eval);
 				text.append(text.append(0, "Millis: "), System.millis() - now);
 				Window.setTitle(text);
-				return 0;
+				return Window.timeoutMax;
 			}
 			if (button == Window.KEY_CODE_TAB) {
 				data.lerp = !data.lerp;
@@ -130,7 +133,7 @@ void show(int width, int height, int animationResolution, vec4f eval(vec4f in)) 
 		data.fpsCount += 1;
 
 		// do not block for any input
-		return 1;
+		return 0;
 	}
 
 	if (animationResolution == 0) {
@@ -176,7 +179,7 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 		}
 	}
 
-	int next(int32 x, int mask) {
+	int nextInc(int32 x, int mask) {
 		int next = x & mask;
 
 		// add lowest bit of mask
@@ -187,26 +190,72 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 
 		return next | (x & ~mask);
 	}
+	int nextBit(int32 x, int mask) {
+		int next = x & mask;
+
+		if (next == 0) {
+			next = mask & -mask;
+		} else {
+			// add lowest bit of mask
+			next = (next + next) & mask;
+		}
+
+		return next | (x & ~mask);
+	}
 
 	static int onEvent(Data data&, int action, int button, int ex, int ey) {
 		static int ox = 0;
 		static int oy = 0;
 		static const float32 slow = 1 / 100f;
 		static const float32 fast = 5 / 100f;
-		if (action == Window.FINGER_MOTION) {
-			action = Window.MOUSE_MOTION;
-		}
-		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
-			// exit when releasing escape key
-			return Window.quit();
-		}
-		if (action == Window.KEY_PRESS) {
-			if (button == Window.KEY_CODE_ENTER) {
-				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
-				vec4f at = {x: 0, y: 0, z: 0, w: 1};
-				vec4f up = {x: 0, y: 1, z: 0, w: 1};
-				data.cam = Camera.lookAt(eye, at, up);
+
+		if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
+			Camera camera& = data.cam;
+			int dx = ex - ox;
+			int dy = ey - oy;
+
+			if (button == 1 || action == Window.FINGER_MOTION) {
+				// orbit around the origin: (x: 0, y: 0, z: 0)
+				vec4f orbit = vec4f(0, 0, 0);
+				camera.rotate(orbit, camera.up, dx * slow);
+				camera.rotate(orbit, camera.right, dy * slow);
 				data.updateCamera();
+			}
+			else if (button == 2) {
+				// rotate
+				vec4f orbit = camera.position;
+				camera.rotate(orbit, camera.up, -dx * slow);
+				camera.rotate(orbit, camera.right, -dy * slow);
+				data.updateCamera();
+			}
+			else if (button == 3) {
+				// move the camera back and forward
+				camera.move(camera.forward, dy * slow);
+				data.updateCamera();
+			}
+			else if (button == 4) {
+				// pan the camera
+				camera.move(camera.right, -dx * slow);
+				camera.move(camera.up, dy * slow);
+				data.updateCamera();
+			}
+			ox = ex;
+			oy = ey;
+		}
+		else if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
+			ox = ex;
+			oy = ey;
+			return Window.timeoutMax;
+		}
+		else if (action == Window.MOUSE_WHEEL) {
+			Camera camera& = data.cam;
+			camera.move(camera.forward, ey * fast);
+			data.updateCamera();
+		}
+
+		else if (action == Window.KEY_PRESS) {
+			if (button == Window.KEY_CODE_ENTER) {
+				return onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
 			}
 
 			else if (button == 'w') {
@@ -281,53 +330,25 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 				data.mode ^= Mesh.useTexture;
 			}
 			else if (button == '/') {
-				data.mode = next(data.mode, Mesh.cullBack | Mesh.cullFront);
+				data.mode = nextInc(data.mode, Mesh.cullMode);
 			}
 			else if (button == Window.KEY_CODE_TAB) {
-				data.mode = next(data.mode, Mesh.drawMode);
+				data.mode = nextBit(data.mode, Mesh.drawMode);
 			}
 		}
-		else if (action == Window.MOUSE_PRESS) {
-			ox = ex;
-			oy = ey;
-			return 0;
+		else if (action == Window.KEY_RELEASE) {
+			if (button == Window.KEY_CODE_ESC) {
+				// exit when releasing escape key
+				return Window.quit();
+			}
 		}
-		else if (action == Window.MOUSE_MOTION) {
-			Camera camera& = data.cam;
-			int dx = ex - ox;
-			int dy = ey - oy;
 
-			if (button == 1) {
-				// orbit around the origin: (x: 0, y: 0, z: 0)
-				vec4f orbit = vec4f(0, 0, 0);
-				camera.rotate(orbit, camera.up, dx * slow);
-				camera.rotate(orbit, camera.right, dy * slow);
-				data.updateCamera();
-			}
-			else if (button == 2) {
-				// rotate
-				vec4f orbit = camera.position;
-				camera.rotate(orbit, camera.up, -dx * slow);
-				camera.rotate(orbit, camera.right, -dy * slow);
-				data.updateCamera();
-			}
-			else if (button == 3) {
-				// move the camera back and forward
-				camera.move(camera.forward, dy * slow);
-				data.updateCamera();
-			}
-			else if (button == 4) {
-				// pan the camera
-				camera.move(camera.right, -dx * slow);
-				camera.move(camera.up, dy * slow);
-				data.updateCamera();
-			}
-			ox = ex;
-			oy = ey;
-		}
-		else if (action == Window.MOUSE_WHEEL) {
+		else if (action == Window.WINDOW_INIT) {
 			Camera camera& = data.cam;
-			camera.move(camera.forward, ey * fast);
+			vec4f eye = {x: 0, y: 0, z: 2, w: 1};
+			vec4f at = {x: 0, y: 0, z: 0, w: 1};
+			vec4f up = {x: 0, y: 1, z: 0, w: 1};
+			data.cam = Camera.lookAt(eye, at, up);
 			data.updateCamera();
 		}
 
@@ -351,17 +372,16 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 			data.fpsCount = 0;
 		}
 		data.fpsCount += 1;
-		return 0;
+		return Window.timeoutMax;
 	}
 
 	Data data = {
-		mode: Mesh.clearDepth | Mesh.clearColor | Mesh.useLights | Mesh.cullBack | Mesh.drawFill;
+		mode: Mesh.useLights | Mesh.cullBack | Mesh.drawFill;
 		offs: Image.create3d(w, h);
 		proj: Camera.projection(fovy, w / float32(h), 1, 100);
-		cam: Camera.lookAt(vec4f(0,0,2), vec4f(0), vec4f(0,1,0));
+		cam: {};
 		mesh: mesh;
 	};
-	data.updateCamera();
 	Window.show(data.offs, data, onEvent);
 	data.offs.destroy();
 }
