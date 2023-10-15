@@ -56,8 +56,8 @@ Syntax is similar to c / js influenced by:
 
 ### `public`, `protected`, `private` access level modifiers are not part of the language.
 * [x] everything is accessible inside one file with no restriction.
-* [ ] accessing a non document commented variable, function field or method will raise a high level warning that can be treated as an error.
-* [ ] deprecation and any other annotations should be specified in the documentation comment.
+* [x] accessing a non-document commented variable, function field or method will raise a high-level warning that can be treated as an error.
+* [x] deprecation and any other annotations should be specified in the documentation comment.
 
 # Lexical structure
 
@@ -89,7 +89,6 @@ Keywords are reserved words, which can not be used as identifiers.
 * for
 * if
 * inline
-* parallel
 * return
 * static
 * struct
@@ -467,13 +466,10 @@ statement
 ## Block statement
 Block statement groups zero ore more statement as a single statement.
 
-### Parallel block statement
-Parallel block statements can be used to execute a block of statements parallel.
-
 ## If statement
 The if statement is a selection statement, that can be used to execute a section of code, only if a condition is met.
 
-Main purpose of the if statement is to handle exceptional cases in the control flow.
+The main purpose of the if statement is to handle exceptional cases in the control flow.
 
 ### Static if statement
 The static if construct can be used as a compile time check.
@@ -494,7 +490,7 @@ inline double = float64;
   - statements inside the scope will be type-checked.
   - compilation error will be reported as warnings.
   - inlined files will be not processed.
-  - byte code generation will be skipped.
+  - code generation will be skipped.
 
 ## For statement
 The for statement is a repetition statement, that can be used to execute a section of code in a loop, while a condition is met.
@@ -583,33 +579,6 @@ print(2);
 print(3);
 print(4);
 ```
-
-### Parallel for statement
-[TODO: implementation]
-
-The parallel version of the for statement executes the statements of the loop on a worker,
-than waits each of them to finish (in case we have fever workers than jobs or a single worker,
-the job will be executed on the main worker).
-
-**Example**: parallel for statement
-```
-parallel for (int i = 0; i < 5; i += 1) {
-	print(i);
-}
-print(99);
-```
-
-**Example**: for statement with a parallel block statement
-```
-for (int i = 0; i < 5; i += 1) parallel {
-	print(i);
-}
-print(99);
-```
-
-These two examples may result different output. In the first example the last statement:
-`print(99);` will be executed last, while in the second example it is possible that
-this is not the last executed statement.
 
 ## Break statement
 The break statement terminates the execution of the innermost enclosing loop.
@@ -1751,45 +1720,6 @@ Performs a conditional jump, if the top element on the stack is zero.
 c = pop();
 if (c == 0) {
 	IP += imm.i24;
-}
-```
-
-### Instruction `task`
-
-Try to delegate the execution to a different execution unit.
-
-* Instruction code: `0x07`
-* Instruction length: 4 bytes
-* Requires 0 operands: […
-* Returns 0 values: […
-
-This instruction has 2 arguments:
-* cl: code length 16 bit
-* dl: data length 8 bit
-
-The code to run in parallel starts after the current instruction, and ends after cl bytes.
-The parallel running code may need to copy some local variables, which is denoted by dl.
-In case the execution can not be delegated, it will be executed by the current execution unit.
-
-```
-if (ppu = acqireExecur()) {
-	copyStack(ppu, imm.dl);
-	ip += imm.cl;
-}
-```
-
-### Instruction `sync`
-
-Waits until all the delegated executions complete.
-
-* Instruction code: `0x08`
-* Instruction length: 2 bytes
-* Requires 0 operands: […
-* Returns 0 values: […
-
-```
-while (hasRunningWorkers) {
-	park;
 }
 ```
 

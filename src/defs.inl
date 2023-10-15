@@ -88,7 +88,6 @@ TOKEN_DEF(ELSE_kwd, 0x00, 0, "else")
 
 TOKEN_DEF(CONST_kwd, 0x00, 0, "const")
 TOKEN_DEF(STATIC_kwd, 0x00, 0, "static")
-TOKEN_DEF(PARAL_kwd, 0x00, 0, "parallel")
 
 TOKEN_DEF(INLINE_kwd, 0x00, 0, "inline")
 TOKEN_DEF(RECORD_kwd, 0x00, 0, "struct")
@@ -129,8 +128,8 @@ OPCODE_DEF(opc_jmpi, 0x03, 1, 1, 0, "ret")          // IP = popref();
 OPCODE_DEF(opc_jmp,  0x04, 4, 0, 0, "jmp")          // IP += arg.rel;
 OPCODE_DEF(opc_jnz,  0x05, 4, 1, 0, "jnz")          // if (popi32() != 0) {IP += arg.rel;}
 OPCODE_DEF(opc_jz,   0x06, 4, 1, 0, "jz")           // if (popi32() == 0) {IP += arg.rel;}
-OPCODE_DEF(opc_task, 0x07, 4, 0, 0, "task")         // arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
-OPCODE_DEF(opc_sync, 0x08, 2, 0, 0, "sync")         // wait, join, sync
+OPCODE_DEF(opc_x07,  0x07, 0, 0, 0, NULL)           //
+OPCODE_DEF(opc_x08,  0x08, 0, 0, 0, NULL)           //
 OPCODE_DEF(opc_not,  0x09, 1, 1, 1, "not.b32")      // sp(0).u32 = !sp(0).u32;
 OPCODE_DEF(opc_inc,  0x0a, 4, 1, 1, "inc.i32")      // push32(popi32(n) + arg.rel);
 OPCODE_DEF(opc_mad,  0x0b, 4, 2, 1, "mad.u32")      // sp(1).u32 += sp(0).u32 * arg.rel; pop1;

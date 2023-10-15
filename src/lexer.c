@@ -31,7 +31,6 @@ static const struct {
 	{"for",      STMT_for},
 	{"if",       STMT_if},
 	{"inline",   INLINE_kwd},
-	{"parallel", PARAL_kwd},
 	{"return",   STMT_ret},
 	{"static",   STATIC_kwd},
 	{"struct",   RECORD_kwd}

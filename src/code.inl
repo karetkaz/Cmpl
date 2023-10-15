@@ -80,21 +80,6 @@ case opc_jz:   NEXT(4, -1, 1) {
 #endif
 	break;
 }
-case opc_task: NEXT(4, -0, 0) {
-#ifdef EXEC
-	if (vmFork(pu, cc, -1, ip->cl * vm_stk_align))
-		pu->ip += ip->cl - 4;
-#endif
-	break;
-}
-case opc_sync: NEXT(2, -0, 0) {
-#ifdef EXEC
-	if (!vmJoin(pu, -1, ip->idx)) {
-		NEXT(-2, -0, 0);
-	}
-#endif
-	break;
-}
 case opc_not:  NEXT(1, -0, 1) {
 #if defined(EXEC)
 	SP(0, u32) = !SP(0, u32);

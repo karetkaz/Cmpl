@@ -97,45 +97,6 @@ if (c == 0) {
 }
 ```
 
-### Instruction `task`
-
-Try to delegate the execution to a different execution unit.
-
-* Instruction code: `0x07`
-* Instruction length: 4 bytes
-* Requires 0 operands: […
-* Returns 0 values: […
-
-This instruction has 2 arguments:
-* cl: code length 16 bit
-* dl: data length 8 bit
-
-The code to run in parallel starts after the current instruction, and ends after cl bytes.
-The parallel running code may need to copy some local variables, which is denoted by dl.
-In case the execution can not be delegated, it will be executed by the current execution unit.
-
-```
-if (ppu = acqireExecur()) {
-	copyStack(ppu, imm.dl);
-	ip += imm.cl;
-}
-```
-
-### Instruction `sync`
-
-Waits until all the delegated executions complete.
-
-* Instruction code: `0x08`
-* Instruction length: 2 bytes
-* Requires 0 operands: […
-* Returns 0 values: […
-
-```
-while (hasRunningWorkers) {
-	park;
-}
-```
-
 ### Instruction `not.b32`
 
 Performs logical not.

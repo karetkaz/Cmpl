@@ -28,7 +28,6 @@ Keywords are reserved words, which can not be used as identifiers.
 * for
 * if
 * inline
-* parallel
 * return
 * static
 * struct

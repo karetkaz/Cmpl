@@ -89,32 +89,6 @@ Performs [todo]
 [todo]
 ```
 
-### Instruction `task`
-
-Performs [todo]
-
-* Instruction code: `0x07`
-* Instruction length: 4 bytes
-* Requires 0 operands: […, [todo]
-* Returns 0 values: […, [todo]
-
-```
-[todo]
-```
-
-### Instruction `sync`
-
-Performs [todo]
-
-* Instruction code: `0x08`
-* Instruction length: 2 bytes
-* Requires 0 operands: […, [todo]
-* Returns 0 values: […, [todo]
-
-```
-[todo]
-```
-
 ### Instruction `not.b32`
 
 Performs [todo]

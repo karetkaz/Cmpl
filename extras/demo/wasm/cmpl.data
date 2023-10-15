@@ -2859,11 +2859,11 @@ static struct Window {
 				}
 				return win.draw(widget);
 			}
-			if (button == 0 && (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION)) {
+			if (button == 0 && action == Window.MOUSE_MOTION) {
 				// hover views
 				return win.draw(widget);
 			}
-			if (button != 0 && (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS)) {
+			if (button != 0 && action == Window.MOUSE_PRESS) {
 				// focus views
 				return win.draw(widget);
 			}
@@ -4560,6 +4560,10 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 			data.updateCamera();
 		}
 
+		else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+			// exit when releasing escape key
+			return Window.quit();
+		}
 		else if (action == Window.KEY_PRESS) {
 			if (button == Window.KEY_CODE_ENTER) {
 				return onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
@@ -4641,12 +4645,6 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 			}
 			else if (button == Window.KEY_CODE_TAB) {
 				data.mode = nextBit(data.mode, Mesh.drawMode);
-			}
-		}
-		else if (action == Window.KEY_RELEASE) {
-			if (button == Window.KEY_CODE_ESC) {
-				// exit when releasing escape key
-				return Window.quit();
 			}
 		}
 

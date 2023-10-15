@@ -230,7 +230,7 @@
 
     CodeMirror.defineMIME("text/x-cmpl", {
         name: "cmpl",
-        keywords: words("break const continue else emit enum for if inline parallel return static struct"),
+        keywords: words("break const continue else emit enum for if inline return static struct"),
         blockKeywords: words("if for"),
         builtin: words("void bool char int8 int16 int32 int64 uint8 uint16 uint32 uint64 float32 float64 " + "pointer variant function object typename null true false int byte float double raise tryExec"),
         atoms: words("true false null"),

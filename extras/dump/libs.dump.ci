@@ -402,22 +402,22 @@ bool: typename {
 	cmplGfx/lib/micro.ui.core.ci:157: referenced as `bool`
 	cmplGfx/lib/micro.ui.core.ci:155: referenced as `bool`
 	cmplGfx/lib/micro.ui.core.ci:153: referenced as `bool`
-	cmplGfx/lib/window.ci:306: referenced as `bool`
-	cmplGfx/lib/window.ci:306: referenced as `bool`
-	cmplGfx/lib/window.ci:300: referenced as `bool`
-	cmplGfx/lib/window.ci:300: referenced as `bool`
-	cmplGfx/lib/window.ci:294: referenced as `bool`
-	cmplGfx/lib/window.ci:294: referenced as `bool`
-	cmplGfx/lib/window.ci:288: referenced as `bool`
-	cmplGfx/lib/window.ci:288: referenced as `bool`
-	cmplGfx/lib/window.ci:281: referenced as `bool`
-	cmplGfx/lib/window.ci:281: referenced as `bool`
-	cmplGfx/lib/window.ci:275: referenced as `bool`
-	cmplGfx/lib/window.ci:275: referenced as `bool`
-	cmplGfx/lib/window.ci:269: referenced as `bool`
-	cmplGfx/lib/window.ci:269: referenced as `bool`
-	cmplGfx/lib/window.ci:263: referenced as `bool`
-	cmplGfx/lib/window.ci:263: referenced as `bool`
+	cmplGfx/lib/window.ci:310: referenced as `bool`
+	cmplGfx/lib/window.ci:310: referenced as `bool`
+	cmplGfx/lib/window.ci:304: referenced as `bool`
+	cmplGfx/lib/window.ci:304: referenced as `bool`
+	cmplGfx/lib/window.ci:298: referenced as `bool`
+	cmplGfx/lib/window.ci:298: referenced as `bool`
+	cmplGfx/lib/window.ci:292: referenced as `bool`
+	cmplGfx/lib/window.ci:292: referenced as `bool`
+	cmplGfx/lib/window.ci:285: referenced as `bool`
+	cmplGfx/lib/window.ci:285: referenced as `bool`
+	cmplGfx/lib/window.ci:279: referenced as `bool`
+	cmplGfx/lib/window.ci:279: referenced as `bool`
+	cmplGfx/lib/window.ci:273: referenced as `bool`
+	cmplGfx/lib/window.ci:273: referenced as `bool`
+	cmplGfx/lib/window.ci:267: referenced as `bool`
+	cmplGfx/lib/window.ci:267: referenced as `bool`
 	cmplGfx/lib/window.ci:86: referenced as `bool`
 	cmplGfx/lib/color.lookup.ci:21: referenced as `bool`
 	cmplGfx/lib/image.transform.ci:84: referenced as `bool`
@@ -482,7 +482,7 @@ char: typename {
 	cmplGfx/lib/micro.ui.core.ci:134: referenced as `char`
 	cmplGfx/lib/micro.ui.core.ci:119: referenced as `char`
 	cmplGfx/lib/micro.ui.core.ci:113: referenced as `char`
-	cmplGfx/lib/window.ci:357: referenced as `char`
+	cmplGfx/lib/window.ci:355: referenced as `char`
 	cmplGfx/lib/window.ci:127: referenced as `char`
 	cmplGfx/lib/window.ci:105: referenced as `char`
 	cmplGfx/lib/mesh.ci:2: referenced as `char`
@@ -875,8 +875,8 @@ int32: typename {
 	cmplGfx/lib/micro.ui.core.ci:50: referenced as `int32`
 	cmplGfx/lib/micro.ui.core.ci:30: referenced as `int`
 	cmplGfx/lib/micro.ui.core.ci:27: referenced as `int`
-	cmplGfx/lib/window.ci:358: referenced as `int`
-	cmplGfx/lib/window.ci:355: referenced as `int`
+	cmplGfx/lib/window.ci:356: referenced as `int`
+	cmplGfx/lib/window.ci:353: referenced as `int`
 	cmplGfx/lib/window.ci:215: referenced as `int`
 	cmplGfx/lib/window.ci:214: referenced as `int`
 	cmplGfx/lib/window.ci:208: referenced as `int`
@@ -1660,7 +1660,7 @@ int64: typename {
 	cmplGfx/lib/micro.ui.ci:488: referenced as `int64`
 	cmplGfx/lib/micro.ui.ci:319: referenced as `int64`
 	cmplGfx/lib/micro.ui.ci:286: referenced as `int64`
-	cmplGfx/lib/window.ci:368: referenced as `int64`
+	cmplGfx/lib/window.ci:366: referenced as `int64`
 	cmplGfx/lib/window.ci:169: referenced as `int64`
 	cmplGfx/lib/window.ci:106: referenced as `int64`
 	cmplGfx/lib/window.ci:84: referenced as `int64`
@@ -2243,7 +2243,7 @@ float32: typename {
 .doc: '@builtin'
 .value: 0
 .usages:
-	cmplGfx/lib/window.ci:381: referenced as `float32`
+	cmplGfx/lib/window.ci:379: referenced as `float32`
 	cmplGfx/lib/window.ci:210: referenced as `float32`
 	cmplGfx/lib/window.ci:209: referenced as `float32`
 	cmplGfx/lib/window.ci:165: referenced as `float32`
@@ -5335,7 +5335,7 @@ System: typename {
 	cmplGfx/lib/micro.ui.ci:1128: referenced as `System`
 	cmplGfx/lib/micro.ui.ci:569: referenced as `System`
 	cmplGfx/lib/micro.ui.ci:499: referenced as `System`
-	cmplGfx/lib/window.ci:368: referenced as `System`
+	cmplGfx/lib/window.ci:366: referenced as `System`
 	cmplGfx/lib/window.ci:123: referenced as `System`
 	cmplGfx/lib/window.ci:109: referenced as `System`
 	cmplGfx/lib/window.ci:106: referenced as `System`
@@ -5393,7 +5393,7 @@ System.millis(): int64: function {
 	cmplGfx/lib/micro.ui.ci:1128: referenced as `millis`
 	cmplGfx/lib/micro.ui.ci:569: referenced as `millis`
 	cmplGfx/lib/micro.ui.ci:499: referenced as `millis`
-	cmplGfx/lib/window.ci:368: referenced as `millis`
+	cmplGfx/lib/window.ci:366: referenced as `millis`
 	cmplGfx/lib/window.ci:123: referenced as `millis`
 	cmplGfx/lib/window.ci:109: referenced as `millis`
 	cmplGfx/lib/window.ci:106: referenced as `millis`
@@ -17604,9 +17604,9 @@ vec4f: typename {
 .field data: float32[4] (size: 16, cast: variable(val))
 .doc: 'A 4d vector (4x float32)'
 .usages:
-	cmplGfx/lib/window.ci:350: referenced as `vec4f`
-	cmplGfx/lib/window.ci:349: referenced as `vec4f`
 	cmplGfx/lib/window.ci:348: referenced as `vec4f`
+	cmplGfx/lib/window.ci:347: referenced as `vec4f`
+	cmplGfx/lib/window.ci:346: referenced as `vec4f`
 	cmplGfx/lib/window.ci:226: referenced as `vec4f`
 	cmplGfx/lib/window.ci:219: referenced as `vec4f`
 	cmplGfx/lib/window.ci:160: referenced as `vec4f`
@@ -17735,9 +17735,9 @@ vec4f.<?>.x: float32 {
 .owner: vec4f.<?>
 .doc: 'X component of the vector'
 .usages:
-	cmplGfx/lib/window.ci:350: referenced as `x`
-	cmplGfx/lib/window.ci:349: referenced as `x`
 	cmplGfx/lib/window.ci:348: referenced as `x`
+	cmplGfx/lib/window.ci:347: referenced as `x`
+	cmplGfx/lib/window.ci:346: referenced as `x`
 	cmplGfx/lib/image.transform.ci:127: referenced as `x`
 	cmplGfx/lib/image.transform.ci:126: referenced as `x`
 	cmplGfx/lib/image.transform.ci:125: referenced as `x`
@@ -17786,9 +17786,9 @@ vec4f.<?>.y: float32 {
 .owner: vec4f.<?>
 .doc: 'Y component of the vector'
 .usages:
-	cmplGfx/lib/window.ci:350: referenced as `y`
-	cmplGfx/lib/window.ci:349: referenced as `y`
 	cmplGfx/lib/window.ci:348: referenced as `y`
+	cmplGfx/lib/window.ci:347: referenced as `y`
+	cmplGfx/lib/window.ci:346: referenced as `y`
 	cmplGfx/lib/image.transform.ci:127: referenced as `y`
 	cmplGfx/lib/image.transform.ci:126: referenced as `y`
 	cmplGfx/lib/image.transform.ci:125: referenced as `y`
@@ -17838,9 +17838,9 @@ vec4f.<?>.z: float32 {
 .owner: vec4f.<?>
 .doc: 'Z component of the vector'
 .usages:
-	cmplGfx/lib/window.ci:350: referenced as `z`
-	cmplGfx/lib/window.ci:349: referenced as `z`
 	cmplGfx/lib/window.ci:348: referenced as `z`
+	cmplGfx/lib/window.ci:347: referenced as `z`
+	cmplGfx/lib/window.ci:346: referenced as `z`
 	cmplGfx/lib/image.transform.ci:127: referenced as `z`
 	cmplGfx/lib/image.transform.ci:126: referenced as `z`
 	cmplGfx/lib/image.transform.ci:125: referenced as `z`
@@ -17889,9 +17889,9 @@ vec4f.<?>.w: float32 {
 .owner: vec4f.<?>
 .doc: 'W component of the vector'
 .usages:
-	cmplGfx/lib/window.ci:350: referenced as `w`
-	cmplGfx/lib/window.ci:349: referenced as `w`
 	cmplGfx/lib/window.ci:348: referenced as `w`
+	cmplGfx/lib/window.ci:347: referenced as `w`
+	cmplGfx/lib/window.ci:346: referenced as `w`
 	cmplGfx/lib/image.transform.ci:127: referenced as `w`
 	cmplGfx/lib/image.transform.ci:126: referenced as `w`
 	cmplGfx/lib/image.transform.ci:125: referenced as `w`
@@ -25369,10 +25369,10 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	cmplGfx/lib/micro.ui.ci:521: referenced as `append`
 	cmplGfx/lib/micro.ui.ci:516: referenced as `append`
 	cmplGfx/lib/micro.ui.ci:515: referenced as `append`
-	cmplGfx/lib/window.ci:364: referenced as `append`
 	cmplGfx/lib/window.ci:362: referenced as `append`
 	cmplGfx/lib/window.ci:360: referenced as `append`
 	cmplGfx/lib/window.ci:358: referenced as `append`
+	cmplGfx/lib/window.ci:356: referenced as `append`
 	cmplGfx/lib/window.ci:128: referenced as `append`
 	cmplGfx/lib/window.ci:109: referenced as `append`
 	cmplStd/lib/text/Format.ci:444: referenced as `append`
@@ -27802,10 +27802,10 @@ append(output: char[], pos: int32, value: int32): int32: function {
 	cmplGfx/lib/micro.ui.ci:529: referenced as `append`
 	cmplGfx/lib/micro.ui.ci:523: referenced as `append`
 	cmplGfx/lib/micro.ui.ci:517: referenced as `append`
-	cmplGfx/lib/window.ci:365: referenced as `append`
 	cmplGfx/lib/window.ci:363: referenced as `append`
 	cmplGfx/lib/window.ci:361: referenced as `append`
 	cmplGfx/lib/window.ci:359: referenced as `append`
+	cmplGfx/lib/window.ci:357: referenced as `append`
 	cmplGfx/lib/window.ci:128: referenced as `append`
 	cmplGfx/lib/window.ci:109: referenced as `append`
 }
@@ -35407,7 +35407,7 @@ Image: typename {
 	cmplGfx/lib/micro.ui.core.ci:347: referenced as `Image`
 	cmplGfx/lib/micro.ui.core.ci:344: referenced as `Image`
 	cmplGfx/lib/micro.ui.core.ci:33: referenced as `Image`
-	cmplGfx/lib/window.ci:380: referenced as `Image`
+	cmplGfx/lib/window.ci:378: referenced as `Image`
 	cmplGfx/lib/window.ci:171: referenced as `Image`
 	cmplGfx/lib/window.ci:141: referenced as `Image`
 	cmplGfx/lib/window.ci:88: referenced as `Image`
@@ -35553,7 +35553,7 @@ Image.create3d(width: int32, height: int32): Image: function {
 .doc: '@builtin'
 .value: nfc(90)
 .usages:
-	cmplGfx/lib/window.ci:380: referenced as `create3d`
+	cmplGfx/lib/window.ci:378: referenced as `create3d`
 }
 Image.recycle(recycle: Image, width: int32, height: int32, depth: int32, flags: int32): Image: function {
 .kind: static const inline
@@ -35598,7 +35598,7 @@ Image.destroy(image: Image): void: function {
 .usages:
 	cmplGfx/lib/micro.ui.ci:1353: referenced as `destroy`
 	cmplGfx/lib/micro.ui.ci:975: referenced as `destroy`
-	cmplGfx/lib/window.ci:386: referenced as `destroy`
+	cmplGfx/lib/window.ci:384: referenced as `destroy`
 	cmplGfx/lib/window.ci:156: referenced as `destroy`
 	cmplGfx/lib/window.ci:155: referenced as `destroy`
 	cmplGfx/lib/window.ci:144: referenced as `destroy`
@@ -36151,7 +36151,7 @@ Image.drawMesh(image: Image, mesh: Mesh, mode: int32): int32: function {
 .doc: '@builtin'
 .value: nfc(118)
 .usages:
-	cmplGfx/lib/window.ci:355: referenced as `drawMesh`
+	cmplGfx/lib/window.ci:353: referenced as `drawMesh`
 }
 Mesh: typename {
 .kind: static const typename(ref)
@@ -36193,14 +36193,14 @@ Mesh: typename {
 .field segments: int64 (size: 8, cast: const variable(i64))
 .doc: '@builtin'
 .usages:
-	cmplGfx/lib/window.ci:379: referenced as `Mesh`
-	cmplGfx/lib/window.ci:379: referenced as `Mesh`
-	cmplGfx/lib/window.ci:379: referenced as `Mesh`
-	cmplGfx/lib/window.ci:336: referenced as `Mesh`
-	cmplGfx/lib/window.ci:333: referenced as `Mesh`
-	cmplGfx/lib/window.ci:330: referenced as `Mesh`
-	cmplGfx/lib/window.ci:315: referenced as `Mesh`
-	cmplGfx/lib/window.ci:312: referenced as `Mesh`
+	cmplGfx/lib/window.ci:377: referenced as `Mesh`
+	cmplGfx/lib/window.ci:377: referenced as `Mesh`
+	cmplGfx/lib/window.ci:377: referenced as `Mesh`
+	cmplGfx/lib/window.ci:340: referenced as `Mesh`
+	cmplGfx/lib/window.ci:337: referenced as `Mesh`
+	cmplGfx/lib/window.ci:334: referenced as `Mesh`
+	cmplGfx/lib/window.ci:319: referenced as `Mesh`
+	cmplGfx/lib/window.ci:316: referenced as `Mesh`
 	cmplGfx/lib/window.ci:174: referenced as `Mesh`
 	cmplGfx/lib/window.ci:165: referenced as `Mesh`
 	cmplGfx/lib/mesh.ci:7: referenced as `Mesh`
@@ -36495,7 +36495,7 @@ Mesh.cullBack: int64 {
 .doc: '@builtin'
 .value: 16
 .usages:
-	cmplGfx/lib/window.ci:379: referenced as `cullBack`
+	cmplGfx/lib/window.ci:377: referenced as `cullBack`
 }
 Mesh.cullFront: int64 {
 .kind: static const i64
@@ -36515,7 +36515,7 @@ Mesh.cullMode: int64 {
 .doc: '@builtin'
 .value: 48
 .usages:
-	cmplGfx/lib/window.ci:333: referenced as `cullMode`
+	cmplGfx/lib/window.ci:337: referenced as `cullMode`
 }
 Mesh.drawPlot: int64 {
 .kind: static const i64
@@ -36544,7 +36544,7 @@ Mesh.drawFill: int64 {
 .doc: '@builtin'
 .value: 1
 .usages:
-	cmplGfx/lib/window.ci:379: referenced as `drawFill`
+	cmplGfx/lib/window.ci:377: referenced as `drawFill`
 }
 Mesh.drawMode: int64 {
 .kind: static const i64
@@ -36555,7 +36555,7 @@ Mesh.drawMode: int64 {
 .doc: '@builtin'
 .value: 7
 .usages:
-	cmplGfx/lib/window.ci:336: referenced as `drawMode`
+	cmplGfx/lib/window.ci:340: referenced as `drawMode`
 }
 Mesh.useTexture: int64 {
 .kind: static const i64
@@ -36566,7 +36566,7 @@ Mesh.useTexture: int64 {
 .doc: '@builtin'
 .value: 64
 .usages:
-	cmplGfx/lib/window.ci:330: referenced as `useTexture`
+	cmplGfx/lib/window.ci:334: referenced as `useTexture`
 }
 Mesh.useLights: int64 {
 .kind: static const i64
@@ -36577,8 +36577,8 @@ Mesh.useLights: int64 {
 .doc: '@builtin'
 .value: 128
 .usages:
-	cmplGfx/lib/window.ci:379: referenced as `useLights`
-	cmplGfx/lib/window.ci:312: referenced as `useLights`
+	cmplGfx/lib/window.ci:377: referenced as `useLights`
+	cmplGfx/lib/window.ci:316: referenced as `useLights`
 }
 Mesh.drawBounds: int64 {
 .kind: static const i64
@@ -36589,7 +36589,7 @@ Mesh.drawBounds: int64 {
 .doc: '@builtin'
 .value: 256
 .usages:
-	cmplGfx/lib/window.ci:315: referenced as `drawBounds`
+	cmplGfx/lib/window.ci:319: referenced as `drawBounds`
 }
 Mesh.vertices: int64 {
 .kind: const variable(i64)
@@ -36599,7 +36599,7 @@ Mesh.vertices: int64 {
 .owner: Mesh
 .doc: '@builtin'
 .usages:
-	cmplGfx/lib/window.ci:359: referenced as `vertices`
+	cmplGfx/lib/window.ci:357: referenced as `vertices`
 }
 Mesh.triangles: int64 {
 .kind: const variable(i64)
@@ -36609,7 +36609,7 @@ Mesh.triangles: int64 {
 .owner: Mesh
 .doc: '@builtin'
 .usages:
-	cmplGfx/lib/window.ci:361: referenced as `triangles`
+	cmplGfx/lib/window.ci:359: referenced as `triangles`
 }
 Mesh.segments: int64 {
 .kind: const variable(i64)
@@ -36744,14 +36744,14 @@ lights: typename {
 .field attenuation: function (size: 0, cast: static const inline)
 .doc: '@builtin'
 .usages:
-	cmplGfx/lib/window.ci:327: referenced as `lights`
-	cmplGfx/lib/window.ci:327: referenced as `lights`
-	cmplGfx/lib/window.ci:324: referenced as `lights`
-	cmplGfx/lib/window.ci:324: referenced as `lights`
-	cmplGfx/lib/window.ci:321: referenced as `lights`
-	cmplGfx/lib/window.ci:321: referenced as `lights`
-	cmplGfx/lib/window.ci:318: referenced as `lights`
-	cmplGfx/lib/window.ci:318: referenced as `lights`
+	cmplGfx/lib/window.ci:331: referenced as `lights`
+	cmplGfx/lib/window.ci:331: referenced as `lights`
+	cmplGfx/lib/window.ci:328: referenced as `lights`
+	cmplGfx/lib/window.ci:328: referenced as `lights`
+	cmplGfx/lib/window.ci:325: referenced as `lights`
+	cmplGfx/lib/window.ci:325: referenced as `lights`
+	cmplGfx/lib/window.ci:322: referenced as `lights`
+	cmplGfx/lib/window.ci:322: referenced as `lights`
 }
 lights.enabled(light: int32): bool: function {
 .kind: static const inline
@@ -36764,10 +36764,10 @@ lights.enabled(light: int32): bool: function {
 .doc: '@builtin'
 .value: nfc(121)
 .usages:
-	cmplGfx/lib/window.ci:327: referenced as `enabled`
-	cmplGfx/lib/window.ci:324: referenced as `enabled`
-	cmplGfx/lib/window.ci:321: referenced as `enabled`
-	cmplGfx/lib/window.ci:318: referenced as `enabled`
+	cmplGfx/lib/window.ci:331: referenced as `enabled`
+	cmplGfx/lib/window.ci:328: referenced as `enabled`
+	cmplGfx/lib/window.ci:325: referenced as `enabled`
+	cmplGfx/lib/window.ci:322: referenced as `enabled`
 }
 lights.enable(light: int32, on: bool): void: function {
 .kind: static const inline
@@ -36781,10 +36781,10 @@ lights.enable(light: int32, on: bool): void: function {
 .doc: '@builtin'
 .value: nfc(122)
 .usages:
-	cmplGfx/lib/window.ci:327: referenced as `enable`
-	cmplGfx/lib/window.ci:324: referenced as `enable`
-	cmplGfx/lib/window.ci:321: referenced as `enable`
-	cmplGfx/lib/window.ci:318: referenced as `enable`
+	cmplGfx/lib/window.ci:331: referenced as `enable`
+	cmplGfx/lib/window.ci:328: referenced as `enable`
+	cmplGfx/lib/window.ci:325: referenced as `enable`
+	cmplGfx/lib/window.ci:322: referenced as `enable`
 }
 lights.position(light: int32, x: float32, y: float32, z: float32): void: function {
 .kind: static const inline
@@ -36926,7 +36926,7 @@ Window.KEY_PRESS: int64 {
 .value: 1
 .usages:
 	cmplGfx/lib/micro.ui.ci:1209: referenced as `KEY_PRESS`
-	cmplGfx/lib/window.ci:256: referenced as `KEY_PRESS`
+	cmplGfx/lib/window.ci:260: referenced as `KEY_PRESS`
 }
 Window.KEY_RELEASE: int64 {
 .kind: static const i64
@@ -36939,7 +36939,7 @@ Window.KEY_RELEASE: int64 {
 .usages:
 	cmplGfx/lib/micro.ui.ci:1295: referenced as `KEY_RELEASE`
 	cmplGfx/lib/micro.ui.ci:1230: referenced as `KEY_RELEASE`
-	cmplGfx/lib/window.ci:339: referenced as `KEY_RELEASE`
+	cmplGfx/lib/window.ci:256: referenced as `KEY_RELEASE`
 	cmplGfx/lib/window.ci:103: referenced as `KEY_RELEASE`
 	cmplGfx/lib/window.ci:96: referenced as `KEY_RELEASE`
 	cmplGfx/lib/window.ci:29: referenced as `KEY_RELEASE`
@@ -37008,7 +37008,6 @@ Window.FINGER_PRESS: int64 {
 .doc: '@builtin'
 .value: 7
 .usages:
-	cmplGfx/lib/micro.ui.ci:1328: referenced as `FINGER_PRESS`
 	cmplGfx/lib/micro.ui.ci:1301: referenced as `FINGER_PRESS`
 	cmplGfx/lib/window.ci:245: referenced as `FINGER_PRESS`
 }
@@ -37021,7 +37020,6 @@ Window.FINGER_MOTION: int64 {
 .doc: '@builtin'
 .value: 8
 .usages:
-	cmplGfx/lib/micro.ui.ci:1324: referenced as `FINGER_MOTION`
 	cmplGfx/lib/micro.ui.ci:1306: referenced as `FINGER_MOTION`
 	cmplGfx/lib/window.ci:217: referenced as `FINGER_MOTION`
 	cmplGfx/lib/window.ci:212: referenced as `FINGER_MOTION`
@@ -37058,8 +37056,8 @@ Window.WINDOW_INIT: int64 {
 .value: 100
 .usages:
 	cmplGfx/lib/micro.ui.ci:1106: referenced as `WINDOW_INIT`
-	cmplGfx/lib/window.ci:346: referenced as `WINDOW_INIT`
-	cmplGfx/lib/window.ci:258: referenced as `WINDOW_INIT`
+	cmplGfx/lib/window.ci:344: referenced as `WINDOW_INIT`
+	cmplGfx/lib/window.ci:262: referenced as `WINDOW_INIT`
 }
 Window.WINDOW_CLOSE: int64 {
 .kind: static const i64
@@ -37105,7 +37103,7 @@ Window.KEY_CODE_ESC: int64 {
 .value: 65307
 .usages:
 	cmplGfx/lib/micro.ui.ci:1295: referenced as `KEY_CODE_ESC`
-	cmplGfx/lib/window.ci:340: referenced as `KEY_CODE_ESC`
+	cmplGfx/lib/window.ci:256: referenced as `KEY_CODE_ESC`
 	cmplGfx/lib/window.ci:96: referenced as `KEY_CODE_ESC`
 	cmplGfx/lib/window.ci:29: referenced as `KEY_CODE_ESC`
 }
@@ -37131,7 +37129,7 @@ Window.KEY_CODE_TAB: int64 {
 .value: 65289
 .usages:
 	cmplGfx/lib/micro.ui.core.ci:1204: referenced as `KEY_CODE_TAB`
-	cmplGfx/lib/window.ci:335: referenced as `KEY_CODE_TAB`
+	cmplGfx/lib/window.ci:339: referenced as `KEY_CODE_TAB`
 	cmplGfx/lib/window.ci:113: referenced as `KEY_CODE_TAB`
 }
 Window.KEY_CODE_ENTER: int64 {
@@ -37144,7 +37142,7 @@ Window.KEY_CODE_ENTER: int64 {
 .value: 65293
 .usages:
 	cmplGfx/lib/micro.ui.core.ci:1204: referenced as `KEY_CODE_ENTER`
-	cmplGfx/lib/window.ci:257: referenced as `KEY_CODE_ENTER`
+	cmplGfx/lib/window.ci:261: referenced as `KEY_CODE_ENTER`
 }
 Window.KEY_CODE_CAPSLOCK: int64 {
 .kind: static const i64
@@ -37245,7 +37243,7 @@ Window.KEY_CODE_RIGHT: int64 {
 .doc: '@builtin'
 .value: 65363
 .usages:
-	cmplGfx/lib/window.ci:304: referenced as `KEY_CODE_RIGHT`
+	cmplGfx/lib/window.ci:308: referenced as `KEY_CODE_RIGHT`
 }
 Window.KEY_CODE_LEFT: int64 {
 .kind: static const i64
@@ -37256,7 +37254,7 @@ Window.KEY_CODE_LEFT: int64 {
 .doc: '@builtin'
 .value: 65361
 .usages:
-	cmplGfx/lib/window.ci:298: referenced as `KEY_CODE_LEFT`
+	cmplGfx/lib/window.ci:302: referenced as `KEY_CODE_LEFT`
 }
 Window.KEY_CODE_DOWN: int64 {
 .kind: static const i64
@@ -37267,7 +37265,7 @@ Window.KEY_CODE_DOWN: int64 {
 .doc: '@builtin'
 .value: 65364
 .usages:
-	cmplGfx/lib/window.ci:292: referenced as `KEY_CODE_DOWN`
+	cmplGfx/lib/window.ci:296: referenced as `KEY_CODE_DOWN`
 }
 Window.KEY_CODE_UP: int64 {
 .kind: static const i64
@@ -37278,7 +37276,7 @@ Window.KEY_CODE_UP: int64 {
 .doc: '@builtin'
 .value: 65362
 .usages:
-	cmplGfx/lib/window.ci:286: referenced as `KEY_CODE_UP`
+	cmplGfx/lib/window.ci:290: referenced as `KEY_CODE_UP`
 }
 Window.KEY_CODE_L_SHIFT: int64 {
 .kind: static const i64
@@ -37363,14 +37361,14 @@ Window.KEY_MASK_SHIFT: int64 {
 .usages:
 	cmplGfx/lib/micro.ui.ci:1231: referenced as `KEY_MASK_SHIFT`
 	cmplGfx/lib/micro.ui.ci:1210: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:306: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:300: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:294: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:288: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:281: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:275: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:269: referenced as `KEY_MASK_SHIFT`
-	cmplGfx/lib/window.ci:263: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:310: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:304: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:298: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:292: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:285: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:279: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:273: referenced as `KEY_MASK_SHIFT`
+	cmplGfx/lib/window.ci:267: referenced as `KEY_MASK_SHIFT`
 }
 Window.KEY_MASK_CTRL: int64 {
 .kind: static const i64
@@ -37410,7 +37408,7 @@ Window.show(surf: Image, closure: pointer, onEvent(closure: pointer, action: int
 .value: nfc(128)
 .usages:
 	cmplGfx/lib/micro.ui.ci:1343: referenced as `show`
-	cmplGfx/lib/window.ci:385: referenced as `show`
+	cmplGfx/lib/window.ci:383: referenced as `show`
 	cmplGfx/lib/window.ci:154: referenced as `show`
 	cmplGfx/lib/window.ci:61: referenced as `show`
 	cmplGfx/lib/window.ci:16: referenced as `show`
@@ -37427,7 +37425,7 @@ Window.setTitle(title: char[*]): void: function {
 .doc: '@builtin'
 .value: nfc(129)
 .usages:
-	cmplGfx/lib/window.ci:366: referenced as `setTitle`
+	cmplGfx/lib/window.ci:364: referenced as `setTitle`
 	cmplGfx/lib/window.ci:129: referenced as `setTitle`
 	cmplGfx/lib/window.ci:110: referenced as `setTitle`
 }
@@ -37442,7 +37440,7 @@ Window.quit(): int32: function {
 .value: nfc(130)
 .usages:
 	cmplGfx/lib/micro.ui.ci:1297: referenced as `quit`
-	cmplGfx/lib/window.ci:342: referenced as `quit`
+	cmplGfx/lib/window.ci:258: referenced as `quit`
 	cmplGfx/lib/window.ci:101: referenced as `quit`
 	cmplGfx/lib/window.ci:98: referenced as `quit`
 	cmplGfx/lib/window.ci:31: referenced as `quit`
@@ -46388,17 +46386,17 @@ Camera: typename {
 .field rotate: function (size: 430, cast: static function)
 .doc: 'Simple camera for 3d transformations and projection.'
 .usages:
-	cmplGfx/lib/window.ci:381: referenced as `Camera`
-	cmplGfx/lib/window.ci:351: referenced as `Camera`
-	cmplGfx/lib/window.ci:347: referenced as `Camera`
-	cmplGfx/lib/window.ci:305: referenced as `Camera`
-	cmplGfx/lib/window.ci:299: referenced as `Camera`
-	cmplGfx/lib/window.ci:293: referenced as `Camera`
-	cmplGfx/lib/window.ci:287: referenced as `Camera`
-	cmplGfx/lib/window.ci:280: referenced as `Camera`
-	cmplGfx/lib/window.ci:274: referenced as `Camera`
-	cmplGfx/lib/window.ci:268: referenced as `Camera`
-	cmplGfx/lib/window.ci:262: referenced as `Camera`
+	cmplGfx/lib/window.ci:379: referenced as `Camera`
+	cmplGfx/lib/window.ci:349: referenced as `Camera`
+	cmplGfx/lib/window.ci:345: referenced as `Camera`
+	cmplGfx/lib/window.ci:309: referenced as `Camera`
+	cmplGfx/lib/window.ci:303: referenced as `Camera`
+	cmplGfx/lib/window.ci:297: referenced as `Camera`
+	cmplGfx/lib/window.ci:291: referenced as `Camera`
+	cmplGfx/lib/window.ci:284: referenced as `Camera`
+	cmplGfx/lib/window.ci:278: referenced as `Camera`
+	cmplGfx/lib/window.ci:272: referenced as `Camera`
+	cmplGfx/lib/window.ci:266: referenced as `Camera`
 	cmplGfx/lib/window.ci:251: referenced as `Camera`
 	cmplGfx/lib/window.ci:213: referenced as `Camera`
 	cmplGfx/lib/window.ci:177: referenced as `Camera`
@@ -46419,10 +46417,10 @@ Camera.position: vec4f {
 .doc: '@public'
 .value: vec4f(0, 0, 0, 1)
 .usages:
-	cmplGfx/lib/window.ci:307: referenced as `position`
-	cmplGfx/lib/window.ci:301: referenced as `position`
-	cmplGfx/lib/window.ci:295: referenced as `position`
-	cmplGfx/lib/window.ci:289: referenced as `position`
+	cmplGfx/lib/window.ci:311: referenced as `position`
+	cmplGfx/lib/window.ci:305: referenced as `position`
+	cmplGfx/lib/window.ci:299: referenced as `position`
+	cmplGfx/lib/window.ci:293: referenced as `position`
 	cmplGfx/lib/window.ci:226: referenced as `position`
 	cmplGfx/lib/window.ci:178: referenced as `position`
 	cmplGfx/lib/camera.ci:82: referenced as `position`
@@ -46445,8 +46443,8 @@ Camera.forward: vec4f {
 .doc: '@public'
 .value: vec4f(0, 0, 0, 1)
 .usages:
-	cmplGfx/lib/window.ci:270: referenced as `forward`
-	cmplGfx/lib/window.ci:264: referenced as `forward`
+	cmplGfx/lib/window.ci:274: referenced as `forward`
+	cmplGfx/lib/window.ci:268: referenced as `forward`
 	cmplGfx/lib/window.ci:252: referenced as `forward`
 	cmplGfx/lib/window.ci:233: referenced as `forward`
 	cmplGfx/lib/window.ci:178: referenced as `forward`
@@ -46468,10 +46466,10 @@ Camera.right: vec4f {
 .doc: '@public'
 .value: vec4f(0, 0, 0, 1)
 .usages:
-	cmplGfx/lib/window.ci:295: referenced as `right`
-	cmplGfx/lib/window.ci:289: referenced as `right`
-	cmplGfx/lib/window.ci:282: referenced as `right`
-	cmplGfx/lib/window.ci:276: referenced as `right`
+	cmplGfx/lib/window.ci:299: referenced as `right`
+	cmplGfx/lib/window.ci:293: referenced as `right`
+	cmplGfx/lib/window.ci:286: referenced as `right`
+	cmplGfx/lib/window.ci:280: referenced as `right`
 	cmplGfx/lib/window.ci:238: referenced as `right`
 	cmplGfx/lib/window.ci:228: referenced as `right`
 	cmplGfx/lib/window.ci:221: referenced as `right`
@@ -46494,8 +46492,8 @@ Camera.up: vec4f {
 .doc: '@public'
 .value: vec4f(0, 1, 0, 1)
 .usages:
-	cmplGfx/lib/window.ci:307: referenced as `up`
-	cmplGfx/lib/window.ci:301: referenced as `up`
+	cmplGfx/lib/window.ci:311: referenced as `up`
+	cmplGfx/lib/window.ci:305: referenced as `up`
 	cmplGfx/lib/window.ci:239: referenced as `up`
 	cmplGfx/lib/window.ci:227: referenced as `up`
 	cmplGfx/lib/window.ci:220: referenced as `up`
@@ -46649,7 +46647,7 @@ Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f: fu
 	<projection+?>: inc.sp(-8)
 	<projection+?>: ret
 .usages:
-	cmplGfx/lib/window.ci:381: referenced as `projection`
+	cmplGfx/lib/window.ci:379: referenced as `projection`
 	cmplGfx/lib/camera.ci:63: referenced as `projection`
 }
 Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera: function {
@@ -46830,7 +46828,7 @@ Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera: function {
 	<lookAt+?>: inc.sp(-32)
 	<lookAt+?>: ret
 .usages:
-	cmplGfx/lib/window.ci:351: referenced as `lookAt`
+	cmplGfx/lib/window.ci:349: referenced as `lookAt`
 }
 Camera.matrix(camera: Camera): mat4f: function {
 .kind: static function
@@ -46996,10 +46994,10 @@ Camera.move(camera: Camera, direction: vec4f, amount: float32): void: function {
 	<move+?>: store.i128
 	<move+?>: ret
 .usages:
-	cmplGfx/lib/window.ci:282: referenced as `move`
-	cmplGfx/lib/window.ci:276: referenced as `move`
-	cmplGfx/lib/window.ci:270: referenced as `move`
-	cmplGfx/lib/window.ci:264: referenced as `move`
+	cmplGfx/lib/window.ci:286: referenced as `move`
+	cmplGfx/lib/window.ci:280: referenced as `move`
+	cmplGfx/lib/window.ci:274: referenced as `move`
+	cmplGfx/lib/window.ci:268: referenced as `move`
 	cmplGfx/lib/window.ci:252: referenced as `move`
 	cmplGfx/lib/window.ci:239: referenced as `move`
 	cmplGfx/lib/window.ci:238: referenced as `move`
@@ -47229,10 +47227,10 @@ Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): 
 	<rotate+?>: inc.sp(-64)
 	<rotate+?>: ret
 .usages:
-	cmplGfx/lib/window.ci:307: referenced as `rotate`
-	cmplGfx/lib/window.ci:301: referenced as `rotate`
-	cmplGfx/lib/window.ci:295: referenced as `rotate`
-	cmplGfx/lib/window.ci:289: referenced as `rotate`
+	cmplGfx/lib/window.ci:311: referenced as `rotate`
+	cmplGfx/lib/window.ci:305: referenced as `rotate`
+	cmplGfx/lib/window.ci:299: referenced as `rotate`
+	cmplGfx/lib/window.ci:293: referenced as `rotate`
 	cmplGfx/lib/window.ci:228: referenced as `rotate`
 	cmplGfx/lib/window.ci:227: referenced as `rotate`
 	cmplGfx/lib/window.ci:221: referenced as `rotate`
@@ -47309,28 +47307,28 @@ Window: typename {
 	cmplGfx/lib/micro.ui.core.ci:1204: referenced as `Window`
 	cmplGfx/lib/micro.ui.core.ci:290: referenced as `Window`
 	cmplGfx/lib/micro.ui.core.ci:33: referenced as `Window`
-	cmplGfx/lib/window.ci:385: referenced as `Window`
-	cmplGfx/lib/window.ci:375: referenced as `Window`
-	cmplGfx/lib/window.ci:366: referenced as `Window`
-	cmplGfx/lib/window.ci:346: referenced as `Window`
-	cmplGfx/lib/window.ci:342: referenced as `Window`
-	cmplGfx/lib/window.ci:340: referenced as `Window`
+	cmplGfx/lib/window.ci:383: referenced as `Window`
+	cmplGfx/lib/window.ci:373: referenced as `Window`
+	cmplGfx/lib/window.ci:364: referenced as `Window`
+	cmplGfx/lib/window.ci:344: referenced as `Window`
 	cmplGfx/lib/window.ci:339: referenced as `Window`
-	cmplGfx/lib/window.ci:335: referenced as `Window`
-	cmplGfx/lib/window.ci:306: referenced as `Window`
+	cmplGfx/lib/window.ci:310: referenced as `Window`
+	cmplGfx/lib/window.ci:308: referenced as `Window`
 	cmplGfx/lib/window.ci:304: referenced as `Window`
-	cmplGfx/lib/window.ci:300: referenced as `Window`
+	cmplGfx/lib/window.ci:302: referenced as `Window`
 	cmplGfx/lib/window.ci:298: referenced as `Window`
-	cmplGfx/lib/window.ci:294: referenced as `Window`
+	cmplGfx/lib/window.ci:296: referenced as `Window`
 	cmplGfx/lib/window.ci:292: referenced as `Window`
-	cmplGfx/lib/window.ci:288: referenced as `Window`
-	cmplGfx/lib/window.ci:286: referenced as `Window`
-	cmplGfx/lib/window.ci:281: referenced as `Window`
-	cmplGfx/lib/window.ci:275: referenced as `Window`
-	cmplGfx/lib/window.ci:269: referenced as `Window`
-	cmplGfx/lib/window.ci:263: referenced as `Window`
+	cmplGfx/lib/window.ci:290: referenced as `Window`
+	cmplGfx/lib/window.ci:285: referenced as `Window`
+	cmplGfx/lib/window.ci:279: referenced as `Window`
+	cmplGfx/lib/window.ci:273: referenced as `Window`
+	cmplGfx/lib/window.ci:267: referenced as `Window`
+	cmplGfx/lib/window.ci:262: referenced as `Window`
+	cmplGfx/lib/window.ci:261: referenced as `Window`
+	cmplGfx/lib/window.ci:260: referenced as `Window`
 	cmplGfx/lib/window.ci:258: referenced as `Window`
-	cmplGfx/lib/window.ci:257: referenced as `Window`
+	cmplGfx/lib/window.ci:256: referenced as `Window`
 	cmplGfx/lib/window.ci:256: referenced as `Window`
 	cmplGfx/lib/window.ci:250: referenced as `Window`
 	cmplGfx/lib/window.ci:248: referenced as `Window`
@@ -47378,7 +47376,7 @@ Window.timeoutMax: int32 {
 	cmplGfx/lib/micro.ui.ci:1277: referenced as `timeoutMax`
 	cmplGfx/lib/micro.ui.ci:1273: referenced as `timeoutMax`
 	cmplGfx/lib/micro.ui.ci:1271: referenced as `timeoutMax`
-	cmplGfx/lib/window.ci:375: referenced as `timeoutMax`
+	cmplGfx/lib/window.ci:373: referenced as `timeoutMax`
 	cmplGfx/lib/window.ci:248: referenced as `timeoutMax`
 	cmplGfx/lib/window.ci:111: referenced as `timeoutMax`
 	cmplGfx/lib/window.ci:50: referenced as `timeoutMax`
@@ -47909,6 +47907,9 @@ Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 			Camera.move(camera, camera.forward, (ey) * fast);
 			Data.updateCamera(data);
 		}
+		else if ((action) == Window.KEY_RELEASE && (button) == Window.KEY_CODE_ESC) {
+			return .result := Window.quit();
+		}
 		else if ((action) == Window.KEY_PRESS) {
 			if ((button) == Window.KEY_CODE_ENTER) {
 				return .result := onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
@@ -47989,11 +47990,6 @@ Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 				data.mode := nextBit(data.mode, Mesh.drawMode);
 			}
 		}
-		else if ((action) == Window.KEY_RELEASE) {
-			if ((button) == Window.KEY_CODE_ESC) {
-				return .result := Window.quit();
-			}
-		}
 		else if ((action) == Window.WINDOW_INIT) {
 			camera: Camera := data.cam;
 			eye: vec4f := {
@@ -48055,9 +48051,9 @@ Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 	Image.destroy(data.offs);
 }
 .instructions: (177 bytes)
-	cmplGfx/lib/window.ci:378: (151 bytes): data: Data := {...}
+	cmplGfx/lib/window.ci:376: (151 bytes): data: Data := {...}
 	<show>  : inc.sp(+168)
-	cmplGfx/lib/window.ci:379: (32 bytes): data.mode := (Mesh.useLights | Mesh.cullBack | Mesh.drawFill);
+	cmplGfx/lib/window.ci:377: (32 bytes): data.mode := (Mesh.useLights | Mesh.cullBack | Mesh.drawFill);
 	<show+?>: load.c64 128
 	<show+?>: load.c64 16
 	<show+?>: or.b64
@@ -48065,12 +48061,12 @@ Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 	<show+?>: or.b64
 	<show+?>: i64.2i32
 	<show+?>: set.x32 sp(5)
-	cmplGfx/lib/window.ci:380: (10 bytes): data.offs := Image.create3d(w, h);
+	cmplGfx/lib/window.ci:378: (10 bytes): data.offs := Image.create3d(w, h);
 	<show+?>: dup.x32 sp(46)
 	<show+?>: dup.x32 sp(46)
 	<show+?>: nfc(90) ;Image.create3d(width: int32, height: int32): Image
 	<show+?>: set.x64 sp(8)
-	cmplGfx/lib/window.ci:381: (49 bytes): data.proj := Camera.projection(fovy, (w) / float32(h), 1, 100);
+	cmplGfx/lib/window.ci:379: (49 bytes): data.proj := Camera.projection(fovy, (w) / float32(h), 1, 100);
 	<show+?>: inc.sp(+64)
 	<show+?>: dup.x32 sp(60)
 	<show+?>: dup.x32 sp(63)
@@ -48111,7 +48107,7 @@ Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 	<show+?>: load.f32 1.000000
 	<show+?>: load.z32
 	<show+?>: set.x128 sp(40)
-	cmplGfx/lib/window.ci:383: (3 bytes): data.mesh := mesh;
+	cmplGfx/lib/window.ci:381: (3 bytes): data.mesh := mesh;
 	<show+?>: mov.x32 sp(40, 43)
 	:: (3 bytes): data.fpsCount := 0;
 	<show+?>: load.z32
@@ -48122,12 +48118,12 @@ Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 	:: (3 bytes): data.fpsTime := (0);
 	<show+?>: load.z64
 	<show+?>: set.x64 sp(4)
-	cmplGfx/lib/window.ci:385: (15 bytes): Window.show(data.offs, data, onEvent);
+	cmplGfx/lib/window.ci:383: (15 bytes): Window.show(data.offs, data, onEvent);
 	<show+?>: dup.x64 sp(6)
 	<show+?>: load.sp(+8)
 	<show+?>: load.ref <?> ;Window.show.onEvent(data: Data, action: int32, button: int32, ex: int32, ey: int32): int32
 	<show+?>: nfc(128) ;Window.show(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
-	cmplGfx/lib/window.ci:386: (6 bytes): Image.destroy(data.offs);
+	cmplGfx/lib/window.ci:384: (6 bytes): Image.destroy(data.offs);
 	<show+?>: dup.x64 sp(6)
 	<show+?>: nfc(93) ;Image.destroy(image: Image): void
 	<show+?>: inc.sp(-168)
@@ -65311,8 +65307,6 @@ Window: typename {
 .usages:
 	cmplGfx/lib/micro.ui.ci:1343: referenced as `Window`
 	cmplGfx/lib/micro.ui.ci:1328: referenced as `Window`
-	cmplGfx/lib/micro.ui.ci:1328: referenced as `Window`
-	cmplGfx/lib/micro.ui.ci:1324: referenced as `Window`
 	cmplGfx/lib/micro.ui.ci:1324: referenced as `Window`
 	cmplGfx/lib/micro.ui.ci:1320: referenced as `Window`
 	cmplGfx/lib/micro.ui.ci:1313: referenced as `Window`
@@ -65577,10 +65571,10 @@ Window.show(offscreen: Image, widget: Widget): void: function {
 			}
 			return .result := draw(win, widget);
 		}
-		if (button == 0 && ((action) == Window.MOUSE_MOTION || (action) == Window.FINGER_MOTION)) {
+		if (button == 0 && (action) == Window.MOUSE_MOTION) {
 			return .result := draw(win, widget);
 		}
-		if (button != 0 && ((action) == Window.MOUSE_PRESS || (action) == Window.FINGER_PRESS)) {
+		if (button != 0 && (action) == Window.MOUSE_PRESS) {
 			return .result := draw(win, widget);
 		}
 		if ((fxWidget) != null) {
@@ -72320,6 +72314,9 @@ Window.show(widget: Widget): void: function {
 						Camera.move(camera, camera.forward, (ey) * fast);
 						Data.updateCamera(data);
 					}
+					else if ((action) == Window.KEY_RELEASE && (button) == Window.KEY_CODE_ESC) {
+						return .result := Window.quit();
+					}
 					else if ((action) == Window.KEY_PRESS) {
 						if ((button) == Window.KEY_CODE_ENTER) {
 							return .result := onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
@@ -72398,11 +72395,6 @@ Window.show(widget: Widget): void: function {
 						}
 						else if ((button) == Window.KEY_CODE_TAB) {
 							data.mode := nextBit(data.mode, Mesh.drawMode);
-						}
-					}
-					else if ((action) == Window.KEY_RELEASE) {
-						if ((button) == Window.KEY_CODE_ESC) {
-							return .result := Window.quit();
 						}
 					}
 					else if ((action) == Window.WINDOW_INIT) {
@@ -79633,10 +79625,10 @@ Window.show(widget: Widget): void: function {
 						}
 						return .result := draw(win, widget);
 					}
-					if (button == 0 && ((action) == Window.MOUSE_MOTION || (action) == Window.FINGER_MOTION)) {
+					if (button == 0 && (action) == Window.MOUSE_MOTION) {
 						return .result := draw(win, widget);
 					}
-					if (button != 0 && ((action) == Window.MOUSE_PRESS || (action) == Window.FINGER_PRESS)) {
+					if (button != 0 && (action) == Window.MOUSE_PRESS) {
 						return .result := draw(win, widget);
 					}
 					if ((fxWidget) != null) {
@@ -79892,6 +79884,9 @@ Window.show(widget: Widget): void: function {
 						Camera.move(camera, camera.forward, (ey) * fast);
 						Data.updateCamera(data);
 					}
+					else if ((action) == Window.KEY_RELEASE && (button) == Window.KEY_CODE_ESC) {
+						return .result := Window.quit();
+					}
 					else if ((action) == Window.KEY_PRESS) {
 						if ((button) == Window.KEY_CODE_ENTER) {
 							return .result := onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
@@ -79970,11 +79965,6 @@ Window.show(widget: Widget): void: function {
 						}
 						else if ((button) == Window.KEY_CODE_TAB) {
 							data.mode := nextBit(data.mode, Mesh.drawMode);
-						}
-					}
-					else if ((action) == Window.KEY_RELEASE) {
-						if ((button) == Window.KEY_CODE_ESC) {
-							return .result := Window.quit();
 						}
 					}
 					else if ((action) == Window.WINDOW_INIT) {
@@ -84745,16 +84735,16 @@ cmplGfx/lib/micro.ui.ci:1076: Window: typename(<Window>)
 
 ---------- Memory usage:
 memory[all] @000000; size: 134217440(128.0 Mb)
-memory[used] @000000; size: 1069058(1.0 Mb)
-memory[heap] @105002; size: 99593974(95.0 Mb)
-memory[stack] @3ffff40; size: 33554360(32.0 Mb)
+memory[used] @000000; size: 1069018(1.0 Mb)
+memory[heap] @104fda; size: 99594022(95.0 Mb)
+memory[stack] @3ffff48; size: 33554360(32.0 Mb)
 
 ---------- Used memory:
 memory[meta] @000000; size: 979968(957.0 Kb)
-memory[code] @000000; size: 83383(81.4 Kb)
+memory[code] @000000; size: 83343(81.4 Kb)
 memory[data] @000000; size: 4024(3.9 Kb)
 
 ---------- Heap memory:
-memory[free] @105020; size: 99593920(95.0 Mb)
+memory[free] @104ff0; size: 99593968(95.0 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

@@ -55,7 +55,7 @@ argumentList: ('&' | '...')? expression (',' argumentList)?;
 propertyList: (declaration | property ';')* | (property (',' property)* ','?)?;              // todo: remove declaration
 declExpr: expression | (variable '=' initializer);
 
-qualifiers: ('const' | 'static' | 'parallel')+;
+qualifiers: ('const' | 'static')+;
 binary: arithmetic | bitwise | relational | equality | assignment;
 unary: ('+' | '-' | '~' | '!');
 arithmetic: ('*' | '/' | '%' | '+' | '-');

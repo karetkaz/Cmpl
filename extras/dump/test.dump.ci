@@ -50830,8 +50830,8 @@ cmplStd/test/math/test.Complex.ci:21: mul: Complex({
 ---------- Memory usage:
 memory[all] @000000; size: 134217440(128.0 Mb)
 memory[used] @000000; size: 741407(724.0 Kb)
-memory[heap] @0b501f; size: 99921625(95.3 Mb)
-memory[stack] @3ffff40; size: 33554360(32.0 Mb)
+memory[heap] @0b501f; size: 99921633(95.3 Mb)
+memory[stack] @3ffff48; size: 33554360(32.0 Mb)
 
 ---------- Used memory:
 memory[meta] @000000; size: 688704(672.6 Kb)
