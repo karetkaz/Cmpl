@@ -352,7 +352,7 @@ static void install_type(ccContext cc, ccInstall mode) {
 	}
 	symn type_fun = install(cc, "function", ATTR_stat | ATTR_cnst | KIND_typ | CAST_ref, 1 * vm_ref_size, type_rec, NULL);
 	if (mode & install_obj) {
-		type_obj = install(cc,  typeProtoObj, ATTR_stat | ATTR_cnst | KIND_typ | CAST_ref, 1 * vm_ref_size, type_rec, NULL);
+		type_obj = install(cc, typeProtoObj, ATTR_stat | ATTR_cnst | KIND_typ | CAST_ref, 1 * vm_ref_size, type_rec, NULL);
 		type_obj->doc = type_doc_public;
 		type_obj->name = typeProtoObj;
 	}

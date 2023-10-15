@@ -23,36 +23,8 @@ int onEvent(int action, int button, int x, int y) {
 		x1: 150;
 		y1: 150;
 	};
-	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return Window.quit();
-	}
-	if (action == Window.WINDOW_INIT) {
-		offs.resize(null, back, null, 1);
-	}
-	if (action == Window.KEY_PRESS) {
-		if (button == ' ') {
-			// toggle animation
-			if (millis == 0) {
-				millis = System.millis();
-			} else {
-				millis = 0;
-			}
-		}
-		if (button == 's') {
-			trace("dumping screen");
-			offs.saveBmp("temp/dump.bmp", 0);
-		}
-	}
-	if (action == Window.FINGER_MOTION) {
-		action = Window.MOUSE_MOTION;
-	}
-	if (action == Window.MOUSE_PRESS) {
-		offs.resize(null, back, null, 1);
-		action = Window.MOUSE_MOTION;
-	}
-	if (action == Window.MOUSE_MOTION) {
-		if (button == 1) {
+	if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
+		if (button == 1 || action == Window.FINGER_MOTION) {
 			offs.copy(x, y, draw, null);
 		}
 		if (button == 2) {
@@ -74,6 +46,32 @@ int onEvent(int action, int button, int x, int y) {
 			offs.tile(x, y, draw, roi);
 		}
 	}
+	else if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
+		offs.resize(null, back, null, 1);
+		return onEvent(Window.MOUSE_MOTION, 1, x, y);
+	}
+	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	else if (action == Window.KEY_PRESS) {
+		if (button == ' ') {
+			// toggle animation
+			if (millis == 0) {
+				millis = System.millis();
+			} else {
+				millis = 0;
+			}
+		}
+		if (button == 's') {
+			trace("dumping screen");
+			offs.saveBmp("temp/dump.bmp", 0);
+		}
+	}
+	else if (action == Window.WINDOW_INIT) {
+		offs.resize(null, back, null, 1);
+	}
+
 	if (millis != 0) {
 		inline animateSpeed = 20;
 		int64 now = System.millis();

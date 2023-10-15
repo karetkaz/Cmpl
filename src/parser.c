@@ -555,7 +555,7 @@ static astn statement(ccContext cc, const char *doc);
 static astn declaration(ccContext cc, ccKind attr, astn *args, const char *doc);
 
 /** Parse qualifiers.
- * @brief scan for qualifiers: const static parallel
+ * @brief scan for qualifiers: const static
  * @param cc compiler context.
  * @param accept accepted qualifiers.
  * @return qualifiers.
@@ -585,12 +585,6 @@ static ccKind qualifier(ccContext cc) {
 					error(cc->rt, ast->file, ast->line, ERR_UNEXPECTED_QUAL, ast);
 				}
 				result |= ATTR_stat;
-				break;
-
-			// parallel
-			case PARAL_kwd:
-				skipTok(cc, PARAL_kwd, 1);
-				error(cc->rt, ast->file, ast->line, ERR_UNEXPECTED_QUAL, ast);
 				break;
 		}
 	}
@@ -1683,7 +1677,7 @@ static astn statement_if(ccContext cc, ccKind attr) {
 /** Parse for statement.
  * @brief parse: `for (init; test; step) statement`.
  * @param cc compiler context.
- * @param attr the qualifier of the statement (ie. parallel for)
+ * @param attr the qualifier of the statement (ie. static if)
  * @return the parsed syntax tree.
  */
 static astn statement_for(ccContext cc) {

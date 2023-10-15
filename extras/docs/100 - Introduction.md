@@ -56,5 +56,5 @@ Syntax is similar to c / js influenced by:
 
 ### `public`, `protected`, `private` access level modifiers are not part of the language.
 * [x] everything is accessible inside one file with no restriction.
-* [ ] accessing a non document commented variable, function field or method will raise a high level warning that can be treated as an error.
-* [ ] deprecation and any other annotations should be specified in the documentation comment.
+* [x] accessing a non-document commented variable, function field or method will raise a high-level warning that can be treated as an error.
+* [x] deprecation and any other annotations should be specified in the documentation comment.

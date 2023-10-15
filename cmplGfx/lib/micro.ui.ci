@@ -1321,11 +1321,11 @@ static struct Window {
 				}
 				return win.draw(widget);
 			}
-			if (button == 0 && (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION)) {
+			if (button == 0 && action == Window.MOUSE_MOTION) {
 				// hover views
 				return win.draw(widget);
 			}
-			if (button != 0 && (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS)) {
+			if (button != 0 && action == Window.MOUSE_PRESS) {
 				// focus views
 				return win.draw(widget);
 			}

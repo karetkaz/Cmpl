@@ -85,30 +85,3 @@ print(2);
 print(3);
 print(4);
 ```
-
-### Parallel for statement
-[TODO: implementation]
-
-The parallel version of the for statement executes the statements of the loop on a worker,
-than waits each of them to finish (in case we have fever workers than jobs or a single worker,
-the job will be executed on the main worker).
-
-**Example**: parallel for statement
-```
-parallel for (int i = 0; i < 5; i += 1) {
-	print(i);
-}
-print(99);
-```
-
-**Example**: for statement with a parallel block statement
-```
-for (int i = 0; i < 5; i += 1) parallel {
-	print(i);
-}
-print(99);
-```
-
-These two examples may result different output. In the first example the last statement:
-`print(99);` will be executed last, while in the second example it is possible that
-this is not the last executed statement.

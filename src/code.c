@@ -49,10 +49,6 @@ typedef struct vmProcessor {
 	trcptr tp;		// Trace pointer
 	stkptr sp;		// Stack pointer
 	size_t ss;		// Stack size
-
-	// processing with multi units
-	unsigned int	cp;			// slaves (join == 0)
-	unsigned int	pp;			// parent (main == 0)
 } *vmProcessor;
 
 #pragma pack(push, 1)
@@ -68,11 +64,6 @@ typedef struct vmInstruction {
 			uint8_t dst;	// index of destination
 			uint8_t src;	// index of source
 		} mov;
-		struct {
-			// used when starting a new parallel task
-			uint8_t  dl;	// data to be copied to stack
-			uint16_t cl;	// code to be executed parallel: 0 means fork
-		};
 	};
 } *vmInstruction;
 #pragma pack(pop)
@@ -660,7 +651,7 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 					if (!rollbackPc(rt)) {
 						break;
 					}
-					arg.i64 = 0 == 0;
+					arg.i64 = 1;
 					opc = opc_lc32;
 					break;
 
@@ -668,7 +659,7 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 					if (!rollbackPc(rt)) {
 						break;
 					}
-					arg.i64 = 0 == 0;
+					arg.i64 = 1;
 					opc = opc_lc32;
 					break;
 
@@ -1534,13 +1525,6 @@ void fixJump(rtContext rt, size_t src, size_t dst, ssize_t stc) {
 			fatal(ERR_INTERNAL_ERROR);
 			return;
 
-		case opc_task:
-			ip->dl = (uint8_t) (stc / 4);
-			ip->cl = (uint16_t) (dst - src);
-			dieif(ip->dl != stc / 4, ERR_INTERNAL_ERROR);
-			dieif(ip->cl != dst - src, ERR_INTERNAL_ERROR);
-			break;
-
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
@@ -1548,66 +1532,6 @@ void fixJump(rtContext rt, size_t src, size_t dst, ssize_t stc) {
 			dieif(ip->rel != (int32_t) (dst - src), ERR_INTERNAL_ERROR);
 			break;
 	}
-}
-
-// TODO: to be removed.
-static inline void tracePpu(vmProcessor pu, unsigned cp, char *msg) {
-	trace("%s: {pu:%d, ip:%x, bp:%x, sp:%x, stack:%d, parent:%d, children:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
-	(void)pu;
-	(void)cp;
-	(void)msg;
-}
-
-/// Try to start a new worker for task.
-static inline int vmFork(vmProcessor pu, int n, unsigned master, unsigned cl) {
-	// find an empty processor
-	int slave = master + 1;
-	while (slave < n) {
-		if (pu[slave].ip == NULL) {
-			break;
-		}
-		slave += 1;
-	}
-
-	if (slave < n) {
-		// set workers, parent, ip, sp and copy stack
-		pu[master].cp++;
-		pu[slave].cp = 0;
-		pu[slave].pp = master;
-
-		pu[slave].ip = pu[master].ip;
-		pu[slave].sp = (stkptr)pu[slave].bp + pu[slave].ss - cl;
-		memcpy(pu[slave].sp, pu[master].sp, cl * vm_stk_align);
-
-		tracePpu(pu, master, "master");
-		tracePpu(pu, slave, "slave");
-
-		return slave;
-	}
-	return 0;
-}
-
-/// Wait for worker to finish.
-static inline int vmJoin(vmProcessor pu, unsigned slave, int wait) {
-	unsigned master = pu[slave].pp;
-	tracePpu(pu, slave, "join");
-
-	// slave proc
-	if (master != slave) {
-		if (pu[slave].cp == 0) {
-			pu[slave].ip = NULL;
-			pu[master].cp -= 1;
-			return 1;
-		}
-		return 0;
-	}
-
-	if (pu[slave].cp > 0) {
-		return !wait;
-	}
-
-	// processor can continue to work
-	return 1;
 }
 
 /// Check for stack overflow.
@@ -1760,7 +1684,6 @@ static vmError exec(rtContext rt, vmProcessor pu, symn fun, const void *extra) {
 	libc *nativeCalls = rt->vm.nfc;
 
 	vmError execError = noError;
-	const int cc = 1;						// cell count
 	const size_t ms = rt->_size;			// memory size
 	const size_t ro = rt->vm.ro;			// read only region
 	const memptr mp = (void*)rt->_mem;
@@ -1972,8 +1895,6 @@ vmError execute(rtContext rt, int argc, char *argv[], void *extra) {
 	}
 	rt->_end -= rt->vm.ss;
 
-	pu->cp = 0;
-	pu->pp = 0;
 	pu->ss = rt->vm.ss;
 	pu->bp = rt->_end;
 	pu->tp = (trcptr)rt->_end;
@@ -2444,7 +2365,7 @@ void traceCalls(dbgContext dbg, FILE *out, int indent, size_t maxCalls, size_t s
 	}
 
 	if (hasOutput > 0) {
-		printFmt(out, NULL, "\n");;
+		printFmt(out, NULL, "\n");
 	}
 }
 
@@ -2457,7 +2378,7 @@ void printOpc(FILE *out, const char **esc, vmOpcode opc, int64_t args) {
 void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mode) {
 	vmInstruction ip = (vmInstruction)ptr;
 	dmpMode ofsMode = mode & (prSymQual|prRelOffs|prAbsOffs);
-	size_t i, len = (size_t) mode & prAsmCode;
+	size_t len = (size_t) mode & prAsmCode;
 	size_t offs = (size_t)ptr;
 	symn sym = NULL;
 
@@ -2501,7 +2422,8 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 
 	//~ write code bytes
 	if (len > 1 && len < opcode_tbl[ip->opc].size) {
-		for (i = 0; i < len - 2; i++) {
+		size_t i = 0;
+		for (; i < len - 2; i++) {
 			if (i < opcode_tbl[ip->opc].size) {
 				printFmt(out, esc, "%02x ", ((unsigned char *) ptr)[i]);
 			}
@@ -2514,7 +2436,7 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 		}
 	}
 	else {
-		for (i = 0; i < len; i++) {
+		for (size_t i = 0; i < len; i++) {
 			if (i < opcode_tbl[ip->opc].size) {
 				printFmt(out, esc, "%02x ", ((unsigned char *) ptr)[i]);
 			}
@@ -2579,25 +2501,13 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
-		case opc_task:
 			printFmt(out, esc, " ");
-			if (ip->opc == opc_task) {
-				printFmt(out, esc, "%d,", ip->dl);
-				i = ip->cl;
-			}
-			else {
-				i = (size_t) ip->rel;
-			}
 			if (mode & (prRelOffs | prAbsOffs)) {
-				printOfs(out, esc, ctx, sym, offs + i, ofsMode);
+				printOfs(out, esc, ctx, sym, offs + ip->rel, ofsMode);
 			}
 			else {
-				printFmt(out, esc, "%+d", i);
+				printFmt(out, esc, "%+d", ip->rel);
 			}
-			break;
-
-		case opc_sync:
-			printFmt(out, esc, " %d", ip->idx);
 			break;
 
 		case b32_bit: switch (ip->idx & 0xc0) {
@@ -2646,7 +2556,7 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 				}
 				else if (ctx->cc != NULL) {
 					char *str = vmPointer(ctx, offs);
-					for (i = 0; i < hashTableSize; i += 1) {
+					for (size_t i = 0; i < hashTableSize; i += 1) {
 						list lst;
 						for (lst = ctx->cc->stringTable[i]; lst; lst = lst->next) {
 							const char *data = lst->data;

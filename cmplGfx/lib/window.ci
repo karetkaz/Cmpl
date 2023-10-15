@@ -253,6 +253,10 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 			data.updateCamera();
 		}
 
+		else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+			// exit when releasing escape key
+			return Window.quit();
+		}
 		else if (action == Window.KEY_PRESS) {
 			if (button == Window.KEY_CODE_ENTER) {
 				return onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
@@ -334,12 +338,6 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 			}
 			else if (button == Window.KEY_CODE_TAB) {
 				data.mode = nextBit(data.mode, Mesh.drawMode);
-			}
-		}
-		else if (action == Window.KEY_RELEASE) {
-			if (button == Window.KEY_CODE_ESC) {
-				// exit when releasing escape key
-				return Window.quit();
 			}
 		}
 
