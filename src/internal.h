@@ -232,7 +232,7 @@ int importLib(rtContext rt, const char *path);
 void closeLibs(rtContext rt);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Error and warning messages
-void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtValue *inspect, const char *msg, va_list vaList);
+void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtValue *details, const char *msg, va_list vaList);
 
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"
@@ -345,14 +345,14 @@ void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtVal
 #define dieif(__EXP, __FMT, ...) do { if (__EXP) { prerr(#__EXP, __FMT, ##__VA_ARGS__); abort(); } } while(0)
 
 // compilation errors
-#define warn(__ENV, __LEVEL, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, __LEVEL, __FILE, __LINE, NULL, __FMT, ##__VA_ARGS__); } while(0)
-#define info(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raisePrint, __FILE, __LINE, NULL, __FMT, ##__VA_ARGS__); } while(0)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, __LEVEL, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
+#define info(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raisePrint, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 
 #ifndef DEBUGGING
-#define error(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE, __LINE, NULL, __FMT, ##__VA_ARGS__); } while(0)
+#define error(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #else
 // show also the line where the error is raised
-#define error(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE__, __LINE__, NULL, "%?s:%?u: "__FMT, __FILE, __LINE, ##__VA_ARGS__); } while(0)
+#define error(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE__, __LINE__, "%?s:%?u: "__FMT, __FILE, __LINE, ##__VA_ARGS__); } while(0)
 #define logif(__EXP, __FMT, ...) do { if (__EXP) { prerr(#__EXP, __FMT, ##__VA_ARGS__); } } while(0)
 
 #if DEBUGGING >= 1	// enable trace

@@ -105,7 +105,7 @@ static int ccInline(ccContext cc, astn tag) {
 
 	strncat(buff, tag->id.name, sizeof(buff) - strlen(buff) - 1);
 	char *path = relativeToCWD(buff);
-	printLog(cc->rt, raiseDebug, tag->file, tag->line, NULL, WARN_INLINE_FILE, path);
+	printLog(cc->rt, raiseDebug, tag->file, tag->line, WARN_INLINE_FILE, path);
 	return ccOpen(cc, path, 1, NULL);
 }
 

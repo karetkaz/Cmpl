@@ -1,25 +1,25 @@
 // test if statements are correctly generated and executed
 
 static if (0 == 0) {
-	raise(raise.debug, 1, "0 == 0", null);
+	raise(raise.debug, 1, "0 == 0");
 }
 
 static if (0 != 0) {
-	raise(raise.debug, 2, "0 != 0", null);
+	raise(raise.debug, 2, "0 != 0");
 }
 
 static if (0 == 0) {
-	raise(raise.debug, 3, "0 == 0", null);
+	raise(raise.debug, 3, "0 == 0");
 }
 else {
-	raise(raise.debug, 4, "0 != 0", null);
+	raise(raise.debug, 4, "0 != 0");
 }
 
 static if (0 != 0) {
-	raise(raise.debug, 5, "0 != 0", null);
+	raise(raise.debug, 5, "0 != 0");
 }
 else {
-	raise(raise.debug, 6, "0 == 0", null);
+	raise(raise.debug, 6, "0 == 0");
 }
 
 {

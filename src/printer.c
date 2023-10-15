@@ -1109,7 +1109,7 @@ void printFmt(FILE *out, const char **esc, const char *fmt, ...) {
 	va_end(ap);
 }
 
-void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtValue *inspect, const char *msg, va_list vaList) {
+void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtValue details[], const char *msg, va_list vaList) {
 	FILE *out = rt->logFile;
 	const char **esc = NULL;
 	const char *logType = "UNKNOWN";
@@ -1186,12 +1186,20 @@ void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtVal
 		wasOutput = 1;
 	}
 
-	if (inspect && inspect->type != NULL && inspect->ref != NULL) {
+	if (details != NULL && details->ref != NULL && details->length > 0) {
 		if (wasOutput) {
 			printStr(rt->logFile, NULL, ": ");
 		}
-		printVal(rt->logFile, NULL, rt, inspect->type, inspect->ref, prGlobal, 0);
-		wasOutput = 1;
+		for (size_t i = 0; i < details->length; ++i) {
+			if (i > 0) {
+				printStr(rt->logFile, NULL, ", ");
+			}
+			vmValue *var = (vmValue *) ((char *) details->ref + 2 * vm_ref_size * i);
+			symn type = vmPointer(rt, var->type);
+			vmValue *ref = vmPointer(rt, var->ref);
+			printVal(rt->logFile, NULL, rt, type, ref, prGlobal, 0);
+			wasOutput = 1;
+		}
 	}
 
 	if (wasOutput) {
@@ -1200,10 +1208,10 @@ void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtVal
 	}
 }
 
-void printLog(rtContext rt, raiseLevel level, const char *file, int line, rtValue *inspect, const char *msg, ...) {
+void printLog(rtContext rt, raiseLevel level, const char *file, int line, const char *msg, ...) {
 	va_list vaList;
 	va_start(vaList, msg);
-	print_log(rt, level, file, line, inspect, msg, vaList);
+	print_log(rt, level, file, line, NULL, msg, vaList);
 	va_end(vaList);
 }
 

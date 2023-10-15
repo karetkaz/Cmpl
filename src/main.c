@@ -2362,7 +2362,7 @@ int main(int argc, char *argv[]) {
 
 	if (install & installLibs) {
 		// install standard library.
-		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sCompile: `%?s`", extra.compileSteps, stdlib);}
+		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.compileSteps, stdlib);}
 		char buffer[1024];
 		if (stdlib != NULL) {
 			snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
@@ -2390,14 +2390,14 @@ int main(int argc, char *argv[]) {
 			if (ccFile != NULL) {
 				char *ext = strrchr(ccFile, '.');
 				if (ext && (strEquals(ext, ".so") || strEquals(ext, ".dll") || strEquals(ext, ".wasm") || strEquals(ext, ".dylib"))) {
-					if (extra.compileSteps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sLibrary: `%?s`", extra.compileSteps, ccFile);}
+					if (extra.compileSteps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sLibrary: `%?s`", extra.compileSteps, ccFile);}
 					int resultCode = importLib(rt, ccFile);
 					if (resultCode != 0) {
 						fatal("error(%d) importing library `%s`", resultCode, ccFile);
 					}
 				}
 				else {
-					if (extra.compileSteps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sCompile: `%?s`", extra.compileSteps, ccFile);}
+					if (extra.compileSteps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.compileSteps, ccFile);}
 					int errors = rt->errors;
 					if (!ccAddUnit(cc, ccFile, 1, NULL) && errors == rt->errors) {
 						// show the error in case it was not raised, but returned
@@ -2489,7 +2489,7 @@ int main(int argc, char *argv[]) {
 
 	// generate code only if there are no compilation errors
 	if (rt->errors == 0) {
-		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sGenerate: byte-code", extra.compileSteps);}
+		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sGenerate: byte-code", extra.compileSteps);}
 		if (ccGenCode(cc, run_code != run || extra.dmpAsmStmt) != 0) {
 			trace("error generating code");
 		}
@@ -2528,7 +2528,7 @@ int main(int argc, char *argv[]) {
 		}
 		else if (dumpFun != NULL) {
 			extra.esc = NULL;
-			if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sSymbols:", extra.compileSteps);}
+			if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sSymbols:", extra.compileSteps);}
 			dumpApi(rt, &extra, dumpFun);
 		}
 	}
@@ -2563,7 +2563,7 @@ int main(int argc, char *argv[]) {
 			extra.dmpMode |= prRelOffs | 9;
 			extra.dmpAsmStmt = 1;
 		}
-		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sExecute: byte-code", extra.compileSteps);}
+		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sExecute: byte-code", extra.compileSteps);}
 		long start = clock();
 		if (execute(rt, 0, NULL, NULL) == noError) {
 			// clear caught errors
@@ -2590,7 +2590,7 @@ int main(int argc, char *argv[]) {
 
 	if (extra.compileSteps != NULL) {
 		clock_t runTime = extra.hideOffsets ? 0 : extra.rtTime;
-		printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sExitcode: %d, time: %.3F ms",
+		printLog(extra.rt, raisePrint, NULL, 0, "%sExitcode: %d, time: %.3F ms",
 			extra.compileSteps, rt->errors,
 			runTime  * 1000. / CLOCKS_PER_SEC
 		);
