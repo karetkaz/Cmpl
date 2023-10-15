@@ -127,7 +127,7 @@ struct ccContextRec {
 	symn emit_opc;        // emit intrinsic function, or whatever it is.
 	astn void_tag;        // used to lookup function call with 0 argument
 
-	symn libc_dbg;        // raise(char file[*], int line, int level, int trace, char message[*], variant inspect);
+	symn libc_dbg;        // raise(char file[*], int line, int level, int trace, char message[*], variant details...);
 	symn libc_try;        // tryExec(pointer args, void action(pointer args));
 	symn libc_mal;        // pointer.alloc(pointer old, int size);
 	symn libc_new;        // object.create(typename type);

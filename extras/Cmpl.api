@@ -197,7 +197,7 @@ emit.swz # @builtin
 emit.swz.x2 # @builtin
 halt(): void # @builtin
 preferNativeCalls # @builtin
-raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void # Report messages or raise errors.
+raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void # Report messages or raise errors.
 raise.abort # @builtin
 raise.error # @builtin
 raise.warn # @builtin
@@ -229,31 +229,23 @@ byte
 float
 double
 sizeof(type: typename): int32 # Returns the size of the given type
-verbose(message: char[*], inspect: variant): void # report message at `verbose` logging level
-verbose(message: char[*]): void # report message at `verbose` logging level
-debug(message: char[*], inspect: variant): void # report message at `debug` logging level
-debug(message: char[*]): void # report message at `debug` logging level
-trace(message: char[*], inspect: variant): void # report message with stacktrace at `debug` logging level
-trace(message: char[*]): void # report message with stacktrace at `debug` logging level
-info(message: char[*], inspect: variant): void # report message at `info` logging level
-info(message: char[*]): void # report message at `info` logging level
-warn(message: char[*], inspect: variant): void # report message at `warn` logging level
-warn(message: char[*]): void # report message at `warn` logging level
-error(message: char[*], inspect: variant): void # report message with stacktrace at `error` logging level
-error(message: char[*]): void # report message with stacktrace at `error` logging level
-abort(message: char[*], inspect: variant): void # report message with stacktrace at `abort` logging level and abort execution
-abort(message: char[*]): void # report message with stacktrace at `abort` logging level and abort execution
+verbose(message: char[*], details: variant[]): void # report message at `verbose` logging level
+debug(message: char[*], details: variant[]): void # report message at `debug` logging level
+trace(message: char[*], details: variant[]): void # report message with stacktrace at `debug` logging level
+info(message: char[*], details: variant[]): void # report message at `info` logging level
+warn(message: char[*], details: variant[]): void # report message at `warn` logging level
+error(message: char[*], details: variant[]): void # report message with stacktrace at `error` logging level
+abort(message: char[*], details: variant[]): void # report message with stacktrace at `abort` logging level and abort execution
 abort(): void # report message with stacktrace at `abort` logging level and abort execution
-assert(condition: bool, message: char[*], inspect: variant): void # report message and abort the execution if the assertion condition fails (is false)
-assert(condition: bool, message: char[*]): void # report message and abort the execution if the assertion condition fails (is false)
-assert(condition: bool): void # report message and abort the execution if the assertion condition fails (is false)
+assert(condition: bool, message: char[*], details: variant[]): void # report message and abort the execution if the assertion condition fails (is false)
+assert(condition: bool, details: variant[]): void # report message and abort the execution if the assertion condition fails (is false)
 NotEquals # Record used for debugging purposes, containing expected, returned and an array of extra values
 NotEquals.expected # Value of the expected result
 NotEquals.returned # Value of the actual result
 NotEquals.extras # Extra argument to identify what happened
 NotEquals(expected: variant, returned: variant): NotEquals # Create a not equals record for inspection from expected and returned
-abort(message: char[*], inspect: NotEquals): void # abort execution displaying the expected and returned values
-assert(condition: bool, message: char[*], inspect: NotEquals): void # report message and abort the execution if the assertion condition fails (is false)
+abort(message: char[*], detail: NotEquals): void # abort execution displaying the expected and returned values
+assert(condition: bool, message: char[*], detail: NotEquals): void # report message and abort the execution if the assertion condition fails (is false)
 assertEq(expected: int32, returned: int32, message: char[*]): void # abort execution if the returned value is not equal to the expected value
 assertEq(expected: int32, returned: int32): void # abort execution if the returned value is not equal to the expected value
 inc(ptr: pointer, val: int32): pointer # Returns the pointer incremented with the given value

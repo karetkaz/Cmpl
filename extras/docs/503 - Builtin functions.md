@@ -56,7 +56,7 @@ Creates a slice from the string with length 3.
 ### The `raise` builtin function.
 The function can be used to log a message with or without the current stacktrace and even to abort the execution.
 
-`void raise(int level, int trace, string message, variant inspect);`
+`void raise(int level, int trace, string message, variant details...);`
 
 Arguments:
 - `level`: level to be used:
@@ -69,7 +69,7 @@ Arguments:
 
 - `trace`: prints the last n stack trace, available only in debug mode.
 - `message`: the message to be printed.
-- `inspect`: a variant to be inspected, useful in assertions.
+- `details`: array of variant data to be inspected, useful in assertions.
 
 In case the raise function is invoked with `abort` the message is logged, and the execution of the application is aborted.
 Using other levels the the execution continues, and the message is logged only if the corresponding level is enabled.

@@ -335,14 +335,21 @@ static vmError sysMSleep(nfcContext args) {
 	return noError;
 }
 
-// void raise(char file[*], int line, int level, int trace, char message[*], variant inspect);
+static void raiseStd(rtContext rt, raiseLevel level, const char *file, int line, rtValue *details, const char *msg, ...) {
+	va_list vaList;
+	va_start(vaList, msg);
+	print_log(rt, level, file, line, details, msg, vaList);
+	va_end(vaList);
+}
+
+// void raise(char file[*], int line, int level, int trace, char message[*], variant details...);
 static vmError sysRaise(nfcContext ctx) {
 	const char *file = nextArg(ctx).ref;
 	int line = nextArg(ctx).i32;
 	int logLevel = nextArg(ctx).i32;
 	int trace = nextArg(ctx).i32;
 	char *message = nextArg(ctx).ref;
-	rtValue inspect = nextArg(ctx);
+	rtValue details = nextArg(ctx);
 	rtContext rt = ctx->rt;
 
 	// logging is disabled or log level not reached.
@@ -350,7 +357,7 @@ static vmError sysRaise(nfcContext ctx) {
 		return noError;
 	}
 
-	printLog(rt, logLevel, file, line, &inspect, "%?s", message);
+	raiseStd(rt, logLevel, file, line, &details, "%?s", message);
 
 	// print stack trace excluding this function
 	if (rt->dbg != NULL && trace > 0) {
@@ -504,7 +511,7 @@ static int ccLibSys(ccContext cc) {
 
 	// raise(fatal, error, warn, info, debug, trace)
 	if (cc->type_var != NULL) {
-		cc->libc_dbg = ccAddCall(cc, sysRaise, "void raise(const char file[*], int32 line, int32 level, int32 trace, const char message[*], const variant details)");
+		cc->libc_dbg = ccAddCall(cc, sysRaise, "void raise(const char file[*], int32 line, int32 level, int32 trace, const char message[*], const variant details...)");
 		if (cc->libc_dbg == NULL) {
 			err = 2;
 		}

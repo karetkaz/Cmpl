@@ -291,15 +291,13 @@ void: typename {
 	cmplStd/lib/text/stream/ByteStream.ci:48: referenced as `void`
 	cmplStd/lib/text/stream/ByteStream.ci:7: referenced as `void`
 	cmplStd/lib/text/stream/ByteStream.ci:5: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:75: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:71: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:71: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:45: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:45: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:43: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:43: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:41: referenced as `void`
-	cmplStd/lib/lang/Debug.ci:41: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:59: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:55: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:55: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:29: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:29: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `void`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `void`
 	internal usages: 41
 }
 bool: typename {
@@ -447,10 +445,9 @@ bool: typename {
 	cmplStd/lib/math/Math.ci:34: referenced as `bool`
 	cmplStd/lib/math/Math.ci:29: referenced as `bool`
 	cmplStd/lib/math/Math.ci:23: referenced as `bool`
-	cmplStd/lib/lang/Debug.ci:71: referenced as `bool`
-	cmplStd/lib/lang/Debug.ci:45: referenced as `bool`
-	cmplStd/lib/lang/Debug.ci:43: referenced as `bool`
-	cmplStd/lib/lang/Debug.ci:41: referenced as `bool`
+	cmplStd/lib/lang/Debug.ci:55: referenced as `bool`
+	cmplStd/lib/lang/Debug.ci:29: referenced as `bool`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `bool`
 	cmplStd/lib.ci:4: referenced as `bool`
 	internal usages: 6
 }
@@ -588,24 +585,16 @@ char: typename {
 	cmplStd/lib/text/cstr.ci:4: referenced as `char`
 	cmplStd/lib/time/Timezone.ci:22: referenced as `char`
 	cmplStd/lib/time/Timezone.ci:3: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:75: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:71: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:69: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:43: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:41: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:34: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:31: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:29: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:26: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:24: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:21: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:59: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:55: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `char`
 	cmplStd/lib/lang/Debug.ci:19: referenced as `char`
 	cmplStd/lib/lang/Debug.ci:16: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `char`
-	cmplStd/lib/lang/Debug.ci:6: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `char`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `char`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `char`
 	internal usages: 20
 }
@@ -1631,10 +1620,10 @@ int32: typename {
 	cmplStd/lib/lang/Pointer.ci:3: referenced as `int`
 	cmplStd/lib/lang/Pointer.ci:1: referenced as `int32`
 	cmplStd/lib/lang/Pointer.ci:1: referenced as `int`
-	cmplStd/lib/lang/Debug.ci:88: referenced as `int`
-	cmplStd/lib/lang/Debug.ci:88: referenced as `int`
-	cmplStd/lib/lang/Debug.ci:75: referenced as `int`
-	cmplStd/lib/lang/Debug.ci:75: referenced as `int`
+	cmplStd/lib/lang/Debug.ci:72: referenced as `int`
+	cmplStd/lib/lang/Debug.ci:72: referenced as `int`
+	cmplStd/lib/lang/Debug.ci:59: referenced as `int`
+	cmplStd/lib/lang/Debug.ci:59: referenced as `int`
 	internal usages: 121
 }
 int64: typename {
@@ -3329,19 +3318,20 @@ variant: typename {
 	cmplGfx/lib/micro.ui.ci:836: referenced as `variant`
 	cmplGfx/lib/micro.ui.ci:756: referenced as `variant`
 	cmplGfx/lib/micro.ui.core.ci:247: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:79: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:60: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:60: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:56: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:53: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:50: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:41: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:63: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:44: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:44: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:40: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:37: referenced as `variant`
 	cmplStd/lib/lang/Debug.ci:34: referenced as `variant`
 	cmplStd/lib/lang/Debug.ci:29: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:24: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `variant`
 	cmplStd/lib/lang/Debug.ci:19: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `variant`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:16: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `variant`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `variant`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `variant`
 	internal usages: 2
 }
@@ -3670,16 +3660,8 @@ null: pointer {
 	cmplStd/lib/math/Bits.ci:61: referenced as `null`
 	cmplStd/lib/math/Bits.ci:51: referenced as `null`
 	cmplStd/lib/math/Bits.ci:41: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:88: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:64: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:38: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:31: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:26: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:21: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:16: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `null`
-	cmplStd/lib/lang/Debug.ci:6: referenced as `null`
+	cmplStd/lib/lang/Debug.ci:72: referenced as `null`
+	cmplStd/lib/lang/Debug.ci:48: referenced as `null`
 }
 int: typename {
 .kind: static const inline
@@ -5112,7 +5094,7 @@ preferNativeCalls: int64 {
 	cmplStd/lib/math/Bits.ci:51: referenced as `preferNativeCalls`
 	cmplStd/lib/math/Bits.ci:41: referenced as `preferNativeCalls`
 }
-raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void: function {
+raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void: function {
 .kind: static const inline
 .base: `function`
 .size: 0
@@ -5131,58 +5113,43 @@ raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], 
 .param level: int32 (size: 4, cast: variable(i32))
 .param trace: int32 (size: 4, cast: variable(i32))
 .param message: char[*] (size: 4, cast: const variable(ref))
-.param details: variant (size: 8, cast: const variable(var))
+.param details: variant[] (size: 8, cast: const variable(arr))
 .doc: 'Report messages or raise errors.'
 .value: nfc(11)
 .usages:
-	cmplStd/lib/lang/Debug.ci:85: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:85: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:85: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:69: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:69: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:69: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:38: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:38: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:38: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:34: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:34: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:34: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:31: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:31: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:31: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:29: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:29: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:29: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:26: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:26: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:26: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:24: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:24: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:24: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:21: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:21: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:21: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:19: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:19: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:19: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:16: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:16: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:16: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:6: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:6: referenced as `raise`
-	cmplStd/lib/lang/Debug.ci:6: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `raise`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `raise`
@@ -5193,76 +5160,71 @@ raise.abort: int64 {
 .base: `int64`
 .size: 0
 .name: 'abort'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: -2
 .usages:
-	cmplStd/lib/lang/Debug.ci:85: referenced as `abort`
 	cmplStd/lib/lang/Debug.ci:69: referenced as `abort`
-	cmplStd/lib/lang/Debug.ci:38: referenced as `abort`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `abort`
-	cmplStd/lib/lang/Debug.ci:34: referenced as `abort`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `abort`
+	cmplStd/lib/lang/Debug.ci:29: referenced as `abort`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `abort`
+	cmplStd/lib/lang/Debug.ci:24: referenced as `abort`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `abort`
 }
 raise.error: int64 {
 .kind: static const i64
 .base: `int64`
 .size: 0
 .name: 'error'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: -1
 .usages:
-	cmplStd/lib/lang/Debug.ci:31: referenced as `error`
-	cmplStd/lib/lang/Debug.ci:29: referenced as `error`
+	cmplStd/lib/lang/Debug.ci:19: referenced as `error`
 }
 raise.warn: int64 {
 .kind: static const i64
 .base: `int64`
 .size: 0
 .name: 'warn'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: 1
 .usages:
-	cmplStd/lib/lang/Debug.ci:26: referenced as `warn`
-	cmplStd/lib/lang/Debug.ci:24: referenced as `warn`
+	cmplStd/lib/lang/Debug.ci:16: referenced as `warn`
 }
 raise.info: int64 {
 .kind: static const i64
 .base: `int64`
 .size: 0
 .name: 'info'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: 13
 .usages:
-	cmplStd/lib/lang/Debug.ci:21: referenced as `info`
-	cmplStd/lib/lang/Debug.ci:19: referenced as `info`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `info`
 }
 raise.debug: int64 {
 .kind: static const i64
 .base: `int64`
 .size: 0
 .name: 'debug'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: 14
 .usages:
-	cmplStd/lib/lang/Debug.ci:16: referenced as `debug`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `debug`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `debug`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `debug`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `debug`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `debug`
 }
 raise.verbose: int64 {
 .kind: static const i64
 .base: `int64`
 .size: 0
 .name: 'verbose'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: 15
 .usages:
-	cmplStd/lib/lang/Debug.ci:6: referenced as `verbose`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `verbose`
 }
 raise.noTrace: int64 {
@@ -5270,17 +5232,13 @@ raise.noTrace: int64 {
 .base: `int64`
 .size: 0
 .name: 'noTrace'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: 0
 .usages:
-	cmplStd/lib/lang/Debug.ci:26: referenced as `noTrace`
-	cmplStd/lib/lang/Debug.ci:24: referenced as `noTrace`
-	cmplStd/lib/lang/Debug.ci:21: referenced as `noTrace`
-	cmplStd/lib/lang/Debug.ci:19: referenced as `noTrace`
-	cmplStd/lib/lang/Debug.ci:11: referenced as `noTrace`
-	cmplStd/lib/lang/Debug.ci:9: referenced as `noTrace`
-	cmplStd/lib/lang/Debug.ci:6: referenced as `noTrace`
+	cmplStd/lib/lang/Debug.ci:16: referenced as `noTrace`
+	cmplStd/lib/lang/Debug.ci:13: referenced as `noTrace`
+	cmplStd/lib/lang/Debug.ci:7: referenced as `noTrace`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `noTrace`
 }
 raise.defTrace: int64 {
@@ -5288,19 +5246,18 @@ raise.defTrace: int64 {
 .base: `int64`
 .size: 0
 .name: 'defTrace'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 .doc: '@builtin'
 .value: 128
 .usages:
-	cmplStd/lib/lang/Debug.ci:85: referenced as `defTrace`
 	cmplStd/lib/lang/Debug.ci:69: referenced as `defTrace`
-	cmplStd/lib/lang/Debug.ci:38: referenced as `defTrace`
-	cmplStd/lib/lang/Debug.ci:36: referenced as `defTrace`
-	cmplStd/lib/lang/Debug.ci:34: referenced as `defTrace`
-	cmplStd/lib/lang/Debug.ci:31: referenced as `defTrace`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `defTrace`
 	cmplStd/lib/lang/Debug.ci:29: referenced as `defTrace`
-	cmplStd/lib/lang/Debug.ci:16: referenced as `defTrace`
-	cmplStd/lib/lang/Debug.ci:14: referenced as `defTrace`
+	cmplStd/lib/lang/Debug.ci:27: referenced as `defTrace`
+	cmplStd/lib/lang/Debug.ci:24: referenced as `defTrace`
+	cmplStd/lib/lang/Debug.ci:22: referenced as `defTrace`
+	cmplStd/lib/lang/Debug.ci:19: referenced as `defTrace`
+	cmplStd/lib/lang/Debug.ci:10: referenced as `defTrace`
 }
 tryExec(args: pointer, action(args: pointer): void): int32: function {
 .kind: static const inline
@@ -5733,7 +5690,7 @@ sizeof(type: typename): int32: function {
 	cmplGfx/lib/micro.ui.core.ci:522: referenced as `sizeof`
 	cmplStd/lib/math/Polynomial.ci:62: referenced as `sizeof`
 }
-verbose(message: char[*], inspect: variant): void: function {
+verbose(message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
@@ -5741,61 +5698,38 @@ verbose(message: char[*], inspect: variant): void: function {
 .file: 'cmplStd/lib/lang/Debug.ci:4'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message at `verbose` logging level'
-.value: raise(raise.verbose, raise.noTrace, message, inspect)
+.value: raise(raise.verbose, raise.noTrace, message, ...details)
 .usages:
 }
-verbose(message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'verbose'
-.file: 'cmplStd/lib/lang/Debug.ci:6'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message at `verbose` logging level'
-.value: raise(raise.verbose, raise.noTrace, message, null)
-.usages:
-}
-debug(message: char[*], inspect: variant): void: function {
+debug(message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'debug'
-.file: 'cmplStd/lib/lang/Debug.ci:9'
+.file: 'cmplStd/lib/lang/Debug.ci:7'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message at `debug` logging level'
-.value: raise(raise.debug, raise.noTrace, message, inspect)
+.value: raise(raise.debug, raise.noTrace, message, ...details)
 .usages:
 	cmplGfx/lib/micro.ui.ci:1264: referenced as `debug`
 }
-debug(message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'debug'
-.file: 'cmplStd/lib/lang/Debug.ci:11'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message at `debug` logging level'
-.value: raise(raise.debug, raise.noTrace, message, null)
-.usages:
-}
-trace(message: char[*], inspect: variant): void: function {
+trace(message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'trace'
-.file: 'cmplStd/lib/lang/Debug.ci:14'
+.file: 'cmplStd/lib/lang/Debug.ci:10'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message with stacktrace at `debug` logging level'
-.value: raise(raise.debug, raise.defTrace, message, inspect)
+.value: raise(raise.debug, raise.defTrace, message, ...details)
 .usages:
+	cmplGfx/lib/window.ci:117: referenced as `trace`
 	cmplStd/lib/time/Datetime.ci:168: referenced as `trace`
 	cmplStd/lib/time/Datetime.ci:158: referenced as `trace`
 	cmplStd/lib/time/Datetime.ci:152: referenced as `trace`
@@ -5803,195 +5737,119 @@ trace(message: char[*], inspect: variant): void: function {
 	cmplStd/lib/time/Timestamp.ci:57: referenced as `trace`
 	cmplStd/lib/math/Matrix4f.ci:112: referenced as `trace`
 }
-trace(message: char[*]): void: function {
+info(message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
-.name: 'trace'
+.name: 'info'
+.file: 'cmplStd/lib/lang/Debug.ci:13'
+.param .result: void (size: 0, cast: void)
+.param message: char[*] (size: 4, cast: const ref)
+.param details: variant[] (size: 8, cast: const arr)
+.doc: 'report message at `info` logging level'
+.value: raise(raise.info, raise.noTrace, message, ...details)
+.usages:
+}
+warn(message: char[*], details: variant[]): void: function {
+.kind: inline
+.base: `function`
+.size: 0
+.name: 'warn'
 .file: 'cmplStd/lib/lang/Debug.ci:16'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message with stacktrace at `debug` logging level'
-.value: raise(raise.debug, raise.defTrace, message, null)
-.usages:
-	cmplGfx/lib/window.ci:117: referenced as `trace`
-}
-info(message: char[*], inspect: variant): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'info'
-.file: 'cmplStd/lib/lang/Debug.ci:19'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
-.doc: 'report message at `info` logging level'
-.value: raise(raise.info, raise.noTrace, message, inspect)
-.usages:
-}
-info(message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'info'
-.file: 'cmplStd/lib/lang/Debug.ci:21'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message at `info` logging level'
-.value: raise(raise.info, raise.noTrace, message, null)
-.usages:
-}
-warn(message: char[*], inspect: variant): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'warn'
-.file: 'cmplStd/lib/lang/Debug.ci:24'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message at `warn` logging level'
-.value: raise(raise.warn, raise.noTrace, message, inspect)
-.usages:
-}
-warn(message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'warn'
-.file: 'cmplStd/lib/lang/Debug.ci:26'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message at `warn` logging level'
-.value: raise(raise.warn, raise.noTrace, message, null)
+.value: raise(raise.warn, raise.noTrace, message, ...details)
 .usages:
 	cmplStd/lib/time/Timezone.ci:25: referenced as `warn`
 }
-error(message: char[*], inspect: variant): void: function {
+error(message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'error'
-.file: 'cmplStd/lib/lang/Debug.ci:29'
+.file: 'cmplStd/lib/lang/Debug.ci:19'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message with stacktrace at `error` logging level'
-.value: raise(raise.error, raise.defTrace, message, inspect)
+.value: raise(raise.error, raise.defTrace, message, ...details)
 .usages:
 	cmplGfx/lib/micro.ui.ci:787: referenced as `error`
 	cmplGfx/lib/micro.ui.core.ci:594: referenced as `error`
-}
-error(message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'error'
-.file: 'cmplStd/lib/lang/Debug.ci:31'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message with stacktrace at `error` logging level'
-.value: raise(raise.error, raise.defTrace, message, null)
-.usages:
 	cmplStd/lib/text/encoding/Utf8.ci:36: referenced as `error`
 	cmplStd/lib/text/encoding/Utf8.ci:27: referenced as `error`
 	cmplStd/lib/text/encoding/Utf8.ci:19: referenced as `error`
 }
-abort(message: char[*], inspect: variant): void: function {
+abort(message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'abort'
-.file: 'cmplStd/lib/lang/Debug.ci:34'
+.file: 'cmplStd/lib/lang/Debug.ci:22'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message with stacktrace at `abort` logging level and abort execution'
-.value: raise(raise.abort, raise.defTrace, message, inspect)
+.value: raise(raise.abort, raise.defTrace, message, ...details)
 .usages:
 	cmplGfx/lib/mesh.ci:9: referenced as `abort`
 	cmplStd/lib/text/Format.ci:483: referenced as `abort`
-	cmplStd/lib/lang/Debug.ci:41: referenced as `abort`
-}
-abort(message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'abort'
-.file: 'cmplStd/lib/lang/Debug.ci:36'
-.param .result: void (size: 0, cast: void)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message with stacktrace at `abort` logging level and abort execution'
-.value: raise(raise.abort, raise.defTrace, message, null)
-.usages:
 	cmplStd/lib/time/Timezone.ci:22: referenced as `abort`
 	cmplStd/lib/time/Timestamp.ci:95: referenced as `abort`
-	cmplStd/lib/lang/Debug.ci:45: referenced as `abort`
-	cmplStd/lib/lang/Debug.ci:43: referenced as `abort`
 }
 abort(): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'abort'
-.file: 'cmplStd/lib/lang/Debug.ci:38'
+.file: 'cmplStd/lib/lang/Debug.ci:24'
 .param .result: void (size: 0, cast: void)
 .doc: 'report message with stacktrace at `abort` logging level and abort execution'
-.value: raise(raise.abort, raise.defTrace, "execution aborted!", null)
+.value: raise(raise.abort, raise.defTrace, "execution aborted!")
 .usages:
 }
-assert(condition: bool, message: char[*], inspect: variant): void: function {
+assert(condition: bool, message: char[*], details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'assert'
-.file: 'cmplStd/lib/lang/Debug.ci:41'
+.file: 'cmplStd/lib/lang/Debug.ci:27'
 .param .result: void (size: 0, cast: void)
 .param condition: bool (size: 4, cast: bool)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: variant (size: 8, cast: const var)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message and abort the execution if the assertion condition fails (is false)'
-.value: void(condition ? void(0) : abort(message, inspect))
-.usages:
-	cmplStd/lib/math/Polynomial.ci:99: referenced as `assert`
-	cmplStd/lib/math/Polynomial.ci:90: referenced as `assert`
-	cmplStd/lib/text/encoding/binary/Base64.ci:191: referenced as `assert`
-	cmplStd/lib/text/Format.ci:115: referenced as `assert`
-	cmplStd/lib/text/Format.ci:114: referenced as `assert`
-}
-assert(condition: bool, message: char[*]): void: function {
-.kind: inline
-.base: `function`
-.size: 0
-.name: 'assert'
-.file: 'cmplStd/lib/lang/Debug.ci:43'
-.param .result: void (size: 0, cast: void)
-.param condition: bool (size: 4, cast: bool)
-.param message: char[*] (size: 4, cast: const ref)
-.doc: 'report message and abort the execution if the assertion condition fails (is false)'
-.value: void(condition ? void(0) : abort(message))
+.value: void(condition ? void(0) : raise(raise.abort, raise.defTrace, message, ...details))
 .usages:
 	cmplGfx/lib/micro.ui.core.ci:610: referenced as `assert`
 	cmplGfx/lib/micro.ui.core.ci:269: referenced as `assert`
 	cmplGfx/lib/micro.ui.core.ci:266: referenced as `assert`
 	cmplStd/lib/math/Polynomial.ci:100: referenced as `assert`
+	cmplStd/lib/math/Polynomial.ci:99: referenced as `assert`
+	cmplStd/lib/math/Polynomial.ci:90: referenced as `assert`
 	cmplStd/lib/text/encoding/Utf8.ci:41: referenced as `assert`
 	cmplStd/lib/text/encoding/Utf8.ci:40: referenced as `assert`
 	cmplStd/lib/text/encoding/Utf8.ci:39: referenced as `assert`
 	cmplStd/lib/text/encoding/Utf8.ci:31: referenced as `assert`
 	cmplStd/lib/text/encoding/Utf8.ci:30: referenced as `assert`
 	cmplStd/lib/text/encoding/Utf8.ci:22: referenced as `assert`
+	cmplStd/lib/text/encoding/binary/Base64.ci:191: referenced as `assert`
+	cmplStd/lib/text/Format.ci:115: referenced as `assert`
+	cmplStd/lib/text/Format.ci:114: referenced as `assert`
 }
-assert(condition: bool): void: function {
+assert(condition: bool, details: variant[]): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'assert'
-.file: 'cmplStd/lib/lang/Debug.ci:45'
+.file: 'cmplStd/lib/lang/Debug.ci:29'
 .param .result: void (size: 0, cast: void)
 .param condition: bool (size: 4, cast: bool)
+.param details: variant[] (size: 8, cast: const arr)
 .doc: 'report message and abort the execution if the assertion condition fails (is false)'
-.value: void(condition ? void(0) : abort("assertion failed!"))
+.value: void(condition ? void(0) : raise(raise.abort, raise.defTrace, "assertion failed!", ...details))
 .usages:
 	cmplGfx/lib/micro.ui.core.ci:1237: referenced as `assert`
 	cmplGfx/lib/micro.ui.core.ci:579: referenced as `assert`
@@ -6019,59 +5877,59 @@ NotEquals: typename {
 .base: `typename`
 .size: 24
 .name: 'NotEquals'
-.file: 'cmplStd/lib/lang/Debug.ci:48'
+.file: 'cmplStd/lib/lang/Debug.ci:32'
 .field expected: variant (size: 8, cast: const variable(var))
 .field returned: variant (size: 8, cast: const variable(var))
 .field extras: variant[] (size: 8, cast: const variable(arr))
 .doc: 'Record used for debugging purposes, containing expected, returned and an array of extra values'
 .usages:
-	cmplStd/lib/lang/Debug.ci:80: referenced as `NotEquals`
-	cmplStd/lib/lang/Debug.ci:71: referenced as `NotEquals`
-	cmplStd/lib/lang/Debug.ci:69: referenced as `NotEquals`
-	cmplStd/lib/lang/Debug.ci:60: referenced as `NotEquals`
+	cmplStd/lib/lang/Debug.ci:64: referenced as `NotEquals`
+	cmplStd/lib/lang/Debug.ci:55: referenced as `NotEquals`
+	cmplStd/lib/lang/Debug.ci:53: referenced as `NotEquals`
+	cmplStd/lib/lang/Debug.ci:44: referenced as `NotEquals`
 }
 NotEquals.expected: variant {
 .kind: const variable(var)
 .base: `variant`
 .size: 8
 .name: 'expected'
-.file: 'cmplStd/lib/lang/Debug.ci:50'
+.file: 'cmplStd/lib/lang/Debug.ci:34'
 .owner: NotEquals
 .doc: 'Value of the expected result'
 .usages:
-	cmplStd/lib/lang/Debug.ci:81: referenced as `expected`
-	cmplStd/lib/lang/Debug.ci:62: referenced as `expected`
+	cmplStd/lib/lang/Debug.ci:65: referenced as `expected`
+	cmplStd/lib/lang/Debug.ci:46: referenced as `expected`
 }
 NotEquals.returned: variant {
 .kind: const variable(var)
 .base: `variant`
 .size: 8
 .name: 'returned'
-.file: 'cmplStd/lib/lang/Debug.ci:53'
+.file: 'cmplStd/lib/lang/Debug.ci:37'
 .owner: NotEquals
 .doc: 'Value of the actual result'
 .usages:
-	cmplStd/lib/lang/Debug.ci:82: referenced as `returned`
-	cmplStd/lib/lang/Debug.ci:63: referenced as `returned`
+	cmplStd/lib/lang/Debug.ci:66: referenced as `returned`
+	cmplStd/lib/lang/Debug.ci:47: referenced as `returned`
 }
 NotEquals.extras: variant[] {
 .kind: const variable(arr)
 .base: `variant[]`
 .size: 8
 .name: 'extras'
-.file: 'cmplStd/lib/lang/Debug.ci:56'
+.file: 'cmplStd/lib/lang/Debug.ci:40'
 .owner: NotEquals
 .doc: 'Extra argument to identify what happened'
 .usages:
-	cmplStd/lib/lang/Debug.ci:83: referenced as `extras`
-	cmplStd/lib/lang/Debug.ci:64: referenced as `extras`
+	cmplStd/lib/lang/Debug.ci:67: referenced as `extras`
+	cmplStd/lib/lang/Debug.ci:48: referenced as `extras`
 }
 NotEquals(expected: variant, returned: variant): NotEquals: function {
 .kind: static function
 .base: `function`
 .size: 15
 .name: 'NotEquals'
-.file: 'cmplStd/lib/lang/Debug.ci:60'
+.file: 'cmplStd/lib/lang/Debug.ci:44'
 .param .result: NotEquals (size: 24, cast: variable(val))
 .param expected: variant (size: 8, cast: const variable(var))
 .param returned: variant (size: 8, cast: const variable(var))
@@ -6084,52 +5942,52 @@ NotEquals(expected: variant, returned: variant): NotEquals: function {
 		};
 }
 .instructions: (15 bytes)
-	cmplStd/lib/lang/Debug.ci:61: (15 bytes): return .result := {...};
-	cmplStd/lib/lang/Debug.ci:62: (3 bytes): .result.expected := expected;
+	cmplStd/lib/lang/Debug.ci:45: (15 bytes): return .result := {...};
+	cmplStd/lib/lang/Debug.ci:46: (3 bytes): .result.expected := expected;
 	<NotEquals>  : mov.x64 sp(5, 3)
-	cmplStd/lib/lang/Debug.ci:63: (3 bytes): .result.returned := returned;
+	cmplStd/lib/lang/Debug.ci:47: (3 bytes): .result.returned := returned;
 	<NotEquals+?>: mov.x64 sp(7, 1)
-	cmplStd/lib/lang/Debug.ci:64: (8 bytes): .result.extras := (null);
+	cmplStd/lib/lang/Debug.ci:48: (8 bytes): .result.extras := (null);
 	<NotEquals+?>: load.z32
 	<NotEquals+?>: load.ref <?> ;null
 	<NotEquals+?>: set.x64 sp(11)
 	<NotEquals+?>: ret
 .usages:
 }
-abort(message: char[*], inspect: NotEquals): void: function {
+abort(message: char[*], detail: NotEquals): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'abort'
-.file: 'cmplStd/lib/lang/Debug.ci:69'
+.file: 'cmplStd/lib/lang/Debug.ci:53'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: NotEquals (size: 4, cast: const ref)
+.param detail: NotEquals (size: 4, cast: const ref)
 .doc: 'abort execution displaying the expected and returned values'
-.value: raise(raise.abort, raise.defTrace, message, inspect)
+.value: raise(raise.abort, raise.defTrace, message, detail)
 .usages:
-	cmplStd/lib/lang/Debug.ci:71: referenced as `abort`
+	cmplStd/lib/lang/Debug.ci:55: referenced as `abort`
 }
-assert(condition: bool, message: char[*], inspect: NotEquals): void: function {
+assert(condition: bool, message: char[*], detail: NotEquals): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'assert'
-.file: 'cmplStd/lib/lang/Debug.ci:71'
+.file: 'cmplStd/lib/lang/Debug.ci:55'
 .param .result: void (size: 0, cast: void)
 .param condition: bool (size: 4, cast: bool)
 .param message: char[*] (size: 4, cast: const ref)
-.param inspect: NotEquals (size: 4, cast: const ref)
+.param detail: NotEquals (size: 4, cast: const ref)
 .doc: 'report message and abort the execution if the assertion condition fails (is false)'
-.value: void(condition ? void(0) : abort(message, inspect))
+.value: void(condition ? void(0) : abort(message, detail))
 .usages:
 }
 assertEq(expected: int32, returned: int32, message: char[*]): void: function {
 .kind: static function
 .base: `function`
-.size: 103
+.size: 118
 .name: 'assertEq'
-.file: 'cmplStd/lib/lang/Debug.ci:75'
+.file: 'cmplStd/lib/lang/Debug.ci:59'
 .param .result: void (size: 0, cast: variable(void))
 .param expected: int32 (size: 4, cast: variable(i32))
 .param returned: int32 (size: 4, cast: variable(i32))
@@ -6142,61 +6000,65 @@ assertEq(expected: int32, returned: int32, message: char[*]): void: function {
 	extras: variant[1] := {
 		extras[0] := (message);
 	};
-	details: NotEquals := {
-		details.expected := (expected);
-		details.returned := (returned);
-		details.extras := (extras);
+	detail: NotEquals := {
+		detail.expected := (expected);
+		detail.returned := (returned);
+		detail.extras := (extras);
 	};
-	raise(raise.abort, raise.defTrace, "assertion failed", details);
+	raise(raise.abort, raise.defTrace, "assertion failed", detail);
 }
-.instructions: (103 bytes)
-	cmplStd/lib/lang/Debug.ci:76: (10 bytes): if (returned == expected)
+.instructions: (118 bytes)
+	cmplStd/lib/lang/Debug.ci:60: (10 bytes): if (returned == expected)
 	<assertEq>  : dup.x32 sp(2)
 	<assertEq+?>: dup.x32 sp(4)
 	<assertEq+?>: ceq.i32
 	<assertEq+?>: jz +5
-	cmplStd/lib/lang/Debug.ci:77: (1 byte): return;
+	cmplStd/lib/lang/Debug.ci:61: (1 byte): return;
 	<assertEq+?>: ret
-	cmplStd/lib/lang/Debug.ci:79: (13 bytes): extras: variant[1] := {...}
+	cmplStd/lib/lang/Debug.ci:63: (13 bytes): extras: variant[1] := {...}
 	<assertEq+?>: inc.sp(+8)
-	cmplStd/lib/lang/Debug.ci:79: (9 bytes): extras[0] := (message);
+	cmplStd/lib/lang/Debug.ci:63: (9 bytes): extras[0] := (message);
 	<assertEq+?>: load.ref <?>
 	<assertEq+?>: dup.x32 sp(4)
 	<assertEq+?>: set.x64 sp(2)
-	cmplStd/lib/lang/Debug.ci:80: (37 bytes): details: NotEquals := {...}
+	cmplStd/lib/lang/Debug.ci:64: (37 bytes): detail: NotEquals := {...}
 	<assertEq+?>: inc.sp(+24)
-	cmplStd/lib/lang/Debug.ci:81: (11 bytes): details.expected := (expected);
+	cmplStd/lib/lang/Debug.ci:65: (11 bytes): detail.expected := (expected);
 	<assertEq+?>: load.ref <?> ;int32
 	<assertEq+?>: load.sp(+48)
 	<assertEq+?>: set.x64 sp(2)
-	cmplStd/lib/lang/Debug.ci:82: (11 bytes): details.returned := (returned);
+	cmplStd/lib/lang/Debug.ci:66: (11 bytes): detail.returned := (returned);
 	<assertEq+?>: load.ref <?> ;int32
 	<assertEq+?>: load.sp(+44)
 	<assertEq+?>: set.x64 sp(4)
-	cmplStd/lib/lang/Debug.ci:83: (11 bytes): details.extras := (extras);
+	cmplStd/lib/lang/Debug.ci:67: (11 bytes): detail.extras := (extras);
 	<assertEq+?>: load.c32 1
 	<assertEq+?>: load.sp(+28)
 	<assertEq+?>: set.x64 sp(6)
-	cmplStd/lib/lang/Debug.ci:85: (38 bytes): raise(raise.abort, raise.defTrace, "assertion failed", details);
+	cmplStd/lib/lang/Debug.ci:69: (53 bytes): raise(raise.abort, raise.defTrace, "assertion failed", detail);
+	<assertEq+?>: load.ref <?> ;NotEquals
+	<assertEq+?>: load.sp(+4)
+	<assertEq+?>: load.c32 1
+	<assertEq+?>: load.sp(+4)
 	<assertEq+?>: load.ref <?> ;"cmplStd/lib/lang/Debug.ci"
-	<assertEq+?>: load.c32 85
+	<assertEq+?>: load.c32 69
 	<assertEq+?>: load.c32 -2
 	<assertEq+?>: load.c32 128
 	<assertEq+?>: load.ref <?> ;"assertion failed"
-	<assertEq+?>: load.ref <?> ;NotEquals
-	<assertEq+?>: load.sp(+24)
-	<assertEq+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<assertEq+?>: dup.x64 sp(5)
+	<assertEq+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<assertEq+?>: inc.sp(-16)
 	<assertEq+?>: inc.sp(-32)
 	<assertEq+?>: ret
 .usages:
-	cmplStd/lib/lang/Debug.ci:88: referenced as `assertEq`
+	cmplStd/lib/lang/Debug.ci:72: referenced as `assertEq`
 }
 assertEq(expected: int32, returned: int32): void: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'assertEq'
-.file: 'cmplStd/lib/lang/Debug.ci:88'
+.file: 'cmplStd/lib/lang/Debug.ci:72'
 .param .result: void (size: 0, cast: void)
 .param expected: int32 (size: 4, cast: i32)
 .param returned: int32 (size: 4, cast: i32)
@@ -19582,7 +19444,7 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 rotation(center: vec4f, direction: vec4f, angle: float32): mat4f: function {
 .kind: static function
 .base: `function`
-.size: 476
+.size: 491
 .name: 'rotation'
 .file: 'cmplStd/lib/math/Matrix4f.ci:109'
 .param .result: mat4f (size: 64, cast: variable(val))
@@ -19632,7 +19494,7 @@ rotation(center: vec4f, direction: vec4f, angle: float32): mat4f: function {
 			.result.w := vec4f(0, 0, 0, 1);
 		};
 }
-.instructions: (476 bytes)
+.instructions: (491 bytes)
 	cmplStd/lib/math/Matrix4f.ci:110: (26 bytes): len: float32 := length(direction)
 	<rotation>  : dup.x32 sp(2)
 	<rotation+?>: load.i128
@@ -19645,21 +19507,25 @@ rotation(center: vec4f, direction: vec4f, angle: float32): mat4f: function {
 	<rotation+?>: inc.sp(-4)
 	<rotation+?>: mov.x32 sp(4, 0)
 	<rotation+?>: inc.sp(-16)
-	cmplStd/lib/math/Matrix4f.ci:111: (82 bytes): if ((len) < 0.000000)
+	cmplStd/lib/math/Matrix4f.ci:111: (97 bytes): if ((len) < 0.000000)
 	<rotation+?>: dup.x32 sp(0)
 	<rotation+?>: f32.2f64
 	<rotation+?>: load.f64 0.000000
 	<rotation+?>: clt.f64
-	<rotation+?>: jz +69
-	cmplStd/lib/math/Matrix4f.ci:112: (36 bytes): trace("invalid direction of rotation", direction);
+	<rotation+?>: jz +84
+	cmplStd/lib/math/Matrix4f.ci:112: (51 bytes): trace("invalid direction of rotation", direction);
+	<rotation+?>: load.ref <?> ;vec4f
+	<rotation+?>: dup.x32 sp(4)
+	<rotation+?>: load.c32 1
+	<rotation+?>: load.sp(+4)
 	<rotation+?>: load.ref <?> ;"cmplStd/lib/math/Matrix4f.ci"
 	<rotation+?>: load.c32 112
 	<rotation+?>: load.c32 14
 	<rotation+?>: load.c32 128
 	<rotation+?>: load.ref <?> ;"invalid direction of rotation"
-	<rotation+?>: load.ref <?> ;vec4f
-	<rotation+?>: dup.x32 sp(9)
-	<rotation+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<rotation+?>: dup.x64 sp(5)
+	<rotation+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<rotation+?>: inc.sp(-16)
 	cmplStd/lib/math/Matrix4f.ci:113: (29 bytes): return .result := {...};
 	cmplStd/lib/math/Matrix4f.ci:114: (6 bytes): .result.x := vec4f(0, 0, 0, 0);
 	<rotation+?>: load.z32
@@ -21480,9 +21346,9 @@ Timestamp: typename {
 .field equal: function (size: 37, cast: static function)
 .field equal: function (size: 11, cast: static function)
 .field add: function (size: 25, cast: static function)
-.field floor: function (size: 94, cast: static function)
-.field ceil: function (size: 115, cast: static function)
-.field distribute: function (size: 43, cast: static function)
+.field floor: function (size: 109, cast: static function)
+.field ceil: function (size: 130, cast: static function)
+.field distribute: function (size: 44, cast: static function)
 .field distribute: function (size: 27, cast: static function)
 .field now: function (size: 31, cast: static function)
 .doc: 'Timestamp is a position in time, without timezone information
@@ -21800,7 +21666,7 @@ Timestamp.add(lhs: Timestamp, value: int64, precision: Timeunit): Timestamp: fun
 Timestamp.floor(value: Timestamp, precision: Timeunit): Timestamp: function {
 .kind: static function
 .base: `function`
-.size: 94
+.size: 109
 .name: 'floor'
 .file: 'cmplStd/lib/time/Timestamp.ci:55'
 .owner: Timestamp
@@ -21823,21 +21689,25 @@ using resolution Timeunit.Minutes, it should return 2002-03-28 13:45:00.000.
 			.result.value := value.value - value.value % one;
 		};
 }
-.instructions: (94 bytes)
-	cmplStd/lib/time/Timestamp.ci:56: (53 bytes): if (precision <= (Timestamp.precision))
+.instructions: (109 bytes)
+	cmplStd/lib/time/Timestamp.ci:56: (68 bytes): if (precision <= (Timestamp.precision))
 	<floor>  : dup.x64 sp(1)
 	<floor+?>: load.m64 <?> ;Timestamp.precision
 	<floor+?>: cgt.i64
-	<floor+?>: jnz +46
-	cmplStd/lib/time/Timestamp.ci:57: (38 bytes): trace("small precision", precision);
+	<floor+?>: jnz +61
+	cmplStd/lib/time/Timestamp.ci:57: (53 bytes): trace("small precision", precision);
+	<floor+?>: load.ref <?> ;Timeunit
+	<floor+?>: load.sp(+8)
+	<floor+?>: load.c32 1
+	<floor+?>: load.sp(+4)
 	<floor+?>: load.ref <?> ;"cmplStd/lib/time/Timestamp.ci"
 	<floor+?>: load.c32 57
 	<floor+?>: load.c32 14
 	<floor+?>: load.c32 128
 	<floor+?>: load.ref <?> ;"small precision"
-	<floor+?>: load.ref <?> ;Timeunit
-	<floor+?>: load.sp(+28)
-	<floor+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<floor+?>: dup.x64 sp(5)
+	<floor+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<floor+?>: inc.sp(-16)
 	cmplStd/lib/time/Timestamp.ci:58: (4 bytes): return .result := value;
 	<floor+?>: mov.x64 sp(5, 3)
 	<floor+?>: ret
@@ -21864,7 +21734,7 @@ using resolution Timeunit.Minutes, it should return 2002-03-28 13:45:00.000.
 Timestamp.ceil(value: Timestamp, precision: Timeunit): Timestamp: function {
 .kind: static function
 .base: `function`
-.size: 115
+.size: 130
 .name: 'ceil'
 .file: 'cmplStd/lib/time/Timestamp.ci:73'
 .owner: Timestamp
@@ -21891,21 +21761,25 @@ using resolution Timeunit.Minutes, it should return 2002-03-28 13:46:00.000.
 			.result.value := value.value - part + one;
 		};
 }
-.instructions: (115 bytes)
-	cmplStd/lib/time/Timestamp.ci:74: (53 bytes): if (precision <= (Timestamp.precision))
+.instructions: (130 bytes)
+	cmplStd/lib/time/Timestamp.ci:74: (68 bytes): if (precision <= (Timestamp.precision))
 	<ceil>  : dup.x64 sp(1)
 	<ceil+?>: load.m64 <?> ;Timestamp.precision
 	<ceil+?>: cgt.i64
-	<ceil+?>: jnz +46
-	cmplStd/lib/time/Timestamp.ci:75: (38 bytes): trace("small precision", precision);
+	<ceil+?>: jnz +61
+	cmplStd/lib/time/Timestamp.ci:75: (53 bytes): trace("small precision", precision);
+	<ceil+?>: load.ref <?> ;Timeunit
+	<ceil+?>: load.sp(+8)
+	<ceil+?>: load.c32 1
+	<ceil+?>: load.sp(+4)
 	<ceil+?>: load.ref <?> ;"cmplStd/lib/time/Timestamp.ci"
 	<ceil+?>: load.c32 75
 	<ceil+?>: load.c32 14
 	<ceil+?>: load.c32 128
 	<ceil+?>: load.ref <?> ;"small precision"
-	<ceil+?>: load.ref <?> ;Timeunit
-	<ceil+?>: load.sp(+28)
-	<ceil+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<ceil+?>: dup.x64 sp(5)
+	<ceil+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<ceil+?>: inc.sp(-16)
 	cmplStd/lib/time/Timestamp.ci:76: (4 bytes): return .result := value;
 	<ceil+?>: mov.x64 sp(5, 3)
 	<ceil+?>: ret
@@ -21945,7 +21819,7 @@ using resolution Timeunit.Minutes, it should return 2002-03-28 13:46:00.000.
 Timestamp.distribute(this: Timestamp, unit: Timeunit, duration: uint64): Timestamp: function {
 .kind: static function
 .base: `function`
-.size: 43
+.size: 44
 .name: 'distribute'
 .file: 'cmplStd/lib/time/Timestamp.ci:94'
 .owner: Timestamp
@@ -21964,16 +21838,18 @@ using distribute(Timeunit.Hours, 2), it will return a date between 2002-03-28 13
 			.result.value := (0);
 		};
 }
-.instructions: (43 bytes)
-	cmplStd/lib/time/Timestamp.ci:95: (39 bytes): abort("not implemented");
-	<distribute>  : load.ref <?> ;"cmplStd/lib/time/Timestamp.ci"
+.instructions: (44 bytes)
+	cmplStd/lib/time/Timestamp.ci:95: (40 bytes): abort("not implemented");
+	<distribute>  : load.z32
+	<distribute+?>: load.sp(+4)
+	<distribute+?>: load.ref <?> ;"cmplStd/lib/time/Timestamp.ci"
 	<distribute+?>: load.c32 95
 	<distribute+?>: load.c32 -2
 	<distribute+?>: load.c32 128
 	<distribute+?>: load.ref <?> ;"not implemented"
-	<distribute+?>: load.ref <?> ;pointer
-	<distribute+?>: load.ref <?> ;null
-	<distribute+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<distribute+?>: dup.x64 sp(5)
+	<distribute+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<distribute+?>: inc.sp(-8)
 	cmplStd/lib/time/Timestamp.ci:96: (4 bytes): return .result := {...};
 	cmplStd/lib/time/Timestamp.ci:96: (3 bytes): .result.value := (0);
 	<distribute+?>: load.z64
@@ -22089,8 +21965,8 @@ Timezone: typename {
 .field offset: function (size: 4, cast: variable(ref))
 .field offset: function (size: 32, cast: static function)
 .field utc: function (size: 20, cast: static function)
-.field lookup: function (size: 40, cast: static function)
-.field local: function (size: 55, cast: static function)
+.field lookup: function (size: 41, cast: static function)
+.field local: function (size: 56, cast: static function)
 .usages:
 	cmplStd/lib/time/Datetime.ci:307: referenced as `Timezone`
 	cmplStd/lib/time/Datetime.ci:301: referenced as `Timezone`
@@ -22206,7 +22082,7 @@ Timezone.utc(): Timezone: function {
 Timezone.lookup(name: char[]): Timezone: function {
 .kind: static function
 .base: `function`
-.size: 40
+.size: 41
 .name: 'lookup'
 .file: 'cmplStd/lib/time/Timezone.ci:22'
 .owner: Timezone
@@ -22215,23 +22091,25 @@ Timezone.lookup(name: char[]): Timezone: function {
 .value: {
 	abort("todo");
 }
-.instructions: (40 bytes)
-	cmplStd/lib/time/Timezone.ci:22: (39 bytes): abort("todo");
-	<lookup>  : load.ref <?> ;"cmplStd/lib/time/Timezone.ci"
+.instructions: (41 bytes)
+	cmplStd/lib/time/Timezone.ci:22: (40 bytes): abort("todo");
+	<lookup>  : load.z32
+	<lookup+?>: load.sp(+4)
+	<lookup+?>: load.ref <?> ;"cmplStd/lib/time/Timezone.ci"
 	<lookup+?>: load.c32 22
 	<lookup+?>: load.c32 -2
 	<lookup+?>: load.c32 128
 	<lookup+?>: load.ref <?> ;"todo"
-	<lookup+?>: load.ref <?> ;pointer
-	<lookup+?>: load.ref <?> ;null
-	<lookup+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<lookup+?>: dup.x64 sp(5)
+	<lookup+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<lookup+?>: inc.sp(-8)
 	<lookup+?>: ret
 .usages:
 }
 Timezone.local(): Timezone: function {
 .kind: static function
 .base: `function`
-.size: 55
+.size: 56
 .name: 'local'
 .file: 'cmplStd/lib/time/Timezone.ci:24'
 .owner: Timezone
@@ -22247,16 +22125,18 @@ Timezone.local(): Timezone: function {
 			.result.name := ("GMT+3");
 		};
 }
-.instructions: (55 bytes)
-	cmplStd/lib/time/Timezone.ci:25: (35 bytes): warn("using fake timezone");
-	<local>  : load.ref <?> ;"cmplStd/lib/time/Timezone.ci"
+.instructions: (56 bytes)
+	cmplStd/lib/time/Timezone.ci:25: (36 bytes): warn("using fake timezone");
+	<local>  : load.z32
+	<local+?>: load.sp(+4)
+	<local+?>: load.ref <?> ;"cmplStd/lib/time/Timezone.ci"
 	<local+?>: load.c32 25
 	<local+?>: load.c32 1
 	<local+?>: load.z32
 	<local+?>: load.ref <?> ;"using fake timezone"
-	<local+?>: load.ref <?> ;pointer
-	<local+?>: load.ref <?> ;null
-	<local+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<local+?>: dup.x64 sp(5)
+	<local+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<local+?>: inc.sp(-8)
 	cmplStd/lib/time/Timezone.ci:31: (20 bytes): return .result := {...};
 	cmplStd/lib/time/Timezone.ci:32: (7 bytes): .result.offset := offset;
 	<local+?>: load.ref <?> ;Timezone.local.offset(zone: Timezone, timestamp: Timestamp, isDaylightSaving: bool): Duration
@@ -22649,7 +22529,7 @@ Datetime: typename {
 .field DaysToMonth366: int32[13] (size: 52, cast: static const variable(val))
 .field DaysTil1970: int32 (size: 4, cast: static const variable(i32))
 .field isLeapYear: function (size: 78, cast: static function)
-.field add: function (size: 271, cast: static function)
+.field add: function (size: 272, cast: static function)
 .doc: 'DateTime represents the parts of an instant in time.'
 .usages:
 	cmplStd/lib/text/Format.ci:507: referenced as `Datetime`
@@ -23014,7 +22894,7 @@ Datetime.isLeapYear(year: int32): bool: function {
 Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime: function {
 .kind: static function
 .base: `function`
-.size: 271
+.size: 272
 .name: 'add'
 .file: 'cmplStd/lib/time/Datetime.ci:116'
 .owner: Datetime
@@ -23051,7 +22931,7 @@ Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime:
 			.result.leapYear := isLeapYear(year);
 		};
 }
-.instructions: (271 bytes)
+.instructions: (272 bytes)
 	cmplStd/lib/time/Datetime.ci:117: (5 bytes): year: int32 := cal.year + years
 	<add>  : dup.x32 sp(4)
 	<add+?>: dup.x32 sp(4)
@@ -23099,20 +22979,22 @@ Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime:
 	<add+?>: mod.i32
 	<add+?>: sub.i32
 	<add+?>: set.x32 sp(1)
-	cmplStd/lib/time/Datetime.ci:129: (51 bytes): assert(days == 0);
-	<add+?>: dup.x32 sp(3)
+	cmplStd/lib/time/Datetime.ci:129: (52 bytes): assert(days == 0);
+	<add+?>: load.z32
+	<add+?>: load.sp(+4)
+	<add+?>: dup.x32 sp(5)
 	<add+?>: load.z32
 	<add+?>: ceq.i32
 	<add+?>: jz +8
-	<add+?>: jmp +43
+	<add+?>: jmp +35
 	<add+?>: load.ref <?> ;"cmplStd/lib/time/Datetime.ci"
 	<add+?>: load.c32 129
 	<add+?>: load.c32 -2
 	<add+?>: load.c32 128
 	<add+?>: load.ref <?> ;"assertion failed!"
-	<add+?>: load.ref <?> ;pointer
-	<add+?>: load.ref <?> ;null
-	<add+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<add+?>: dup.x64 sp(5)
+	<add+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<add+?>: inc.sp(-8)
 	cmplStd/lib/time/Datetime.ci:131: (126 bytes): return .result := {...};
 	cmplStd/lib/time/Datetime.ci:132: (3 bytes): .result.year := year;
 	<add+?>: mov.x32 sp(16, 1)
@@ -23180,7 +23062,7 @@ Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime:
 Timestamp(value: Datetime): Timestamp: function {
 .kind: static function
 .base: `function`
-.size: 581
+.size: 626
 .name: 'Timestamp'
 .file: 'cmplStd/lib/time/Datetime.ci:149'
 .param .result: Timestamp (size: 8, cast: variable(val))
@@ -23210,10 +23092,10 @@ Timestamp(value: Datetime): Timestamp: function {
 	t: int64 := (((d * (24) + (value.hour)) * (60) + (value.minute)) * (60) + (value.second)) * (1000) + (value.millis);
 	return .result := Timestamp(t, Timeunit.(Millis));
 }
-.instructions: (581 bytes)
+.instructions: (626 bytes)
 	cmplStd/lib/time/Datetime.ci:150: (2 bytes): year: int32 := value.year
 	<Timestamp>  : dup.x32 sp(1)
-	cmplStd/lib/time/Datetime.ci:151: (104 bytes): if (year < 0 || year > 9999)
+	cmplStd/lib/time/Datetime.ci:151: (119 bytes): if (year < 0 || year > 9999)
 	<Timestamp+?>: dup.x32 sp(0)
 	<Timestamp+?>: load.z32
 	<Timestamp+?>: clt.i32
@@ -23223,16 +23105,20 @@ Timestamp(value: Datetime): Timestamp: function {
 	<Timestamp+?>: dup.x32 sp(0)
 	<Timestamp+?>: load.c32 9999
 	<Timestamp+?>: cgt.i32
-	<Timestamp+?>: jz +82
-	cmplStd/lib/time/Datetime.ci:152: (38 bytes): trace("invalid year", year);
+	<Timestamp+?>: jz +97
+	cmplStd/lib/time/Datetime.ci:152: (53 bytes): trace("invalid year", year);
+	<Timestamp+?>: load.ref <?> ;int32
+	<Timestamp+?>: load.sp(+4)
+	<Timestamp+?>: load.c32 1
+	<Timestamp+?>: load.sp(+4)
 	<Timestamp+?>: load.ref <?> ;"cmplStd/lib/time/Datetime.ci"
 	<Timestamp+?>: load.c32 152
 	<Timestamp+?>: load.c32 14
 	<Timestamp+?>: load.c32 128
 	<Timestamp+?>: load.ref <?> ;"invalid year"
-	<Timestamp+?>: load.ref <?> ;int32
-	<Timestamp+?>: load.sp(+24)
-	<Timestamp+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<Timestamp+?>: dup.x64 sp(5)
+	<Timestamp+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<Timestamp+?>: inc.sp(-16)
 	cmplStd/lib/time/Datetime.ci:153: (40 bytes): return .result := Timestamp(1 << 63, Timestamp.precision);
 	<Timestamp+?>: inc.sp(+8)
 	<Timestamp+?>: load.c64 1
@@ -23248,7 +23134,7 @@ Timestamp(value: Datetime): Timestamp: function {
 	cmplStd/lib/time/Datetime.ci:156: (5 bytes): month: int32 := value.month
 	<Timestamp+?>: load.sp(+12)
 	<Timestamp+?>: load.iu8
-	cmplStd/lib/time/Datetime.ci:157: (126 bytes): if (month < (Month.(January)) || month > (Month.(December)))
+	cmplStd/lib/time/Datetime.ci:157: (141 bytes): if (month < (Month.(January)) || month > (Month.(December)))
 	<Timestamp+?>: dup.x32 sp(0)
 	<Timestamp+?>: load.c32 1
 	<Timestamp+?>: clt.i32
@@ -23258,16 +23144,20 @@ Timestamp(value: Datetime): Timestamp: function {
 	<Timestamp+?>: dup.x32 sp(0)
 	<Timestamp+?>: load.c32 12
 	<Timestamp+?>: cgt.i32
-	<Timestamp+?>: jz +100
-	cmplStd/lib/time/Datetime.ci:158: (38 bytes): trace("invalid month", month);
+	<Timestamp+?>: jz +115
+	cmplStd/lib/time/Datetime.ci:158: (53 bytes): trace("invalid month", month);
+	<Timestamp+?>: load.ref <?> ;int32
+	<Timestamp+?>: load.sp(+4)
+	<Timestamp+?>: load.c32 1
+	<Timestamp+?>: load.sp(+4)
 	<Timestamp+?>: load.ref <?> ;"cmplStd/lib/time/Datetime.ci"
 	<Timestamp+?>: load.c32 158
 	<Timestamp+?>: load.c32 14
 	<Timestamp+?>: load.c32 128
 	<Timestamp+?>: load.ref <?> ;"invalid month"
-	<Timestamp+?>: load.ref <?> ;int32
-	<Timestamp+?>: load.sp(+24)
-	<Timestamp+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<Timestamp+?>: dup.x64 sp(5)
+	<Timestamp+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<Timestamp+?>: inc.sp(-16)
 	cmplStd/lib/time/Datetime.ci:159: (58 bytes): month := Math.clamp(month, int32(Month.(January)), int32(Month.(December)));
 	<Timestamp+?>: load.c32 1
 	<Timestamp+?>: dup.x32 sp(1)
@@ -23315,7 +23205,7 @@ Timestamp(value: Datetime): Timestamp: function {
 	<Timestamp+?>: load.i32
 	<Timestamp+?>: dup.x32 sp(1)
 	<Timestamp+?>: sub.i32
-	cmplStd/lib/time/Datetime.ci:167: (124 bytes): if (day < 1 || day > daysInMonth)
+	cmplStd/lib/time/Datetime.ci:167: (139 bytes): if (day < 1 || day > daysInMonth)
 	<Timestamp+?>: dup.x32 sp(2)
 	<Timestamp+?>: load.c32 1
 	<Timestamp+?>: clt.i32
@@ -23325,16 +23215,20 @@ Timestamp(value: Datetime): Timestamp: function {
 	<Timestamp+?>: dup.x32 sp(2)
 	<Timestamp+?>: dup.x32 sp(1)
 	<Timestamp+?>: cgt.i32
-	<Timestamp+?>: jz +101
-	cmplStd/lib/time/Datetime.ci:168: (38 bytes): trace("invalid day of month", day);
+	<Timestamp+?>: jz +116
+	cmplStd/lib/time/Datetime.ci:168: (53 bytes): trace("invalid day of month", day);
+	<Timestamp+?>: load.ref <?> ;int32
+	<Timestamp+?>: load.sp(+12)
+	<Timestamp+?>: load.c32 1
+	<Timestamp+?>: load.sp(+4)
 	<Timestamp+?>: load.ref <?> ;"cmplStd/lib/time/Datetime.ci"
 	<Timestamp+?>: load.c32 168
 	<Timestamp+?>: load.c32 14
 	<Timestamp+?>: load.c32 128
 	<Timestamp+?>: load.ref <?> ;"invalid day of month"
-	<Timestamp+?>: load.ref <?> ;int32
-	<Timestamp+?>: load.sp(+32)
-	<Timestamp+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<Timestamp+?>: dup.x64 sp(5)
+	<Timestamp+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<Timestamp+?>: inc.sp(-16)
 	cmplStd/lib/time/Datetime.ci:169: (59 bytes): day := Math.clamp(day, 1, daysInMonth);
 	<Timestamp+?>: dup.x32 sp(2)
 	<Timestamp+?>: load.c32 1
@@ -23427,7 +23321,7 @@ Timestamp(value: Datetime): Timestamp: function {
 Datetime(timestamp: Timestamp, calendar: Calendar, timezone: Timezone): Datetime: function {
 .kind: static function
 .base: `function`
-.size: 629
+.size: 630
 .name: 'Datetime'
 .file: 'cmplStd/lib/time/Datetime.ci:179'
 .param .result: Datetime (size: 40, cast: variable(val))
@@ -23476,22 +23370,24 @@ Datetime(timestamp: Timestamp, calendar: Calendar, timezone: Timezone): Datetime
 			.result.leapYear := (DaysToMonth) == Datetime.DaysToMonth366;
 		};
 }
-.instructions: (629 bytes)
-	cmplStd/lib/time/Datetime.ci:180: (54 bytes): assert(calendar == (Calendar.(Gregorian)));
-	<Datetime>  : load.sp(+20)
+.instructions: (630 bytes)
+	cmplStd/lib/time/Datetime.ci:180: (55 bytes): assert(calendar == (Calendar.(Gregorian)));
+	<Datetime>  : load.z32
+	<Datetime+?>: load.sp(+4)
+	<Datetime+?>: load.sp(+28)
 	<Datetime+?>: load.iu8
 	<Datetime+?>: load.z32
 	<Datetime+?>: ceq.i32
 	<Datetime+?>: jz +8
-	<Datetime+?>: jmp +43
+	<Datetime+?>: jmp +35
 	<Datetime+?>: load.ref <?> ;"cmplStd/lib/time/Datetime.ci"
 	<Datetime+?>: load.c32 180
 	<Datetime+?>: load.c32 -2
 	<Datetime+?>: load.c32 128
 	<Datetime+?>: load.ref <?> ;"assertion failed!"
-	<Datetime+?>: load.ref <?> ;pointer
-	<Datetime+?>: load.ref <?> ;null
-	<Datetime+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<Datetime+?>: dup.x64 sp(5)
+	<Datetime+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<Datetime+?>: inc.sp(-8)
 	cmplStd/lib/time/Datetime.ci:196: (20 bytes): offset: Duration := Timezone.offset(timezone, timestamp)
 	<Datetime+?>: inc.sp(+8)
 	<Datetime+?>: load.sp(+12)
@@ -25392,7 +25288,7 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFlags): int32: function {
 .kind: static function
 .base: `function`
-.size: 653
+.size: 687
 .name: 'append'
 .file: 'cmplStd/lib/text/Format.ci:107'
 .param .result: int32 (size: 4, cast: variable(i32))
@@ -25450,39 +25346,47 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	output[pos] := (0);
 	return .result := pos;
 }
-.instructions: (653 bytes)
+.instructions: (687 bytes)
 	cmplStd/lib/text/Format.ci:111: (1 byte): len: int32 := 0
 	<append>  : load.z32
 	cmplStd/lib/text/Format.ci:112: (4 bytes): digits: char[80] := {...}
 	<append+?>: inc.sp(+80)
-	cmplStd/lib/text/Format.ci:114: (54 bytes): assert(radix > 1, "radix is too small", radix);
-	<append+?>: dup.x32 sp(25)
+	cmplStd/lib/text/Format.ci:114: (69 bytes): assert(radix > 1, "radix is too small", radix);
+	<append+?>: load.ref <?> ;int32
+	<append+?>: load.sp(+104)
+	<append+?>: load.c32 1
+	<append+?>: load.sp(+4)
+	<append+?>: dup.x32 sp(29)
 	<append+?>: load.c32 1
 	<append+?>: cgt.i32
 	<append+?>: jz +8
-	<append+?>: jmp +42
+	<append+?>: jmp +35
 	<append+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<append+?>: load.c32 114
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
 	<append+?>: load.ref <?> ;"radix is too small"
+	<append+?>: dup.x64 sp(5)
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<append+?>: inc.sp(-16)
+	cmplStd/lib/text/Format.ci:115: (68 bytes): assert(radix < (radixDigits.length), "radix is too big", radix);
 	<append+?>: load.ref <?> ;int32
-	<append+?>: load.sp(+124)
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
-	cmplStd/lib/text/Format.ci:115: (53 bytes): assert(radix < (radixDigits.length), "radix is too big", radix);
-	<append+?>: dup.x32 sp(25)
+	<append+?>: load.sp(+104)
+	<append+?>: load.c32 1
+	<append+?>: load.sp(+4)
+	<append+?>: dup.x32 sp(29)
 	<append+?>: load.m32 <?> ;append.radixDigits+4
 	<append+?>: clt.i32
 	<append+?>: jz +8
-	<append+?>: jmp +42
+	<append+?>: jmp +35
 	<append+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<append+?>: load.c32 115
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
 	<append+?>: load.ref <?> ;"radix is too big"
-	<append+?>: load.ref <?> ;int32
-	<append+?>: load.sp(+124)
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<append+?>: dup.x64 sp(5)
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<append+?>: inc.sp(-16)
 	cmplStd/lib/text/Format.ci:118: (49 bytes): for ( ; value > (0); value := value / (radix))
 	<append+?>: jmp +41
 	cmplStd/lib/text/Format.ci:119: (29 bytes): digits[len := len + 1] := radixDigits[value % (radix)];
@@ -25546,17 +25450,17 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.c32 32
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
-	cmplStd/lib/text/Format.ci:133: (203 bytes): if ((format.sign) != 0)
+	cmplStd/lib/text/Format.ci:133: (205 bytes): if ((format.sign) != 0)
 	<append+?>: dup.x32 sp(24)
 	<append+?>: load.is8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
-	<append+?>: jnz +198
+	<append+?>: jnz +200
 	cmplStd/lib/text/Format.ci:134: (8 bytes): maxLen := maxLen - 1;
 	<append+?>: dup.x32 sp(1)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(2)
-	cmplStd/lib/text/Format.ci:135: (117 bytes): if (contains(whiteSpace, padChr))
+	cmplStd/lib/text/Format.ci:135: (118 bytes): if (contains(whiteSpace, padChr))
 	<append+?>: load.z32
 	<append+?>: load.m32 <?> ;append.whiteSpace
 	<append+?>: load.sp(+8)
@@ -25566,23 +25470,25 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: inc.sp(-8)
 	<append+?>: load.z32
 	<append+?>: clt.i32
-	<append+?>: jnz +95
-	cmplStd/lib/text/Format.ci:137: (91 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
-	<append+?>: jmp +83
-	cmplStd/lib/text/Format.ci:138: (52 bytes): assert(pos < (output.length));
-	<append+?>: dup.x32 sp(28)
-	<append+?>: dup.x32 sp(31)
+	<append+?>: jnz +96
+	cmplStd/lib/text/Format.ci:137: (92 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
+	<append+?>: jmp +84
+	cmplStd/lib/text/Format.ci:138: (53 bytes): assert(pos < (output.length));
+	<append+?>: load.z32
+	<append+?>: load.sp(+4)
+	<append+?>: dup.x32 sp(30)
+	<append+?>: dup.x32 sp(33)
 	<append+?>: clt.i32
 	<append+?>: jz +8
-	<append+?>: jmp +43
+	<append+?>: jmp +35
 	<append+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<append+?>: load.c32 138
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
 	<append+?>: load.ref <?> ;"assertion failed!"
-	<append+?>: load.ref <?> ;pointer
-	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<append+?>: dup.x64 sp(5)
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<append+?>: inc.sp(-8)
 	cmplStd/lib/text/Format.ci:139: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
 	<append+?>: load.is8
@@ -25602,21 +25508,23 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(1)
 	<append+?>: load.z32
 	<append+?>: cgt.i32
-	<append+?>: jnz -83
-	cmplStd/lib/text/Format.ci:143: (52 bytes): assert(pos < (output.length));
-	<append+?>: dup.x32 sp(28)
-	<append+?>: dup.x32 sp(31)
+	<append+?>: jnz -84
+	cmplStd/lib/text/Format.ci:143: (53 bytes): assert(pos < (output.length));
+	<append+?>: load.z32
+	<append+?>: load.sp(+4)
+	<append+?>: dup.x32 sp(30)
+	<append+?>: dup.x32 sp(33)
 	<append+?>: clt.i32
 	<append+?>: jz +8
-	<append+?>: jmp +43
+	<append+?>: jmp +35
 	<append+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<append+?>: load.c32 143
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
 	<append+?>: load.ref <?> ;"assertion failed!"
-	<append+?>: load.ref <?> ;pointer
-	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<append+?>: dup.x64 sp(5)
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<append+?>: inc.sp(-8)
 	cmplStd/lib/text/Format.ci:144: (9 bytes): output[pos] := format.sign;
 	<append+?>: dup.x32 sp(24)
 	<append+?>: load.is8
@@ -25628,22 +25536,24 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(28)
 	<append+?>: inc.i32(+1)
 	<append+?>: set.x32 sp(29)
-	cmplStd/lib/text/Format.ci:149: (91 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
-	<append+?>: jmp +83
-	cmplStd/lib/text/Format.ci:150: (52 bytes): assert(pos < (output.length));
-	<append+?>: dup.x32 sp(28)
-	<append+?>: dup.x32 sp(31)
+	cmplStd/lib/text/Format.ci:149: (92 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
+	<append+?>: jmp +84
+	cmplStd/lib/text/Format.ci:150: (53 bytes): assert(pos < (output.length));
+	<append+?>: load.z32
+	<append+?>: load.sp(+4)
+	<append+?>: dup.x32 sp(30)
+	<append+?>: dup.x32 sp(33)
 	<append+?>: clt.i32
 	<append+?>: jz +8
-	<append+?>: jmp +43
+	<append+?>: jmp +35
 	<append+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<append+?>: load.c32 150
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
 	<append+?>: load.ref <?> ;"assertion failed!"
-	<append+?>: load.ref <?> ;pointer
-	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<append+?>: dup.x64 sp(5)
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<append+?>: inc.sp(-8)
 	cmplStd/lib/text/Format.ci:151: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
 	<append+?>: load.is8
@@ -25663,24 +25573,26 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(1)
 	<append+?>: load.z32
 	<append+?>: cgt.i32
-	<append+?>: jnz -83
-	cmplStd/lib/text/Format.ci:156: (99 bytes): for (i: int32 := 0; i < len; i := i + 1)
+	<append+?>: jnz -84
+	cmplStd/lib/text/Format.ci:156: (100 bytes): for (i: int32 := 0; i < len; i := i + 1)
 	<append+?>: load.z32
-	<append+?>: jmp +85
-	cmplStd/lib/text/Format.ci:157: (52 bytes): assert(i < (output.length));
-	<append+?>: dup.x32 sp(0)
-	<append+?>: dup.x32 sp(32)
+	<append+?>: jmp +86
+	cmplStd/lib/text/Format.ci:157: (53 bytes): assert(i < (output.length));
+	<append+?>: load.z32
+	<append+?>: load.sp(+4)
+	<append+?>: dup.x32 sp(2)
+	<append+?>: dup.x32 sp(34)
 	<append+?>: clt.i32
 	<append+?>: jz +8
-	<append+?>: jmp +43
+	<append+?>: jmp +35
 	<append+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<append+?>: load.c32 157
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
 	<append+?>: load.ref <?> ;"assertion failed!"
-	<append+?>: load.ref <?> ;pointer
-	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<append+?>: dup.x64 sp(5)
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<append+?>: inc.sp(-8)
 	cmplStd/lib/text/Format.ci:158: (17 bytes): output[pos] := digits[len - i];
 	<append+?>: load.sp(+12)
 	<append+?>: dup.x32 sp(24)
@@ -25702,7 +25614,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(0)
 	<append+?>: dup.x32 sp(24)
 	<append+?>: clt.i32
-	<append+?>: jnz -86
+	<append+?>: jnz -87
 	<append+?>: inc.sp(-4)
 	cmplStd/lib/text/Format.ci:162: (17 bytes): if (pos >= (output.length))
 	<append+?>: dup.x32 sp(28)
@@ -26374,7 +26286,7 @@ DatetimeFormat: typename {
 .field timeLong: char[] (size: 8, cast: const variable(arr))
 .field dateShort: char[] (size: 8, cast: const variable(arr))
 .field timeShort: char[] (size: 8, cast: const variable(arr))
-.field format: function (size: 2623, cast: static function)
+.field format: function (size: 2638, cast: static function)
 .field format: function (size: 23, cast: static function)
 .doc: 'datetime regional formatter, currently 'en' if instantiated with: `DatetimeFormat fmt = {};`'
 .usages:
@@ -26498,7 +26410,7 @@ DatetimeFormat.timeShort: char[] {
 DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, value: Datetime, format: char[]): int32: function {
 .kind: static function
 .base: `function`
-.size: 2623
+.size: 2638
 .name: 'format'
 .file: 'cmplStd/lib/text/Format.ci:313'
 .owner: DatetimeFormat
@@ -26636,7 +26548,7 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	output[end] := (0);
 	return .result := end;
 }
-.instructions: (2623 bytes)
+.instructions: (2638 bytes)
 	cmplStd/lib/text/Format.ci:316: (44 bytes): if (pointer(format) == null)
 	<format>  : dup.x32 sp(1)
 	<format+?>: load.ref <?> ;null
@@ -26657,9 +26569,9 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: ret
 	cmplStd/lib/text/Format.ci:320: (1 byte): chr: char := 0
 	<format+?>: load.z32
-	cmplStd/lib/text/Format.ci:321: (2546 bytes): for (pos: int32 := 0; pos < (format.length); pos := pos + 1)
+	cmplStd/lib/text/Format.ci:321: (2561 bytes): for (pos: int32 := 0; pos < (format.length); pos := pos + 1)
 	<format+?>: load.z32
-	<format+?>: jmp +2532
+	<format+?>: jmp +2547
 	cmplStd/lib/text/Format.ci:322: (33 bytes): if (end >= (output.length))
 	<format+?>: dup.x32 sp(6)
 	<format+?>: dup.x32 sp(9)
@@ -26703,7 +26615,7 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: inc.i32(+1)
 	<format+?>: set.x32 sp(7)
 	cmplStd/lib/text/Format.ci:331: (4 bytes): continue;
-	<format+?>: jmp +2446
+	<format+?>: jmp +2461
 	cmplStd/lib/text/Format.ci:334: (20 bytes): flags: FormatFlags := FormatFlags.read(format, &pos)
 	<format+?>: inc.sp(+16)
 	<format+?>: dup.x64 sp(7)
@@ -26718,7 +26630,7 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: load.is8
 	<format+?>: load.sp(+24)
 	<format+?>: store.i8
-	cmplStd/lib/text/Format.ci:337: (2407 bytes): if (chr == '%')
+	cmplStd/lib/text/Format.ci:337: (2422 bytes): if (chr == '%')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 37
@@ -26733,8 +26645,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +2370
-	cmplStd/lib/text/Format.ci:340: (2366 bytes): if (chr == 'a')
+	<format+?>: jmp +2385
+	cmplStd/lib/text/Format.ci:340: (2381 bytes): if (chr == 'a')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 97
@@ -26757,8 +26669,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +2311
-	cmplStd/lib/text/Format.ci:344: (2307 bytes): if (chr == 'A')
+	<format+?>: jmp +2326
+	cmplStd/lib/text/Format.ci:344: (2322 bytes): if (chr == 'A')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 65
@@ -26781,8 +26693,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +2252
-	cmplStd/lib/text/Format.ci:348: (2248 bytes): if (chr == 'b')
+	<format+?>: jmp +2267
+	cmplStd/lib/text/Format.ci:348: (2263 bytes): if (chr == 'b')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 98
@@ -26805,8 +26717,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +2193
-	cmplStd/lib/text/Format.ci:352: (2189 bytes): if (chr == 'B')
+	<format+?>: jmp +2208
+	cmplStd/lib/text/Format.ci:352: (2204 bytes): if (chr == 'B')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 66
@@ -26828,8 +26740,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +2138
-	cmplStd/lib/text/Format.ci:357: (2134 bytes): if (chr == 'C')
+	<format+?>: jmp +2153
+	cmplStd/lib/text/Format.ci:357: (2149 bytes): if (chr == 'C')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 67
@@ -26859,8 +26771,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +2048
-	cmplStd/lib/text/Format.ci:361: (2044 bytes): if (chr == 'd')
+	<format+?>: jmp +2063
+	cmplStd/lib/text/Format.ci:361: (2059 bytes): if (chr == 'd')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 100
@@ -26889,8 +26801,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1960
-	cmplStd/lib/text/Format.ci:365: (1956 bytes): if (chr == 'D')
+	<format+?>: jmp +1975
+	cmplStd/lib/text/Format.ci:365: (1971 bytes): if (chr == 'D')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 68
@@ -26908,8 +26820,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1910
-	cmplStd/lib/text/Format.ci:369: (1906 bytes): if (chr == 'e')
+	<format+?>: jmp +1925
+	cmplStd/lib/text/Format.ci:369: (1921 bytes): if (chr == 'e')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 101
@@ -26938,8 +26850,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1822
-	cmplStd/lib/text/Format.ci:373: (1818 bytes): if (chr == 'F')
+	<format+?>: jmp +1837
+	cmplStd/lib/text/Format.ci:373: (1833 bytes): if (chr == 'F')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 70
@@ -26957,8 +26869,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1772
-	cmplStd/lib/text/Format.ci:379: (1768 bytes): if (chr == 'h')
+	<format+?>: jmp +1787
+	cmplStd/lib/text/Format.ci:379: (1783 bytes): if (chr == 'h')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 104
@@ -26981,8 +26893,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1713
-	cmplStd/lib/text/Format.ci:383: (1709 bytes): if (chr == 'H')
+	<format+?>: jmp +1728
+	cmplStd/lib/text/Format.ci:383: (1724 bytes): if (chr == 'H')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 72
@@ -27011,8 +26923,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1625
-	cmplStd/lib/text/Format.ci:387: (1621 bytes): if (chr == 'I')
+	<format+?>: jmp +1640
+	cmplStd/lib/text/Format.ci:387: (1636 bytes): if (chr == 'I')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 73
@@ -27056,8 +26968,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1494
-	cmplStd/lib/text/Format.ci:391: (1490 bytes): if (chr == 'j')
+	<format+?>: jmp +1509
+	cmplStd/lib/text/Format.ci:391: (1505 bytes): if (chr == 'j')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 106
@@ -27086,8 +26998,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1406
-	cmplStd/lib/text/Format.ci:395: (1402 bytes): if (chr == 'k')
+	<format+?>: jmp +1421
+	cmplStd/lib/text/Format.ci:395: (1417 bytes): if (chr == 'k')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 107
@@ -27116,8 +27028,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1318
-	cmplStd/lib/text/Format.ci:399: (1314 bytes): if (chr == 'l')
+	<format+?>: jmp +1333
+	cmplStd/lib/text/Format.ci:399: (1329 bytes): if (chr == 'l')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 108
@@ -27161,8 +27073,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1187
-	cmplStd/lib/text/Format.ci:403: (1183 bytes): if (chr == 'm')
+	<format+?>: jmp +1202
+	cmplStd/lib/text/Format.ci:403: (1198 bytes): if (chr == 'm')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 109
@@ -27193,8 +27105,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1091
-	cmplStd/lib/text/Format.ci:407: (1087 bytes): if (chr == 'M')
+	<format+?>: jmp +1106
+	cmplStd/lib/text/Format.ci:407: (1102 bytes): if (chr == 'M')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 77
@@ -27223,8 +27135,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +1003
-	cmplStd/lib/text/Format.ci:411: (999 bytes): if (chr == 'n')
+	<format+?>: jmp +1018
+	cmplStd/lib/text/Format.ci:411: (1014 bytes): if (chr == 'n')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 110
@@ -27239,8 +27151,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +962
-	cmplStd/lib/text/Format.ci:415: (958 bytes): if (chr == 'N')
+	<format+?>: jmp +977
+	cmplStd/lib/text/Format.ci:415: (973 bytes): if (chr == 'N')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 78
@@ -27271,8 +27183,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +868
-	cmplStd/lib/text/Format.ci:420: (864 bytes): if (chr == 'p')
+	<format+?>: jmp +883
+	cmplStd/lib/text/Format.ci:420: (879 bytes): if (chr == 'p')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 112
@@ -27296,8 +27208,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +807
-	cmplStd/lib/text/Format.ci:424: (803 bytes): if (chr == 'P')
+	<format+?>: jmp +822
+	cmplStd/lib/text/Format.ci:424: (818 bytes): if (chr == 'P')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 80
@@ -27321,8 +27233,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +746
-	cmplStd/lib/text/Format.ci:430: (742 bytes): if (chr == 'R')
+	<format+?>: jmp +761
+	cmplStd/lib/text/Format.ci:430: (757 bytes): if (chr == 'R')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 82
@@ -27340,8 +27252,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +696
-	cmplStd/lib/text/Format.ci:434: (692 bytes): if (chr == 's')
+	<format+?>: jmp +711
+	cmplStd/lib/text/Format.ci:434: (707 bytes): if (chr == 's')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 115
@@ -27370,8 +27282,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +603
-	cmplStd/lib/text/Format.ci:438: (599 bytes): if (chr == 'S')
+	<format+?>: jmp +618
+	cmplStd/lib/text/Format.ci:438: (614 bytes): if (chr == 'S')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 83
@@ -27400,8 +27312,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +515
-	cmplStd/lib/text/Format.ci:442: (511 bytes): if (chr == 't')
+	<format+?>: jmp +530
+	cmplStd/lib/text/Format.ci:442: (526 bytes): if (chr == 't')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 116
@@ -27416,8 +27328,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +474
-	cmplStd/lib/text/Format.ci:446: (470 bytes): if (chr == 'T')
+	<format+?>: jmp +489
+	cmplStd/lib/text/Format.ci:446: (485 bytes): if (chr == 'T')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 84
@@ -27435,8 +27347,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +424
-	cmplStd/lib/text/Format.ci:450: (420 bytes): if (chr == 'u')
+	<format+?>: jmp +439
+	cmplStd/lib/text/Format.ci:450: (435 bytes): if (chr == 'u')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 117
@@ -27458,8 +27370,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +363
-	cmplStd/lib/text/Format.ci:457: (359 bytes): if (chr == 'W')
+	<format+?>: jmp +378
+	cmplStd/lib/text/Format.ci:457: (374 bytes): if (chr == 'W')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 87
@@ -27488,8 +27400,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +275
-	cmplStd/lib/text/Format.ci:461: (271 bytes): if (chr == 'x')
+	<format+?>: jmp +290
+	cmplStd/lib/text/Format.ci:461: (286 bytes): if (chr == 'x')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 120
@@ -27508,8 +27420,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +228
-	cmplStd/lib/text/Format.ci:465: (224 bytes): if (chr == 'X')
+	<format+?>: jmp +243
+	cmplStd/lib/text/Format.ci:465: (239 bytes): if (chr == 'X')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 88
@@ -27528,8 +27440,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +181
-	cmplStd/lib/text/Format.ci:469: (177 bytes): if (chr == 'y')
+	<format+?>: jmp +196
+	cmplStd/lib/text/Format.ci:469: (192 bytes): if (chr == 'y')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 121
@@ -27559,8 +27471,8 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: mov.x32 sp(4, 0)
 	<format+?>: inc.sp(-16)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +91
-	cmplStd/lib/text/Format.ci:473: (87 bytes): if (chr == 'Y')
+	<format+?>: jmp +106
+	cmplStd/lib/text/Format.ci:473: (102 bytes): if (chr == 'Y')
 	<format+?>: load.sp(+20)
 	<format+?>: load.is8
 	<format+?>: load.c32 89
@@ -27579,16 +27491,20 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: call
 	<format+?>: inc.sp(-28)
 	<format+?>: set.x32 sp(11)
-	<format+?>: jmp +42
-	cmplStd/lib/text/Format.ci:483: (38 bytes): abort("unimplemented or invalid format character", chr);
+	<format+?>: jmp +57
+	cmplStd/lib/text/Format.ci:483: (53 bytes): abort("unimplemented or invalid format character", chr);
+	<format+?>: load.ref <?> ;char
+	<format+?>: load.sp(+24)
+	<format+?>: load.c32 1
+	<format+?>: load.sp(+4)
 	<format+?>: load.ref <?> ;"cmplStd/lib/text/Format.ci"
 	<format+?>: load.c32 483
 	<format+?>: load.c32 -2
 	<format+?>: load.c32 128
 	<format+?>: load.ref <?> ;"unimplemented or invalid format character"
-	<format+?>: load.ref <?> ;char
-	<format+?>: load.sp(+44)
-	<format+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<format+?>: dup.x64 sp(5)
+	<format+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<format+?>: inc.sp(-16)
 	<format+?>: inc.sp(-16)
 	cmplStd/lib/text/Format.ci:321: (4 bytes): pos := pos + 1
 	<format+?>: inc.i32(+1)
@@ -27596,7 +27512,7 @@ DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, val
 	<format+?>: dup.x32 sp(0)
 	<format+?>: dup.x32 sp(5)
 	<format+?>: clt.i32
-	<format+?>: jnz -2533
+	<format+?>: jnz -2548
 	<format+?>: inc.sp(-4)
 	cmplStd/lib/text/Format.ci:487: (17 bytes): if (end >= (output.length))
 	<format+?>: dup.x32 sp(5)
@@ -29718,7 +29634,7 @@ Base64Encoder: ByteWriter {
 .field wrap: int32 (size: 4, cast: const variable(i32))
 .field wrapSize: int32 (size: 4, cast: variable(i32))
 .field flushBuffer: function (size: 232, cast: static function)
-.field write: function (size: 887, cast: static function)
+.field write: function (size: 896, cast: static function)
 .field flush: function (size: 27, cast: static function)
 .field close: function (size: 13, cast: static function)
 .field write: function (size: 4, cast: variable(ref))
@@ -29999,7 +29915,7 @@ Base64Encoder.flushBuffer(this: Base64Encoder): void: function {
 Base64Encoder.write(this: Base64Encoder, data: uint8[]): void: function {
 .kind: static function
 .base: `function`
-.size: 887
+.size: 896
 .name: 'write'
 .file: 'cmplStd/lib/text/encoding/binary/Base64.ci:41'
 .owner: Base64Encoder
@@ -30071,9 +29987,13 @@ the method must write all the bytes from the `bytes` array'
 		}
 	}
 }
-.instructions: (887 bytes)
+.instructions: (896 bytes)
+	cmplStd/lib/text/encoding/binary/Base64.ci:42: (9 bytes): assert(buffer.(length) > 3);
+	<write>  : load.z32
+	<write+?>: load.sp(+4)
+	<write+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/binary/Base64.ci:44: (7 bytes): writer: ByteWriter := this.writer
-	<write>  : dup.x32 sp(3)
+	<write+?>: dup.x32 sp(3)
 	<write+?>: inc.i32(+16)
 	<write+?>: load.i32
 	cmplStd/lib/text/encoding/binary/Base64.ci:45: (11 bytes): buffer: uint8[] := this.buffer
@@ -30616,7 +30536,7 @@ Base64Decoder: ByteReader {
 .field bitsDecoded: int32 (size: 4, cast: variable(i32))
 .field charDecoded: int32 (size: 4, cast: variable(i32))
 .field read: function (size: 345, cast: static function)
-.field close: function (size: 58, cast: static function)
+.field close: function (size: 73, cast: static function)
 .field read: function (size: 4, cast: variable(ref))
 .field read: function (size: 59, cast: static function)
 .field close: function (size: 4, cast: variable(ref))
@@ -31130,7 +31050,7 @@ in case there is an error -1 should be returned'
 Base64Decoder.close(this: Base64Decoder): void: function {
 .kind: static function
 .base: `function`
-.size: 58
+.size: 73
 .name: 'close'
 .file: 'cmplStd/lib/text/encoding/binary/Base64.ci:190'
 .owner: Base64Decoder
@@ -31140,24 +31060,28 @@ Base64Decoder.close(this: Base64Decoder): void: function {
 .value: {
 	assert(this.bitsDecoded == 0, "unprocessed bits remaining.", this.bitsDecoded);
 }
-.instructions: (58 bytes)
-	cmplStd/lib/text/encoding/binary/Base64.ci:191: (57 bytes): assert(this.bitsDecoded == 0, "unprocessed bits remaining.", this.bitsDecoded);
-	<close>  : dup.x32 sp(1)
+.instructions: (73 bytes)
+	cmplStd/lib/text/encoding/binary/Base64.ci:191: (72 bytes): assert(this.bitsDecoded == 0, "unprocessed bits remaining.", this.bitsDecoded);
+	<close>  : load.ref <?> ;int32
+	<close+?>: dup.x32 sp(2)
+	<close+?>: inc.i32(+16)
+	<close+?>: load.c32 1
+	<close+?>: load.sp(+4)
+	<close+?>: dup.x32 sp(5)
 	<close+?>: inc.i32(+16)
 	<close+?>: load.i32
 	<close+?>: load.z32
 	<close+?>: ceq.i32
 	<close+?>: jz +8
-	<close+?>: jmp +44
+	<close+?>: jmp +35
 	<close+?>: load.ref <?> ;"cmplStd/lib/text/encoding/binary/Base64.ci"
 	<close+?>: load.c32 191
 	<close+?>: load.c32 -2
 	<close+?>: load.c32 128
 	<close+?>: load.ref <?> ;"unprocessed bits remaining."
-	<close+?>: load.ref <?> ;int32
-	<close+?>: dup.x32 sp(7)
-	<close+?>: inc.i32(+16)
-	<close+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<close+?>: dup.x64 sp(5)
+	<close+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<close+?>: inc.sp(-16)
 	<close+?>: ret
 .usages:
 }
@@ -31360,7 +31284,7 @@ Utf8Reader: TextReader {
 .size: 16
 .name: 'Utf8Reader'
 .file: 'cmplStd/lib/text/encoding/Utf8.ci:2'
-.field decode: function (size: 936, cast: static function)
+.field decode: function (size: 945, cast: static function)
 .field reader: ByteReader (size: 4, cast: const variable(ref))
 .field decode: function (size: 4, cast: variable(ref))
 .field close: function (size: 18, cast: static function)
@@ -31379,7 +31303,7 @@ Utf8Reader: TextReader {
 Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32: function {
 .kind: static function
 .base: `function`
-.size: 936
+.size: 945
 .name: 'decode'
 .file: 'cmplStd/lib/text/encoding/Utf8.ci:4'
 .owner: Utf8Reader
@@ -31434,7 +31358,7 @@ in case there is an error -1 should be returned'
 	}
 	return .result := chars.length;
 }
-.instructions: (936 bytes)
+.instructions: (945 bytes)
 	cmplStd/lib/text/encoding/Utf8.ci:5: (10 bytes): buff: uint8[1] := {...}
 	<decode>  : inc.sp(+4)
 	cmplStd/lib/text/encoding/Utf8.ci:5: (6 bytes): buff[0] := (0);
@@ -31451,9 +31375,9 @@ in case there is an error -1 should be returned'
 	<decode+?>: dup.x32 sp(5)
 	<decode+?>: inc.i32(+8)
 	<decode+?>: load.i32
-	cmplStd/lib/text/encoding/Utf8.ci:8: (901 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
+	cmplStd/lib/text/encoding/Utf8.ci:8: (910 bytes): for (i: int32 := 0; i < (chars.length); i := i + 1)
 	<decode+?>: load.z32
-	<decode+?>: jmp +887
+	<decode+?>: jmp +896
 	cmplStd/lib/text/encoding/Utf8.ci:9: (38 bytes): if (reader.read(reader, buff) <= 0)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(2)
@@ -31471,7 +31395,7 @@ in case there is an error -1 should be returned'
 	<decode+?>: mov.x32 sp(8, 0)
 	<decode+?>: inc.sp(-16)
 	<decode+?>: ret
-	cmplStd/lib/text/encoding/Utf8.ci:14: (841 bytes): if (((buff[0]) & 128) == 0)
+	cmplStd/lib/text/encoding/Utf8.ci:14: (850 bytes): if (((buff[0]) & 128) == 0)
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 128
@@ -31486,16 +31410,16 @@ in case there is an error -1 should be returned'
 	<decode+?>: dup.x32 sp(2)
 	<decode+?>: mad.u32 4
 	<decode+?>: store.i32
-	<decode+?>: jmp +810
-	cmplStd/lib/text/encoding/Utf8.ci:17: (806 bytes): if (((buff[0]) & 224) == 192)
+	<decode+?>: jmp +819
+	cmplStd/lib/text/encoding/Utf8.ci:17: (815 bytes): if (((buff[0]) & 224) == 192)
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 224
 	<decode+?>: and.b32
 	<decode+?>: load.c32 192
 	<decode+?>: ceq.i32
-	<decode+?>: jz +179
-	cmplStd/lib/text/encoding/Utf8.ci:18: (81 bytes): if (reader.read(reader, ext[...1]) != 1)
+	<decode+?>: jz +181
+	cmplStd/lib/text/encoding/Utf8.ci:18: (82 bytes): if (reader.read(reader, ext[...1]) != 1)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(2)
 	<decode+?>: load.c32 1
@@ -31507,37 +31431,41 @@ in case there is an error -1 should be returned'
 	<decode+?>: inc.sp(-12)
 	<decode+?>: load.c32 1
 	<decode+?>: ceq.i32
-	<decode+?>: jnz +51
-	cmplStd/lib/text/encoding/Utf8.ci:19: (39 bytes): error("invalid codepoint");
+	<decode+?>: jnz +52
+	cmplStd/lib/text/encoding/Utf8.ci:19: (40 bytes): error("invalid codepoint");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 19
 	<decode+?>: load.c32 -1
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"invalid codepoint"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/Utf8.ci:20: (8 bytes): return .result := i;
 	<decode+?>: mov.x32 sp(8, 0)
 	<decode+?>: inc.sp(-16)
 	<decode+?>: ret
-	cmplStd/lib/text/encoding/Utf8.ci:22: (64 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
-	<decode+?>: load.sp(+8)
+	cmplStd/lib/text/encoding/Utf8.ci:22: (65 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: load.sp(+16)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 192
 	<decode+?>: and.b32
 	<decode+?>: load.c32 128
 	<decode+?>: ceq.i32
 	<decode+?>: jz +8
-	<decode+?>: jmp +43
+	<decode+?>: jmp +35
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 22
 	<decode+?>: load.c32 -2
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"10xxxxxx"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/Utf8.ci:23: (26 bytes): chars[i] := (((buff[0]) & 31) << 6 | ((ext[0]) & 63));
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
@@ -31551,16 +31479,16 @@ in case there is an error -1 should be returned'
 	<decode+?>: dup.x32 sp(2)
 	<decode+?>: mad.u32 4
 	<decode+?>: store.i32
-	<decode+?>: jmp +614
-	cmplStd/lib/text/encoding/Utf8.ci:25: (610 bytes): if (((buff[0]) & 240) == 224)
+	<decode+?>: jmp +621
+	cmplStd/lib/text/encoding/Utf8.ci:25: (617 bytes): if (((buff[0]) & 240) == 224)
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 240
 	<decode+?>: and.b32
 	<decode+?>: load.c32 224
 	<decode+?>: ceq.i32
-	<decode+?>: jz +253
-	cmplStd/lib/text/encoding/Utf8.ci:26: (81 bytes): if (reader.read(reader, ext[...2]) != 2)
+	<decode+?>: jz +256
+	cmplStd/lib/text/encoding/Utf8.ci:26: (82 bytes): if (reader.read(reader, ext[...2]) != 2)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(2)
 	<decode+?>: load.c32 2
@@ -31572,54 +31500,60 @@ in case there is an error -1 should be returned'
 	<decode+?>: inc.sp(-12)
 	<decode+?>: load.c32 2
 	<decode+?>: ceq.i32
-	<decode+?>: jnz +51
-	cmplStd/lib/text/encoding/Utf8.ci:27: (39 bytes): error("invalid codepoint");
+	<decode+?>: jnz +52
+	cmplStd/lib/text/encoding/Utf8.ci:27: (40 bytes): error("invalid codepoint");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 27
 	<decode+?>: load.c32 -1
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"invalid codepoint"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/Utf8.ci:28: (8 bytes): return .result := i;
 	<decode+?>: mov.x32 sp(8, 0)
 	<decode+?>: inc.sp(-16)
 	<decode+?>: ret
-	cmplStd/lib/text/encoding/Utf8.ci:30: (64 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
-	<decode+?>: load.sp(+8)
+	cmplStd/lib/text/encoding/Utf8.ci:30: (65 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: load.sp(+16)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 192
 	<decode+?>: and.b32
 	<decode+?>: load.c32 128
 	<decode+?>: ceq.i32
 	<decode+?>: jz +8
-	<decode+?>: jmp +43
+	<decode+?>: jmp +35
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 30
 	<decode+?>: load.c32 -2
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"10xxxxxx"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
-	cmplStd/lib/text/encoding/Utf8.ci:31: (64 bytes): assert(((ext[1]) & 192) == 128, "10xxxxxx");
-	<decode+?>: load.sp(+9)
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
+	cmplStd/lib/text/encoding/Utf8.ci:31: (65 bytes): assert(((ext[1]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: load.sp(+17)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 192
 	<decode+?>: and.b32
 	<decode+?>: load.c32 128
 	<decode+?>: ceq.i32
 	<decode+?>: jz +8
-	<decode+?>: jmp +43
+	<decode+?>: jmp +35
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 31
 	<decode+?>: load.c32 -2
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"10xxxxxx"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/Utf8.ci:32: (36 bytes): chars[i] := (((buff[0]) & 15) << 12 | ((ext[0]) & 63) << 6 | ((ext[1]) & 63));
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
@@ -31638,16 +31572,16 @@ in case there is an error -1 should be returned'
 	<decode+?>: dup.x32 sp(2)
 	<decode+?>: mad.u32 4
 	<decode+?>: store.i32
-	<decode+?>: jmp +344
-	cmplStd/lib/text/encoding/Utf8.ci:34: (340 bytes): if (((buff[0]) & 248) == 240)
+	<decode+?>: jmp +348
+	cmplStd/lib/text/encoding/Utf8.ci:34: (344 bytes): if (((buff[0]) & 248) == 240)
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 248
 	<decode+?>: and.b32
 	<decode+?>: load.c32 240
 	<decode+?>: ceq.i32
-	<decode+?>: jz +323
-	cmplStd/lib/text/encoding/Utf8.ci:35: (81 bytes): if (reader.read(reader, ext[...3]) != 3)
+	<decode+?>: jz +327
+	cmplStd/lib/text/encoding/Utf8.ci:35: (82 bytes): if (reader.read(reader, ext[...3]) != 3)
 	<decode+?>: load.z32
 	<decode+?>: dup.x32 sp(2)
 	<decode+?>: load.c32 3
@@ -31659,71 +31593,79 @@ in case there is an error -1 should be returned'
 	<decode+?>: inc.sp(-12)
 	<decode+?>: load.c32 3
 	<decode+?>: ceq.i32
-	<decode+?>: jnz +51
-	cmplStd/lib/text/encoding/Utf8.ci:36: (39 bytes): error("invalid codepoint");
+	<decode+?>: jnz +52
+	cmplStd/lib/text/encoding/Utf8.ci:36: (40 bytes): error("invalid codepoint");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 36
 	<decode+?>: load.c32 -1
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"invalid codepoint"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/Utf8.ci:37: (8 bytes): return .result := i;
 	<decode+?>: mov.x32 sp(8, 0)
 	<decode+?>: inc.sp(-16)
 	<decode+?>: ret
-	cmplStd/lib/text/encoding/Utf8.ci:39: (64 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
-	<decode+?>: load.sp(+8)
+	cmplStd/lib/text/encoding/Utf8.ci:39: (65 bytes): assert(((ext[0]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: load.sp(+16)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 192
 	<decode+?>: and.b32
 	<decode+?>: load.c32 128
 	<decode+?>: ceq.i32
 	<decode+?>: jz +8
-	<decode+?>: jmp +43
+	<decode+?>: jmp +35
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 39
 	<decode+?>: load.c32 -2
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"10xxxxxx"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
-	cmplStd/lib/text/encoding/Utf8.ci:40: (64 bytes): assert(((ext[1]) & 192) == 128, "10xxxxxx");
-	<decode+?>: load.sp(+9)
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
+	cmplStd/lib/text/encoding/Utf8.ci:40: (65 bytes): assert(((ext[1]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: load.sp(+17)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 192
 	<decode+?>: and.b32
 	<decode+?>: load.c32 128
 	<decode+?>: ceq.i32
 	<decode+?>: jz +8
-	<decode+?>: jmp +43
+	<decode+?>: jmp +35
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 40
 	<decode+?>: load.c32 -2
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"10xxxxxx"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
-	cmplStd/lib/text/encoding/Utf8.ci:41: (64 bytes): assert(((ext[2]) & 192) == 128, "10xxxxxx");
-	<decode+?>: load.sp(+10)
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
+	cmplStd/lib/text/encoding/Utf8.ci:41: (65 bytes): assert(((ext[2]) & 192) == 128, "10xxxxxx");
+	<decode+?>: load.z32
+	<decode+?>: load.sp(+4)
+	<decode+?>: load.sp(+18)
 	<decode+?>: load.iu8
 	<decode+?>: load.c32 192
 	<decode+?>: and.b32
 	<decode+?>: load.c32 128
 	<decode+?>: ceq.i32
 	<decode+?>: jz +8
-	<decode+?>: jmp +43
+	<decode+?>: jmp +35
 	<decode+?>: load.ref <?> ;"cmplStd/lib/text/encoding/Utf8.ci"
 	<decode+?>: load.c32 41
 	<decode+?>: load.c32 -2
 	<decode+?>: load.c32 128
 	<decode+?>: load.ref <?> ;"10xxxxxx"
-	<decode+?>: load.ref <?> ;pointer
-	<decode+?>: load.ref <?> ;null
-	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<decode+?>: dup.x64 sp(5)
+	<decode+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<decode+?>: inc.sp(-8)
 	cmplStd/lib/text/encoding/Utf8.ci:42: (46 bytes): chars[i] := (((buff[0]) & 7) << 18 | ((ext[0]) & 63) << 12 | ((ext[1]) & 63) << 6 | ((ext[2]) & 63));
 	<decode+?>: load.sp(+12)
 	<decode+?>: load.iu8
@@ -31753,7 +31695,7 @@ in case there is an error -1 should be returned'
 	<decode+?>: dup.x32 sp(0)
 	<decode+?>: dup.x32 sp(7)
 	<decode+?>: clt.i32
-	<decode+?>: jnz -888
+	<decode+?>: jnz -897
 	<decode+?>: inc.sp(-4)
 	cmplStd/lib/text/encoding/Utf8.ci:45: (8 bytes): return .result := chars.length;
 	<decode+?>: mov.x32 sp(7, 5)
@@ -32610,10 +32552,10 @@ Polynomial: TextWriter.Writeable {
 .field write: function (size: 411, cast: static function)
 .field destroy: function (size: 17, cast: static function)
 .field destroy: function (size: 4, cast: const variable(ref))
-.field create: function (size: 252, cast: static function)
+.field create: function (size: 253, cast: static function)
 .field degree: function (size: 58, cast: static function)
-.field get: function (size: 85, cast: static function)
-.field set: function (size: 124, cast: static function)
+.field get: function (size: 100, cast: static function)
+.field set: function (size: 140, cast: static function)
 .field neg: function (size: 93, cast: static function)
 .field add: function (size: 145, cast: static function)
 .field sub: function (size: 145, cast: static function)
@@ -32986,7 +32928,7 @@ Polynomial.destroy(this: Polynomial): void: function {
 Polynomial.create(degree: int32, values: float64[]): Polynomial: function {
 .kind: static function
 .base: `function`
-.size: 252
+.size: 253
 .name: 'create'
 .file: 'cmplStd/lib/math/Polynomial.ci:59'
 .owner: Polynomial
@@ -33012,7 +32954,7 @@ Polynomial.create(degree: int32, values: float64[]): Polynomial: function {
 	}
 	return .result := result;
 }
-.instructions: (252 bytes)
+.instructions: (253 bytes)
 	cmplStd/lib/math/Polynomial.ci:60: (31 bytes): capacity: int32 := Math.max(0, degree) + 1
 	<create>  : load.z32
 	<create+?>: dup.x32 sp(4)
@@ -33026,20 +32968,22 @@ Polynomial.create(degree: int32, values: float64[]): Polynomial: function {
 	<create+?>: mov.x32 sp(2, 0)
 	<create+?>: inc.sp(-8)
 	<create+?>: inc.i32(+1)
-	cmplStd/lib/math/Polynomial.ci:61: (52 bytes): assert(capacity >= (values.length));
-	<create+?>: dup.x32 sp(0)
-	<create+?>: dup.x32 sp(4)
+	cmplStd/lib/math/Polynomial.ci:61: (53 bytes): assert(capacity >= (values.length));
+	<create+?>: load.z32
+	<create+?>: load.sp(+4)
+	<create+?>: dup.x32 sp(2)
+	<create+?>: dup.x32 sp(6)
 	<create+?>: clt.i32
 	<create+?>: jnz +8
-	<create+?>: jmp +43
+	<create+?>: jmp +35
 	<create+?>: load.ref <?> ;"cmplStd/lib/math/Polynomial.ci"
 	<create+?>: load.c32 61
 	<create+?>: load.c32 -2
 	<create+?>: load.c32 128
 	<create+?>: load.ref <?> ;"assertion failed!"
-	<create+?>: load.ref <?> ;pointer
-	<create+?>: load.ref <?> ;null
-	<create+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<create+?>: dup.x64 sp(5)
+	<create+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<create+?>: inc.sp(-8)
 	cmplStd/lib/math/Polynomial.ci:62: (21 bytes): coefficients: float64[*] := pointer.alloc(null, capacity * sizeof(float64))
 	<create+?>: load.ref <?> ;null
 	<create+?>: dup.x32 sp(1)
@@ -33194,7 +33138,7 @@ Polynomial.degree(this: Polynomial): int32: function {
 Polynomial.get(this: Polynomial, index: int32): float64: function {
 .kind: static function
 .base: `function`
-.size: 85
+.size: 100
 .name: 'get'
 .file: 'cmplStd/lib/math/Polynomial.ci:89'
 .owner: Polynomial
@@ -33209,21 +33153,25 @@ Polynomial.get(this: Polynomial, index: int32): float64: function {
 	}
 	return .result := this.coefficients[index];
 }
-.instructions: (85 bytes)
-	cmplStd/lib/math/Polynomial.ci:90: (50 bytes): assert(index >= 0, "negative index", index);
-	<get>  : dup.x32 sp(1)
+.instructions: (100 bytes)
+	cmplStd/lib/math/Polynomial.ci:90: (65 bytes): assert(index >= 0, "negative index", index);
+	<get>  : load.ref <?> ;int32
+	<get+?>: load.sp(+8)
+	<get+?>: load.c32 1
+	<get+?>: load.sp(+4)
+	<get+?>: dup.x32 sp(5)
 	<get+?>: load.z32
 	<get+?>: clt.i32
 	<get+?>: jnz +8
-	<get+?>: jmp +42
+	<get+?>: jmp +35
 	<get+?>: load.ref <?> ;"cmplStd/lib/math/Polynomial.ci"
 	<get+?>: load.c32 90
 	<get+?>: load.c32 -2
 	<get+?>: load.c32 128
 	<get+?>: load.ref <?> ;"negative index"
-	<get+?>: load.ref <?> ;int32
-	<get+?>: load.sp(+28)
-	<get+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<get+?>: dup.x64 sp(5)
+	<get+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<get+?>: inc.sp(-16)
 	cmplStd/lib/math/Polynomial.ci:91: (18 bytes): if (index >= this.capacity)
 	<get+?>: dup.x32 sp(1)
 	<get+?>: dup.x32 sp(3)
@@ -33256,7 +33204,7 @@ Polynomial.get(this: Polynomial, index: int32): float64: function {
 Polynomial.set(this: Polynomial, index: int32, value: float64): float64: function {
 .kind: static function
 .base: `function`
-.size: 124
+.size: 140
 .name: 'set'
 .file: 'cmplStd/lib/math/Polynomial.ci:98'
 .owner: Polynomial
@@ -33270,37 +33218,43 @@ Polynomial.set(this: Polynomial, index: int32, value: float64): float64: functio
 	assert(index < this.capacity, "invalid index");
 	return .result := this.coefficients[index];
 }
-.instructions: (124 bytes)
-	cmplStd/lib/math/Polynomial.ci:99: (50 bytes): assert(index >= 0, "negative index", index);
-	<set>  : dup.x32 sp(3)
+.instructions: (140 bytes)
+	cmplStd/lib/math/Polynomial.ci:99: (65 bytes): assert(index >= 0, "negative index", index);
+	<set>  : load.ref <?> ;int32
+	<set+?>: load.sp(+16)
+	<set+?>: load.c32 1
+	<set+?>: load.sp(+4)
+	<set+?>: dup.x32 sp(7)
 	<set+?>: load.z32
 	<set+?>: clt.i32
 	<set+?>: jnz +8
-	<set+?>: jmp +42
+	<set+?>: jmp +35
 	<set+?>: load.ref <?> ;"cmplStd/lib/math/Polynomial.ci"
 	<set+?>: load.c32 99
 	<set+?>: load.c32 -2
 	<set+?>: load.c32 128
 	<set+?>: load.ref <?> ;"negative index"
-	<set+?>: load.ref <?> ;int32
-	<set+?>: load.sp(+36)
-	<set+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
-	cmplStd/lib/math/Polynomial.ci:100: (57 bytes): assert(index < this.capacity, "invalid index");
-	<set+?>: dup.x32 sp(3)
+	<set+?>: dup.x64 sp(5)
+	<set+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<set+?>: inc.sp(-16)
+	cmplStd/lib/math/Polynomial.ci:100: (58 bytes): assert(index < this.capacity, "invalid index");
+	<set+?>: load.z32
+	<set+?>: load.sp(+4)
 	<set+?>: dup.x32 sp(5)
+	<set+?>: dup.x32 sp(7)
 	<set+?>: inc.i32(+12)
 	<set+?>: load.i32
 	<set+?>: clt.i32
 	<set+?>: jz +8
-	<set+?>: jmp +43
+	<set+?>: jmp +35
 	<set+?>: load.ref <?> ;"cmplStd/lib/math/Polynomial.ci"
 	<set+?>: load.c32 100
 	<set+?>: load.c32 -2
 	<set+?>: load.c32 128
 	<set+?>: load.ref <?> ;"invalid index"
-	<set+?>: load.ref <?> ;pointer
-	<set+?>: load.ref <?> ;null
-	<set+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<set+?>: dup.x64 sp(5)
+	<set+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<set+?>: inc.sp(-8)
 	cmplStd/lib/math/Polynomial.ci:101: (17 bytes): return .result := this.coefficients[index];
 	<set+?>: dup.x32 sp(4)
 	<set+?>: inc.i32(+8)
@@ -34321,7 +34275,7 @@ FileWriter: ByteWriter {
 .name: 'FileWriter'
 .file: 'cmplFile/lib/FileStream.ci:15'
 .field file: File (size: 8, cast: const variable(val))
-.field write: function (size: 70, cast: static function)
+.field write: function (size: 71, cast: static function)
 .field flush: function (size: 12, cast: static function)
 .field close: function (size: 12, cast: static function)
 .field write: function (size: 4, cast: variable(ref))
@@ -34366,7 +34320,7 @@ FileWriter.file: File {
 FileWriter.write(this: FileWriter, bytes: uint8[]): void: function {
 .kind: static function
 .base: `function`
-.size: 70
+.size: 71
 .name: 'write'
 .file: 'cmplFile/lib/FileStream.ci:19'
 .owner: FileWriter
@@ -34379,27 +34333,29 @@ the method must write all the bytes from the `bytes` array'
 	wrote: int32 := File.write(this.file, bytes);
 	assert(wrote == (bytes.length));
 }
-.instructions: (70 bytes)
+.instructions: (71 bytes)
 	cmplFile/lib/FileStream.ci:20: (13 bytes): wrote: int32 := File.write(this.file, bytes)
 	<write>  : dup.x32 sp(3)
 	<write+?>: inc.i32(+16)
 	<write+?>: load.i64
 	<write+?>: dup.x64 sp(3)
 	<write+?>: nfc(63) ;File.write(file: File, buff: uint8[]): int32
-	cmplFile/lib/FileStream.ci:21: (52 bytes): assert(wrote == (bytes.length));
-	<write+?>: dup.x32 sp(0)
-	<write+?>: dup.x32 sp(4)
+	cmplFile/lib/FileStream.ci:21: (53 bytes): assert(wrote == (bytes.length));
+	<write+?>: load.z32
+	<write+?>: load.sp(+4)
+	<write+?>: dup.x32 sp(2)
+	<write+?>: dup.x32 sp(6)
 	<write+?>: ceq.i32
 	<write+?>: jz +8
-	<write+?>: jmp +43
+	<write+?>: jmp +35
 	<write+?>: load.ref <?> ;"cmplFile/lib/FileStream.ci"
 	<write+?>: load.c32 21
 	<write+?>: load.c32 -2
 	<write+?>: load.c32 128
 	<write+?>: load.ref <?> ;"assertion failed!"
-	<write+?>: load.ref <?> ;pointer
-	<write+?>: load.ref <?> ;null
-	<write+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<write+?>: dup.x64 sp(5)
+	<write+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<write+?>: inc.sp(-8)
 	<write+?>: inc.sp(-4)
 	<write+?>: ret
 .usages:
@@ -34460,12 +34416,12 @@ BufferedFileWriter: FileWriter {
 .file: 'cmplFile/lib/FileStream.ci:34'
 .field buffer: uint8[1024] (size: 1024, cast: variable(val))
 .field bufferSize: int32 (size: 4, cast: variable(i32))
-.field flushBuffer: function (size: 94, cast: static function)
+.field flushBuffer: function (size: 95, cast: static function)
 .field write: function (size: 150, cast: static function)
 .field flush: function (size: 25, cast: static function)
 .field close: function (size: 25, cast: static function)
 .field file: File (size: 8, cast: const variable(val))
-.field write: function (size: 70, cast: static function)
+.field write: function (size: 71, cast: static function)
 .field flush: function (size: 12, cast: static function)
 .field close: function (size: 12, cast: static function)
 .field write: function (size: 4, cast: variable(ref))
@@ -34523,7 +34479,7 @@ BufferedFileWriter.bufferSize: int32 {
 BufferedFileWriter.flushBuffer(this: BufferedFileWriter): void: function {
 .kind: static function
 .base: `function`
-.size: 94
+.size: 95
 .name: 'flushBuffer'
 .file: 'cmplFile/lib/FileStream.ci:38'
 .owner: BufferedFileWriter
@@ -34534,7 +34490,7 @@ BufferedFileWriter.flushBuffer(this: BufferedFileWriter): void: function {
 	assert(wrote == this.bufferSize);
 	this.bufferSize := 0;
 }
-.instructions: (94 bytes)
+.instructions: (95 bytes)
 	cmplFile/lib/FileStream.ci:39: (24 bytes): wrote: int32 := File.write(this.file, this.buffer[...this.bufferSize])
 	<flushBuffer>  : dup.x32 sp(1)
 	<flushBuffer+?>: inc.i32(+16)
@@ -34545,22 +34501,24 @@ BufferedFileWriter.flushBuffer(this: BufferedFileWriter): void: function {
 	<flushBuffer+?>: dup.x32 sp(4)
 	<flushBuffer+?>: inc.i32(+24)
 	<flushBuffer+?>: nfc(63) ;File.write(file: File, buff: uint8[]): int32
-	cmplFile/lib/FileStream.ci:40: (57 bytes): assert(wrote == this.bufferSize);
-	<flushBuffer+?>: dup.x32 sp(0)
-	<flushBuffer+?>: dup.x32 sp(3)
+	cmplFile/lib/FileStream.ci:40: (58 bytes): assert(wrote == this.bufferSize);
+	<flushBuffer+?>: load.z32
+	<flushBuffer+?>: load.sp(+4)
+	<flushBuffer+?>: dup.x32 sp(2)
+	<flushBuffer+?>: dup.x32 sp(5)
 	<flushBuffer+?>: inc.i32(+1048)
 	<flushBuffer+?>: load.i32
 	<flushBuffer+?>: ceq.i32
 	<flushBuffer+?>: jz +8
-	<flushBuffer+?>: jmp +43
+	<flushBuffer+?>: jmp +35
 	<flushBuffer+?>: load.ref <?> ;"cmplFile/lib/FileStream.ci"
 	<flushBuffer+?>: load.c32 40
 	<flushBuffer+?>: load.c32 -2
 	<flushBuffer+?>: load.c32 128
 	<flushBuffer+?>: load.ref <?> ;"assertion failed!"
-	<flushBuffer+?>: load.ref <?> ;pointer
-	<flushBuffer+?>: load.ref <?> ;null
-	<flushBuffer+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<flushBuffer+?>: dup.x64 sp(5)
+	<flushBuffer+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<flushBuffer+?>: inc.sp(-8)
 	cmplFile/lib/FileStream.ci:41: (8 bytes): this.bufferSize := 0;
 	<flushBuffer+?>: load.z32
 	<flushBuffer+?>: dup.x32 sp(3)
@@ -42771,7 +42729,7 @@ drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: in
 blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void: function {
 .kind: static function
 .base: `function`
-.size: 547
+.size: 548
 .name: 'blend'
 .file: 'cmplGfx/lib/image.blend.ci:2'
 .param .result: void (size: 0, cast: variable(void))
@@ -42824,7 +42782,7 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer,
 		}
 	}
 }
-.instructions: (547 bytes)
+.instructions: (548 bytes)
 	cmplGfx/lib/image.blend.ci:4: (19 bytes): return .result := Image.blend(image, x0, y0, src, roi, extra, pointer(blend));
 	<blend>  : dup.x64 sp(8)
 	<blend+?>: dup.x32 sp(9)
@@ -42946,28 +42904,30 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer,
 	cmplGfx/lib/image.blend.ci:30: (5 bytes): return;
 	<blend+?>: inc.sp(-16)
 	<blend+?>: ret
-	cmplGfx/lib/image.blend.ci:33: (81 bytes): assert(Image.depth(image) == 32 && Image.depth(src) == 32);
-	<blend+?>: dup.x64 sp(12)
+	cmplGfx/lib/image.blend.ci:33: (82 bytes): assert(Image.depth(image) == 32 && Image.depth(src) == 32);
+	<blend+?>: load.z32
+	<blend+?>: load.sp(+4)
+	<blend+?>: dup.x64 sp(14)
 	<blend+?>: nfc(103) ;Image.depth(image: Image): int32
 	<blend+?>: load.c32 32
 	<blend+?>: ceq.i32
 	<blend+?>: dup.x32 sp(0)
 	<blend+?>: jz +20
 	<blend+?>: inc.sp(-4)
-	<blend+?>: dup.x64 sp(8)
+	<blend+?>: dup.x64 sp(10)
 	<blend+?>: nfc(103) ;Image.depth(image: Image): int32
 	<blend+?>: load.c32 32
 	<blend+?>: ceq.i32
 	<blend+?>: jz +8
-	<blend+?>: jmp +43
+	<blend+?>: jmp +35
 	<blend+?>: load.ref <?> ;"cmplGfx/lib/image.blend.ci"
 	<blend+?>: load.c32 33
 	<blend+?>: load.c32 -2
 	<blend+?>: load.c32 128
 	<blend+?>: load.ref <?> ;"assertion failed!"
-	<blend+?>: load.ref <?> ;pointer
-	<blend+?>: load.ref <?> ;null
-	<blend+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<blend+?>: dup.x64 sp(5)
+	<blend+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<blend+?>: inc.sp(-8)
 	cmplGfx/lib/image.blend.ci:34: (89 bytes): if ((blend) == null)
 	<blend+?>: dup.x32 sp(5)
 	<blend+?>: load.ref <?> ;null
@@ -43854,7 +43814,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void: function {
 .kind: static function
 .base: `function`
-.size: 1352
+.size: 1354
 .name: 'transform'
 .file: 'cmplGfx/lib/image.transform.ci:2'
 .param .result: void (size: 0, cast: variable(void))
@@ -43916,7 +43876,7 @@ transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, m
 		}
 	}
 }
-.instructions: (1352 bytes)
+.instructions: (1354 bytes)
 	cmplGfx/lib/image.transform.ci:4: (17 bytes): return .result := Image.transform(image, rect, src, roi, interpolate, pointer(mat.data));
 	<transform>  : dup.x64 sp(7)
 	<transform+?>: dup.x32 sp(8)
@@ -43926,36 +43886,40 @@ transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, m
 	<transform+?>: dup.x32 sp(8)
 	<transform+?>: nfc(111) ;Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
 	<transform+?>: ret
-	cmplGfx/lib/image.transform.ci:7: (59 bytes): assert(Image.depth(image) == 32);
-	<transform+?>: dup.x64 sp(7)
+	cmplGfx/lib/image.transform.ci:7: (60 bytes): assert(Image.depth(image) == 32);
+	<transform+?>: load.z32
+	<transform+?>: load.sp(+4)
+	<transform+?>: dup.x64 sp(9)
 	<transform+?>: nfc(103) ;Image.depth(image: Image): int32
 	<transform+?>: load.c32 32
 	<transform+?>: ceq.i32
 	<transform+?>: jz +8
-	<transform+?>: jmp +43
+	<transform+?>: jmp +35
 	<transform+?>: load.ref <?> ;"cmplGfx/lib/image.transform.ci"
 	<transform+?>: load.c32 7
 	<transform+?>: load.c32 -2
 	<transform+?>: load.c32 128
 	<transform+?>: load.ref <?> ;"assertion failed!"
-	<transform+?>: load.ref <?> ;pointer
-	<transform+?>: load.ref <?> ;null
-	<transform+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
-	cmplGfx/lib/image.transform.ci:8: (59 bytes): assert(Image.depth(src) == 32);
-	<transform+?>: dup.x64 sp(4)
+	<transform+?>: dup.x64 sp(5)
+	<transform+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<transform+?>: inc.sp(-8)
+	cmplGfx/lib/image.transform.ci:8: (60 bytes): assert(Image.depth(src) == 32);
+	<transform+?>: load.z32
+	<transform+?>: load.sp(+4)
+	<transform+?>: dup.x64 sp(6)
 	<transform+?>: nfc(103) ;Image.depth(image: Image): int32
 	<transform+?>: load.c32 32
 	<transform+?>: ceq.i32
 	<transform+?>: jz +8
-	<transform+?>: jmp +43
+	<transform+?>: jmp +35
 	<transform+?>: load.ref <?> ;"cmplGfx/lib/image.transform.ci"
 	<transform+?>: load.c32 8
 	<transform+?>: load.c32 -2
 	<transform+?>: load.c32 128
 	<transform+?>: load.ref <?> ;"assertion failed!"
-	<transform+?>: load.ref <?> ;pointer
-	<transform+?>: load.ref <?> ;null
-	<transform+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<transform+?>: dup.x64 sp(5)
+	<transform+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<transform+?>: inc.sp(-8)
 	cmplGfx/lib/image.transform.ci:10: (114 bytes): dRec: Rect := {...}
 	<transform+?>: inc.sp(+16)
 	cmplGfx/lib/image.transform.ci:11: (22 bytes): dRec.x0 := (rect) != null ? rect.x0 : 0;
@@ -44927,7 +44891,7 @@ Image(fileName: char[*], width: int32, height: int32, depth: int32): Image: func
 blur(image: Image, radius: int32, sigma: float64): void: function {
 .kind: static function
 .base: `function`
-.size: 933
+.size: 934
 .name: 'blur'
 .file: 'cmplGfx/lib/image.blur.ci:2'
 .param .result: void (size: 0, cast: variable(void))
@@ -44999,7 +44963,7 @@ blur(image: Image, radius: int32, sigma: float64): void: function {
 	}
 	Image.destroy(tmp);
 }
-.instructions: (933 bytes)
+.instructions: (934 bytes)
 	cmplGfx/lib/image.blur.ci:4: (11 bytes): return .result := Image.blur(image, radius, sigma);
 	<blur>  : dup.x64 sp(4)
 	<blur+?>: dup.x32 sp(5)
@@ -45014,20 +44978,22 @@ blur(image: Image, radius: int32, sigma: float64): void: function {
 	<blur+?>: load.c32 2
 	<blur+?>: mul.i32
 	<blur+?>: inc.i32(+1)
-	cmplGfx/lib/image.blur.ci:26: (55 bytes): assert(size < kernel.(length));
-	<blur+?>: dup.x32 sp(0)
+	cmplGfx/lib/image.blur.ci:26: (56 bytes): assert(size < kernel.(length));
+	<blur+?>: load.z32
+	<blur+?>: load.sp(+4)
+	<blur+?>: dup.x32 sp(2)
 	<blur+?>: load.c32 1024
 	<blur+?>: clt.i32
 	<blur+?>: jz +8
-	<blur+?>: jmp +43
+	<blur+?>: jmp +35
 	<blur+?>: load.ref <?> ;"cmplGfx/lib/image.blur.ci"
 	<blur+?>: load.c32 26
 	<blur+?>: load.c32 -2
 	<blur+?>: load.c32 128
 	<blur+?>: load.ref <?> ;"assertion failed!"
-	<blur+?>: load.ref <?> ;pointer
-	<blur+?>: load.ref <?> ;null
-	<blur+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<blur+?>: dup.x64 sp(5)
+	<blur+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<blur+?>: inc.sp(-8)
 	cmplGfx/lib/image.blur.ci:28: (1 byte): kernelSum: float64 := 0
 	<blur+?>: load.z64
 	cmplGfx/lib/image.blur.ci:29: (4 bytes): kernelFlt: float64[1024] := {...}
@@ -45434,7 +45400,7 @@ blur(image: Image, radius: int32, sigma: float64): void: function {
 colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 .kind: static function
 .base: `function`
-.size: 950
+.size: 951
 .name: 'colorMap'
 .file: 'cmplGfx/lib/color.lookup.ci:2'
 .param .result: void (size: 0, cast: variable(void))
@@ -45524,28 +45490,30 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 		}
 	}
 }
-.instructions: (950 bytes)
+.instructions: (951 bytes)
 	cmplGfx/lib/color.lookup.ci:4: (11 bytes): return .result := Image.colorMap(image, roi, pointer(lut));
 	<colorMap>  : dup.x64 sp(3)
 	<colorMap+?>: dup.x32 sp(4)
 	<colorMap+?>: dup.x32 sp(4)
 	<colorMap+?>: nfc(113) ;Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void
 	<colorMap+?>: ret
-	cmplGfx/lib/color.lookup.ci:7: (59 bytes): assert(Image.depth(image) == 32);
-	<colorMap+?>: dup.x64 sp(3)
+	cmplGfx/lib/color.lookup.ci:7: (60 bytes): assert(Image.depth(image) == 32);
+	<colorMap+?>: load.z32
+	<colorMap+?>: load.sp(+4)
+	<colorMap+?>: dup.x64 sp(5)
 	<colorMap+?>: nfc(103) ;Image.depth(image: Image): int32
 	<colorMap+?>: load.c32 32
 	<colorMap+?>: ceq.i32
 	<colorMap+?>: jz +8
-	<colorMap+?>: jmp +43
+	<colorMap+?>: jmp +35
 	<colorMap+?>: load.ref <?> ;"cmplGfx/lib/color.lookup.ci"
 	<colorMap+?>: load.c32 7
 	<colorMap+?>: load.c32 -2
 	<colorMap+?>: load.c32 128
 	<colorMap+?>: load.ref <?> ;"assertion failed!"
-	<colorMap+?>: load.ref <?> ;pointer
-	<colorMap+?>: load.ref <?> ;null
-	<colorMap+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<colorMap+?>: dup.x64 sp(5)
+	<colorMap+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<colorMap+?>: inc.sp(-8)
 	cmplGfx/lib/color.lookup.ci:10: (114 bytes): r: Rect := {...}
 	<colorMap+?>: inc.sp(+16)
 	cmplGfx/lib/color.lookup.ci:11: (22 bytes): r.x0 := (roi) != null ? roi.x0 : 0;
@@ -45948,7 +45916,7 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 .kind: static function
 .base: `function`
-.size: 683
+.size: 684
 .name: 'colorMat'
 .file: 'cmplGfx/lib/color.matrix.ci:2'
 .param .result: void (size: 0, cast: variable(void))
@@ -45995,28 +45963,30 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 		}
 	}
 }
-.instructions: (683 bytes)
+.instructions: (684 bytes)
 	cmplGfx/lib/color.matrix.ci:4: (11 bytes): return .result := Image.colorMat(image, roi, mat.data);
 	<colorMat>  : dup.x64 sp(3)
 	<colorMat+?>: dup.x32 sp(4)
 	<colorMat+?>: dup.x32 sp(4)
 	<colorMat+?>: nfc(114) ;Image.colorMat(image: Image, roi: Rect, mat: float32[16]): void
 	<colorMat+?>: ret
-	cmplGfx/lib/color.matrix.ci:6: (59 bytes): assert(Image.depth(image) == 32);
-	<colorMat+?>: dup.x64 sp(3)
+	cmplGfx/lib/color.matrix.ci:6: (60 bytes): assert(Image.depth(image) == 32);
+	<colorMat+?>: load.z32
+	<colorMat+?>: load.sp(+4)
+	<colorMat+?>: dup.x64 sp(5)
 	<colorMat+?>: nfc(103) ;Image.depth(image: Image): int32
 	<colorMat+?>: load.c32 32
 	<colorMat+?>: ceq.i32
 	<colorMat+?>: jz +8
-	<colorMat+?>: jmp +43
+	<colorMat+?>: jmp +35
 	<colorMat+?>: load.ref <?> ;"cmplGfx/lib/color.matrix.ci"
 	<colorMat+?>: load.c32 6
 	<colorMat+?>: load.c32 -2
 	<colorMat+?>: load.c32 128
 	<colorMat+?>: load.ref <?> ;"assertion failed!"
-	<colorMat+?>: load.ref <?> ;pointer
-	<colorMat+?>: load.ref <?> ;null
-	<colorMat+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<colorMat+?>: dup.x64 sp(5)
+	<colorMat+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<colorMat+?>: inc.sp(-8)
 	cmplGfx/lib/color.matrix.ci:9: (114 bytes): r: Rect := {...}
 	<colorMat+?>: inc.sp(+16)
 	cmplGfx/lib/color.matrix.ci:10: (22 bytes): r.x0 := (roi) != null ? roi.x0 : 0;
@@ -46312,7 +46282,7 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 Mesh(fileName: char[*]): Mesh: function {
 .kind: static function
 .base: `function`
-.size: 109
+.size: 124
 .name: 'Mesh'
 .file: 'cmplGfx/lib/mesh.ci:2'
 .param .result: Mesh (size: 4, cast: variable(ref))
@@ -46327,7 +46297,7 @@ Mesh(fileName: char[*]): Mesh: function {
 	}
 	abort("unknown file extension", fileName);
 }
-.instructions: (109 bytes)
+.instructions: (124 bytes)
 	cmplGfx/lib/mesh.ci:3: (36 bytes): if (endsWith(fileName, ".obj", ignCaseCmp))
 	<Mesh>  : load.z32
 	<Mesh+?>: dup.x32 sp(2)
@@ -46356,15 +46326,19 @@ Mesh(fileName: char[*]): Mesh: function {
 	<Mesh+?>: nfc(74) ;Mesh.open3ds(path: char[*]): Mesh
 	<Mesh+?>: set.x32 sp(3)
 	<Mesh+?>: ret
-	cmplGfx/lib/mesh.ci:9: (36 bytes): abort("unknown file extension", fileName);
+	cmplGfx/lib/mesh.ci:9: (51 bytes): abort("unknown file extension", fileName);
+	<Mesh+?>: load.ref <?>
+	<Mesh+?>: dup.x32 sp(2)
+	<Mesh+?>: load.c32 1
+	<Mesh+?>: load.sp(+4)
 	<Mesh+?>: load.ref <?> ;"cmplGfx/lib/mesh.ci"
 	<Mesh+?>: load.c32 9
 	<Mesh+?>: load.c32 -2
 	<Mesh+?>: load.c32 128
 	<Mesh+?>: load.ref <?> ;"unknown file extension"
-	<Mesh+?>: load.ref <?>
-	<Mesh+?>: dup.x32 sp(7)
-	<Mesh+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<Mesh+?>: dup.x64 sp(5)
+	<Mesh+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<Mesh+?>: inc.sp(-16)
 	<Mesh+?>: ret
 .usages:
 }
@@ -50129,7 +50103,7 @@ View: object {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -50551,7 +50525,7 @@ View.onReset(this: View): bool: function {
 View.onCreate(this: View, parent: View): void: function {
 .kind: static function
 .base: `function`
-.size: 181
+.size: 183
 .name: 'onCreate'
 .file: 'cmplGfx/lib/micro.ui.core.ci:265'
 .owner: View
@@ -50567,9 +50541,11 @@ View.onCreate(this: View, parent: View): void: function {
 		this.style := emit(pointer(parent.style));
 	}
 }
-.instructions: (181 bytes)
-	cmplGfx/lib/micro.ui.core.ci:266: (80 bytes): assert((this.parent) == null || this.parent == parent, "can not add the same view to different layouts");
-	<onCreate>  : dup.x32 sp(2)
+.instructions: (183 bytes)
+	cmplGfx/lib/micro.ui.core.ci:266: (81 bytes): assert((this.parent) == null || this.parent == parent, "can not add the same view to different layouts");
+	<onCreate>  : load.z32
+	<onCreate+?>: load.sp(+4)
+	<onCreate+?>: dup.x32 sp(4)
 	<onCreate+?>: inc.i32(+16)
 	<onCreate+?>: load.i32
 	<onCreate+?>: load.ref <?> ;null
@@ -50577,49 +50553,51 @@ View.onCreate(this: View, parent: View): void: function {
 	<onCreate+?>: dup.x32 sp(0)
 	<onCreate+?>: jnz +18
 	<onCreate+?>: inc.sp(-4)
-	<onCreate+?>: dup.x32 sp(2)
+	<onCreate+?>: dup.x32 sp(4)
 	<onCreate+?>: inc.i32(+16)
 	<onCreate+?>: load.i32
-	<onCreate+?>: dup.x32 sp(2)
+	<onCreate+?>: dup.x32 sp(4)
 	<onCreate+?>: ceq.i32
 	<onCreate+?>: jz +8
-	<onCreate+?>: jmp +43
+	<onCreate+?>: jmp +35
 	<onCreate+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<onCreate+?>: load.c32 266
 	<onCreate+?>: load.c32 -2
 	<onCreate+?>: load.c32 128
 	<onCreate+?>: load.ref <?> ;"can not add the same view to different layouts"
-	<onCreate+?>: load.ref <?> ;pointer
-	<onCreate+?>: load.ref <?> ;null
-	<onCreate+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<onCreate+?>: dup.x64 sp(5)
+	<onCreate+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<onCreate+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:267: (9 bytes): this.parent := parent;
 	<onCreate+?>: dup.x32 sp(1)
 	<onCreate+?>: dup.x32 sp(3)
 	<onCreate+?>: inc.i32(+16)
 	<onCreate+?>: store.i32
-	cmplGfx/lib/micro.ui.core.ci:268: (91 bytes): if ((this.style) == null)
+	cmplGfx/lib/micro.ui.core.ci:268: (92 bytes): if ((this.style) == null)
 	<onCreate+?>: dup.x32 sp(2)
 	<onCreate+?>: inc.i32(+20)
 	<onCreate+?>: load.i32
 	<onCreate+?>: load.ref <?> ;null
 	<onCreate+?>: ceq.i32
-	<onCreate+?>: jz +78
-	cmplGfx/lib/micro.ui.core.ci:269: (60 bytes): assert((parent.style) != null, "can not create view with a parent without a style");
-	<onCreate+?>: dup.x32 sp(1)
+	<onCreate+?>: jz +79
+	cmplGfx/lib/micro.ui.core.ci:269: (61 bytes): assert((parent.style) != null, "can not create view with a parent without a style");
+	<onCreate+?>: load.z32
+	<onCreate+?>: load.sp(+4)
+	<onCreate+?>: dup.x32 sp(3)
 	<onCreate+?>: inc.i32(+20)
 	<onCreate+?>: load.i32
 	<onCreate+?>: load.ref <?> ;null
 	<onCreate+?>: ceq.i32
 	<onCreate+?>: jnz +8
-	<onCreate+?>: jmp +43
+	<onCreate+?>: jmp +35
 	<onCreate+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<onCreate+?>: load.c32 269
 	<onCreate+?>: load.c32 -2
 	<onCreate+?>: load.c32 128
 	<onCreate+?>: load.ref <?> ;"can not create view with a parent without a style"
-	<onCreate+?>: load.ref <?> ;pointer
-	<onCreate+?>: load.ref <?> ;null
-	<onCreate+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<onCreate+?>: dup.x64 sp(5)
+	<onCreate+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<onCreate+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:270: (14 bytes): this.style := emit(pointer(parent.style))
 	<onCreate+?>: dup.x32 sp(1)
 	<onCreate+?>: inc.i32(+20)
@@ -51361,15 +51339,15 @@ Layout: View {
 .field getPressed: function (size: 114, cast: static function)
 .field getFocused: function (size: 114, cast: static function)
 .field setFocused: function (size: 283, cast: static function)
-.field capacity: function (size: 174, cast: static function)
+.field capacity: function (size: 175, cast: static function)
 .field addItems: function (size: 204, cast: static function)
 .field size: function (size: 10, cast: static function)
-.field getView: function (size: 93, cast: static function)
-.field setAlignment: function (size: 93, cast: static function)
+.field getView: function (size: 94, cast: static function)
+.field setAlignment: function (size: 94, cast: static function)
 .field padding: function (size: 56, cast: static function)
-.field onClick: function (size: 43, cast: static function)
+.field onClick: function (size: 58, cast: static function)
 .field onReset: function (size: 94, cast: static function)
-.field onCreate: function (size: 140, cast: static function)
+.field onCreate: function (size: 141, cast: static function)
 .field onDestroy: function (size: 86, cast: static function)
 .field onKeyEvent: function (size: 89, cast: static function)
 .field onTouchEvent: function (size: 799, cast: static function)
@@ -51393,7 +51371,7 @@ Layout: View {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -52452,7 +52430,7 @@ Layout.setFocused(this: Layout, focus: View): bool: function {
 Layout.capacity(this: Layout, capacity: int32): Layout: function {
 .kind: static function
 .base: `function`
-.size: 174
+.size: 175
 .name: 'capacity'
 .file: 'cmplGfx/lib/micro.ui.core.ci:513'
 .owner: Layout
@@ -52471,23 +52449,25 @@ Layout.capacity(this: Layout, capacity: int32): Layout: function {
 	pointer.alloc(items, 0);
 	return .result := this;
 }
-.instructions: (174 bytes)
-	cmplGfx/lib/micro.ui.core.ci:514: (57 bytes): assert(capacity >= this.itemCount);
-	<capacity>  : dup.x32 sp(1)
+.instructions: (175 bytes)
+	cmplGfx/lib/micro.ui.core.ci:514: (58 bytes): assert(capacity >= this.itemCount);
+	<capacity>  : load.z32
+	<capacity+?>: load.sp(+4)
 	<capacity+?>: dup.x32 sp(3)
+	<capacity+?>: dup.x32 sp(5)
 	<capacity+?>: inc.i32(+72)
 	<capacity+?>: load.i32
 	<capacity+?>: clt.i32
 	<capacity+?>: jnz +8
-	<capacity+?>: jmp +43
+	<capacity+?>: jmp +35
 	<capacity+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<capacity+?>: load.c32 514
 	<capacity+?>: load.c32 -2
 	<capacity+?>: load.c32 128
 	<capacity+?>: load.ref <?> ;"assertion failed!"
-	<capacity+?>: load.ref <?> ;pointer
-	<capacity+?>: load.ref <?> ;null
-	<capacity+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<capacity+?>: dup.x64 sp(5)
+	<capacity+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<capacity+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:515: (15 bytes): if (capacity == this.itemCapacity)
 	<capacity+?>: dup.x32 sp(1)
 	<capacity+?>: dup.x32 sp(3)
@@ -52735,7 +52715,7 @@ Layout.size(this: Layout): int32: function {
 Layout.getView(this: Layout, idx: int32): View: function {
 .kind: static function
 .base: `function`
-.size: 93
+.size: 94
 .name: 'getView'
 .file: 'cmplGfx/lib/micro.ui.core.ci:572'
 .owner: Layout
@@ -52747,30 +52727,32 @@ Layout.getView(this: Layout, idx: int32): View: function {
 	assert(idx >= 0 && idx < this.itemCount);
 	return .result := this.items[idx].view;
 }
-.instructions: (93 bytes)
-	cmplGfx/lib/micro.ui.core.ci:573: (72 bytes): assert(idx >= 0 && idx < this.itemCount);
-	<getView>  : dup.x32 sp(1)
+.instructions: (94 bytes)
+	cmplGfx/lib/micro.ui.core.ci:573: (73 bytes): assert(idx >= 0 && idx < this.itemCount);
+	<getView>  : load.z32
+	<getView+?>: load.sp(+4)
+	<getView+?>: dup.x32 sp(3)
 	<getView+?>: load.z32
 	<getView+?>: clt.i32
 	<getView+?>: not.b32
 	<getView+?>: dup.x32 sp(0)
 	<getView+?>: jz +18
 	<getView+?>: inc.sp(-4)
-	<getView+?>: dup.x32 sp(1)
 	<getView+?>: dup.x32 sp(3)
+	<getView+?>: dup.x32 sp(5)
 	<getView+?>: inc.i32(+72)
 	<getView+?>: load.i32
 	<getView+?>: clt.i32
 	<getView+?>: jz +8
-	<getView+?>: jmp +43
+	<getView+?>: jmp +35
 	<getView+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<getView+?>: load.c32 573
 	<getView+?>: load.c32 -2
 	<getView+?>: load.c32 128
 	<getView+?>: load.ref <?> ;"assertion failed!"
-	<getView+?>: load.ref <?> ;pointer
-	<getView+?>: load.ref <?> ;null
-	<getView+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<getView+?>: dup.x64 sp(5)
+	<getView+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<getView+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:574: (21 bytes): return .result := this.items[idx].view;
 	<getView+?>: dup.x32 sp(2)
 	<getView+?>: inc.i32(+68)
@@ -52786,7 +52768,7 @@ Layout.getView(this: Layout, idx: int32): View: function {
 Layout.setAlignment(this: Layout, idx: int32, alignment: int32): void: function {
 .kind: static function
 .base: `function`
-.size: 93
+.size: 94
 .name: 'setAlignment'
 .file: 'cmplGfx/lib/micro.ui.core.ci:578'
 .owner: Layout
@@ -52799,30 +52781,32 @@ Layout.setAlignment(this: Layout, idx: int32, alignment: int32): void: function 
 	assert(idx >= 0 && idx < this.itemCount);
 	this.items[idx].align := alignment;
 }
-.instructions: (93 bytes)
-	cmplGfx/lib/micro.ui.core.ci:579: (72 bytes): assert(idx >= 0 && idx < this.itemCount);
-	<setAlignment>  : dup.x32 sp(2)
+.instructions: (94 bytes)
+	cmplGfx/lib/micro.ui.core.ci:579: (73 bytes): assert(idx >= 0 && idx < this.itemCount);
+	<setAlignment>  : load.z32
+	<setAlignment+?>: load.sp(+4)
+	<setAlignment+?>: dup.x32 sp(4)
 	<setAlignment+?>: load.z32
 	<setAlignment+?>: clt.i32
 	<setAlignment+?>: not.b32
 	<setAlignment+?>: dup.x32 sp(0)
 	<setAlignment+?>: jz +18
 	<setAlignment+?>: inc.sp(-4)
-	<setAlignment+?>: dup.x32 sp(2)
 	<setAlignment+?>: dup.x32 sp(4)
+	<setAlignment+?>: dup.x32 sp(6)
 	<setAlignment+?>: inc.i32(+72)
 	<setAlignment+?>: load.i32
 	<setAlignment+?>: clt.i32
 	<setAlignment+?>: jz +8
-	<setAlignment+?>: jmp +43
+	<setAlignment+?>: jmp +35
 	<setAlignment+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<setAlignment+?>: load.c32 579
 	<setAlignment+?>: load.c32 -2
 	<setAlignment+?>: load.c32 128
 	<setAlignment+?>: load.ref <?> ;"assertion failed!"
-	<setAlignment+?>: load.ref <?> ;pointer
-	<setAlignment+?>: load.ref <?> ;null
-	<setAlignment+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<setAlignment+?>: dup.x64 sp(5)
+	<setAlignment+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<setAlignment+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:580: (20 bytes): this.items[idx].align := alignment;
 	<setAlignment+?>: dup.x32 sp(1)
 	<setAlignment+?>: dup.x32 sp(4)
@@ -52895,7 +52879,7 @@ Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int3
 Layout.onClick(this: Layout): bool: function {
 .kind: static function
 .base: `function`
-.size: 43
+.size: 58
 .name: 'onClick'
 .file: 'cmplGfx/lib/micro.ui.core.ci:593'
 .owner: Layout
@@ -52906,16 +52890,20 @@ Layout.onClick(this: Layout): bool: function {
 	error("onClick", this);
 	return .result := false;
 }
-.instructions: (43 bytes)
-	cmplGfx/lib/micro.ui.core.ci:594: (36 bytes): error("onClick", this);
-	<onClick>  : load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
+.instructions: (58 bytes)
+	cmplGfx/lib/micro.ui.core.ci:594: (51 bytes): error("onClick", this);
+	<onClick>  : load.ref <?> ;Layout
+	<onClick+?>: dup.x32 sp(2)
+	<onClick+?>: load.c32 1
+	<onClick+?>: load.sp(+4)
+	<onClick+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<onClick+?>: load.c32 594
 	<onClick+?>: load.c32 -1
 	<onClick+?>: load.c32 128
 	<onClick+?>: load.ref <?> ;"onClick"
-	<onClick+?>: load.ref <?> ;Layout
-	<onClick+?>: dup.x32 sp(7)
-	<onClick+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<onClick+?>: dup.x64 sp(5)
+	<onClick+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<onClick+?>: inc.sp(-16)
 	cmplGfx/lib/micro.ui.core.ci:595: (7 bytes): return .result := false;
 	<onClick+?>: load.z32
 	<onClick+?>: load.sp(+12)
@@ -52993,7 +52981,7 @@ Layout.onReset(this: Layout): bool: function {
 Layout.onCreate(this: Layout, parent: View): void: function {
 .kind: static function
 .base: `function`
-.size: 140
+.size: 141
 .name: 'onCreate'
 .file: 'cmplGfx/lib/micro.ui.core.ci:609'
 .owner: Layout
@@ -53009,23 +52997,25 @@ Layout.onCreate(this: Layout, parent: View): void: function {
 		view.onCreate(view, this);
 	}
 }
-.instructions: (140 bytes)
-	cmplGfx/lib/micro.ui.core.ci:610: (60 bytes): assert((this.parent) == null, "can not add the same layout multiple times");
-	<onCreate>  : dup.x32 sp(2)
+.instructions: (141 bytes)
+	cmplGfx/lib/micro.ui.core.ci:610: (61 bytes): assert((this.parent) == null, "can not add the same layout multiple times");
+	<onCreate>  : load.z32
+	<onCreate+?>: load.sp(+4)
+	<onCreate+?>: dup.x32 sp(4)
 	<onCreate+?>: inc.i32(+16)
 	<onCreate+?>: load.i32
 	<onCreate+?>: load.ref <?> ;null
 	<onCreate+?>: ceq.i32
 	<onCreate+?>: jz +8
-	<onCreate+?>: jmp +43
+	<onCreate+?>: jmp +35
 	<onCreate+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<onCreate+?>: load.c32 610
 	<onCreate+?>: load.c32 -2
 	<onCreate+?>: load.c32 128
 	<onCreate+?>: load.ref <?> ;"can not add the same layout multiple times"
-	<onCreate+?>: load.ref <?> ;pointer
-	<onCreate+?>: load.ref <?> ;null
-	<onCreate+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<onCreate+?>: dup.x64 sp(5)
+	<onCreate+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<onCreate+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:611: (14 bytes): View.onCreate(this, parent);
 	<onCreate+?>: dup.x32 sp(2)
 	<onCreate+?>: dup.x32 sp(2)
@@ -54823,15 +54813,15 @@ Widget: Layout {
 .field getPressed: function (size: 114, cast: static function)
 .field getFocused: function (size: 114, cast: static function)
 .field setFocused: function (size: 283, cast: static function)
-.field capacity: function (size: 174, cast: static function)
+.field capacity: function (size: 175, cast: static function)
 .field addItems: function (size: 204, cast: static function)
 .field size: function (size: 10, cast: static function)
-.field getView: function (size: 93, cast: static function)
-.field setAlignment: function (size: 93, cast: static function)
+.field getView: function (size: 94, cast: static function)
+.field setAlignment: function (size: 94, cast: static function)
 .field padding: function (size: 56, cast: static function)
-.field onClick: function (size: 43, cast: static function)
+.field onClick: function (size: 58, cast: static function)
 .field onReset: function (size: 94, cast: static function)
-.field onCreate: function (size: 140, cast: static function)
+.field onCreate: function (size: 141, cast: static function)
 .field onDestroy: function (size: 86, cast: static function)
 .field onKeyEvent: function (size: 89, cast: static function)
 .field onTouchEvent: function (size: 799, cast: static function)
@@ -54855,7 +54845,7 @@ Widget: Layout {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -55713,7 +55703,7 @@ Widget.onDraw(this: Widget, offs: Image, rect: Rect): void: function {
 getWidget(view: View): Widget: function {
 .kind: static function
 .base: `function`
-.size: 127
+.size: 128
 .name: 'getWidget'
 .file: 'cmplGfx/lib/micro.ui.core.ci:1231'
 .param .result: Widget (size: 4, cast: variable(ref))
@@ -55728,10 +55718,10 @@ getWidget(view: View): Widget: function {
 	}
 	return .result := null;
 }
-.instructions: (127 bytes)
-	cmplGfx/lib/micro.ui.core.ci:1232: (119 bytes): for (v: View := view; (v) != null; v := v.parent)
+.instructions: (128 bytes)
+	cmplGfx/lib/micro.ui.core.ci:1232: (120 bytes): for (v: View := view; (v) != null; v := v.parent)
 	<getWidget>  : dup.x32 sp(1)
-	<getWidget+?>: jmp +101
+	<getWidget+?>: jmp +102
 	cmplGfx/lib/micro.ui.core.ci:1233: (35 bytes): if ((w) != null)
 	<getWidget+?>: dup.x32 sp(0)
 	<getWidget+?>: load.ref <?> ;Widget
@@ -55745,22 +55735,24 @@ getWidget(view: View): Widget: function {
 	<getWidget+?>: inc.sp(-8)
 	<getWidget+?>: ret
 	<getWidget+?>: inc.sp(-4)
-	cmplGfx/lib/micro.ui.core.ci:1237: (57 bytes): assert(v != v.parent);
-	<getWidget+?>: dup.x32 sp(0)
-	<getWidget+?>: dup.x32 sp(1)
+	cmplGfx/lib/micro.ui.core.ci:1237: (58 bytes): assert(v != v.parent);
+	<getWidget+?>: load.z32
+	<getWidget+?>: load.sp(+4)
+	<getWidget+?>: dup.x32 sp(2)
+	<getWidget+?>: dup.x32 sp(3)
 	<getWidget+?>: inc.i32(+16)
 	<getWidget+?>: load.i32
 	<getWidget+?>: ceq.i32
 	<getWidget+?>: jnz +8
-	<getWidget+?>: jmp +43
+	<getWidget+?>: jmp +35
 	<getWidget+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.core.ci"
 	<getWidget+?>: load.c32 1237
 	<getWidget+?>: load.c32 -2
 	<getWidget+?>: load.c32 128
 	<getWidget+?>: load.ref <?> ;"assertion failed!"
-	<getWidget+?>: load.ref <?> ;pointer
-	<getWidget+?>: load.ref <?> ;null
-	<getWidget+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<getWidget+?>: dup.x64 sp(5)
+	<getWidget+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<getWidget+?>: inc.sp(-8)
 	cmplGfx/lib/micro.ui.core.ci:1232: (5 bytes): v := v.parent
 	<getWidget+?>: inc.i32(+16)
 	<getWidget+?>: load.i32
@@ -55768,7 +55760,7 @@ getWidget(view: View): Widget: function {
 	<getWidget+?>: dup.x32 sp(0)
 	<getWidget+?>: load.ref <?> ;null
 	<getWidget+?>: ceq.i32
-	<getWidget+?>: jz -105
+	<getWidget+?>: jz -106
 	<getWidget+?>: inc.sp(-4)
 	cmplGfx/lib/micro.ui.core.ci:1239: (8 bytes): return .result := null;
 	<getWidget+?>: load.ref <?> ;null
@@ -56128,7 +56120,7 @@ Button: View {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -56286,7 +56278,7 @@ Switch: View {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -57399,7 +57391,7 @@ Slider: View {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -58633,7 +58625,7 @@ Histogram: View {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -59748,7 +59740,7 @@ DebugView: View {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -60612,15 +60604,15 @@ Panel: Layout {
 .field getPressed: function (size: 114, cast: static function)
 .field getFocused: function (size: 114, cast: static function)
 .field setFocused: function (size: 283, cast: static function)
-.field capacity: function (size: 174, cast: static function)
+.field capacity: function (size: 175, cast: static function)
 .field addItems: function (size: 204, cast: static function)
 .field size: function (size: 10, cast: static function)
-.field getView: function (size: 93, cast: static function)
-.field setAlignment: function (size: 93, cast: static function)
+.field getView: function (size: 94, cast: static function)
+.field setAlignment: function (size: 94, cast: static function)
 .field padding: function (size: 56, cast: static function)
-.field onClick: function (size: 43, cast: static function)
+.field onClick: function (size: 58, cast: static function)
 .field onReset: function (size: 94, cast: static function)
-.field onCreate: function (size: 140, cast: static function)
+.field onCreate: function (size: 141, cast: static function)
 .field onDestroy: function (size: 86, cast: static function)
 .field onKeyEvent: function (size: 89, cast: static function)
 .field onTouchEvent: function (size: 799, cast: static function)
@@ -60644,7 +60636,7 @@ Panel: Layout {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -60819,15 +60811,15 @@ TabPage: Layout {
 .field getPressed: function (size: 114, cast: static function)
 .field getFocused: function (size: 114, cast: static function)
 .field setFocused: function (size: 283, cast: static function)
-.field capacity: function (size: 174, cast: static function)
+.field capacity: function (size: 175, cast: static function)
 .field addItems: function (size: 204, cast: static function)
 .field size: function (size: 10, cast: static function)
-.field getView: function (size: 93, cast: static function)
-.field setAlignment: function (size: 93, cast: static function)
+.field getView: function (size: 94, cast: static function)
+.field setAlignment: function (size: 94, cast: static function)
 .field padding: function (size: 56, cast: static function)
-.field onClick: function (size: 43, cast: static function)
+.field onClick: function (size: 58, cast: static function)
 .field onReset: function (size: 94, cast: static function)
-.field onCreate: function (size: 140, cast: static function)
+.field onCreate: function (size: 141, cast: static function)
 .field onDestroy: function (size: 86, cast: static function)
 .field onKeyEvent: function (size: 89, cast: static function)
 .field onTouchEvent: function (size: 799, cast: static function)
@@ -60851,7 +60843,7 @@ TabPage: Layout {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -62138,7 +62130,7 @@ Select: Layout {
 .field selectedData: function (size: 45, cast: static function)
 .field expand: function (size: 160, cast: static function)
 .field onItemClick: function (size: 52, cast: static function)
-.field setSelectedIndex: function (size: 158, cast: static function)
+.field setSelectedIndex: function (size: 173, cast: static function)
 .field addItems: function (size: 749, cast: static function)
 .field addItem: function (size: 259, cast: static function)
 .field addItem: function (size: 28, cast: static function)
@@ -62159,15 +62151,15 @@ Select: Layout {
 .field getPressed: function (size: 114, cast: static function)
 .field getFocused: function (size: 114, cast: static function)
 .field setFocused: function (size: 283, cast: static function)
-.field capacity: function (size: 174, cast: static function)
+.field capacity: function (size: 175, cast: static function)
 .field addItems: function (size: 204, cast: static function)
 .field size: function (size: 10, cast: static function)
-.field getView: function (size: 93, cast: static function)
-.field setAlignment: function (size: 93, cast: static function)
+.field getView: function (size: 94, cast: static function)
+.field setAlignment: function (size: 94, cast: static function)
 .field padding: function (size: 56, cast: static function)
-.field onClick: function (size: 43, cast: static function)
+.field onClick: function (size: 58, cast: static function)
 .field onReset: function (size: 94, cast: static function)
-.field onCreate: function (size: 140, cast: static function)
+.field onCreate: function (size: 141, cast: static function)
 .field onDestroy: function (size: 86, cast: static function)
 .field onKeyEvent: function (size: 89, cast: static function)
 .field onTouchEvent: function (size: 799, cast: static function)
@@ -62191,7 +62183,7 @@ Select: Layout {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -62474,7 +62466,7 @@ Select.onItemClick(select: Select, view: Button): bool: function {
 Select.setSelectedIndex(select: Select, index: int32): Select: function {
 .kind: static function
 .base: `function`
-.size: 158
+.size: 173
 .name: 'setSelectedIndex'
 .file: 'cmplGfx/lib/micro.ui.ci:785'
 .owner: Select
@@ -62495,8 +62487,8 @@ Select.setSelectedIndex(select: Select, index: int32): Select: function {
 	select.states[0] := (button.text);
 	return .result := select;
 }
-.instructions: (158 bytes)
-	cmplGfx/lib/micro.ui.ci:786: (75 bytes): if (index < 0 || index > select.panel.itemCount)
+.instructions: (173 bytes)
+	cmplGfx/lib/micro.ui.ci:786: (90 bytes): if (index < 0 || index > select.panel.itemCount)
 	<setSelectedIndex>  : dup.x32 sp(1)
 	<setSelectedIndex+?>: load.z32
 	<setSelectedIndex+?>: clt.i32
@@ -62510,16 +62502,20 @@ Select.setSelectedIndex(select: Select, index: int32): Select: function {
 	<setSelectedIndex+?>: inc.i32(+72)
 	<setSelectedIndex+?>: load.i32
 	<setSelectedIndex+?>: cgt.i32
-	<setSelectedIndex+?>: jz +46
-	cmplGfx/lib/micro.ui.ci:787: (38 bytes): error("invalid index selected", index);
+	<setSelectedIndex+?>: jz +61
+	cmplGfx/lib/micro.ui.ci:787: (53 bytes): error("invalid index selected", index);
+	<setSelectedIndex+?>: load.ref <?> ;int32
+	<setSelectedIndex+?>: load.sp(+8)
+	<setSelectedIndex+?>: load.c32 1
+	<setSelectedIndex+?>: load.sp(+4)
 	<setSelectedIndex+?>: load.ref <?> ;"cmplGfx/lib/micro.ui.ci"
 	<setSelectedIndex+?>: load.c32 787
 	<setSelectedIndex+?>: load.c32 -1
 	<setSelectedIndex+?>: load.c32 128
 	<setSelectedIndex+?>: load.ref <?> ;"invalid index selected"
-	<setSelectedIndex+?>: load.ref <?> ;int32
-	<setSelectedIndex+?>: load.sp(+28)
-	<setSelectedIndex+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	<setSelectedIndex+?>: dup.x64 sp(5)
+	<setSelectedIndex+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	<setSelectedIndex+?>: inc.sp(-16)
 	cmplGfx/lib/micro.ui.ci:788: (4 bytes): return .result := select;
 	<setSelectedIndex+?>: mov.x32 sp(3, 2)
 	<setSelectedIndex+?>: ret
@@ -63596,15 +63592,15 @@ FxWidget: Widget {
 .field getPressed: function (size: 114, cast: static function)
 .field getFocused: function (size: 114, cast: static function)
 .field setFocused: function (size: 283, cast: static function)
-.field capacity: function (size: 174, cast: static function)
+.field capacity: function (size: 175, cast: static function)
 .field addItems: function (size: 204, cast: static function)
 .field size: function (size: 10, cast: static function)
-.field getView: function (size: 93, cast: static function)
-.field setAlignment: function (size: 93, cast: static function)
+.field getView: function (size: 94, cast: static function)
+.field setAlignment: function (size: 94, cast: static function)
 .field padding: function (size: 56, cast: static function)
-.field onClick: function (size: 43, cast: static function)
+.field onClick: function (size: 58, cast: static function)
 .field onReset: function (size: 94, cast: static function)
-.field onCreate: function (size: 140, cast: static function)
+.field onCreate: function (size: 141, cast: static function)
 .field onDestroy: function (size: 86, cast: static function)
 .field onKeyEvent: function (size: 89, cast: static function)
 .field onTouchEvent: function (size: 799, cast: static function)
@@ -63628,7 +63624,7 @@ FxWidget: Widget {
 .field onClick: function (size: 4, cast: const variable(ref))
 .field onReset: function (size: 7, cast: static function)
 .field onReset: function (size: 4, cast: const variable(ref))
-.field onCreate: function (size: 181, cast: static function)
+.field onCreate: function (size: 183, cast: static function)
 .field onCreate: function (size: 4, cast: const variable(ref))
 .field onDestroy: function (size: 1, cast: static function)
 .field onDestroy: function (size: 4, cast: const variable(ref))
@@ -65797,28 +65793,20 @@ Window.show(widget: Widget): void: function {
 .field double: typename (size: 0, cast: inline)
 .field sizeof: function (size: 0, cast: inline)
 .field verbose: function (size: 0, cast: inline)
-.field verbose: function (size: 0, cast: inline)
-.field debug: function (size: 0, cast: inline)
 .field debug: function (size: 0, cast: inline)
 .field trace: function (size: 0, cast: inline)
-.field trace: function (size: 0, cast: inline)
-.field info: function (size: 0, cast: inline)
 .field info: function (size: 0, cast: inline)
 .field warn: function (size: 0, cast: inline)
-.field warn: function (size: 0, cast: inline)
-.field error: function (size: 0, cast: inline)
 .field error: function (size: 0, cast: inline)
 .field abort: function (size: 0, cast: inline)
 .field abort: function (size: 0, cast: inline)
-.field abort: function (size: 0, cast: inline)
-.field assert: function (size: 0, cast: inline)
 .field assert: function (size: 0, cast: inline)
 .field assert: function (size: 0, cast: inline)
 .field NotEquals: typename (size: 24, cast: static const typename(val))
 .field NotEquals: function (size: 15, cast: static function)
 .field abort: function (size: 0, cast: inline)
 .field assert: function (size: 0, cast: inline)
-.field assertEq: function (size: 103, cast: static function)
+.field assertEq: function (size: 118, cast: static function)
 .field assertEq: function (size: 0, cast: inline)
 .field inc: function (size: 0, cast: inline)
 .field Bits: typename (size: 0, cast: static const typename(void))
@@ -65906,7 +65894,7 @@ Window.show(widget: Widget): void: function {
 .field dp4: function (size: 0, cast: inline)
 .field transpose: function (size: 49, cast: static function)
 .field mul: function (size: 265, cast: static function)
-.field rotation: function (size: 476, cast: static function)
+.field rotation: function (size: 491, cast: static function)
 .field rotation: function (size: 243, cast: static function)
 .field translation: function (size: 88, cast: static function)
 .field scale: function (size: 217, cast: static function)
@@ -65937,8 +65925,8 @@ Window.show(widget: Widget): void: function {
 .field indexOf: function (size: 0, cast: inline)
 .field Calendar: uint8 (size: 1, cast: static const typename(ERR))
 .field Datetime: typename (size: 40, cast: static const typename(val))
-.field Timestamp: function (size: 581, cast: static function)
-.field Datetime: function (size: 629, cast: static function)
+.field Timestamp: function (size: 626, cast: static function)
+.field Datetime: function (size: 630, cast: static function)
 .field Datetime: function (size: 0, cast: inline)
 .field Datetime: function (size: 97, cast: static function)
 .field Datetime: function (size: 55, cast: static function)
@@ -65962,7 +65950,7 @@ Window.show(widget: Widget): void: function {
 .field float64: function (size: 423, cast: static function)
 .field FormatFlags: typename (size: 16, cast: static const typename(val))
 .field append: function (size: 119, cast: static function)
-.field append: function (size: 653, cast: static function)
+.field append: function (size: 687, cast: static function)
 .field append: function (size: 121, cast: static function)
 .field append: function (size: 649, cast: static function)
 .field append: function (size: 0, cast: inline)
@@ -66095,7 +66083,7 @@ Window.show(widget: Widget): void: function {
 .field drawBezier: function (size: 233, cast: static function)
 .field fill: function (size: 33, cast: static function)
 .field drawText: function (size: 47, cast: static function)
-.field blend: function (size: 547, cast: static function)
+.field blend: function (size: 548, cast: static function)
 .field blend: function (size: 93, cast: static function)
 .field blend: function (size: 134, cast: static function)
 .field blendAlpha: function (size: 54, cast: static function)
@@ -66104,16 +66092,16 @@ Window.show(widget: Widget): void: function {
 .field Image: function (size: 46, cast: static function)
 .field tile: function (size: 325, cast: static function)
 .field eval: function (size: 491, cast: static function)
-.field transform: function (size: 1352, cast: static function)
+.field transform: function (size: 1354, cast: static function)
 .field resize: function (size: 0, cast: inline)
 .field Image: function (size: 567, cast: static function)
 .field Image: function (size: 56, cast: static function)
 .field Image: function (size: 0, cast: inline)
 .field Image: function (size: 0, cast: inline)
-.field blur: function (size: 933, cast: static function)
-.field colorMap: function (size: 950, cast: static function)
-.field colorMat: function (size: 683, cast: static function)
-.field Mesh: function (size: 109, cast: static function)
+.field blur: function (size: 934, cast: static function)
+.field colorMap: function (size: 951, cast: static function)
+.field colorMat: function (size: 684, cast: static function)
+.field Mesh: function (size: 124, cast: static function)
 .field Camera: typename (size: 64, cast: static const typename(val))
 .field Window: typename (size: 0, cast: static const typename(void))
 .field Style: typename (size: 56, cast: static const typename(val))
@@ -66124,7 +66112,7 @@ Window.show(widget: Widget): void: function {
 .field invalidate: function (size: 4, cast: static variable(ref))
 .field Layout: View (size: 116, cast: static const typename(ref))
 .field Widget: Layout (size: 132, cast: static const typename(ref))
-.field getWidget: function (size: 127, cast: static function)
+.field getWidget: function (size: 128, cast: static function)
 .field focus: function (size: 244, cast: static function)
 .field invalidate: function (size: 54, cast: static function)
 .field invalidate: function (size: 0, cast: inline)
@@ -66155,24 +66143,16 @@ Window.show(widget: Widget): void: function {
 		double: typename := float64;
 		sizeof(type: typename): int32 := typename.size(type);
 		static if (typename(raise) == function) {
-			verbose(const message: char[*], const inspect: variant): void := raise(raise.verbose, raise.noTrace, message, inspect);
-			verbose(const message: char[*]): void := raise(raise.verbose, raise.noTrace, message, null);
-			debug(const message: char[*], const inspect: variant): void := raise(raise.debug, raise.noTrace, message, inspect);
-			debug(const message: char[*]): void := raise(raise.debug, raise.noTrace, message, null);
-			trace(const message: char[*], const inspect: variant): void := raise(raise.debug, raise.defTrace, message, inspect);
-			trace(const message: char[*]): void := raise(raise.debug, raise.defTrace, message, null);
-			info(const message: char[*], const inspect: variant): void := raise(raise.info, raise.noTrace, message, inspect);
-			info(const message: char[*]): void := raise(raise.info, raise.noTrace, message, null);
-			warn(const message: char[*], const inspect: variant): void := raise(raise.warn, raise.noTrace, message, inspect);
-			warn(const message: char[*]): void := raise(raise.warn, raise.noTrace, message, null);
-			error(const message: char[*], const inspect: variant): void := raise(raise.error, raise.defTrace, message, inspect);
-			error(const message: char[*]): void := raise(raise.error, raise.defTrace, message, null);
-			abort(const message: char[*], const inspect: variant): void := raise(raise.abort, raise.defTrace, message, inspect);
-			abort(const message: char[*]): void := raise(raise.abort, raise.defTrace, message, null);
-			abort(): void := raise(raise.abort, raise.defTrace, "execution aborted!", null);
-			assert(condition: bool, const message: char[*], const inspect: variant): void := void(condition ? void(0) : abort(message, inspect));
-			assert(condition: bool, const message: char[*]): void := void(condition ? void(0) : abort(message));
-			assert(condition: bool): void := void(condition ? void(0) : abort("assertion failed!"));
+			verbose(const message: char[*], const details: variant[]): void := raise(raise.verbose, raise.noTrace, message, ...details);
+			debug(const message: char[*], const details: variant[]): void := raise(raise.debug, raise.noTrace, message, ...details);
+			trace(const message: char[*], const details: variant[]): void := raise(raise.debug, raise.defTrace, message, ...details);
+			info(const message: char[*], const details: variant[]): void := raise(raise.info, raise.noTrace, message, ...details);
+			warn(const message: char[*], const details: variant[]): void := raise(raise.warn, raise.noTrace, message, ...details);
+			error(const message: char[*], const details: variant[]): void := raise(raise.error, raise.defTrace, message, ...details);
+			abort(const message: char[*], const details: variant[]): void := raise(raise.abort, raise.defTrace, message, ...details);
+			abort(): void := raise(raise.abort, raise.defTrace, "execution aborted!");
+			assert(condition: bool, const message: char[*], const details: variant[]): void := void(condition ? void(0) : raise(raise.abort, raise.defTrace, message, ...details));
+			assert(condition: bool, const details: variant[]): void := void(condition ? void(0) : raise(raise.abort, raise.defTrace, "assertion failed!", ...details));
 			static const NotEquals: struct {
 				const expected: variant;
 				const returned: variant;
@@ -66185,8 +66165,8 @@ Window.show(widget: Widget): void: function {
 			.result.extras := (null);
 		};
 			};
-			abort(const message: char[*], const inspect: NotEquals): void := raise(raise.abort, raise.defTrace, message, inspect);
-			assert(condition: bool, const message: char[*], const inspect: NotEquals): void := void(condition ? void(0) : abort(message, inspect));
+			abort(const message: char[*], const detail: NotEquals): void := raise(raise.abort, raise.defTrace, message, detail);
+			assert(condition: bool, const message: char[*], const detail: NotEquals): void := void(condition ? void(0) : abort(message, detail));
 			static assertEq(expected: int32, returned: int32, const message: char[*]): void := {
 				if (returned == expected) {
 					return;
@@ -66194,12 +66174,12 @@ Window.show(widget: Widget): void: function {
 				extras: variant[1] := {
 					extras[0] := (message);
 				};
-				details: NotEquals := {
-					details.expected := (expected);
-					details.returned := (returned);
-					details.extras := (extras);
+				detail: NotEquals := {
+					detail.expected := (expected);
+					detail.returned := (returned);
+					detail.extras := (extras);
 				};
-				raise(raise.abort, raise.defTrace, "assertion failed", details);
+				raise(raise.abort, raise.defTrace, "assertion failed", detail);
 			};
 			assertEq(expected: int32, returned: int32): void := assertEq(expected, returned, null);
 		}
@@ -83878,9 +83858,9 @@ emit.swz: typename(<emit.swz>)
 emit: typename(<emit>)
 System.Platform: typename(<System.Platform>)
 System: typename(<System>)
-cmplStd/lib/lang/Debug.ci:48: NotEquals: typename(<NotEquals>)
-cmplStd/lib/lang/Debug.ci:60: NotEquals: function(<NotEquals>)
-cmplStd/lib/lang/Debug.ci:75: assertEq: function(<assertEq>)
+cmplStd/lib/lang/Debug.ci:32: NotEquals: typename(<NotEquals>)
+cmplStd/lib/lang/Debug.ci:44: NotEquals: function(<NotEquals>)
+cmplStd/lib/lang/Debug.ci:59: assertEq: function(<assertEq>)
 cmplStd/lib/math/Bits.ci:40: Bits.zxt32: function(<Bits.zxt32>)
 cmplStd/lib/math/Bits.ci:50: Bits.sxt32: function(<Bits.sxt32>)
 cmplStd/lib/math/Bits.ci:60: Bits.zxt64: function(<Bits.zxt64>)
@@ -84735,16 +84715,16 @@ cmplGfx/lib/micro.ui.ci:1076: Window: typename(<Window>)
 
 ---------- Memory usage:
 memory[all] @000000; size: 134217440(128.0 Mb)
-memory[used] @000000; size: 1069018(1.0 Mb)
-memory[heap] @104fda; size: 99594022(95.0 Mb)
+memory[used] @000000; size: 1065810(1.0 Mb)
+memory[heap] @104352; size: 99597230(95.0 Mb)
 memory[stack] @3ffff48; size: 33554360(32.0 Mb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 979968(957.0 Kb)
-memory[code] @000000; size: 83343(81.4 Kb)
+memory[meta] @000000; size: 976448(953.6 Kb)
+memory[code] @000000; size: 83643(81.7 Kb)
 memory[data] @000000; size: 4024(3.9 Kb)
 
 ---------- Heap memory:
-memory[free] @104ff0; size: 99593968(95.0 Mb)
+memory[free] @104370; size: 99597168(95.0 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

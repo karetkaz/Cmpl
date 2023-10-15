@@ -93,8 +93,8 @@
 				<right token=".variable" type="typename" kind="static const typename(ref)" value="function"/>
 			</test>
 			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib.ci:16">
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="verbose(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.verbose, raise.noTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="verbose(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.verbose, raise.noTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.verbose">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="verbose"/>
@@ -104,27 +104,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+						</push>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="verbose(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.verbose, raise.noTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.verbose">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="verbose"/>
-						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.noTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="debug(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, raise.noTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="debug(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, raise.noTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
@@ -134,27 +121,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+						</push>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="debug(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, raise.noTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
-						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.noTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="trace(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, raise.defTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="trace(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, raise.defTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
@@ -164,27 +138,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+						</push>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="trace(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, raise.defTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
-						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.defTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="info(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.info, raise.noTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="info(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.info, raise.noTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.info">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="info"/>
@@ -194,27 +155,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+						</push>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="info(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.info, raise.noTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.info">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="info"/>
-						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.noTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="warn(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.warn, raise.noTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="warn(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.warn, raise.noTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.warn">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="warn"/>
@@ -224,27 +172,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+						</push>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="warn(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.warn, raise.noTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.warn">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="warn"/>
-						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.noTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="noTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="error(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.error, raise.defTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="error(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.error, raise.defTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.error">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="error"/>
@@ -254,27 +189,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+						</push>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="error(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.error, raise.defTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.error">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="error"/>
-						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.defTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="abort(message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="abort(message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, message, ...details)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
@@ -284,27 +206,14 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
-						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="abort(message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, message, null)">
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
+						<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+							<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
 						</push>
-						<push token="." type="int64" kind="static const typename(i64)" value="raise.defTrace">
-							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
-							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
-						</push>
-						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
 				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="abort(): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, &quot;execution aborted!&quot;, null)">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, &quot;execution aborted!&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
@@ -314,54 +223,58 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
 						</push>
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;execution aborted!&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool, message: char[*], inspect: variant): void">
-					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : abort(message, inspect))">
-						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : abort(message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool, message: char[*], details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : raise(raise.abort, raise.defTrace, message, ...details))">
+						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : raise(raise.abort, raise.defTrace, message, ...details)">
 							<test token=".variable" type="bool" kind="static const typename(bool)" value="condition"/>
 							<left token="()" type="void" kind="static const typename(void)" value="void(0)">
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
 							</left>
-							<right token="()" type="void" kind="static const typename(void)" value="abort(message, inspect)">
+							<right token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, message, ...details)">
+								<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
+									<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
+									<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
+								</push>
+								<push token="." type="int64" kind="static const typename(i64)" value="raise.defTrace">
+									<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
+									<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
+								</push>
 								<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-								<push token=".variable" type="variant" kind="static const typename(var)" value="inspect"/>
-								<call token=".variable" type="function" kind="static const typename(ref)" value="abort"/>
+								<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+									<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+								</push>
+								<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							</right>
 						</push>
 						<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool, message: char[*]): void">
-					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : abort(message))">
-						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : abort(message)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool, details: variant[]): void">
+					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : raise(raise.abort, raise.defTrace, &quot;assertion failed!&quot;, ...details))">
+						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : raise(raise.abort, raise.defTrace, &quot;assertion failed!&quot;, ...details)">
 							<test token=".variable" type="bool" kind="static const typename(bool)" value="condition"/>
 							<left token="()" type="void" kind="static const typename(void)" value="void(0)">
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
 							</left>
-							<right token="()" type="void" kind="static const typename(void)" value="abort(message)">
-								<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-								<call token=".variable" type="function" kind="static const typename(ref)" value="abort"/>
-							</right>
-						</push>
-						<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
-					</init>
-				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool): void">
-					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : abort(&quot;assertion failed!&quot;))">
-						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : abort(&quot;assertion failed!&quot;)">
-							<test token=".variable" type="bool" kind="static const typename(bool)" value="condition"/>
-							<left token="()" type="void" kind="static const typename(void)" value="void(0)">
-								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
-								<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
-							</left>
-							<right token="()" type="void" kind="static const typename(void)" value="abort(&quot;assertion failed!&quot;)">
+							<right token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, &quot;assertion failed!&quot;, ...details)">
+								<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
+									<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
+									<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
+								</push>
+								<push token="." type="int64" kind="static const typename(i64)" value="raise.defTrace">
+									<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
+									<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
+								</push>
 								<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;assertion failed!&quot;" />
-								<call token=".variable" type="function" kind="static const typename(ref)" value="abort"/>
+								<push token="..." type="variant[]" kind="static typename(arr)" value="...details">
+									<right token=".variable" type="variant[]" kind="static typename(arr)" value="details"/>
+								</push>
+								<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							</right>
 						</push>
 						<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
@@ -376,7 +289,7 @@
 					</field>
 				</stmt>
 				<stmt token=".variable" type="function" kind="static const typename(ref)" value="NotEquals(expected: variant, returned: variant): NotEquals">
-					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:60">
+					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:44">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 							<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 								<left token=".variable" type="NotEquals" kind="static const typename(val)" value=".result"/>
@@ -415,8 +328,8 @@
 						</stmt>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="abort(message: char[*], inspect: NotEquals): void">
-					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="abort(message: char[*], detail: NotEquals): void">
+					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, message, detail)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
@@ -426,21 +339,21 @@
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
 						</push>
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-						<push token=".variable" type="NotEquals" kind="static const typename(val)" value="inspect"/>
+						<push token=".variable" type="NotEquals" kind="static const typename(val)" value="detail"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</init>
 				</stmt>
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool, message: char[*], inspect: NotEquals): void">
-					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : abort(message, inspect))">
-						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : abort(message, inspect)">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="assert(condition: bool, message: char[*], detail: NotEquals): void">
+					<init token="()" type="void" kind="static const typename(void)" value="void(condition ? void(0) : abort(message, detail))">
+						<push token="?:" type="void" kind="static const typename(void)" value="condition ? void(0) : abort(message, detail)">
 							<test token=".variable" type="bool" kind="static const typename(bool)" value="condition"/>
 							<left token="()" type="void" kind="static const typename(void)" value="void(0)">
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								<call token=".variable" type="typename" kind="static const typename(ref)" value="void"/>
 							</left>
-							<right token="()" type="void" kind="static const typename(void)" value="abort(message, inspect)">
+							<right token="()" type="void" kind="static const typename(void)" value="abort(message, detail)">
 								<push token=".variable" type="char[*]" kind="static typename(arr)" value="message"/>
-								<push token=".variable" type="NotEquals" kind="static const typename(val)" value="inspect"/>
+								<push token=".variable" type="NotEquals" kind="static const typename(val)" value="detail"/>
 								<call token=".variable" type="function" kind="static const typename(ref)" value="abort"/>
 							</right>
 						</push>
@@ -448,13 +361,13 @@
 					</init>
 				</stmt>
 				<stmt token=".variable" type="function" kind="static const typename(ref)" value="assertEq(expected: int32, returned: int32, message: char[*]): void">
-					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:75">
+					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:59">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (returned == expected)">
 							<test token="==" type="bool" kind="static const typename(bool)" value="returned == expected">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="returned"/>
 								<right token=".variable" type="int32" kind="static const typename(i32)" value="expected"/>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:76">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:60">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return;" />
 							</then>
 						</stmt>
@@ -473,12 +386,12 @@
 								</stmt>
 							</init>
 						</stmt>
-						<stmt token=".variable" type="NotEquals" kind="static const typename(val)" value="details">
+						<stmt token=".variable" type="NotEquals" kind="static const typename(val)" value="detail">
 							<init token="{}" type="NotEquals" kind="static const typename(val)">
-								<stmt token=";" type="void" kind="static const typename(void)" stmt="details.expected := (expected);">
-									<expr token=":=" type="void" kind="static const typename(void)" value="details.expected := (expected)">
-										<left token="." type="variant" kind="static const typename(var)" value="details.expected">
-											<left token=".variable" type="NotEquals" kind="static const typename(val)" value="details"/>
+								<stmt token=";" type="void" kind="static const typename(void)" stmt="detail.expected := (expected);">
+									<expr token=":=" type="void" kind="static const typename(void)" value="detail.expected := (expected)">
+										<left token="." type="variant" kind="static const typename(var)" value="detail.expected">
+											<left token=".variable" type="NotEquals" kind="static const typename(val)" value="detail"/>
 											<right token=".variable" type="variant" kind="static const typename(var)" value="expected"/>
 										</left>
 										<right token="()" type="variant" kind="static const typename(var)" value="(expected)">
@@ -486,10 +399,10 @@
 										</right>
 									</expr>
 								</stmt>
-								<stmt token=";" type="void" kind="static const typename(void)" stmt="details.returned := (returned);">
-									<expr token=":=" type="void" kind="static const typename(void)" value="details.returned := (returned)">
-										<left token="." type="variant" kind="static const typename(var)" value="details.returned">
-											<left token=".variable" type="NotEquals" kind="static const typename(val)" value="details"/>
+								<stmt token=";" type="void" kind="static const typename(void)" stmt="detail.returned := (returned);">
+									<expr token=":=" type="void" kind="static const typename(void)" value="detail.returned := (returned)">
+										<left token="." type="variant" kind="static const typename(var)" value="detail.returned">
+											<left token=".variable" type="NotEquals" kind="static const typename(val)" value="detail"/>
 											<right token=".variable" type="variant" kind="static const typename(var)" value="returned"/>
 										</left>
 										<right token="()" type="variant" kind="static const typename(var)" value="(returned)">
@@ -497,10 +410,10 @@
 										</right>
 									</expr>
 								</stmt>
-								<stmt token=";" type="void" kind="static const typename(void)" stmt="details.extras := (extras);">
-									<expr token=":=" type="void" kind="static const typename(void)" value="details.extras := (extras)">
-										<left token="." type="variant[]" kind="static typename(arr)" value="details.extras">
-											<left token=".variable" type="NotEquals" kind="static const typename(val)" value="details"/>
+								<stmt token=";" type="void" kind="static const typename(void)" stmt="detail.extras := (extras);">
+									<expr token=":=" type="void" kind="static const typename(void)" value="detail.extras := (extras)">
+										<left token="." type="variant[]" kind="static typename(arr)" value="detail.extras">
+											<left token=".variable" type="NotEquals" kind="static const typename(val)" value="detail"/>
 											<right token=".variable" type="variant[]" kind="static typename(arr)" value="extras"/>
 										</left>
 										<right token="()" type="variant[]" kind="static typename(arr)" value="(extras)">
@@ -510,8 +423,8 @@
 								</stmt>
 							</init>
 						</stmt>
-						<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.abort, raise.defTrace, &quot;assertion failed&quot;, details);">
-							<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, &quot;assertion failed&quot;, details)">
+						<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.abort, raise.defTrace, &quot;assertion failed&quot;, detail);">
+							<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.abort, raise.defTrace, &quot;assertion failed&quot;, detail)">
 								<push token="." type="int64" kind="static const typename(i64)" value="raise.abort">
 									<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 									<right token=".variable" type="int64" kind="static const typename(i64)" value="abort"/>
@@ -521,7 +434,7 @@
 									<right token=".variable" type="int64" kind="static const typename(i64)" value="defTrace"/>
 								</push>
 								<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;assertion failed&quot;" />
-								<push token=".variable" type="NotEquals" kind="static const typename(val)" value="details"/>
+								<push token=".variable" type="NotEquals" kind="static const typename(val)" value="detail"/>
 								<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							</expr>
 						</stmt>
@@ -45660,15 +45573,14 @@
 				<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 			</test>
 			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/test/lang/stmt.if.ci:3">
-				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 1, &quot;0 == 0&quot;, null);">
-					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 1, &quot;0 == 0&quot;, null)">
+				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 1, &quot;0 == 0&quot;);">
+					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 1, &quot;0 == 0&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
 						</push>
 						<push token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;0 == 0&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</expr>
 				</stmt>
@@ -45680,15 +45592,14 @@
 				<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 			</test>
 			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/test/lang/stmt.if.ci:7">
-				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 2, &quot;0 != 0&quot;, null);">
-					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 2, &quot;0 != 0&quot;, null)">
+				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 2, &quot;0 != 0&quot;);">
+					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 2, &quot;0 != 0&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
 						</push>
 						<push token=".literal" type="int32" kind="static const typename(i32)" value="2" />
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;0 != 0&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</expr>
 				</stmt>
@@ -45700,29 +45611,27 @@
 				<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 			</test>
 			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/test/lang/stmt.if.ci:11">
-				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 3, &quot;0 == 0&quot;, null);">
-					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 3, &quot;0 == 0&quot;, null)">
+				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 3, &quot;0 == 0&quot;);">
+					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 3, &quot;0 == 0&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
 						</push>
 						<push token=".literal" type="int32" kind="static const typename(i32)" value="3" />
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;0 == 0&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</expr>
 				</stmt>
 			</then>
 			<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/test/lang/stmt.if.ci:14">
-				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 4, &quot;0 != 0&quot;, null);">
-					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 4, &quot;0 != 0&quot;, null)">
+				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 4, &quot;0 != 0&quot;);">
+					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 4, &quot;0 != 0&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
 						</push>
 						<push token=".literal" type="int32" kind="static const typename(i32)" value="4" />
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;0 != 0&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</expr>
 				</stmt>
@@ -45734,29 +45643,27 @@
 				<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 			</test>
 			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/test/lang/stmt.if.ci:18">
-				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 5, &quot;0 != 0&quot;, null);">
-					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 5, &quot;0 != 0&quot;, null)">
+				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 5, &quot;0 != 0&quot;);">
+					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 5, &quot;0 != 0&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
 						</push>
 						<push token=".literal" type="int32" kind="static const typename(i32)" value="5" />
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;0 != 0&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</expr>
 				</stmt>
 			</then>
 			<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/test/lang/stmt.if.ci:21">
-				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 6, &quot;0 == 0&quot;, null);">
-					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 6, &quot;0 == 0&quot;, null)">
+				<stmt token=";" type="void" kind="static const typename(void)" stmt="raise(raise.debug, 6, &quot;0 == 0&quot;);">
+					<expr token="()" type="void" kind="static const typename(void)" value="raise(raise.debug, 6, &quot;0 == 0&quot;)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.debug">
 							<left token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 							<right token=".variable" type="int64" kind="static const typename(i64)" value="debug"/>
 						</push>
 						<push token=".literal" type="int32" kind="static const typename(i32)" value="6" />
 						<push token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot;0 == 0&quot;" />
-						<push token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						<call token=".variable" type="function" kind="static const typename(ref)" value="raise"/>
 					</expr>
 				</stmt>
