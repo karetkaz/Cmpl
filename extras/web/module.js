@@ -1,6 +1,6 @@
 Module.workspace = '/workspace';
 Module.locateFile = function(path) {
-	return (Module.locatePath || '/Cmpl/extras/demo/wasm/') + path;
+	return (Module.locatePath || '/Cmpl/build/wasm/') + path;
 };
 
 Module.importScripts(Module.locateFile('cmpl.js'));

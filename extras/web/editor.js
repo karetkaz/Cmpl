@@ -837,7 +837,7 @@ function process(data) {
 			let open = document.createElement('p');
 			open.textContent = 'Open dump file in inspector: ';
 			let openLink = open.appendChild(document.createElement('a'));
-			openLink.href = window.location.origin + '/Cmpl/extras/demo/inspector.html#' + data.dump;
+			openLink.href = window.location.origin + '/Cmpl/extras/web/inspector.html#' + data.dump;
 			openLink.target = '_blank';
 			openLink.textContent = data.path;
 			terminal.append(open);

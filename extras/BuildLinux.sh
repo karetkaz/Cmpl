@@ -1,12 +1,12 @@
 #!/bin/bash
 
-export "CMPL_HOME=$(dirname "$(dirname "$(readlink -f "$0")")")"
+export "CMPL_HOME=$(realpath "$(dirname "$(readlink -f "$0")")"/..)"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
 BIN=build/linux
 BIN_WCC=$BIN.wcc
-BIN_EMC=$CMPL_HOME/extras/demo/wasm
+BIN_EMC=build/wasm
 
 make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.so libGfx.so libOpenGL.so BINDIR="$BIN"
@@ -28,9 +28,16 @@ if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 	cd $CMPL_HOME || exit 1
 fi
 
+echo>extras/Cmpl.md
+DOC_FILES="$CMPL_HOME/extras/docs/*.md"
+printf '%s\n' $DOC_FILES | while read file; do
+	cat>>extras/Cmpl.md "$file"
+	echo>>extras/Cmpl.md
+done
+
 # test the virtual machine
 $BIN_WCC/cmpl>"$BIN_WCC-vm.dump.md" --test-vm
-if ! $BIN/cmpl>extras/dump/vm.dump.md --test-vm; then
+if ! $BIN/cmpl>"$BIN-vm.dump.md" --test-vm; then
 	echo "virtual machine test failed"
 	exit 1
 fi
@@ -41,41 +48,23 @@ if ! $BIN/cmpl -dump.scite extras/Cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; t
 	exit 1
 fi
 
-rm extras/Cmpl.md
-DOC_FILES="$CMPL_HOME/extras/docs/*.md"
-printf '%s\n' $DOC_FILES | while read file; do
-	cat>>extras/Cmpl.md "$file"
-	echo>>extras/Cmpl.md
-done
-
-# dump symbols, assembly, syntax tree and global variables
-TEST_FLAGS="$(echo -X+steps-stdin-offsets -asm/n/s -debug/g "$CMPL_HOME/cmplStd/test/test.ci")"
-$BIN_WCC/cmpl -log/d "$BIN_WCC.ci" $TEST_FLAGS
-if ! $BIN/cmpl -log/d "$BIN.ci" $TEST_FLAGS; then
+TEST_FLAGS="$(echo -X+steps+fold+fast-stdin-glob-offsets -api/A/d/p -asm/n/s -ast -doc -use)"
+$BIN_WCC/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$BIN_WCC.test-dump.ci" "cmplStd/test/test.ci"
+if ! $BIN/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$BIN.test-dump.ci" "cmplStd/test/test.ci"; then
 	echo "main test failed: $TEST_FLAGS"
 	exit 1
 fi
 
-# dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
-$BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -log/d/15 "extras/dump/test.dump.ci" -dump.ast.xml "extras/dump/test.dump.xml" "cmplStd/test/test.ci"
-# dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
-$BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -use -log/d "extras/dump/libs.dump.ci" "$BIN/libFile.so" "$BIN/libGfx.so"
-# dump profile data in text format including function tracing
-$BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "extras/dump/test.prof.ci" "cmplStd/test/test.ci"
+# dump symbols, assembly, syntax tree and global variables
+$BIN/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$BIN.test.ci" -dump.ast.xml "$BIN.test-dump.xml" "$BIN/libFile.so" "$BIN/libGfx.so" "cmplStd/test/test.ci"
 # dump profile data in json format
-$BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
+$BIN/cmpl -profile/t/P/G/M $TEST_FLAGS -dump.json "$BIN.test.json" "$BIN/libFile.so" "$BIN/libGfx.so" "cmplStd/test/test.ci"
 
 read -rsn1 -p "Compilation finished, press enter to run tests"
 echo
 if [ -n "$REPLY" ]; then
 	exit 0
 fi
-
-DUMP_FILE=$BIN.dump.antlr.ci
-rm "$DUMP_FILE"
-find "$CMPL_HOME/cmplStd" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
-find "$CMPL_HOME/cmplGfx" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
-find "$CMPL_HOME/cmplFile" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
 
 TEST_FILES="$CMPL_HOME/cmplStd/test/test.ci"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/demo/*.ci)"
@@ -93,7 +82,7 @@ TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplFile/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/demo/*.ci)"
 
 BIN="$CMPL_HOME/$BIN"
-DUMP_FILE=$BIN.dump.exec.ci
+DUMP_FILE=$BIN-tests.exec.ci
 $BIN/cmpl -log/d "$DUMP_FILE"
 for file in $TEST_FILES
 do
@@ -124,5 +113,5 @@ do
 	fi
 done
 
-# requirements to build and run on linux
+# requirements to build and run on linux (ubuntu based distros)
 # sudo apt install build-essential libjpeg-dev libpng-dev libsdl2-dev freeglut3-dev

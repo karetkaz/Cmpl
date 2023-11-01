@@ -7,7 +7,7 @@ var Module = {
 		'libFile.wasm'
 	],
 	relativeUrl: function(path) {
-		let worker = '/Cmpl/extras/demo/worker.js';
+		let worker = '/Cmpl/extras/web/worker.js';
 		if (location.href.endsWith(worker) && !path.startsWith('/')) {
 			return location.href.substr(0, location.href.length - worker.length + 1) + path;
 		}

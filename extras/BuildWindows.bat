@@ -32,18 +32,14 @@ IF EXIST "%WATCOM%" (
 %BIN%\cmpl>"%BIN%-vm.dump.md" --test-vm
 
 :: dump symbols, assembly, syntax tree and global variables
-SET TEST_FLAGS=-X+steps-stdin-offsets -asm/n/s -debug/g "%CMPL_HOME%\cmplStd\test\test.ci"
-%BIN_WCC%\cmpl -log/d "%BIN_WCC%.ci" %TEST_FLAGS%
-%BIN%\cmpl -log/d "%BIN%.ci" %TEST_FLAGS%
+SET TEST_FLAGS=-X+steps+fold+fast-stdin-glob-offsets -api/A/d/p -asm/n/s -ast -doc -use
+%BIN_WCC%\cmpl -debug/G/M %TEST_FLAGS% -log/d/15 "%BIN_WCC%.test-dump.ci" "cmplStd/test/test.ci"
+%BIN%\cmpl -debug/G/M %TEST_FLAGS% -log/d/15 "%BIN%.test-dump.ci" "cmplStd/test/test.ci"
 
-:: dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
-%BIN%\cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -log/d/15 "%BIN%-test.dump.ci" -dump.ast.xml "%BIN%-test.dump.xml" "cmplStd\test\test.ci"
-:: dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
-%BIN%\cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -use -log/d "%BIN%-libs.dump.ci" "%BIN%\libFile.dll" "%BIN%\libGfx.dll"
-:: dump profile data in text format including function tracing
-%BIN%\cmpl -X-stdin+steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "%BIN%-test.prof.ci" "cmplStd\test\test.ci"
+:: dump symbols, assembly, syntax tree and global variables
+%BIN%\cmpl -debug/G/M %TEST_FLAGS% -log/d/15 "%BIN%.test.ci" -dump.ast.xml "%BIN%.test-dump.xml" "%BIN%/libFile.so" "%BIN%/libGfx.so" "cmplStd/test/test.ci"
 :: dump profile data in json format
-%BIN%\cmpl -X-stdin-steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -dump.json "%BIN%-test.prof.json" "cmplStd\test\test.ci"
+%BIN%\cmpl -profile/t/P/G/M %TEST_FLAGS%  -dump.json "%BIN%.test.json" "%BIN%/libFile.so" "%BIN%/libGfx.so" "cmplStd/test/test.ci"
 
 SET TEST_FILES=%CMPL_HOME%\cmplStd\test\test.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\demo\*.ci
@@ -61,7 +57,7 @@ SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplFile\test\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\temp\todo.cmplGfx\demo\*.ci
 @REM SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGL\test\*.ci
 
-SET DUMP_FILE=%BIN%.dump.exec.ci
+SET DUMP_FILE=%BIN%-tests.exec.ci
 %BIN%\cmpl -log/d "%DUMP_FILE%"
 FOR %%f IN (%TEST_FILES%) DO (
 	pushd "%%~dpf"
