@@ -790,7 +790,7 @@ static ccKind genCall(ccContext cc, astn ast) {
 				dbgCgen("%?s:%?u: Using the location of the last expression statement", file, line);
 			}
 
-			// add 2 extra computed argument to the raise function(file and line)
+			// add two extra computed arguments to the raise function(file and line)
 			extraFile.kind = TOKEN_val;
 			extraLine.kind = TOKEN_val;
 			extraFile.type = function->params->next->type;
@@ -2365,7 +2365,10 @@ int ccGenCode(ccContext cc, int debug) {
 	}
 
 	// prepare to emit instructions
-	if (!vmInit(rt, debug, NULL)) {
+	if (debug && !dbgInit(rt, dbgError)) {
+		return -2;
+	}
+	if (!vmInit(rt, NULL)) {
 		return -2;
 	}
 

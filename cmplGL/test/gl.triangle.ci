@@ -15,7 +15,7 @@ vertex vertices[] = {
 };
 
 void mouse(int btn, int x, int y) {
-	// trace("mouse");
+	// trace("mouse", btn, x, y);
 	uint32 idx = btn - 1;
 	if (idx >= vertices.length) {
 		return;
@@ -36,27 +36,26 @@ void keyboard(int key) {
 	}
 	if (key == ' ') {
 		char buff[65536] = {};
-		char text[*] = buff;
 		// gl.Vendor
 		gl.getString(gl.Vendor, buff);
-		debug("gl.Vendor", text);
+		debug("gl.Vendor", buff);
 
 		// gl.Renderer
 		gl.getString(gl.Renderer, buff);
-		debug("gl.Renderer", text);
+		debug("gl.Renderer", buff);
 
 		// gl.Version
 		gl.getString(gl.Version, buff);
-		debug("gl.Version", text);
+		debug("gl.Version", buff);
 
 		// gl.Extensions
 		gl.getString(gl.Extensions, buff);
-		debug("gl.Extensions", text);
+		debug("gl.Extensions", buff);
 	}
 }
 
 void reshape(int x, int y) {
-	//trace("reshape");
+	// trace("reshape", x, y);
 	gl.viewport(0, 0, x, y);
 	glut.postRedisplay();
 	maxx = x;
@@ -64,7 +63,7 @@ void reshape(int x, int y) {
 }
 
 void display() {
-	//trace("display");
+	// trace("display");
 
 	gl.clear(gl.ColorBuffer);
 	gl.begin(gl.Triangles);
@@ -101,7 +100,7 @@ glut.onKeyboard(keyboard);
 glut.onReshape(reshape);
 glut.onDisplay(display);
 
-glut.initDisplayMode(glut.Double|glut.Rgb);
+glut.initDisplayMode(glut.Multisample|glut.Double|glut.Rgb);
 
 // this wont let wmExec to exit.
 glut.mainLoop(800, 600, "Cmpl - OpenGL");

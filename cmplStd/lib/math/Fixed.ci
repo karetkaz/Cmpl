@@ -39,11 +39,9 @@ struct Fixed {
 
 	/// Adds the two fixed point numbers.
 	static Fixed add(Fixed a, Fixed b) { return {value: a.value + b.value}; }
-	static Fixed add(Fixed a, int32 b) { return {value: a.value + b}; }
 
 	/// Subtract one from another fixed point number.
 	static Fixed sub(Fixed a, Fixed b) { return {value: a.value - b.value}; }
-	static Fixed sub(Fixed a, int32 b) { return {value: a.value - b}; }
 
 	/// Multiply two fixed-point numbers.
 	static Fixed mul(Fixed a, Fixed b) { return {value: (int64(a.value) * b.value) >> precision}; }

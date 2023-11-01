@@ -12,7 +12,9 @@ static const char *const proto_file_open = "File open(const char path[*])";
 static const char *const proto_file_create = "File create(const char path[*])";
 static const char *const proto_file_append = "File append(const char path[*])";
 static vmError FILE_open(nfcContext ctx) {
-	char *name = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	char *name = rt->api.nextArg(&al)->ref;
 	const char *mode = NULL;
 	if (ctx->proto == proto_file_open) {
 		mode = "r";
@@ -35,8 +37,10 @@ static vmError FILE_open(nfcContext ctx) {
 
 static const char *const proto_file_read_buff = "int read(File file, uint8 buff[])";
 static vmError FILE_read(nfcContext ctx) {
-	FILE *file = (FILE *) nextArg(ctx).ref;
-	rtValue buff = nextArg(ctx);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	FILE *file = (FILE *) rt->api.nextArg(&al)->ref;
+	struct nfcArgArr buff = rt->api.nextArg(&al)->arr;
 	size_t n = fread(buff.ref, 1, buff.length, file);
 	reti32(ctx, n);
 	return noError;
@@ -44,8 +48,10 @@ static vmError FILE_read(nfcContext ctx) {
 
 static const char *const proto_file_write_buff = "int write(File file, const uint8 buff[])";
 static vmError FILE_write(nfcContext ctx) {
-	FILE *file = (FILE *) nextArg(ctx).ref;
-	rtValue buff = nextArg(ctx);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	FILE *file = (FILE *) rt->api.nextArg(&al)->ref;
+	struct nfcArgArr buff = rt->api.nextArg(&al)->arr;
 	size_t len = fwrite(buff.ref, 1, buff.length, file);
 	reti32(ctx, len);
 	return noError;
@@ -79,8 +85,10 @@ static const char *const proto_file_seek_set = "File seek(File file, int64 posit
 static const char *const proto_file_seek_cur = "File seekCur(File file, int64 position)";
 static const char *const proto_file_seek_end = "File seekEnd(File file, int64 position)";
 static vmError FILE_seek(nfcContext ctx) {
-	FILE *file = (FILE *) nextArg(ctx).ref;
-	ssize_t pos = nextArg(ctx).i64;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	FILE *file = rt->api.nextArg(&al)->ref;
+	ssize_t pos = rt->api.nextArg(&al)->i64;
 	if (ctx->proto == proto_file_seek_set) {
 		if (fseek(file, pos, SEEK_SET) == 0) {
 			rethnd(ctx, file);

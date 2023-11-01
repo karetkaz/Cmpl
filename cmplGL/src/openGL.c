@@ -8,20 +8,12 @@
 #include <GL/glut.h>
 #include <cmpl.h>
 
-static inline size_t nextArgOfs(nfcContext ctx) {
-	return ctx->rt->api.nfcNextArg(ctx);
-}
-
-static inline symn argSym(nfcContext ctx, size_t offset) {
-	return ctx->rt->api.rtLookup(ctx->rt, argref(ctx, offset), KIND_fun);
-}
 static inline void *argPtr(nfcContext ctx, size_t offset) {
 	return ctx->rt->_mem + argref(ctx, offset);
 }
-static inline rtValue argVal(nfcContext ctx, size_t offset) {
-	return ctx->rt->api.nfcReadArg(ctx, offset);
+static inline symn argSym(nfcContext ctx, size_t offset) {
+	return ctx->rt->api.rtLookup(ctx->rt, argref(ctx, offset), KIND_fun);
 }
-
 
 static inline symn ccBegin(rtContext rt, const char *name) {
 	return rt->api.ccBegin(rt->cc, name);
@@ -33,8 +25,10 @@ static inline symn ccEnd(rtContext rt, symn cls) {
 //#{ gl wrapper functions
 
 static vmError glFun_GetString(nfcContext ctx) {
-	uint32_t name = argu32(ctx, nextArgOfs(ctx));
-	rtValue buffer = argVal(ctx, nextArgOfs(ctx));
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	uint32_t name = rt->api.nextArg(&al)->u32;
+	struct nfcArgArr buffer = rt->api.nextArg(&al)->arr;
 	char *src = (char *)glGetString(name);
 	char *dst = buffer.ref;
 
@@ -53,10 +47,12 @@ static vmError glFun_GetString(nfcContext ctx) {
 	return noError;
 }
 static vmError glFun_Viewport(nfcContext ctx) {
-	int x = argi32(ctx, nextArgOfs(ctx));
-	int y = argi32(ctx, nextArgOfs(ctx));
-	int w = argi32(ctx, nextArgOfs(ctx));
-	int h = argi32(ctx, nextArgOfs(ctx));
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	int x = rt->api.nextArg(&al)->i32;
+	int y = rt->api.nextArg(&al)->i32;
+	int w = rt->api.nextArg(&al)->i32;
+	int h = rt->api.nextArg(&al)->i32;
 	glViewport(x, y, w, h);
 	return noError;
 }
@@ -97,25 +93,25 @@ static vmError glFun_End(nfcContext ctx) {
 }
 
 static vmError glFun_Vertex(nfcContext ctx) {
-	float x = argf32(ctx, nextArgOfs(ctx));
-	float y = argf32(ctx, nextArgOfs(ctx));
-	float z = argf32(ctx, nextArgOfs(ctx));
-	float w = argf32(ctx, nextArgOfs(ctx));
+	float x = argf32(ctx, 3 * sizeof(float32_t));
+	float y = argf32(ctx, 2 * sizeof(float32_t));
+	float z = argf32(ctx, 1 * sizeof(float32_t));
+	float w = argf32(ctx, 0 * sizeof(float32_t));
 	glVertex4f(x, y, z, w);
 	return noError;
 }
 static vmError glFun_Normal(nfcContext ctx) {
-	float x = argf32(ctx, nextArgOfs(ctx));
-	float y = argf32(ctx, nextArgOfs(ctx));
-	float z = argf32(ctx, nextArgOfs(ctx));
+	float x = argf32(ctx, 2 * sizeof(float32_t));
+	float y = argf32(ctx, 1 * sizeof(float32_t));
+	float z = argf32(ctx, 0 * sizeof(float32_t));
 	glNormal3f(x, y, z);
 	return noError;
 }
 static vmError glFun_Color(nfcContext ctx) {
-	float r = argf32(ctx, nextArgOfs(ctx));
-	float g = argf32(ctx, nextArgOfs(ctx));
-	float b = argf32(ctx, nextArgOfs(ctx));
-	float a = argf32(ctx, nextArgOfs(ctx));
+	float r = argf32(ctx, 3 * sizeof(float32_t));
+	float g = argf32(ctx, 2 * sizeof(float32_t));
+	float b = argf32(ctx, 1 * sizeof(float32_t));
+	float a = argf32(ctx, 0 * sizeof(float32_t));
 	glColor4f(r, g, b, a);
 	return noError;
 }
@@ -127,22 +123,22 @@ static vmError glFun_MatrixMode(nfcContext ctx) {
 }
 
 static vmError glFun_Frustum(nfcContext ctx) {
-	GLdouble left   = argf64(ctx, nextArgOfs(ctx));
-	GLdouble right  = argf64(ctx, nextArgOfs(ctx));
-	GLdouble bottom = argf64(ctx, nextArgOfs(ctx));
-	GLdouble top    = argf64(ctx, nextArgOfs(ctx));
-	GLdouble near  = argf64(ctx, nextArgOfs(ctx));
-	GLdouble far   = argf64(ctx, nextArgOfs(ctx));
+	GLdouble left   = argf64(ctx, 5 * sizeof(float64_t));
+	GLdouble right  = argf64(ctx, 4 * sizeof(float64_t));
+	GLdouble bottom = argf64(ctx, 3 * sizeof(float64_t));
+	GLdouble top    = argf64(ctx, 2 * sizeof(float64_t));
+	GLdouble near   = argf64(ctx, 1 * sizeof(float64_t));
+	GLdouble far    = argf64(ctx, 0 * sizeof(float64_t));
 	glFrustum(left, right, bottom, top, near, far);
 	return noError;
 }
 static vmError glFun_Ortho(nfcContext ctx) {
-	GLdouble left   = argf64(ctx, nextArgOfs(ctx));
-	GLdouble right  = argf64(ctx, nextArgOfs(ctx));
-	GLdouble bottom = argf64(ctx, nextArgOfs(ctx));
-	GLdouble top    = argf64(ctx, nextArgOfs(ctx));
-	GLdouble near  = argf64(ctx, nextArgOfs(ctx));
-	GLdouble far   = argf64(ctx, nextArgOfs(ctx));
+	GLdouble left   = argf64(ctx, 5 * sizeof(float64_t));
+	GLdouble right  = argf64(ctx, 4 * sizeof(float64_t));
+	GLdouble bottom = argf64(ctx, 3 * sizeof(float64_t));
+	GLdouble top    = argf64(ctx, 2 * sizeof(float64_t));
+	GLdouble near   = argf64(ctx, 1 * sizeof(float64_t));
+	GLdouble far    = argf64(ctx, 0 * sizeof(float64_t));
 	glOrtho(left, right, bottom, top, near, far);
 	return noError;
 }
@@ -174,24 +170,24 @@ static vmError glFun_PopMatrix(nfcContext ctx) {
 }
 
 static vmError glFun_Rotate(nfcContext ctx) {
-	GLdouble a = argf64(ctx, nextArgOfs(ctx));
-	GLdouble x = argf64(ctx, nextArgOfs(ctx));
-	GLdouble y = argf64(ctx, nextArgOfs(ctx));
-	GLdouble z = argf64(ctx, nextArgOfs(ctx));
+	GLdouble a = argf64(ctx, 3 * sizeof(float64_t));
+	GLdouble x = argf64(ctx, 2 * sizeof(float64_t));
+	GLdouble y = argf64(ctx, 1 * sizeof(float64_t));
+	GLdouble z = argf64(ctx, 0 * sizeof(float64_t));
 	glRotated(a, x, y, z);
 	return noError;
 }
 static vmError glFun_Scale(nfcContext ctx) {
-	GLdouble x = argf64(ctx, nextArgOfs(ctx));
-	GLdouble y = argf64(ctx, nextArgOfs(ctx));
-	GLdouble z = argf64(ctx, nextArgOfs(ctx));
+	GLdouble x = argf64(ctx, 2 * sizeof(float64_t));
+	GLdouble y = argf64(ctx, 1 * sizeof(float64_t));
+	GLdouble z = argf64(ctx, 0 * sizeof(float64_t));
 	glScaled(x, y, z);
 	return noError;
 }
 static vmError glFun_Translate(nfcContext ctx) {
-	GLdouble x = argf64(ctx, nextArgOfs(ctx));
-	GLdouble y = argf64(ctx, nextArgOfs(ctx));
-	GLdouble z = argf64(ctx, nextArgOfs(ctx));
+	GLdouble x = argf64(ctx, 2 * sizeof(float64_t));
+	GLdouble y = argf64(ctx, 1 * sizeof(float64_t));
+	GLdouble z = argf64(ctx, 0 * sizeof(float64_t));
 	glTranslated(x, y, z);
 	return noError;
 }
@@ -199,16 +195,15 @@ static vmError glFun_Translate(nfcContext ctx) {
 
 //#{ glu wrapper functions
 static vmError gluFun_LookAt(nfcContext ctx) {
-	GLdouble atx = argf64(ctx, nextArgOfs(ctx));
-	GLdouble aty = argf64(ctx, nextArgOfs(ctx));
-	GLdouble atz = argf64(ctx, nextArgOfs(ctx));
-	GLdouble tox = argf64(ctx, nextArgOfs(ctx));
-	GLdouble toy = argf64(ctx, nextArgOfs(ctx));
-	GLdouble toz = argf64(ctx, nextArgOfs(ctx));
-	GLdouble upx = argf64(ctx, nextArgOfs(ctx));
-	GLdouble upy = argf64(ctx, nextArgOfs(ctx));
-	GLdouble upz = argf64(ctx, nextArgOfs(ctx));
-
+	GLdouble atx = argf64(ctx, 8 * sizeof(float64_t));
+	GLdouble aty = argf64(ctx, 7 * sizeof(float64_t));
+	GLdouble atz = argf64(ctx, 6 * sizeof(float64_t));
+	GLdouble tox = argf64(ctx, 5 * sizeof(float64_t));
+	GLdouble toy = argf64(ctx, 4 * sizeof(float64_t));
+	GLdouble toz = argf64(ctx, 3 * sizeof(float64_t));
+	GLdouble upx = argf64(ctx, 2 * sizeof(float64_t));
+	GLdouble upy = argf64(ctx, 1 * sizeof(float64_t));
+	GLdouble upz = argf64(ctx, 0 * sizeof(float64_t));
 	gluLookAt(atx, aty, atz, tox, toy, toz, upx, upy, upz);
 	return noError;
 }
@@ -345,9 +340,11 @@ static vmError glutFun_FullScreen(nfcContext ctx) {
 static vmError glutFun_MainLoop(nfcContext ctx) {
 	int argc = 0;
 	char *argv[] = {""};
-	int width = argi32(ctx, nextArgOfs(ctx));
-	int height = argi32(ctx, nextArgOfs(ctx));
-	char *title = argPtr(ctx, nextArgOfs(ctx));
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	int width = rt->api.nextArg(&al)->i32;
+	int height = rt->api.nextArg(&al)->i32;
+	char *title = rt->api.nextArg(&al)->ref;
 
 	glutInit(&argc, argv);
 	glutInitWindowSize(width, height);

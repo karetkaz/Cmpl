@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 typedef uint32_t vmOffs;                        // offset TODO: 32/64 bit offsets support
-typedef struct symNode *symn;                   // symbol
+typedef struct symNode *symn;                   // symbol node
 typedef struct astNode *astn;                   // syntax tree
 typedef struct dbgNode *dbgn;                   // debug node
 typedef struct rtContextRec *rtContext;         // runtimeContext
@@ -48,6 +48,7 @@ typedef struct ccContextRec *ccContext;         // compilerContext
 typedef struct dbgContextRec *dbgContext;       // debuggerContext
 typedef struct nfcContextRec *nfcContext;       // nativeCallContext
 typedef struct userContextRec *userContext;     // customUserContext
+typedef struct nfcArgs *nfcArgs;
 
 /**
  * specify the extension file to be compiled with this plugin.
@@ -116,26 +117,6 @@ typedef enum {
 	nativeCallError,
 } vmError;
 
-/**
- * Value translated from virtual machine to be used in runtime
- * @note pointers are transformed to offsets by subtracting the pointer to vm memory.
- */
-typedef union {
-	int32_t i32;
-	int64_t i64;
-	uint32_t u32;
-	uint64_t u64;
-	float32_t f32;
-	float64_t f64;
-	struct {
-		void *ref;
-		union {
-			symn type;
-			size_t length;
-		};
-	};
-} rtValue;
-
 /// Symbol node: types and variables
 typedef enum {
 	CAST_any   = 0x0000,		// error
@@ -160,17 +141,8 @@ typedef enum {
 	KIND_fun   = 0x0020,		// function: executable byte-code.
 	KIND_var   = 0x0030,		// variable: function and typename are also variables
 
-	// todo: variance: https://flow.org/en/docs/lang/variance
-	//Invariant     0x0000,     // can not assign super or subtypes
-	//Covariant     0x0040,     // can assign to subtypes: object o = (string)s;
-	//Contravariant 0x0080,     // can assign to supertypes: string s = (object) o;
-	//Bivariant     0x00c0,     // can assign to anything in the hierarchy tree.
-
 	ATTR_stat  = 0x0100,        // static attribute (not dynamic, usually computed at compile time)
 	ATTR_cnst  = 0x0200,        // constant attribute (not mutable), (value, not a variable) can't be changed after initialization
-	//ATTR_pure  = 0x0200,      // ==ATTR_cnst todo: pure attribute: no side effect for function
-	//ATTR_null  = 0x0400,      // todo: nullable attribute (int nullable? = null; int notnull& = a;)
-	//ATTR_scpe  = 0x0800,      // todo: variable doesn't escapes scope (heap allocation can be replaced with stack allocation)
 
 	ARGS_inln  = 0x1000,        // inline argument
 	ARGS_varg  = 0x2000,        // variable argument
@@ -289,13 +261,10 @@ struct rtContextRec {
 		void *(*const rtAlloc)(rtContext ctx, void *ptr, size_t size);
 
 		/// Reset to the first argument inside a native function
-		size_t (*const nfcFirstArg)(nfcContext ctx);
+		struct nfcArgs (*const nfcArgs)(nfcContext ctx);
 
 		/// Advance to the next argument inside a native function
-		size_t (*const nfcNextArg)(nfcContext ctx);
-
-		/// Read the argument, transforming offsets to pointers
-		rtValue (*const nfcReadArg)(nfcContext ctx, size_t argOffs);
+		nfcArgs (*const nextArg)(nfcArgs ctx);
 	} api;
 
 	/**
@@ -315,32 +284,33 @@ struct rtContextRec {
 };
 
 struct symNode {
-	const char *name;  // symbol name
-	const char *unit;  // declared in unit
-	const char *file;  // declared in file
-	int32_t line;      // declared on line
-	int32_t nest;      // declared on scope level
-	size_t size;       // variable or function size
-	size_t offs;       // address of variable or function
+	const char *name;   // symbol name
+	const char *unit;   // declared in unit
+	const char *file;   // declared in file
+	const char *doc;    // document comment
+	const char *fmt;    // print format
+	int32_t line;       // declared on line
+	int32_t nest;       // declared on scope level
+	size_t size;        // variable or function size
+	size_t offs;        // address of variable or function
 
 	symn next;          // next symbol: field / param / ... / (in scope table)
 	symn type;          // base type of array / typename (void, int, float, struct, function, ...)
+	symn scope;         // global variables and functions / while_compiling variables of the block in reverse order
+
 	symn owner;         // the type that declares the current symbol (DeclaringType)
 	symn fields;        // all fields: static + non-static
 	symn params;        // function parameters, return value is the first parameter.
-	symn override;      // function overrides this other function
+
+	astn init;          // VAR init / FUN body, this should be null after code generation?
 
 	ccKind kind;        // KIND_def / KIND_typ / KIND_fun / KIND_var + ATTR_xxx + CAST_xxx
 
 	// TODO: merge scope and global attributes
-	symn scope;         // global variables and functions / while_compiling variables of the block in reverse order
+	symn override;      // function overrides this other function
 	symn global;        // all static variables and functions
-	astn init;          // VAR init / FUN body, this should be null after code generation?
-
 	astn use;           // TEMP: usages
 	astn tag;           // TEMP: declaration reference
-	const char *doc;    // document comment
-	const char *fmt;    // print format
 };
 
 static inline int isConst(symn sym) {
@@ -398,9 +368,8 @@ struct nfcContextRec {
 	const symn sym;             // invoked function (returned by ccAddCall)
 	const char *proto;          // static data (passed to ccAddCall)
 	const void *extra;          // extra data (passed to execute or invoke)
-	const void *args;           // arguments
+	const void *argv;           // arguments
 	const size_t argc;          // argument count in bytes
-	symn param;           // the current parameter (modified by nfcFirstArg and nfcNextArg)
 };
 
 /**
@@ -411,12 +380,9 @@ struct nfcContextRec {
  * @return pointer to the memory.
  */
 static inline void *vmPointer(rtContext rt, size_t offset) {
-	if (offset == 0) {
+	if (offset == 0 || offset >= rt->_size) {
 		return NULL;
 	}
-	/* TODO: if (offset >= rt->_size) {
-		abort();
-	}*/
 	return rt->_mem + offset;
 }
 
@@ -444,32 +410,22 @@ static inline size_t vmOffset(rtContext rt, const void *ptr) {
  *
  * @param args Native function call arguments context.
  * @param offset Relative offset of argument.
- * @param result Optionally copy here the result.
- * @param size Size of the argument to copy to result.
- * @return Pointer where the result is located or copied.
+ * @return Pointer where the result is located.
  * @note Getting an argument must be used with padded offset.
  */
-static inline void *argget(nfcContext args, size_t offset, void *result, size_t size) {
-	char *ptr = (char *) args->args + offset;
-	// if result is not null, make a copy
-	if (result != NULL && size > 0) {
-		memcpy(result, ptr, size);
-		return result;
-	}
-	return ptr;
+static inline void *argget(nfcContext args, size_t offset) {
+	return (char *) args->argv + offset;
 }
 
 // speed up of getting arguments of known types
-#define argget(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((char*)(__ARGV)->args + (__OFFS)))
-static inline int32_t argi32(nfcContext ctx, size_t offs) { return argget(ctx, offs, int32_t); }
-static inline int64_t argi64(nfcContext ctx, size_t offs) { return argget(ctx, offs, int64_t); }
-static inline uint32_t argu32(nfcContext ctx, size_t offs) { return argget(ctx, offs, uint32_t); }
-static inline uint64_t argu64(nfcContext ctx, size_t offs) { return argget(ctx, offs, uint64_t); }
-static inline float32_t argf32(nfcContext ctx, size_t offs) { return argget(ctx, offs, float32_t); }
-static inline float64_t argf64(nfcContext ctx, size_t offs) { return argget(ctx, offs, float64_t); }
-static inline void *arghnd(nfcContext ctx, size_t offs) { return argget(ctx, offs, void*); }
-static inline size_t argref(nfcContext ctx, size_t offs) { return argget(ctx, offs, vmOffs); }
-#undef argget
+static inline int32_t argi32(nfcContext ctx, size_t offs) { return *(int32_t *) argget(ctx, offs); }
+static inline int64_t argi64(nfcContext ctx, size_t offs) { return *(int64_t *) argget(ctx, offs); }
+static inline uint32_t argu32(nfcContext ctx, size_t offs) { return *(uint32_t *) argget(ctx, offs); }
+static inline uint64_t argu64(nfcContext ctx, size_t offs) { return *(uint64_t *) argget(ctx, offs); }
+static inline float32_t argf32(nfcContext ctx, size_t offs) { return *(float32_t *) argget(ctx, offs); }
+static inline float64_t argf64(nfcContext ctx, size_t offs) { return *(float64_t *) argget(ctx, offs); }
+static inline void *arghnd(nfcContext ctx, size_t offs) { return *(void **) argget(ctx, offs); }
+static inline size_t argref(nfcContext ctx, size_t offs) { return *(vmOffs *) argget(ctx, offs); }
 
 /**
  * Set the return value of a wrapped native call.
@@ -481,7 +437,7 @@ static inline size_t argref(nfcContext ctx, size_t offs) { return argget(ctx, of
  * @note Setting the return value may overwrite some arguments.
  */
 static inline void *retset(nfcContext args, void *result, size_t size) {
-	char *ptr = (char *) args->args + args->argc - size;
+	char *ptr = (char *) args->argv + args->argc - size;
 	if (result != NULL && size > 0) {
 		memcpy(ptr, result, size);
 		return result;
@@ -490,7 +446,7 @@ static inline void *retset(nfcContext args, void *result, size_t size) {
 }
 
 // speed up of setting result of known types.
-#define retset(__ARGV, __TYPE, __VAL) ((__TYPE*)((char *)(__ARGV)->args + (__ARGV)->argc))[-1] = (__TYPE)(__VAL)
+#define retset(__ARGV, __TYPE, __VAL) ((__TYPE*)((char *)(__ARGV)->argv + (__ARGV)->argc))[-1] = (__TYPE)(__VAL)
 static inline void reti32(nfcContext ctx, int32_t val) { retset(ctx, int32_t, val); }
 static inline void reti64(nfcContext ctx, int64_t val) { retset(ctx, int64_t, val); }
 static inline void retu32(nfcContext ctx, uint32_t val) { retset(ctx, uint32_t, val); }
@@ -519,9 +475,28 @@ static inline int cmplVersion() {
 	return (year * 100 + month) * 100 + day;
 }
 
-static inline rtValue nextArg(nfcContext ctx) {
-	return ctx->rt->api.nfcReadArg(ctx, ctx->rt->api.nfcNextArg(ctx));
-}
+struct nfcArgs {
+	nfcContext ctx;
+	vmOffs offset;          // the current argument offset
+	symn param;             // the current argument
+	union {
+		int32_t i32;
+		int64_t i64;
+		uint32_t u32;
+		uint64_t u64;
+		float32_t f32;
+		float64_t f64;
+		void *ref;
+		struct nfcArgArr {
+			void *ref;
+			size_t length;
+		} arr;
+		struct nfcArgVar {
+			void *ref;
+			symn type;
+		} var;
+	};
+};
 
 #ifdef __cplusplus
 }

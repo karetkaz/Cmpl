@@ -76,7 +76,7 @@ static vmError typenameGetField(nfcContext ctx) {
 static const char *const variant_as = "pointer as(variant var, typename type)";
 static vmError variantHelpers(nfcContext ctx) {
 	size_t symOffs = argref(ctx, 0);
-	vmValue *varOffs = argget(ctx, vm_ref_size, NULL, 2 * vm_ref_size);
+	vmValue *varOffs = argget(ctx, vm_ref_size);
 
 	if (ctx->proto == variant_as) {
 		if (varOffs->type == symOffs) {
@@ -187,9 +187,10 @@ static void *rtAllocApi(rtContext rt, void *ptr, size_t size) {
 
 /// Private raise wrapper for the api
 static void raiseApi(rtContext rt, int level, const char *msg, ...) {
+	static const struct nfcArgArr details = {0};
 	va_list vaList;
 	va_start(vaList, msg);
-	print_log(rt, level, NULL, 0, NULL, msg, vaList);
+	print_log(rt, level, NULL, 0, details, msg, vaList);
 	va_end(vaList);
 
 	// print stack trace including this function
@@ -198,47 +199,43 @@ static void raiseApi(rtContext rt, int level, const char *msg, ...) {
 	}
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Native
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Native Calls
 
-size_t nfcFirstArg(nfcContext nfc) {
-	nfc->param = (void *) -1;
-	return nfcNextArg(nfc);
-}
-
-size_t nfcNextArg(nfcContext nfc) {
-	symn param = nfc->param;
-	if (param == (void *) -1) {
-		param = nfc->sym->params;
-		nfc->param = param;
-	}
-
-	if (param == NULL || param->next == NULL) {
-		fatal(ERR_INTERNAL_ERROR);
-		return 0;
-	}
-
-	nfc->param = param = param->next;
-	return nfc->argc - param->offs;
+/**
+ * get an iterator to the native call methods.
+ *
+ * @param nfc the native call context.
+ * @return iterator for argument list.
+ */
+static struct nfcArgs nfcArgList(nfcContext nfc) {
+	struct nfcArgs result = {0};
+	// the first argument is `result`
+	result.param = nfc->sym->params;
+	result.ctx = nfc;
+	return result;
 }
 
 /**
- * Get a pointer to the native call argument.
+ * Read the value at the given param converting offsets to pointers.
+ * Advance to the next argument.
  *
- * @param nfc the native call context.
- * @param offs relative offset of the argument.
- * @return pointer to the argument at the relative offset.
- * @note the values on the stack will contain offsets, not pointers
+ * @param args the arguments iterator.
+ * @return the iterator, or NULL for ending, or if an error occurred.
+ * @note offsets inside structs will be not converted to pointers.
  */
-static inline vmValue *nfcPeekArg(nfcContext nfc, size_t argOffs) {
-	return (vmValue *) (((char *) nfc->args) + argOffs);
-}
+static nfcArgs nfcArgNext(nfcArgs nfc) {
+	symn param = nfc->param->next;
+	if (param == NULL) {
+		return NULL;
+	}
 
-rtValue nfcReadArg(nfcContext nfc, size_t offs) {
-	vmValue *value = nfcPeekArg(nfc, offs);
-	rtValue result = {0};
-	switch (castOf(nfc->param)) {
+	nfc->param = param;
+	nfc->offset = nfc->ctx->argc - param->offs;
+	vmValue* value = (vmValue *) ((char *) nfc->ctx->argv + nfc->offset);
+
+	rtContext rt = nfc->ctx->rt;
+	switch (castOf(param)) {
 		default:
-			fatal(ERR_INTERNAL_ERROR);
 			break;
 
 		case CAST_bit:
@@ -246,55 +243,41 @@ rtValue nfcReadArg(nfcContext nfc, size_t offs) {
 		case CAST_u32:
 		case CAST_f32:
 			// copy 32 bits
-			result.i32 = value->i32;
-			break;
+			nfc->i32 = value->i32;
+			return nfc;
 
 		case CAST_i64:
 		case CAST_u64:
 		case CAST_f64:
 			// copy 64 bits
-			result.i64 = value->i64;
-			break;
+			nfc->i64 = value->i64;
+			return nfc;
 
 		case CAST_ref:
-			result.ref = vmPointer(nfc->rt, value->ref);
-			break;
+			nfc->ref = vmPointer(rt, value->ref);
+			return nfc;
 
 		case CAST_arr:
-			result.ref = vmPointer(nfc->rt, value->ref);
-			result.length = value->length;  // FIXME: length may be missing || static
-			break;
+			nfc->arr.ref = vmPointer(rt, value->ref);
+			nfc->arr.length = value->length;
+			return nfc;
 
 		case CAST_var:
-			result.ref = vmPointer(nfc->rt, value->ref);
-			result.type = vmPointer(nfc->rt, value->type);
-			break;
+			nfc->var.ref = vmPointer(rt, value->ref);
+			nfc->var.type = rtLookup(rt, value->type, 0);
+			return nfc;
 
 		case CAST_val:
-			if (nfc->param->size > sizeof(result)) {
-				fatal(ERR_UNIMPLEMENTED_FEATURE);
-				return result;
+			if (param->size > sizeof(nfc->u64)) {
+				break;
 			}
-			memcpy(&result, value, nfc->param->size);
-			break;
-	}
-	return result;
-}
 
-void nfcCheckArg(nfcContext nfc, ccKind cast, char *name) {
-	symn param = nfc->param;
-	if (param == (void *) -1) {
-		fatal(ERR_INTERNAL_ERROR);
+			nfc->u64 = value->u64;
+			return nfc;
 	}
-	if (param == NULL) {
-		fatal(ERR_INTERNAL_ERROR);
-	}
-	if (cast && cast != refCast(param)) {
-		fatal(ERR_INTERNAL_ERROR);
-	}
-	if (name && strcmp(name, param->name) != 0) {
-		fatal(ERR_INTERNAL_ERROR);
-	}
+
+	fatal("invalid param: %T", param);
+	return NULL;
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Language
@@ -677,10 +660,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
  * @param onHalt the function to be invoked when execution stops.
  * @returns 0 on success
  */
-static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)) {
-	ccContext cc = rt->cc;
-	symn field;
-
+static int install_base(ccContext cc, ccInstall mode, vmError onHalt(nfcContext)) {
 	// !!! halt must be the first native call.
 	int error = !ccAddCall(cc, onHalt ? onHalt : haltDummy, "void halt()");
 
@@ -688,6 +668,7 @@ static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)
 	if (cc->type_rec != NULL && cc->type_var != NULL) {
 		enter(cc, NULL, cc->type_var);
 
+		symn field;
 		if ((mode & installLibs) != 0) {
 			error = error || !(field = ccAddCall(cc, variantHelpers, variant_as));
 		}
@@ -749,6 +730,7 @@ static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)
 	if (cc->type_rec != NULL && cc->type_obj != NULL) {
 		enter(cc, NULL, cc->type_obj);
 
+		symn field;
 		if ((field = install(cc, ".type", ATTR_cnst | KIND_var | CAST_ref, vm_ref_size, cc->type_rec, NULL))) {
 			field->offs = 0;
 		} else {
@@ -805,9 +787,8 @@ rtContext rtInit(void *mem, size_t size) {
 		*(void**)&rt->api.rtAlloc = rtAllocApi;
 		*(void**)&rt->api.rtLookup = rtLookup;
 
-		*(void**)&rt->api.nfcFirstArg = nfcFirstArg;
-		*(void**)&rt->api.nfcNextArg = nfcNextArg;
-		*(void**)&rt->api.nfcReadArg = nfcReadArg;
+		*(void**)&rt->api.nfcArgs = nfcArgList;
+		*(void**)&rt->api.nextArg = nfcArgNext;
 
 		// default values
 		rt->logLevel = 5;
@@ -850,22 +831,23 @@ int rtClose(rtContext rt) {
 	return errors;
 }
 
-size_t vmInit(rtContext rt, int debug, vmError onHalt(nfcContext)) {
+dbgContext dbgInit(rtContext rt, vmError onExec(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee)) {
+	rt->dbg = (dbgContext)(rt->_beg = padPointer(rt->_beg, vm_mem_align));
+	rt->_beg += sizeof(struct dbgContextRec);
+
+	dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
+	memset(rt->dbg, 0, sizeof(struct dbgContextRec));
+
+	rt->dbg->rt = rt;
+	rt->dbg->tryExec = rt->cc->libc_try;
+	rt->dbg->debug = onExec;
+	initBuff(&rt->dbg->functions, 128, sizeof(struct dbgNode));
+	initBuff(&rt->dbg->statements, 128, sizeof(struct dbgNode));
+	return rt->dbg;
+}
+
+size_t vmInit(rtContext rt, vmError onHalt(nfcContext)) {
 	ccContext cc = rt->cc;
-
-	// debug info
-	if (debug != 0) {
-		rt->dbg = (dbgContext)(rt->_beg = padPointer(rt->_beg, vm_mem_align));
-		rt->_beg += sizeof(struct dbgContextRec);
-
-		dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
-		memset(rt->dbg, 0, sizeof(struct dbgContextRec));
-
-		rt->dbg->rt = rt;
-		rt->dbg->tryExec = cc->libc_try;
-		initBuff(&rt->dbg->functions, 128, sizeof(struct dbgNode));
-		initBuff(&rt->dbg->statements, 128, sizeof(struct dbgNode));
-	}
 
 	// initialize native calls
 	if (cc != NULL && cc->native != NULL) {
@@ -971,7 +953,7 @@ void *rtAlloc(rtContext rt, void *ptr, size_t size, void dbg(dbgContext, void *,
 
 	const ssize_t minAllocationSize = sizeof(struct memChunk);
 	size_t allocSize = padOffset(size + minAllocationSize, minAllocationSize);
-	memChunk chunk = (memChunk)((char*)ptr - offsetOf(struct memChunk, data));
+	memChunk chunk = NULL;
 
 	// memory manager is not initialized, initialize it first
 	if (rt->vm.heap == NULL) {
@@ -989,6 +971,7 @@ void *rtAlloc(rtContext rt, void *ptr, size_t size, void dbg(dbgContext, void *,
 
 	// chop or free.
 	if (ptr != NULL) {
+		chunk = (memChunk)((char*)ptr - offsetOf(struct memChunk, data));
 		size_t chunkSize = chunk->next ? ((char*)chunk->next - (char*)chunk) : 0;
 
 		if ((unsigned char*)ptr < rt->_beg || (unsigned char*)ptr > rt->_end) {
@@ -1090,9 +1073,6 @@ void *rtAlloc(rtContext rt, void *ptr, size_t size, void dbg(dbgContext, void *,
 			chunk = next;
 		}
 	}
-	else {
-		chunk = NULL;
-	}
 
 	if (rt->dbg != NULL) {
 		memChunk mem;
@@ -1148,7 +1128,7 @@ ccContext ccInit(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)) {
 
 	install_type(cc, mode);
 	install_emit(cc, mode);
-	install_base(rt, mode, onHalt);
+	install_base(cc, mode, onHalt);
 
 	cc->root = newNode(cc, STMT_beg);
 	cc->root->type = cc->type_vid;

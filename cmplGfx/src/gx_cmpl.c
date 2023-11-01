@@ -41,10 +41,12 @@ static const char *const proto_image_destroy = "void destroy(Image image)";
 static const char *const proto_image_recycle = "Image recycle(Image recycle, int32 width, int32 height, int32 depth, int32 flags)";
 static const char *const proto_image_slice = "Image slice(Image image, const Rect rect&)";
 static vmError surf_recycle(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	if (ctx->proto == proto_image_create2d) {
-		int width = nextArg(ctx).i32;
-		int height = nextArg(ctx).i32;
-		int depth = nextArg(ctx).i32;
+		int width = rt->api.nextArg(&al)->i32;
+		int height = rt->api.nextArg(&al)->i32;
+		int depth = rt->api.nextArg(&al)->i32;
 		GxImage result = createImage(NULL, width, height, depth, Image2d);
 		if (result != NULL) {
 			rethnd(ctx, result);
@@ -52,8 +54,8 @@ static vmError surf_recycle(nfcContext ctx) {
 		}
 	}
 	if (ctx->proto == proto_image_create3d) {
-		int width = nextArg(ctx).i32;
-		int height = nextArg(ctx).i32;
+		int width = rt->api.nextArg(&al)->i32;
+		int height = rt->api.nextArg(&al)->i32;
 		GxImage result = createImage(NULL, width, height, 32, Image3d);
 		if (result != NULL) {
 			rethnd(ctx, result);
@@ -61,16 +63,16 @@ static vmError surf_recycle(nfcContext ctx) {
 		}
 	}
 	if (ctx->proto == proto_image_destroy) {
-		GxImage surf = nextArg(ctx).ref;
+		GxImage surf = rt->api.nextArg(&al)->ref;
 		destroyImage(surf);
 		return noError;
 	}
 	if (ctx->proto == proto_image_recycle) {
-		GxImage recycle = nextArg(ctx).ref;
-		int width = nextArg(ctx).i32;
-		int height = nextArg(ctx).i32;
-		int depth = nextArg(ctx).i32;
-		int flags = nextArg(ctx).i32;
+		GxImage recycle = rt->api.nextArg(&al)->ref;
+		int width = rt->api.nextArg(&al)->i32;
+		int height = rt->api.nextArg(&al)->i32;
+		int depth = rt->api.nextArg(&al)->i32;
+		int flags = rt->api.nextArg(&al)->i32;
 		GxImage result = createImage(recycle, width, height, depth, flags);
 		if (result != NULL) {
 			rethnd(ctx, result);
@@ -78,8 +80,8 @@ static vmError surf_recycle(nfcContext ctx) {
 		}
 	}
 	if (ctx->proto == proto_image_slice) {
-		GxImage image = nextArg(ctx).ref;
-		GxRect region = nextArg(ctx).ref;
+		GxImage image = rt->api.nextArg(&al)->ref;
+		GxRect region = rt->api.nextArg(&al)->ref;
 		GxImage result = sliceImage(NULL, image, region);
 		if (result != NULL) {
 			rethnd(ctx, result);
@@ -96,7 +98,7 @@ static const char *const proto_font_default = "Image font";
 static vmError surf_font(nfcContext ctx) {
 	GxImage result = NULL;
 	if (ctx->proto == proto_font_resized) {
-		int size = nextArg(ctx).i32;
+		int size = argi32(ctx, 0);
 		result = defaultFont(size);
 	}
 	else if (ctx->proto == proto_font_default) {
@@ -118,30 +120,32 @@ static const char *const proto_image_openJpg = "Image openJpg(const char path[*]
 static const char *const proto_image_openTtf = "Image openTtf(const char path[*], int32 height)";
 static const char *const proto_image_openFnt = "Image openFnt(const char path[*])";
 static vmError surf_open(nfcContext ctx) {
-	char *path = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	char *path = rt->api.nextArg(&al)->ref;
 
 	GxImage result = NULL;
 	if (ctx->proto == proto_image_openImg) {
-		int depth = nextArg(ctx).i32;
+		int depth = rt->api.nextArg(&al)->i32;
 		result = loadImg(NULL, path, depth);
 	}
 	else if (ctx->proto == proto_image_openTtf) {
-		int height = nextArg(ctx).i32;
+		int height = rt->api.nextArg(&al)->i32;
 		result = loadTtf(NULL, path, height, 31, 256);
 	}
 	else if (ctx->proto == proto_image_openBmp) {
-		int depth = nextArg(ctx).i32;
+		int depth = rt->api.nextArg(&al)->i32;
 		result = loadBmp(NULL, path, depth);
 	}
 #ifndef NO_LIBPNG
 	else if (ctx->proto == proto_image_openPng) {
-		int depth = nextArg(ctx).i32;
+		int depth = rt->api.nextArg(&al)->i32;
 		result = loadPng(NULL, path, depth);
 	}
 #endif
 #ifndef NO_LIBJPEG
 	else if (ctx->proto == proto_image_openJpg) {
-		int depth = nextArg(ctx).i32;
+		int depth = rt->api.nextArg(&al)->i32;
 		result = loadJpg(NULL, path, depth);
 	}
 #endif
@@ -158,9 +162,11 @@ static vmError surf_open(nfcContext ctx) {
 
 static const char *const proto_image_saveBmp = "void saveBmp(Image image, const char path[*], int32 flags)";
 static vmError surf_save(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	char *path = nextArg(ctx).ref;
-	int flags = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	char *path = rt->api.nextArg(&al)->ref;
+	int flags = rt->api.nextArg(&al)->i32;
 
 	int result = saveBmp(path, surf, flags);
 
@@ -194,9 +200,9 @@ static vmError surf_depth(nfcContext ctx) {
 
 static const char *const proto_image_get = "int32 get(Image image, int32 x, int32 y)";
 static vmError surf_get(nfcContext ctx) {
-	int32_t y = argi32(ctx, 0);
-	int32_t x = argi32(ctx, 4);
 	GxImage surf = arghnd(ctx, 8);
+	int32_t x = argi32(ctx, 4);
+	int32_t y = argi32(ctx, 0);
 
 	reti32(ctx, getPixel(surf, x, y));
 	return noError;
@@ -204,9 +210,9 @@ static vmError surf_get(nfcContext ctx) {
 
 static const char *const proto_image_tex = "vec4f tex(Image image, float32 x, float32 y)";
 static vmError surf_tex(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	int32_t x = nextArg(ctx).f32 * 65535 * surf->width;
-	int32_t y = nextArg(ctx).f32 * 65535 * surf->height;
+	GxImage surf = arghnd(ctx, 8);
+	int32_t x = argf32(ctx, 4)* 65535 * surf->width;
+	int32_t y = argf32(ctx, 0)* 65535 * surf->height;
 	struct vector result = vecldc(cast_rgb(getPixelLinear(surf, x, y)));
 	retset(ctx, &result, sizeof(struct vector));
 	return noError;
@@ -214,10 +220,10 @@ static vmError surf_tex(nfcContext ctx) {
 
 static const char *const proto_image_set = "void set(Image image, int32 x, int32 y, uint32 color)";
 static vmError surf_set(nfcContext ctx) {
-	uint32_t color = argi32(ctx, 0);
-	int32_t y = argi32(ctx, 4);
-	int32_t x = argi32(ctx, 8);
 	GxImage surf = arghnd(ctx, 12);
+	int32_t x = argi32(ctx, 8);
+	int32_t y = argi32(ctx, 4);
+	uint32_t color = argi32(ctx, 0);
 
 	setPixel(surf, x, y, color);
 	return noError;
@@ -225,12 +231,13 @@ static vmError surf_set(nfcContext ctx) {
 
 static const char *const proto_image_drawText = "void drawText(Image image, const Rect roi&, Image font, const char text[*], int32 color)";
 static vmError surf_drawText(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-
-	GxRect rect = nextArg(ctx).ref;
-	GxImage font = nextArg(ctx).ref;
-	char *text = nextArg(ctx).ref;
-	uint32_t color = nextArg(ctx).u32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxRect rect = rt->api.nextArg(&al)->ref;
+	GxImage font = rt->api.nextArg(&al)->ref;
+	char *text = rt->api.nextArg(&al)->ref;
+	uint32_t color = rt->api.nextArg(&al)->u32;
 	struct GxRect textRect = *rect;
 	if (!clipRect(surf, &textRect)) {
 		return noError;
@@ -242,9 +249,11 @@ static vmError surf_drawText(nfcContext ctx) {
 
 static const char *const proto_image_clipText = "void clipText(Image font, Rect rect&, const char text[*])";
 static vmError surf_clipText(nfcContext ctx) {
-	GxImage font = nextArg(ctx).ref;
-	GxRect rect = nextArg(ctx).ref;
-	char *text = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage font = rt->api.nextArg(&al)->ref;
+	GxRect rect = rt->api.nextArg(&al)->ref;
+	char *text = rt->api.nextArg(&al)->ref;
 
 	clipText(rect, font, text);
 	return noError;
@@ -252,13 +261,15 @@ static vmError surf_clipText(nfcContext ctx) {
 
 static const char *const proto_image_fillRect = "void fillRect(Image image, int x0, int y0, int x1, int y1, int incl, uint32 color)";
 static vmError surf_fillRect(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	int x0 = nextArg(ctx).i32;
-	int y0 = nextArg(ctx).i32;
-	int x1 = nextArg(ctx).i32;
-	int y1 = nextArg(ctx).i32;
-	int incl = nextArg(ctx).i32;
-	uint32_t color = nextArg(ctx).u32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	int x0 = rt->api.nextArg(&al)->i32;
+	int y0 = rt->api.nextArg(&al)->i32;
+	int x1 = rt->api.nextArg(&al)->i32;
+	int y1 = rt->api.nextArg(&al)->i32;
+	int incl = rt->api.nextArg(&al)->i32;
+	uint32_t color = rt->api.nextArg(&al)->u32;
 
 	fillRect(surf, x0, y0, x1, y1, incl, color);
 	return noError;
@@ -329,13 +340,14 @@ static int blendAlpha(argb* dst, argb *src, argb *color, size_t cnt) {
 }
 static vmError surf_blend(nfcContext ctx) {
 	rtContext rt = ctx->rt;
-	GxImage surf = nextArg(ctx).ref;
-	int x = nextArg(ctx).i32;
-	int y = nextArg(ctx).i32;
-	GxImage src = nextArg(ctx).ref;
-	GxRect roi = nextArg(ctx).ref;
-	size_t extra = argref(ctx, rt->api.nfcNextArg(ctx));
-	size_t offset = argref(ctx, rt->api.nfcNextArg(ctx));
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	int x = rt->api.nextArg(&al)->i32;
+	int y = rt->api.nextArg(&al)->i32;
+	GxImage src = rt->api.nextArg(&al)->ref;
+	GxRect roi = rt->api.nextArg(&al)->ref;
+	size_t extra = argref(ctx, rt->api.nextArg(&al)->offset);
+	size_t offset = argref(ctx, rt->api.nextArg(&al)->offset);
 	symn builtin = rt->api.rtLookup(ctx->rt, offset, KIND_typ);
 	symn callback = rt->api.rtLookup(ctx->rt, offset, KIND_fun);
 
@@ -405,12 +417,14 @@ static vmError surf_blend(nfcContext ctx) {
 
 static const char *const proto_image_transform = "void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 interpolate, const float32 mat[16])";
 static vmError surf_transform(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	GxRect rect = nextArg(ctx).ref;
-	GxImage src = nextArg(ctx).ref;
-	GxRect roi = nextArg(ctx).ref;
-	int interpolate = nextArg(ctx).i32;
-	float32_t *mat = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxRect rect = rt->api.nextArg(&al)->ref;
+	GxImage src = rt->api.nextArg(&al)->ref;
+	GxRect roi = rt->api.nextArg(&al)->ref;
+	int interpolate = rt->api.nextArg(&al)->i32;
+	float32_t *mat = rt->api.nextArg(&al)->ref;
 
 	if (transformImage(surf, rect, src, roi, interpolate, mat) < 0) {
 		if (surf->depth != src->depth) {
@@ -423,9 +437,11 @@ static vmError surf_transform(nfcContext ctx) {
 
 static const char *const proto_image_blur = "void blur(Image image, int32 radius, float64 sigma)";
 static vmError surf_blur(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	int radius = nextArg(ctx).i32;
-	double sigma = nextArg(ctx).f64;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	int radius = rt->api.nextArg(&al)->i32;
+	double sigma = rt->api.nextArg(&al)->f64;
 
 	if (blurImage(surf, radius, sigma) != 0) {
 		return nativeCallError;
@@ -437,9 +453,11 @@ static const char *const proto_image_calcHueHist = "void calcHueHist(Image image
 static const char *const proto_image_calcLumHist = "void calcLumHist(Image image, const Rect roi&, uint32 lut[256])";
 static const char *const proto_image_calcRgbHist = "void calcRgbHist(Image image, const Rect roi&, uint32 lut[256])";
 static vmError surf_calcHist(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	GxRect roi = nextArg(ctx).ref;
-	rtValue lut = nextArg(ctx);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxRect roi = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr lut = rt->api.nextArg(&al)->arr;
 
 	if (surf->depth != 32) {
 		ctx->rt->api.raise(ctx->rt, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
@@ -536,9 +554,11 @@ static vmError surf_calcHist(nfcContext ctx) {
 
 static const char *const proto_image_colorMap = "void colorMap(Image image, const Rect roi&, const uint32 lut[256])";
 static vmError surf_colorMap(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	GxRect roi = nextArg(ctx).ref;
-	rtValue lut = nextArg(ctx);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxRect roi = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr lut = rt->api.nextArg(&al)->arr;
 	int useLuminosity = 0;
 
 	if (surf->depth != 32) {
@@ -646,9 +666,11 @@ static vmError surf_colorMap(nfcContext ctx) {
 
 static const char *const proto_image_colorMat = "void colorMat(Image image, const Rect roi&, const float32 mat[16])";
 static vmError surf_colorMat(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	GxRect roi = nextArg(ctx).ref;
-	rtValue mat = nextArg(ctx);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxRect roi = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr mat = rt->api.nextArg(&al)->arr;
 
 	if (surf->depth != 32) {
 		ctx->rt->api.raise(ctx->rt, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
@@ -699,11 +721,13 @@ static vmError surf_colorMat(nfcContext ctx) {
 
 static const char *const proto_image_gradient = "void gradient(Image image, const Rect roi&, int32 type, bool repeat, uint32 colors...)";
 static vmError surf_gradient(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	GxRect rect = nextArg(ctx).ref;
-	GradientFlags type = nextArg(ctx).i32;
-	int repeat = nextArg(ctx).i32;
-	rtValue colors = nextArg(ctx);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxRect rect = rt->api.nextArg(&al)->ref;
+	GradientFlags type = rt->api.nextArg(&al)->i32;
+	int repeat = rt->api.nextArg(&al)->i32;
+	struct nfcArgArr colors = rt->api.nextArg(&al)->arr;
 	if (repeat) {
 		type |= flag_repeat;
 	}
@@ -714,15 +738,17 @@ static vmError surf_gradient(nfcContext ctx) {
 static const char *const proto_mesh_create = "Mesh create(int32 size)";
 static const char *const proto_mesh_recycle = "Mesh recycle(Mesh recycle, int32 size)";
 static vmError mesh_recycle(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxMesh recycle = NULL;
 	int size = 32;
 	if (ctx->proto == proto_mesh_recycle) {
-		recycle = nextArg(ctx).ref;
-		size = nextArg(ctx).i32;
+		recycle = rt->api.nextArg(&al)->ref;
+		size = rt->api.nextArg(&al)->i32;
 	}
 	if (ctx->proto == proto_mesh_create) {
 		recycle = meshMemMgr(ctx->rt, NULL, sizeof(struct GxMesh));
-		size = nextArg(ctx).i32;
+		size = rt->api.nextArg(&al)->i32;
 	}
 	GxMesh result = createMesh(recycle, (size_t) size);
 	if (result == NULL) {
@@ -734,7 +760,9 @@ static vmError mesh_recycle(nfcContext ctx) {
 
 static const char *const proto_mesh_destroy = "void destroy(Mesh mesh)";
 static vmError mesh_destroy(nfcContext ctx) {
-	GxMesh mesh = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
 	destroyMesh(mesh);
 	meshMemMgr(ctx->rt, mesh, 0);
 	return noError;
@@ -742,9 +770,11 @@ static vmError mesh_destroy(nfcContext ctx) {
 
 static const char *const proto_image_drawMesh = "int32 drawMesh(Image image, Mesh mesh, int32 mode)";
 static vmError surf_drawMesh(nfcContext ctx) {
-	GxImage surf = nextArg(ctx).ref;
-	GxMesh mesh = nextArg(ctx).ref;
-	int32_t mode = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage surf = rt->api.nextArg(&al)->ref;
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
+	int32_t mode = rt->api.nextArg(&al)->i32;
 
 	reti32(ctx, drawMesh(surf, mesh, cam, lights, mode));
 	return noError;
@@ -753,7 +783,9 @@ static vmError surf_drawMesh(nfcContext ctx) {
 static const char *const proto_mesh_openObj = "Mesh openObj(const char path[*])";
 static const char *const proto_mesh_open3ds = "Mesh open3ds(const char path[*])";
 static vmError mesh_open(nfcContext ctx) {
-	char *path = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	char *path = rt->api.nextArg(&al)->ref;
 
 	GxMesh result = meshMemMgr(ctx->rt, NULL, sizeof(struct GxMesh));
 	if (result == NULL) {
@@ -784,8 +816,10 @@ static vmError mesh_open(nfcContext ctx) {
 
 static const char *const proto_mesh_saveObj = "void saveObj(Mesh mesh, const char path[*])";
 static vmError mesh_save(nfcContext ctx) {
-	GxMesh mesh = nextArg(ctx).ref;
-	char *path = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
+	char *path = rt->api.nextArg(&al)->ref;
 
 	if (mesh == NULL) {
 		return nativeCallError;
@@ -800,21 +834,25 @@ static vmError mesh_save(nfcContext ctx) {
 static const char *const proto_mesh_normalize = "void normalize(Mesh mesh, float32 tolerance, float32 center[3], float32 resize[3])";
 static vmError mesh_normalize(nfcContext ctx) {
 	struct vector args[2];
-	GxMesh mesh = nextArg(ctx).ref;
-	float32_t tolerance = nextArg(ctx).f32;
-	vector center = a2Vec(&args[0], nextArg(ctx).ref);
-	vector resize = a2Vec(&args[1], nextArg(ctx).ref);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
+	float32_t tolerance = rt->api.nextArg(&al)->f32;
+	vector center = a2Vec(&args[0], rt->api.nextArg(&al)->ref);
+	vector resize = a2Vec(&args[1], rt->api.nextArg(&al)->ref);
 	normMesh(mesh, tolerance, center, resize);
 	return noError;
 }
 
 static const char *const proto_mesh_addVertex = "int32 addVertex(Mesh mesh, float32 x, float32 y, float32 z)";
 static vmError mesh_addVertex(nfcContext ctx) {
-	GxMesh mesh = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
 	scalar pos[3];
-	pos[0] = nextArg(ctx).f32;
-	pos[1] = nextArg(ctx).f32;
-	pos[2] = nextArg(ctx).f32;
+	pos[0] = rt->api.nextArg(&al)->f32;
+	pos[1] = rt->api.nextArg(&al)->f32;
+	pos[2] = rt->api.nextArg(&al)->f32;
 	if (!addVtx(mesh, pos, NULL, NULL)) {
 		// return nativeCallError;
 		reti32(ctx, -1);
@@ -828,24 +866,26 @@ static const char *const proto_mesh_addLine = "int32 addLine(Mesh mesh, int32 v1
 static const char *const proto_mesh_addFace = "int32 addFace(Mesh mesh, int32 v1, int32 v2, int32 v3)";
 static const char *const proto_mesh_addQuad = "int32 addFace(Mesh mesh, int32 v1, int32 v2, int32 v3, int32 v4)";
 static vmError mesh_addFace(nfcContext ctx) {
-	GxMesh mesh = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
 	int res = -1;
 	if (ctx->proto == proto_mesh_addLine) {
-		int v1 = nextArg(ctx).i32;
-		int v2 = nextArg(ctx).i32;
+		int v1 = rt->api.nextArg(&al)->i32;
+		int v2 = rt->api.nextArg(&al)->i32;
 		res = addSeg(mesh, v1, v2);
 	}
 	if (ctx->proto == proto_mesh_addFace) {
-		int v1 = nextArg(ctx).i32;
-		int v2 = nextArg(ctx).i32;
-		int v3 = nextArg(ctx).i32;
+		int v1 = rt->api.nextArg(&al)->i32;
+		int v2 = rt->api.nextArg(&al)->i32;
+		int v3 = rt->api.nextArg(&al)->i32;
 		res = addTri(mesh, v1, v2, v3);
 	}
 	if (ctx->proto == proto_mesh_addQuad) {
-		int v1 = nextArg(ctx).i32;
-		int v2 = nextArg(ctx).i32;
-		int v3 = nextArg(ctx).i32;
-		int v4 = nextArg(ctx).i32;
+		int v1 = rt->api.nextArg(&al)->i32;
+		int v2 = rt->api.nextArg(&al)->i32;
+		int v3 = rt->api.nextArg(&al)->i32;
+		int v4 = rt->api.nextArg(&al)->i32;
 		res = addQuad(mesh, v1, v2, v3, v4);
 	}
 	if (!res) {
@@ -861,27 +901,29 @@ static const char *const proto_mesh_setVertexPos = "bool setVertex(Mesh mesh, in
 static const char *const proto_mesh_setVertexNrm = "bool setNormal(Mesh mesh, int32 idx, float32 x, float32 y, float32 z)";
 static const char *const proto_mesh_setVertexTex = "bool setTexture(Mesh mesh, int32 idx, float32 s, float32 t)";
 static vmError mesh_setVertex(nfcContext ctx) {
-	GxMesh mesh = nextArg(ctx).ref;
-	int32_t idx = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
+	int32_t idx = rt->api.nextArg(&al)->i32;
 	int res = 0;
 	if (ctx->proto == proto_mesh_setVertexPos) {
 		scalar pos[3];
-		pos[0] = nextArg(ctx).f32;
-		pos[1] = nextArg(ctx).f32;
-		pos[2] = nextArg(ctx).f32;
+		pos[0] = rt->api.nextArg(&al)->f32;
+		pos[1] = rt->api.nextArg(&al)->f32;
+		pos[2] = rt->api.nextArg(&al)->f32;
 		res = setVtx(mesh, idx, pos, NULL, NULL);
 	}
 	if (ctx->proto == proto_mesh_setVertexNrm) {
 		scalar nrm[3];
-		nrm[0] = nextArg(ctx).f32;
-		nrm[1] = nextArg(ctx).f32;
-		nrm[2] = nextArg(ctx).f32;
+		nrm[0] = rt->api.nextArg(&al)->f32;
+		nrm[1] = rt->api.nextArg(&al)->f32;
+		nrm[2] = rt->api.nextArg(&al)->f32;
 		res = setVtx(mesh, idx, NULL, nrm, NULL);
 	}
 	if (ctx->proto == proto_mesh_setVertexTex) {
 		scalar tex[2];
-		tex[0] = nextArg(ctx).f32;
-		tex[1] = nextArg(ctx).f32;
+		tex[0] = rt->api.nextArg(&al)->f32;
+		tex[1] = rt->api.nextArg(&al)->f32;
 		res = setVtx(mesh, idx, NULL, NULL, tex);
 	}
 	reti32(ctx, res != 0);
@@ -960,9 +1002,10 @@ static void mainLoopCallback(mainLoopArgs args) {
 static const char *const proto_window_show = "void show(Image surf, pointer closure, int32 onEvent(pointer closure, int32 action, int32 button, int32 x, int32 y))";
 static vmError window_show(nfcContext ctx) {
 	rtContext rt = ctx->rt;
-	GxImage offScreen = nextArg(ctx).ref;
-	size_t cbClosure = argref(ctx, rt->api.nfcNextArg(ctx));
-	size_t cbOffs = argref(ctx, rt->api.nfcNextArg(ctx));
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxImage offScreen = rt->api.nextArg(&al)->ref;
+	size_t cbClosure = argref(ctx, rt->api.nextArg(&al)->offset);
+	size_t cbOffs = argref(ctx, rt->api.nextArg(&al)->offset);
 
 	struct mainLoopArgs args = {0};
 	args.rt = rt;
@@ -1007,9 +1050,11 @@ static vmError window_show(nfcContext ctx) {
 
 static const char *const proto_window_title = "void setTitle(const char title[*])";
 static vmError window_title(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	mainLoopArgs args = (mainLoopArgs) ctx->extra;
 	if (args != NULL && args->window != NULL) {
-		char *title = nextArg(ctx).ref;
+		char *title = rt->api.nextArg(&al)->ref;
 		setWindowTitle(args->window, title);
 		return noError;
 	}
@@ -1029,12 +1074,13 @@ static vmError window_quit(nfcContext ctx) {
 
 static const char *const proto_camera_set = "void camera(const float32 proj[16], const float32 position[4], const float32 forward[4], const float32 right[4], const float32 up[4])";
 static vmError camera_set(nfcContext ctx) {
-
-	matrix proj = nextArg(ctx).ref;
-	vector position = nextArg(ctx).ref;
-	vector forward = nextArg(ctx).ref;
-	vector right = nextArg(ctx).ref;
-	vector up = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	matrix proj = rt->api.nextArg(&al)->ref;
+	vector position = rt->api.nextArg(&al)->ref;
+	vector forward = rt->api.nextArg(&al)->ref;
+	vector right = rt->api.nextArg(&al)->ref;
+	vector up = rt->api.nextArg(&al)->ref;
 
 	memcpy(&cam->proj, proj, sizeof(struct matrix));
 	memcpy(&cam->pos, position, sizeof(struct vector));
@@ -1053,7 +1099,9 @@ static const char *const proto_lights_diffuse = "void diffuse(int32 light, float
 static const char *const proto_lights_specular = "void specular(int32 light, float32 r, float32 g, float32 b)";
 static const char *const proto_lights_attenuation = "void attenuation(int32 light, float32 constant, float32 linear, float32 quadratic)";
 static vmError lights_manager(nfcContext ctx) {
-	size_t light = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	size_t light = rt->api.nextArg(&al)->i32;
 
 	if (light >= (sizeof(lights) / sizeof(*lights))) {
 		return nativeCallError;
@@ -1065,47 +1113,47 @@ static vmError lights_manager(nfcContext ctx) {
 	}
 
 	if (ctx->proto == proto_lights_enable) {
-		int on = nextArg(ctx).i32;
+		int on = rt->api.nextArg(&al)->i32;
 		lights[light].attr = on;
 		return noError;
 	}
 
 	if (ctx->proto == proto_lights_position) {
-		float32_t x = nextArg(ctx).f32;
-		float32_t y = nextArg(ctx).f32;
-		float32_t z = nextArg(ctx).f32;
+		float32_t x = rt->api.nextArg(&al)->f32;
+		float32_t y = rt->api.nextArg(&al)->f32;
+		float32_t z = rt->api.nextArg(&al)->f32;
 		vecldf(&lights[light].pos, x, y, z, 1);
 		return noError;
 	}
 
 	if (ctx->proto == proto_lights_ambient) {
-		float32_t r = nextArg(ctx).f32;
-		float32_t g = nextArg(ctx).f32;
-		float32_t b = nextArg(ctx).f32;
+		float32_t r = rt->api.nextArg(&al)->f32;
+		float32_t g = rt->api.nextArg(&al)->f32;
+		float32_t b = rt->api.nextArg(&al)->f32;
 		vecldf(&lights[light].ambi, r, g, b, 1);
 		return noError;
 	}
 
 	if (ctx->proto == proto_lights_diffuse) {
-		float32_t r = nextArg(ctx).f32;
-		float32_t g = nextArg(ctx).f32;
-		float32_t b = nextArg(ctx).f32;
+		float32_t r = rt->api.nextArg(&al)->f32;
+		float32_t g = rt->api.nextArg(&al)->f32;
+		float32_t b = rt->api.nextArg(&al)->f32;
 		vecldf(&lights[light].diff, r, g, b, 1);
 		return noError;
 	}
 
 	if (ctx->proto == proto_lights_specular) {
-		float32_t r = nextArg(ctx).f32;
-		float32_t g = nextArg(ctx).f32;
-		float32_t b = nextArg(ctx).f32;
+		float32_t r = rt->api.nextArg(&al)->f32;
+		float32_t g = rt->api.nextArg(&al)->f32;
+		float32_t b = rt->api.nextArg(&al)->f32;
 		vecldf(&lights[light].spec, r, g, b, 0);
 		return noError;
 	}
 
 	if (ctx->proto == proto_lights_attenuation) {
-		float32_t constant = nextArg(ctx).f32;
-		float32_t linear = nextArg(ctx).f32;
-		float32_t quadratic = nextArg(ctx).f32;
+		float32_t constant = rt->api.nextArg(&al)->f32;
+		float32_t linear = rt->api.nextArg(&al)->f32;
+		float32_t quadratic = rt->api.nextArg(&al)->f32;
 		vecldf(&lights[light].attn, constant, linear, quadratic, 0);
 		return noError;
 	}
@@ -1119,39 +1167,41 @@ static const char *const proto_material_specular = "void specular(Mesh mesh, flo
 static const char *const proto_material_shine = "void shine(Mesh mesh, float32 value)";
 static const char *const proto_material_texture = "void texture(Mesh mesh, Image texture)";
 static vmError mesh_material(nfcContext ctx) {
-	GxMesh mesh = nextArg(ctx).ref;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	GxMesh mesh = rt->api.nextArg(&al)->ref;
 
 	if (ctx->proto == proto_material_ambient) {
-		float32_t r = nextArg(ctx).f32;
-		float32_t g = nextArg(ctx).f32;
-		float32_t b = nextArg(ctx).f32;
+		float32_t r = rt->api.nextArg(&al)->f32;
+		float32_t g = rt->api.nextArg(&al)->f32;
+		float32_t b = rt->api.nextArg(&al)->f32;
 		vecldf(&mesh->mtl.ambi, r, g, b, 1);
 		return noError;
 	}
 
 	if (ctx->proto == proto_material_diffuse) {
-		float32_t r = nextArg(ctx).f32;
-		float32_t g = nextArg(ctx).f32;
-		float32_t b = nextArg(ctx).f32;
+		float32_t r = rt->api.nextArg(&al)->f32;
+		float32_t g = rt->api.nextArg(&al)->f32;
+		float32_t b = rt->api.nextArg(&al)->f32;
 		vecldf(&mesh->mtl.diff, r, g, b, 1);
 		return noError;
 	}
 
 	if (ctx->proto == proto_material_specular) {
-		float32_t r = nextArg(ctx).f32;
-		float32_t g = nextArg(ctx).f32;
-		float32_t b = nextArg(ctx).f32;
+		float32_t r = rt->api.nextArg(&al)->f32;
+		float32_t g = rt->api.nextArg(&al)->f32;
+		float32_t b = rt->api.nextArg(&al)->f32;
 		vecldf(&mesh->mtl.spec, r, g, b, 0);
 		return noError;
 	}
 
 	if (ctx->proto == proto_material_shine) {
-		mesh->mtl.spow = nextArg(ctx).f32;
+		mesh->mtl.spow = rt->api.nextArg(&al)->f32;
 		return noError;
 	}
 
 	if (ctx->proto == proto_material_texture) {
-		mesh->mtl.texture = nextArg(ctx).ref;
+		mesh->mtl.texture = rt->api.nextArg(&al)->ref;
 		return noError;
 	}
 
