@@ -1,8 +1,8 @@
-/cmake-build-*/
-/build/
 /.idea/
-/.fleet/
-.vscode/
+/.cache/
+/.vscode/
 **/bin/
 **/out/
 **/temp/
+**/build/
+**/cmake-build-*/

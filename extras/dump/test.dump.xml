@@ -9371,34 +9371,8 @@
 					</stmt>
 				</init>
 			</field>
-			<field token=".variable" type="function" kind="static const typename(ref)" value="add(a: Fixed, b: int32): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:42">
-					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
-						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
-							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
-							<right token="{}" type="void" kind="static const typename(void)">
-								<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.value := a.value + b;">
-									<expr token=":=" type="void" kind="static const typename(void)" value=".result.value := a.value + b">
-										<left token="." type="int32" kind="static const typename(i32)" value=".result.value">
-											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
-											<right token=".variable" type="int32" kind="static const typename(i32)" value="value"/>
-										</left>
-										<right token="+" type="int32" kind="static const typename(i32)" value="a.value + b">
-											<left token="." type="int32" kind="static const typename(i32)" value="a.value">
-												<left token=".variable" type="Fixed" kind="static const typename(val)" value="a"/>
-												<right token=".variable" type="int32" kind="static const typename(i32)" value="value"/>
-											</left>
-											<right token=".variable" type="int32" kind="static const typename(i32)" value="b"/>
-										</right>
-									</expr>
-								</stmt>
-							</right>
-						</expr>
-					</stmt>
-				</init>
-			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sub(a: Fixed, b: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:45">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:44">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9426,34 +9400,8 @@
 					</stmt>
 				</init>
 			</field>
-			<field token=".variable" type="function" kind="static const typename(ref)" value="sub(a: Fixed, b: int32): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:46">
-					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
-						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
-							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
-							<right token="{}" type="void" kind="static const typename(void)">
-								<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.value := a.value - b;">
-									<expr token=":=" type="void" kind="static const typename(void)" value=".result.value := a.value - b">
-										<left token="." type="int32" kind="static const typename(i32)" value=".result.value">
-											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
-											<right token=".variable" type="int32" kind="static const typename(i32)" value="value"/>
-										</left>
-										<right token="-" type="int32" kind="static const typename(i32)" value="a.value - b">
-											<left token="." type="int32" kind="static const typename(i32)" value="a.value">
-												<left token=".variable" type="Fixed" kind="static const typename(val)" value="a"/>
-												<right token=".variable" type="int32" kind="static const typename(i32)" value="value"/>
-											</left>
-											<right token=".variable" type="int32" kind="static const typename(i32)" value="b"/>
-										</right>
-									</expr>
-								</stmt>
-							</right>
-						</expr>
-					</stmt>
-				</init>
-			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="mul(a: Fixed, b: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:49">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:47">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9494,7 +9442,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="mul(a: Fixed, b: int32): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:50">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:48">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9520,7 +9468,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="mul_28(a: Fixed, b: int32): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:51">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:49">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9556,7 +9504,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="div(a: Fixed, b: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:54">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:52">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (b.value == 0)">
 						<test token="==" type="bool" kind="static const typename(bool)" value="b.value == 0">
 							<left token="." type="int32" kind="static const typename(i32)" value="b.value">
@@ -9565,7 +9513,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:55">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:53">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (a.value == 0)">
 								<test token="==" type="bool" kind="static const typename(bool)" value="a.value == 0">
 									<left token="." type="int32" kind="static const typename(i32)" value="a.value">
@@ -9574,7 +9522,7 @@
 									</left>
 									<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:56">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:54">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(nan);">
 										<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(nan)">
 											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9649,7 +9597,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="div(a: Fixed, b: int32): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:63">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:61">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9675,7 +9623,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="mod(a: Fixed, b: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:66">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:64">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9704,7 +9652,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="inv(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:69">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:67">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value == 0)">
 						<test token="==" type="bool" kind="static const typename(bool)" value="x.value == 0">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -9713,7 +9661,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:70">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:68">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 								<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9762,7 +9710,7 @@
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="63" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:74">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:72">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 								<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9813,7 +9761,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="fract(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:82">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:80">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value &lt; 0)">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="x.value &lt; 0">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -9822,7 +9770,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:83">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:81">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 								<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9883,7 +9831,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="floor(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:90">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:88">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 						<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9911,7 +9859,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="ceil(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:95">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:93">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := neg(floor(neg(x)));">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := neg(floor(neg(x)))">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9930,7 +9878,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="round(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:100">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:98">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := floor(as(x.value + half));">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := floor(as(x.value + half))">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -9952,7 +9900,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="isFinite(x: Fixed): bool">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:105">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:103">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value == nan)">
 						<test token="==" type="bool" kind="static const typename(bool)" value="x.value == nan">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -9961,7 +9909,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="nan"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:106">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:104">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := false;">
 								<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := false">
 									<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -9978,7 +9926,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="inf"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:109">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:107">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := false;">
 								<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := false">
 									<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -9997,7 +9945,7 @@
 								<right token=".variable" type="int32" kind="static const typename(i32)" value="inf"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:112">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:110">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := false;">
 								<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := false">
 									<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -10015,7 +9963,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="isNan(x: Fixed): bool">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:118">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:116">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x.value == nan;">
 						<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := x.value == nan">
 							<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -10031,7 +9979,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="compare(a: Fixed, b: Fixed): int32">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:123">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:121">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := int32(a.value &lt; b.value) - int32(a.value &gt; b.value);">
 						<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := int32(a.value &lt; b.value) - int32(a.value &gt; b.value)">
 							<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -10068,7 +10016,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="log2(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:136">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:134">
 					<stmt token=".variable" type="uint32[257]" kind="static typename(arr)" value="tbl_log2">
 						<init token="{}" type="uint32[257]" kind="static typename(arr)">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="tbl_log2[0] := (0);">
@@ -12908,7 +12856,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:178">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:176">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value == 0)">
 								<test token="==" type="bool" kind="static const typename(bool)" value="x.value == 0">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -12917,7 +12865,7 @@
 									</left>
 									<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:179">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:177">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
 										<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
 											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -12973,7 +12921,7 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="precision"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="8" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:186">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:184">
 							<stmt token=".variable" type="void" kind="static const typename(void)" value="error_not_implemented_yet"/>
 						</then>
 					</stmt>
@@ -13021,7 +12969,7 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="precision"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="8" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:189">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:187">
 							<stmt token=".variable" type="uint32" kind="static const typename(u32)" value="mix">
 								<init token="&amp;" type="int32" kind="static const typename(i32)" value="(n &gt; 16 ? x.value &gt;&gt; n - 16 : x.value &lt;&lt; 16 - n) &amp; 255">
 									<left token="()" type="int32" kind="static const typename(i32)" value="(n &gt; 16 ? x.value &gt;&gt; n - 16 : x.value &lt;&lt; 16 - n)">
@@ -13127,7 +13075,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="log(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:200">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:198">
 					<stmt token=";" type="void" kind="static const typename(void)" stmt="x := log2(x);">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value="x := log2(x)">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value="x"/>
@@ -13144,7 +13092,7 @@
 								<call token=".variable" type="function" kind="static const typename(ref)" value="isFinite"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:209">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:207">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := x">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -13166,7 +13114,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="log10(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:217">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:215">
 					<stmt token=";" type="void" kind="static const typename(void)" stmt="x := log2(x);">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value="x := log2(x)">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value="x"/>
@@ -13183,7 +13131,7 @@
 								<call token=".variable" type="function" kind="static const typename(ref)" value="isFinite"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:226">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:224">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := x">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -13205,7 +13153,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="log(x: Fixed, base: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:233">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:231">
 					<stmt token=";" type="void" kind="static const typename(void)" stmt="x := log2(x);">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value="x := log2(x)">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value="x"/>
@@ -13222,7 +13170,7 @@
 								<call token=".variable" type="function" kind="static const typename(ref)" value="isFinite"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:236">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:234">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := x">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -13247,7 +13195,7 @@
 								<call token=".variable" type="function" kind="static const typename(ref)" value="isFinite"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:240">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:238">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := base;">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := base">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -13269,7 +13217,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="pow2(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:256">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:254">
 					<stmt token=".variable" type="uint32[257]" kind="static typename(arr)" value="tbl_pow2">
 						<init token="{}" type="uint32[257]" kind="static typename(arr)">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="tbl_pow2[0] := (1073741824);">
@@ -16109,7 +16057,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="pow2max"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:298">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:296">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(inf);">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(inf)">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16131,13 +16079,13 @@
 								<right token=".variable" type="int32" kind="static const typename(i32)" value="pow2max"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:301">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:299">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (isNan(x))">
 								<test token="()" type="bool" kind="static const typename(bool)" value="isNan(x)">
 									<push token=".variable" type="Fixed" kind="static const typename(val)" value="x"/>
 									<call token=".variable" type="function" kind="static const typename(ref)" value="isNan"/>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:302">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:300">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 										<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := x">
 											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16181,7 +16129,7 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="precision"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="8" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:309">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:307">
 							<stmt token=".variable" type="void" kind="static const typename(void)" value="error_not_implemented_yet"/>
 						</then>
 					</stmt>
@@ -16196,7 +16144,7 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="precision"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="8" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:311">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:309">
 							<stmt token=".variable" type="uint32" kind="static const typename(u32)" value="mix">
 								<init token="&amp;" type="int32" kind="static const typename(i32)" value="(precision &gt; 16 ? x.value &gt;&gt; (precision - 16) : x.value &lt;&lt; (16 - precision)) &amp; 255">
 									<left token="()" type="int32" kind="static const typename(i32)" value="(precision &gt; 16 ? x.value &gt;&gt; (precision - 16) : x.value &lt;&lt; (16 - precision))">
@@ -16310,7 +16258,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="exp(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:324">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:322">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := pow2(mul_28(x, l2e_28));">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := pow2(mul_28(x, l2e_28))">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16327,7 +16275,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="exp10(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:336">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:334">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := pow2(mul_28(x, l2t_28));">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := pow2(mul_28(x, l2t_28))">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16344,7 +16292,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sqrt(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:348">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:346">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value &lt;= 0)">
 						<test token="&lt;=" type="bool" kind="static const typename(bool)" value="x.value &lt;= 0">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -16353,7 +16301,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:355">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:353">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value &lt; 0)">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="x.value &lt; 0">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -16362,7 +16310,7 @@
 									</left>
 									<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:356">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:354">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(nan);">
 										<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(nan)">
 											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16395,7 +16343,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:362">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:360">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := pow2(div(log2(x), 2));">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := pow2(div(log2(x), 2))">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16453,7 +16401,7 @@
 								</right>
 							</right>
 						</step>
-						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:370">
+						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:368">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="remHi := (remHi &lt;&lt; 2) | (remLo &gt;&gt; 30);">
 								<expr token=":=" type="uint32" kind="static const typename(u32)" value="remHi := (remHi &lt;&lt; 2) | (remLo &gt;&gt; 30)">
 									<left token=".variable" type="uint32" kind="static const typename(u32)" value="remHi"/>
@@ -16509,7 +16457,7 @@
 									<left token=".variable" type="uint32" kind="static const typename(u32)" value="remHi"/>
 									<right token=".variable" type="uint32" kind="static const typename(u32)" value="testDiv"/>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:375">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:373">
 									<stmt token=";" type="void" kind="static const typename(void)" stmt="remHi := remHi - testDiv;">
 										<expr token=":=" type="uint32" kind="static const typename(u32)" value="remHi := remHi - testDiv">
 											<left token=".variable" type="uint32" kind="static const typename(u32)" value="remHi"/>
@@ -16546,7 +16494,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="pow(x: Fixed, y: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:384">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:382">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (y.value == 0 || x.value == one)">
 						<test token="||" type="bool" kind="static const typename(bool)" value="y.value == 0 || x.value == one">
 							<left token="==" type="bool" kind="static const typename(bool)" value="y.value == 0">
@@ -16564,7 +16512,7 @@
 								<right token=".variable" type="int32" kind="static const typename(i32)" value="one"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:385">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:383">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(one);">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(one)">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16584,7 +16532,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="one"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:390">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:388">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := x">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16601,7 +16549,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="half"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:394">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:392">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := sqrt(x);">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := sqrt(x)">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16630,7 +16578,7 @@
 								<right token=".variable" type="int32" kind="static const typename(i32)" value="nan"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:398">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:396">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(nan);">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(nan)">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16650,7 +16598,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:403">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:401">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (y.value &lt; 0)">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="y.value &lt; 0">
 									<left token="." type="int32" kind="static const typename(i32)" value="y.value">
@@ -16659,7 +16607,7 @@
 									</left>
 									<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:410">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:408">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(inf);">
 										<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(inf)">
 											<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -16695,7 +16643,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:427">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:425">
 							<stmt token=".variable" type="int32" kind="static const typename(i32)" value="res">
 								<init token=".variable" type="int32" kind="static const typename(i32)" value="one">
 									<init token=".literal" type="int32" kind="static const typename(i32)" value="1048576" />
@@ -16738,7 +16686,7 @@
 									<left token=".variable" type="int32" kind="static const typename(i32)" value="pow"/>
 									<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								</test>
-								<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:432">
+								<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:430">
 									<stmt token="if" type="void" kind="static const typename(void)" stmt="if ((pow &amp; 1) != 0)">
 										<test token="!=" type="bool" kind="static const typename(bool)" value="(pow &amp; 1) != 0">
 											<left token="()" type="int32" kind="static const typename(i32)" value="(pow &amp; 1)">
@@ -16749,7 +16697,7 @@
 											</left>
 											<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 										</test>
-										<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:433">
+										<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:431">
 											<stmt token=";" type="void" kind="static const typename(void)" stmt="res := ((res) * sqr &gt;&gt; precision);">
 												<expr token=":=" type="int32" kind="static const typename(i32)" value="res := ((res) * sqr &gt;&gt; precision)">
 													<left token=".variable" type="int32" kind="static const typename(i32)" value="res"/>
@@ -16915,7 +16863,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sin(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:453">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:451">
 					<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := x.value % piMul2;">
 						<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := x.value % piMul2">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -16939,7 +16887,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:469">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:467">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := x.value + piMul2;">
 								<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := x.value + piMul2">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -16968,7 +16916,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="pi"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:475">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:473">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := x.value - pi;">
 								<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := x.value - pi">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17002,7 +16950,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="piDiv2"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:481">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:479">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := pi - x.value;">
 								<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := pi - x.value">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17071,7 +17019,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sinh(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:492">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:490">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x.value == 0)">
 						<test token="==" type="bool" kind="static const typename(bool)" value="x.value == 0">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17080,7 +17028,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:497">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:495">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as(0);">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as(0)">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -17099,7 +17047,7 @@
 								<call token=".variable" type="function" kind="static const typename(ref)" value="isFinite"/>
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:500">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:498">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 								<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := x">
 									<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -17134,7 +17082,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cos(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:532">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:530">
 					<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := x.value % piMul2;">
 						<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := x.value % piMul2">
 							<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17158,7 +17106,7 @@
 							</left>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:547">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:545">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := x.value + piMul2;">
 								<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := x.value + piMul2">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17184,7 +17132,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="pi"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:552">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:550">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := piMul2 - x.value;">
 								<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := piMul2 - x.value">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17213,7 +17161,7 @@
 							</left>
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="piDiv2"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:558">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:556">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x.value := x.value - pi;">
 								<expr token=":=" type="int32" kind="static const typename(i32)" value="x.value := x.value - pi">
 									<left token="." type="int32" kind="static const typename(i32)" value="x.value">
@@ -17286,7 +17234,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="tan(x: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:607">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:605">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := div(sin(x), cos(x));">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := div(sin(x), cos(x))">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -17306,7 +17254,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="degrees(radians: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:716">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:714">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := as((radians.value) * int64(r2d_24) &gt;&gt; 24);">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := as((radians.value) * int64(r2d_24) &gt;&gt; 24)">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -17333,7 +17281,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="radians(degrees: Fixed): Fixed">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:721">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:719">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := mul_28(degrees, d2r_28);">
 						<expr token=":=" type="Fixed" kind="static const typename(val)" value=".result := mul_28(degrees, d2r_28)">
 							<left token=".variable" type="Fixed" kind="static const typename(val)" value=".result"/>
@@ -17375,7 +17323,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="Fixed(value: float64): Fixed">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:734">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:732">
 				<stmt token=".variable" type="Fixed" kind="static const typename(val)" value="result">
 					<init token="()" type="Fixed" kind="static const typename(val)" value="Fixed.as(value * ((1 &lt;&lt; Fixed.precision)))">
 						<push token="*" type="float64" kind="static const typename(f64)" value="value * ((1 &lt;&lt; Fixed.precision))">
@@ -17409,13 +17357,13 @@
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="nan"/>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:736">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:734">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (value != value)">
 							<test token="!=" type="bool" kind="static const typename(bool)" value="value != value">
 								<left token=".variable" type="float64" kind="static const typename(f64)" value="value"/>
 								<right token=".variable" type="float64" kind="static const typename(f64)" value="value"/>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:737">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:735">
 								<stmt token=";" type="void" kind="static const typename(void)" stmt="result.value := Fixed.nan;">
 									<expr token=":=" type="int32" kind="static const typename(i32)" value="result.value := Fixed.nan">
 										<left token="." type="int32" kind="static const typename(i32)" value="result.value">
@@ -17429,7 +17377,7 @@
 									</expr>
 								</stmt>
 							</then>
-							<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:740">
+							<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:738">
 								<stmt token="if" type="void" kind="static const typename(void)" stmt="if (value &gt; (0))">
 									<test token="&gt;" type="bool" kind="static const typename(bool)" value="value &gt; (0)">
 										<left token=".variable" type="float64" kind="static const typename(f64)" value="value"/>
@@ -17437,7 +17385,7 @@
 											<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 										</right>
 									</test>
-									<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:740">
+									<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:738">
 										<stmt token=";" type="void" kind="static const typename(void)" stmt="result.value := Fixed.inf;">
 											<expr token=":=" type="int32" kind="static const typename(i32)" value="result.value := Fixed.inf">
 												<left token="." type="int32" kind="static const typename(i32)" value="result.value">
@@ -17451,7 +17399,7 @@
 											</expr>
 										</stmt>
 									</then>
-									<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:743">
+									<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:741">
 										<stmt token="if" type="void" kind="static const typename(void)" stmt="if (value &lt; (0))">
 											<test token="&lt;" type="bool" kind="static const typename(bool)" value="value &lt; (0)">
 												<left token=".variable" type="float64" kind="static const typename(f64)" value="value"/>
@@ -17459,7 +17407,7 @@
 													<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 												</right>
 											</test>
-											<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:743">
+											<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:741">
 												<stmt token=";" type="void" kind="static const typename(void)" stmt="result.value := -Fixed.inf;">
 													<expr token=":=" type="int32" kind="static const typename(i32)" value="result.value := -Fixed.inf">
 														<left token="." type="int32" kind="static const typename(i32)" value="result.value">
@@ -17491,7 +17439,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="float64(value: Fixed): float64">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:752">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:750">
 				<stmt token="if" type="void" kind="static const typename(void)" stmt="if (value.value == Fixed.nan)">
 					<test token="==" type="bool" kind="static const typename(bool)" value="value.value == Fixed.nan">
 						<left token="." type="int32" kind="static const typename(i32)" value="value.value">
@@ -17503,7 +17451,7 @@
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="nan"/>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:753">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:751">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := Math.nan;">
 							<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := Math.nan">
 								<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -17526,7 +17474,7 @@
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="inf"/>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:756">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:754">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := Math.inf;">
 							<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := Math.inf">
 								<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -17551,7 +17499,7 @@
 							</right>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:759">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Fixed.ci:757">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := -Math.inf;">
 							<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := -Math.inf">
 								<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>

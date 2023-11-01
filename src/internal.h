@@ -97,8 +97,6 @@ static inline int isValidOffset(rtContext rt, void *ptr) {
 	return 1;
 }
 
-void nfcCheckArg(nfcContext nfc, ccKind cast, char *name);
-
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 extern const char * const pluginLibImport;
@@ -232,7 +230,7 @@ int importLib(rtContext rt, const char *path);
 void closeLibs(rtContext rt);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Error and warning messages
-void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtValue *details, const char *msg, va_list vaList);
+void print_log(rtContext rt, raiseLevel level, const char *file, int line, struct nfcArgArr details, const char *msg, va_list vaList);
 
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"

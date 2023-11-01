@@ -17,8 +17,6 @@ typedef enum {
 	tok_last,
 
 	TOKEN_opc = EMIT_kwd,
-	OPER_beg = OPER_fnc,
-	OPER_end = OPER_com,
 } ccToken;
 
 struct tokenRec {

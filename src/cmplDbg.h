@@ -18,6 +18,15 @@ struct dbgContextRec {
 	symn tryExec;	// the symbol of tryExec function
 };
 
+/**
+ * Initialize debugger context.
+ *
+ * @param rt Runtime context.
+ * @param onError function to be executed when an error occurs.
+ * @return debugger context.
+ */
+dbgContext dbgInit(rtContext rt, vmError (*debug)(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee));
+
 /// Break point actions
 typedef enum {
 	brkSkip = 0x00,     // do nothing

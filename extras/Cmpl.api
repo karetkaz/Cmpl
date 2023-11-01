@@ -463,9 +463,7 @@ Fixed.l2t
 Fixed.as(value: int32): Fixed
 Fixed.neg(a: Fixed): Fixed # Computes the negated value of the given number.
 Fixed.add(a: Fixed, b: Fixed): Fixed # Adds the two fixed point numbers.
-Fixed.add(a: Fixed, b: int32): Fixed
 Fixed.sub(a: Fixed, b: Fixed): Fixed # Subtract one from another fixed point number.
-Fixed.sub(a: Fixed, b: int32): Fixed
 Fixed.mul(a: Fixed, b: Fixed): Fixed # Multiply two fixed-point numbers.
 Fixed.mul(a: Fixed, b: int32): Fixed
 Fixed.mul_28(a: Fixed, b: int32): Fixed

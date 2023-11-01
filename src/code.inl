@@ -25,9 +25,8 @@ case opc_nfc:  NEXT(4, 0, 0) {
 	*((void const **) &args.sym) = nfc->sym;
 	*((void const **) &args.extra) = extra;
 	*((char const **) &args.proto) = nfc->proto;
-	*((void const **) &args.args) = sp;
+	*((void const **) &args.argv) = sp;
 	*((size_t*) &args.argc) = vm_stk_align * nfc->in;
-	args.param = (void *) -1;
 
 	TRACE(nfc->sym->offs);
 	vmError nfcError = nfc->call(&args);

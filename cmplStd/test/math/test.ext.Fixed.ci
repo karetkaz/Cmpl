@@ -63,8 +63,6 @@ struct Domain {
 	float64 cosErr = 0;
 	float64 tanErr = 0;
 	float64 hypErr = 0;
-	float64 arcErr = 0;
-	float64 archErr = 0;
 
 	static void normalize(Domain domain&) {
 		inline log(float64 x) = Math.log2(x);
@@ -82,8 +80,6 @@ struct Domain {
 		domain.cosErr = log(domain.cosErr);
 		domain.tanErr = log(domain.tanErr);
 		domain.hypErr = log(domain.hypErr);
-		domain.arcErr = log(domain.arcErr);
-		domain.archErr = log(domain.archErr);
 	}
 }
 

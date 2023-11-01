@@ -79,20 +79,24 @@ static vmError f64frexp(nfcContext args) {
 	retf64(args, frexp(x, y));
 	return noError;
 }
-static vmError f64parse(nfcContext args) {
-	const char *str = nextArg(args).ref;
-	float64_t *out = nextArg(args).ref;
+static vmError f64parse(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	const char *str = rt->api.nextArg(&al)->ref;
+	float64_t *out = rt->api.nextArg(&al)->ref;
 	char *end = NULL;
 	*out = strtod(str, &end);
-	retref(args, end - str);
+	retref(ctx, end - str);
 	return noError;
 }
-static vmError f64print(nfcContext args) {
-	rtValue out = nextArg(args);
-	double val = nextArg(args).f64;
-	int32_t flags = nextArg(args).i32;
-	int32_t width = nextArg(args).i32;
-	int32_t precision = nextArg(args).i32;
+static vmError f64print(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	struct nfcArgArr out = rt->api.nextArg(&al)->arr;
+	double val = rt->api.nextArg(&al)->f64;
+	int32_t flags = rt->api.nextArg(&al)->i32;
+	int32_t width = rt->api.nextArg(&al)->i32;
+	int32_t precision = rt->api.nextArg(&al)->i32;
 	int i = 0;
 	char format[16] = {0};
 
@@ -123,7 +127,7 @@ static vmError f64print(nfcContext args) {
 	return nativeCallError;
 #else
 	int res = snprintf((char *) out.ref, out.length, format, width, precision, val);
-	retref(args, res);
+	retref(ctx, res);
 	return noError;
 #endif
 }
@@ -335,7 +339,7 @@ static vmError sysMSleep(nfcContext args) {
 	return noError;
 }
 
-static void raiseStd(rtContext rt, raiseLevel level, const char *file, int line, rtValue *details, const char *msg, ...) {
+static void raiseStd(rtContext rt, raiseLevel level, const char *file, int line, struct nfcArgArr details, const char *msg, ...) {
 	va_list vaList;
 	va_start(vaList, msg);
 	print_log(rt, level, file, line, details, msg, vaList);
@@ -344,20 +348,21 @@ static void raiseStd(rtContext rt, raiseLevel level, const char *file, int line,
 
 // void raise(char file[*], int line, int level, int trace, char message[*], variant details...);
 static vmError sysRaise(nfcContext ctx) {
-	const char *file = nextArg(ctx).ref;
-	int line = nextArg(ctx).i32;
-	int logLevel = nextArg(ctx).i32;
-	int trace = nextArg(ctx).i32;
-	char *message = nextArg(ctx).ref;
-	rtValue details = nextArg(ctx);
 	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	const char *file = rt->api.nextArg(&al)->ref;
+	int line = rt->api.nextArg(&al)->i32;
+	int logLevel = rt->api.nextArg(&al)->i32;
+	int trace = rt->api.nextArg(&al)->i32;
+	char *message = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr details = rt->api.nextArg(&al)->arr;
 
 	// logging is disabled or log level not reached.
 	if (rt->logFile == NULL || logLevel > (int)rt->logLevel) {
 		return noError;
 	}
 
-	raiseStd(rt, logLevel, file, line, &details, "%?s", message);
+	raiseStd(rt, logLevel, file, line, details, "%?s", message);
 
 	// print stack trace excluding this function
 	if (rt->dbg != NULL && trace > 0) {
@@ -376,8 +381,9 @@ static vmError sysRaise(nfcContext ctx) {
 static vmError sysTryExec(nfcContext ctx) {
 	vmError result;
 	rtContext rt = ctx->rt;
-	size_t args = argref(ctx, rt->api.nfcNextArg(ctx));
-	size_t actionOffs = argref(ctx, rt->api.nfcNextArg(ctx));
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	size_t args = argref(ctx, rt->api.nextArg(&al)->offset);
+	size_t actionOffs = argref(ctx, rt->api.nextArg(&al)->offset);
 	symn action = rt->api.rtLookup(rt, actionOffs, KIND_fun);
 
 	if (action != NULL && action->offs == actionOffs) {
@@ -396,35 +402,43 @@ static vmError sysTryExec(nfcContext ctx) {
 
 // pointer alloc(pointer ptr, int32 size);
 static vmError sysMemMgr(nfcContext ctx) {
-	void *old = nextArg(ctx).ref;
-	int size = nextArg(ctx).i32;
-	void *res = rtAlloc(ctx->rt, old, (size_t) size, NULL);
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	void *old = rt->api.nextArg(&al)->ref;
+	int size = rt->api.nextArg(&al)->i32;
+	void *res = rtAlloc(rt, old, (size_t) size, NULL);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
 // pointer fill(pointer dst, int value, int32 size)
 static vmError sysMemSet(nfcContext ctx) {
-	void *dst = nextArg(ctx).ref;
-	int value = nextArg(ctx).i32;
-	int size = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	void *dst = rt->api.nextArg(&al)->ref;
+	int value = rt->api.nextArg(&al)->i32;
+	int size = rt->api.nextArg(&al)->i32;
 	void *res = memset(dst, value, (size_t) size);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
 // pointer copy(pointer dst, pointer src, int32 size);
 static vmError sysMemCpy(nfcContext ctx) {
-	void *dst = nextArg(ctx).ref;
-	void *src = nextArg(ctx).ref;
-	int size = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	void *dst = rt->api.nextArg(&al)->ref;
+	void *src = rt->api.nextArg(&al)->ref;
+	int size = rt->api.nextArg(&al)->i32;
 	void *res = memcpy(dst, src, (size_t) size);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
 // pointer move(pointer dst, pointer src, int32 size);
 static vmError sysMemMove(nfcContext ctx) {
-	void *dst = nextArg(ctx).ref;
-	void *src = nextArg(ctx).ref;
-	int size = nextArg(ctx).i32;
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	void *dst = rt->api.nextArg(&al)->ref;
+	void *src = rt->api.nextArg(&al)->ref;
+	int size = rt->api.nextArg(&al)->i32;
 	void *res = memmove(dst, src, (size_t) size);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
