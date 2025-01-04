@@ -1,0 +1,1514 @@
+typename # @builtin
+typename.size # @builtin
+typename.offset # @builtin
+typename.base(type: typename): typename # @builtin
+typename.file(type: typename): .cstr # @builtin
+typename.line(type: typename): int32 # @builtin
+typename.name(type: typename): .cstr # @builtin
+typename.size(type: typename): int32 # @builtin
+void # @builtin
+bool # @builtin
+char # @builtin
+int8 # @builtin
+int16 # @builtin
+int32 # @builtin
+int64 # @builtin
+uint8 # @builtin
+uint16 # @builtin
+uint32 # @builtin
+uint32.zxt(value: int32, offs: int32, count: int32): int32 # @builtin
+uint32.sxt(value: int32, offs: int32, count: int32): int32 # @builtin
+uint32.pop(value: int32): int32 # @builtin
+uint32.swap(value: int32): int32 # @builtin
+uint32.bsr(value: int32): int32 # @builtin
+uint32.bsf(value: int32): int32 # @builtin
+uint32.hib(value: int32): int32 # @builtin
+uint32.lob(value: int32): int32 # @builtin
+uint64 # @builtin
+uint64.zxt(value: int64, offs: int32, count: int32): int64 # @builtin
+uint64.sxt(value: int64, offs: int32, count: int32): int64 # @builtin
+float32 # @builtin
+float32.sin(x: float32): float32 # @builtin
+float32.cos(x: float32): float32 # @builtin
+float32.tan(x: float32): float32 # @builtin
+float32.log(x: float32): float32 # @builtin
+float32.exp(x: float32): float32 # @builtin
+float32.pow(x: float32, y: float32): float32 # @builtin
+float32.sqrt(x: float32): float32 # @builtin
+float32.atan2(x: float32, y: float32): float32 # @builtin
+float64 # @builtin
+float64.sin(x: float64): float64 # @builtin
+float64.cos(x: float64): float64 # @builtin
+float64.tan(x: float64): float64 # @builtin
+float64.log(x: float64): float64 # @builtin
+float64.exp(x: float64): float64 # @builtin
+float64.pow(x: float64, y: float64): float64 # @builtin
+float64.sqrt(x: float64): float64 # @builtin
+float64.atan2(x: float64, y: float64): float64 # @builtin
+float64.ldexp(x: float64, exp: int32): float64 # @builtin
+float64.frexp(x: float64, exp: int32): float64 # @builtin
+float64.parse(value: char[], out: float64): int32 # @builtin
+float64.print(out: char[], value: float64, flags: int32, width: int32, precision: int32): int32 # @builtin
+float64.print.flagMinus # @builtin
+float64.print.flagPlus # @builtin
+float64.print.flagSpace # @builtin
+float64.print.flagHash # @builtin
+float64.print.flagZero # @builtin
+pointer # @builtin
+pointer.alloc(ptr: pointer, size: int32): pointer # @builtin
+pointer.fill(dst: pointer, value: uint8, size: int32): pointer # @builtin
+pointer.copy(dst: pointer, src: pointer, size: int32): pointer # @builtin
+pointer.move(dst: pointer, src: pointer, size: int32): pointer # @builtin
+variant # @builtin
+variant.as(var: variant, type: typename): pointer # @builtin
+function # @builtin
+object # @builtin
+object.create(type: typename): pointer # @builtin
+object.destroy(this: object): void # @builtin
+object.as(this: object, type: typename): pointer # @builtin
+object.type(this: object): typename # @builtin
+null # @builtin
+int
+emit # @builtin
+emit.nop # @builtin
+emit.not # @builtin
+emit.set # @builtin
+emit.ret # @builtin
+emit.call # @builtin
+emit.p4x # @builtin
+emit.p4x.dp3 # @builtin
+emit.p4x.dp4 # @builtin
+emit.p4x.dph # @builtin
+emit.dup # @builtin
+emit.dup.x1 # @builtin
+emit.dup.x2 # @builtin
+emit.dup.x4 # @builtin
+emit.load # @builtin
+emit.load.z32 # @builtin
+emit.load.z64 # @builtin
+emit.load.z128 # @builtin
+emit.load.i8 # @builtin
+emit.load.u8 # @builtin
+emit.load.i16 # @builtin
+emit.load.u16 # @builtin
+emit.load.i32 # @builtin
+emit.load.i64 # @builtin
+emit.load.i128 # @builtin
+emit.store # @builtin
+emit.store.i8 # @builtin
+emit.store.i16 # @builtin
+emit.store.i32 # @builtin
+emit.store.i64 # @builtin
+emit.store.i128 # @builtin
+emit.cmt # @builtin
+emit.cmt.u32 # @builtin
+emit.cmt.u64 # @builtin
+emit.and # @builtin
+emit.and.u32 # @builtin
+emit.and.u64 # @builtin
+emit.or # @builtin
+emit.or.u32 # @builtin
+emit.or.u64 # @builtin
+emit.xor # @builtin
+emit.xor.u32 # @builtin
+emit.xor.u64 # @builtin
+emit.shl # @builtin
+emit.shl.u32 # @builtin
+emit.shl.u64 # @builtin
+emit.shr # @builtin
+emit.shr.i32 # @builtin
+emit.shr.i64 # @builtin
+emit.shr.u32 # @builtin
+emit.shr.u64 # @builtin
+emit.neg # @builtin
+emit.neg.i32 # @builtin
+emit.neg.i64 # @builtin
+emit.neg.f32 # @builtin
+emit.neg.f64 # @builtin
+emit.neg.p4f # @builtin
+emit.neg.p2d # @builtin
+emit.add # @builtin
+emit.add.i32 # @builtin
+emit.add.i64 # @builtin
+emit.add.f32 # @builtin
+emit.add.f64 # @builtin
+emit.add.p4f # @builtin
+emit.add.p2d # @builtin
+emit.sub # @builtin
+emit.sub.i32 # @builtin
+emit.sub.i64 # @builtin
+emit.sub.f32 # @builtin
+emit.sub.f64 # @builtin
+emit.sub.p4f # @builtin
+emit.sub.p2d # @builtin
+emit.mul # @builtin
+emit.mul.i32 # @builtin
+emit.mul.i64 # @builtin
+emit.mul.u32 # @builtin
+emit.mul.u64 # @builtin
+emit.mul.f32 # @builtin
+emit.mul.f64 # @builtin
+emit.mul.p4f # @builtin
+emit.mul.p2d # @builtin
+emit.div # @builtin
+emit.div.i32 # @builtin
+emit.div.i64 # @builtin
+emit.div.u32 # @builtin
+emit.div.u64 # @builtin
+emit.div.f32 # @builtin
+emit.div.f64 # @builtin
+emit.div.p4f # @builtin
+emit.div.p2d # @builtin
+emit.mod # @builtin
+emit.mod.i32 # @builtin
+emit.mod.i64 # @builtin
+emit.mod.u32 # @builtin
+emit.mod.u64 # @builtin
+emit.mod.f32 # @builtin
+emit.mod.f64 # @builtin
+emit.ceq # @builtin
+emit.ceq.i32 # @builtin
+emit.ceq.i64 # @builtin
+emit.ceq.f32 # @builtin
+emit.ceq.f64 # @builtin
+emit.ceq.p4f # @builtin
+emit.ceq.p2d # @builtin
+emit.clt # @builtin
+emit.clt.i32 # @builtin
+emit.clt.i64 # @builtin
+emit.clt.u32 # @builtin
+emit.clt.u64 # @builtin
+emit.clt.f32 # @builtin
+emit.clt.f64 # @builtin
+emit.cgt # @builtin
+emit.cgt.i32 # @builtin
+emit.cgt.i64 # @builtin
+emit.cgt.u32 # @builtin
+emit.cgt.u64 # @builtin
+emit.cgt.f32 # @builtin
+emit.cgt.f64 # @builtin
+emit.min # @builtin
+emit.min.p4f # @builtin
+emit.min.p2d # @builtin
+emit.max # @builtin
+emit.max.p4f # @builtin
+emit.max.p2d # @builtin
+emit.swz # @builtin
+emit.swz.x2 # @builtin
+halt(): void # @builtin
+preferNativeCalls # @builtin
+raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void # Report messages or raise errors.
+raise.abort # @builtin
+raise.error # @builtin
+raise.warn # @builtin
+raise.info # @builtin
+raise.debug # @builtin
+raise.verbose # @builtin
+raise.noTrace # @builtin
+raise.defTrace # @builtin
+tryExec(args: pointer, action(args: pointer): void): int32 # @builtin
+System # @builtin
+System.exit(code: int32): void # @builtin
+System.srand(seed: int32): void # @builtin
+System.time(): int32 # @builtin
+System.millis(): int64 # @builtin
+System.sleep(millis: int64): void # @builtin
+System.rand(): int32 # @builtin
+System.rand.max # @builtin
+System.clock(): int32 # @builtin
+System.clock.perSec # @builtin
+System.Platform # @builtin
+System.Platform.WebAssembly # @builtin
+System.Platform.Windows # @builtin
+System.Platform.MacOS # @builtin
+System.Platform.Linux # @builtin
+System.Platform.Unix # @builtin
+true
+false
+byte
+float
+double
+sizeof(type: typename): int32 # Returns the size of the given type
+verbose(message: char[*], details: variant[]): void # report message at `verbose` logging level
+debug(message: char[*], details: variant[]): void # report message at `debug` logging level
+trace(message: char[*], details: variant[]): void # report message with stacktrace at `debug` logging level
+info(message: char[*], details: variant[]): void # report message at `info` logging level
+warn(message: char[*], details: variant[]): void # report message at `warn` logging level
+error(message: char[*], details: variant[]): void # report message with stacktrace at `error` logging level
+abort(message: char[*], details: variant[]): void # report message with stacktrace at `abort` logging level and abort execution
+abort(): void # report message with stacktrace at `abort` logging level and abort execution
+assert(condition: bool, message: char[*], details: variant[]): void # report message and abort the execution if the assertion condition fails (is false)
+assert(condition: bool, details: variant[]): void # report message and abort the execution if the assertion condition fails (is false)
+NotEquals # Record used for debugging purposes, containing expected, returned and an array of extra values
+NotEquals.expected # Value of the expected result
+NotEquals.returned # Value of the actual result
+NotEquals.extras # Extra argument to identify what happened
+NotEquals(expected: variant, returned: variant): NotEquals # Create a not equals record for inspection from expected and returned
+abort(message: char[*], detail: NotEquals): void # abort execution displaying the expected and returned values
+assert(condition: bool, message: char[*], detail: NotEquals): void # report message and abort the execution if the assertion condition fails (is false)
+assertEq(expected: int32, returned: int32, message: char[*]): void # abort execution if the returned value is not equal to the expected value
+assertEq(expected: int32, returned: int32): void # abort execution if the returned value is not equal to the expected value
+inc(ptr: pointer, val: int32): pointer # Returns the pointer incremented with the given value
+Bits # Utility functions manipulating binary representations
+Bits.signed(value: uint8): int8 # convert unsigned to signed integer
+Bits.signed(value: uint16): int16 # convert unsigned to signed integer
+Bits.signed(value: uint32): int32 # convert unsigned to signed integer
+Bits.signed(value: uint64): int64 # convert unsigned to signed integer
+Bits.unsigned(value: int8): uint8 # convert signed to unsigned integer
+Bits.unsigned(value: int16): uint16 # convert signed to unsigned integer
+Bits.unsigned(value: int32): uint32 # convert signed to unsigned integer
+Bits.unsigned(value: int64): uint64 # convert signed to unsigned integer
+Bits.fromFloat32(value: float32): uint32 # return the 32 bit floating point value as an integer
+Bits.fromFloat64(value: float64): uint64 # return the 64 bit floating point value as an integer
+Bits.asFloat32(value: uint32): float32 # return the 32 bit integer as a floating point value
+Bits.asFloat64(value: uint64): float64 # return the 64 bit integer as a floating point value
+Bits.asFloat64(hi: uint32, lo: uint32): float64 # return the two 32 bit integers merged as a floating point value
+Bits.zxt32(value: int32, offs: int32, count: int32): int32 # @public
+Bits.sxt32(value: int32, offs: int32, count: int32): int32 # @public
+Bits.zxt64(value: int64, offs: int32, count: int32): int64 # @public
+Bits.sxt64(value: int64, offs: int32, count: int32): int64 # @public
+Bits.swapBytes(x: uint64): uint64 # convert a 64 bit value between Little endian and Big endian
+Bits.swapBytes(x: uint32): uint32 # convert a 32 bit value between Little endian and Big endian
+Bits.swapBytes(x: uint16): uint16 # convert a 16 bit value between Little endian and Big endian
+Bits.swapBytes(x: int64): int64 # convert a 64 bit value between Little endian and Big endian
+Bits.swapBytes(x: int32): int32 # convert a 32 bit value between Little endian and Big endian
+Bits.swapBytes(x: int16): int16 # convert a 16 bit value between Little endian and Big endian
+Bits.scanReverse(x: uint64): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int64): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: uint32): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int32): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: uint16): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int16): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: uint8): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int8): int32 # find the index of the most significant(highest) bit
+Bits.scanForward(x: uint64): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int64): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: uint32): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int32): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: uint16): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int16): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: uint8): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int8): int32 # find the index of the least significant(lowest) bit
+Bits.keepMsb(x: uint64): uint64 # keep the highest bit set
+Bits.keepMsb(x: int64): uint64 # keep the highest bit set
+Bits.keepMsb(x: uint32): uint32 # keep the highest bit set
+Bits.keepMsb(x: int32): uint32 # keep the highest bit set
+Bits.keepLsb(x: uint64): uint64 # keep the lowest bit set
+Bits.keepLsb(x: int64): uint64 # keep the lowest bit set
+Bits.keepLsb(x: uint32): uint32 # keep the lowest bit set
+Bits.keepLsb(x: int32): uint32 # keep the lowest bit set
+Bits.keepLsb(x: uint16): uint16 # keep the lowest bit set
+Bits.keepLsb(x: int16): uint16 # keep the lowest bit set
+Bits.keepLsb(x: uint8): uint8 # keep the lowest bit set
+Bits.keepLsb(x: int8): uint8 # keep the lowest bit set
+Bits.countOnes(x: uint64): int32 # count bits set to one
+Bits.countOnes(x: int64): int32 # count bits set to one
+Bits.countOnes(x: uint32): int32 # count bits set to one
+Bits.countOnes(x: int32): int32 # count bits set to one
+Bits.swapBits(x: uint64): uint64 # reverse all the bits
+Bits.swapBits(x: int64): uint64 # reverse all the bits
+Bits.swapBits(x: uint32): uint32 # reverse all the bits
+Bits.swapBits(x: int32): uint32 # reverse all the bits
+Bits.swapBits(x: uint16): uint16 # reverse all the bits
+Bits.swapBits(x: int16): uint16 # reverse all the bits
+Bits.swapBits(x: uint8): uint8 # reverse all the bits
+Bits.swapBits(x: int8): uint8 # reverse all the bits
+Bits.clamp(value: int32, max: int32): int32 # branch-less clamp
+Bits.clamp(value: int32, min: int32, max: int32): int32 # branch-less clamp
+Math # Mathematical utility functions and constants
+Math.pi
+Math.e
+Math.ln2
+Math.log2E
+Math.ln10
+Math.log10E
+Math.phi
+Math.sqrt2
+Math.sqrtE
+Math.sqrtPi
+Math.sqrtPhi
+Math.nan
+Math.inf
+Math.smallestNormal
+Math.isNan(x: float64): bool # Determines whether the given floating point value is not-a-number
+Math.isInf(x: float64): bool # Determines whether the given floating point value is ±infinity
+Math.isFinite(x: float64): bool # Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
+Math.isInf(x: float64, sign: int32): bool # Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
+Math.floor(x: float64): float64 # Computes the largest integer value not greater than the input
+Math.floor(x: float32): float32 # Computes the largest integer value not greater than the input
+Math.ceil(x: float64): float64 # Computes the smallest integer not less than the input
+Math.ceil(x: float32): float32 # Computes the smallest integer not less than the input
+Math.round(x: float64): float64 # Computes the nearest integer to the input
+Math.round(x: float32): float32 # Computes the nearest integer to the input
+Math.sign(x: int32): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.sign(x: int64): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.sign(x: uint32): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
+Math.sign(x: uint64): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
+Math.sign(x: float32): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.sign(x: float64): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.absMod(val: float32, mod: float32): float32 # Returns the positive modulus of the input
+Math.absMod(val: float64, mod: float64): float64 # Returns the positive modulus of the input
+Math.abs(x: int32): int32 # Returns the absolute value of the input
+Math.abs(x: int64): int64 # Returns the absolute value of the input
+Math.abs(x: uint32): uint32 # Returns the absolute value of the input
+Math.abs(x: uint64): uint64 # Returns the absolute value of the input
+Math.abs(x: float32): float32 # Returns the absolute value of the input
+Math.abs(x: float64): float64 # Returns the absolute value of the input
+Math.min(a: int32, b: int32): int32 # Returns the smaller value from the input values
+Math.min(a: int64, b: int64): int64 # Returns the smaller value from the input values
+Math.min(a: uint32, b: uint32): uint32 # Returns the smaller value from the input values
+Math.min(a: uint64, b: uint64): uint64 # Returns the smaller value from the input values
+Math.min(a: float32, b: float32): float32 # Returns the smaller value from the input values
+Math.min(a: float64, b: float64): float64 # Returns the smaller value from the input values
+Math.max(a: int32, b: int32): int32 # Returns the greater value from the input values
+Math.max(a: int64, b: int64): int64 # Returns the greater value from the input values
+Math.max(a: uint32, b: uint32): uint32 # Returns the greater value from the input values
+Math.max(a: uint64, b: uint64): uint64 # Returns the greater value from the input values
+Math.max(a: float32, b: float32): float32 # Returns the greater value from the input values
+Math.max(a: float64, b: float64): float64 # Returns the greater value from the input values
+Math.clamp(value: int32, min: int32, max: int32): int32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: int64, min: int64, max: int64): int64 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: uint32, min: uint32, max: uint32): uint32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: uint64, min: uint64, max: uint64): uint64 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: float32, min: float32, max: float32): float32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: float64, min: float64, max: float64): float64 # Returns the `value` clamped between `min` and `max`
+Math.mix(a: float32, b: float32, t: float32): float32 # Returns the linear interpolation between `a` and `b` by `t`
+Math.mix(a: float64, b: float64, t: float64): float64 # Returns the linear interpolation between `a` and `b` by `t`
+Math.smoothstep(t: float32): float32
+Math.smoothstep(min: float32, max: float32, t: float32): float32 # Returns the Hermite interpolation between two values
+Math.smoothstep(t: float64): float64
+Math.smoothstep(min: float64, max: float64, t: float64): float64 # Returns the Hermite interpolation between two values
+Math.min(values: float64[]): float64 # Returns the smaller value from the input values
+Math.max(values: float64[]): float64 # Returns the greater value from the input values
+Math.sum(values: float64[]): float64 # Returns the sum of the input values
+Math.mean(values: float64[]): float64 # Returns the mean of the input values
+Math.eval(x: float64, a0: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64, a4: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64, a4: float64, a5: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, polynomial: float64[]): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.modf(x: float64, intPart: float64): float64 # Decompose a value into integer and fractional parts
+Math.copysign(x: float64, y: float64): float64
+Math.frexp(f: float64, exp: int32): float64
+Math.ldexp(f: float64, exp: int32): float64
+Math.log(x: float64): float64 # Returns the natural logarithm of the argument `x`.
+Math.log(x: float32): float32 # Returns the natural logarithm of the argument `x`.
+Math.log2(x: float64): float64 # Returns the base 2 logarithm of the argument `x`.
+Math.log10(x: float64): float64 # Returns the base 10 logarithm of the argument `x`.
+Math.log(x: float64, base: float64): float64 # Returns the logarithm of the specified `base` of the argument `x`.
+Math.exp(x: float64): float64 # Returns the base-e exponential: $ e^x $.
+Math.exp(x: float32): float32 # Returns the base-e exponential: $ e^x $.
+Math.sqrt(x: float64): float64 # Returns the square root of the parameter `x`: $\sqrt{x}$.
+Math.sqrt(x: float32): float32 # Returns the square root of the parameter `x`: $\sqrt{x}$.
+Math.pow(x: float64, y: float64): float64 # Returns `x` raised to the power of `y`: $ x^y $.
+Math.pow(x: float32, y: float32): float32 # Returns `x` raised to the power of `y`: $ x^y $.
+Math.sincos(x: float64, quad: int32): float64
+Math.tancot(x: float64, flag: int32): float64
+Math.atan(x: float64): float64 # Returns the inverse tangent of the radian argument `x`.
+Math.atan2(arg1: float64, arg2: float64): float64 # Returns the inverse tangent of y/x.
+Math.atan2(y: float32, x: float32): float32 # Returns the inverse tangent of y/x.
+Math.sin(x: float64): float64 # Returns the sine of the radian argument `x`.
+Math.sin(x: float32): float32 # Returns the sine of the radian argument `x`.
+Math.sinh(x: float64): float64 # Returns the hyperbolic sine of the radian argument `x`.
+Math.asin(x: float64): float64 # Returns the inverse sine of the radian argument `x`.
+Math.asinh(x: float64): float64 # Returns the inverse hyperbolic sine of the radian argument `x`.
+Math.cos(x: float64): float64 # Returns the cosine of the radian argument `x`.
+Math.cos(x: float32): float32 # Returns the sine of the radian argument `x`.
+Math.cosh(x: float64): float64 # Returns the hyperbolic cosine of the radian argument `x`.
+Math.acos(x: float64): float64 # Returns the inverse cosine of the radian argument `x`.
+Math.acosh(x: float64): float64 # Returns the inverse hyperbolic cosine of the radian argument `x`.
+Math.tan(x: float64): float64 # Returns the tangent of the radian argument `x`.
+Math.tan(x: float32): float32 # Returns the tangent of the radian argument `x`.
+Math.tanh(x: float64): float64 # Returns the hyperbolic tangent of the radian argument `x`.
+Math.atanh(x: float64): float64 # Returns the inverse hyperbolic tangent of the radian argument `x`.
+Math.cot(x: float64): float64 # Returns the cotangent of the radian argument `x`.
+Math.coth(x: float64): float64 # Returns the hyperbolic cotangent of the radian argument `x`.
+Math.acot(x: float64): float64 # Returns the inverse cotangent of the radian argument `x`.
+Math.acoth(x: float64): float64 # Returns the inverse hyperbolic cotangent of the radian argument `x`.
+Math.sec(x: float64): float64 # Returns the secant of the radian argument `x`.
+Math.sech(x: float64): float64 # Returns the hyperbolic secant of the radian argument `x`.
+Math.asec(x: float64): float64 # Returns the inverse secant of the radian argument `x`.
+Math.asech(x: float64): float64 # Returns the inverse hyperbolic secant of the radian argument `x`.
+Math.csc(x: float64): float64 # Returns the cosecant of the radian argument `x`.
+Math.csch(x: float64): float64 # Returns the hyperbolic cosecant of the radian argument `x`.
+Math.acsc(x: float64): float64 # Returns the inverse cosecant of the radian argument `x`.
+Math.acsch(x: float64): float64 # Returns the inverse hyperbolic cosecant of the radian argument `x`.
+Math.radians(degrees: float64): float64 # Converts the input to radians from degrees.
+Math.degrees(radians: float64): float64 # Converts the input to degrees from radians.
+Fixed # simple fixed point, `precision` bits used for decimal part, the rest for integer part
+Fixed.value
+Fixed.precision
+Fixed.one
+Fixed.nan
+Fixed.inf
+Fixed.half
+Fixed.mask
+Fixed.pow2max
+Fixed.mpi_28
+Fixed.ln2_28
+Fixed.lg2_28
+Fixed.l2e_28
+Fixed.l2t_28
+Fixed.d2r_28
+Fixed.r2d_24
+Fixed.piMul2
+Fixed.piDiv2
+Fixed.pi
+Fixed.ln2
+Fixed.lg2
+Fixed.l2e
+Fixed.l2t
+Fixed.as(value: int32): Fixed
+Fixed.neg(a: Fixed): Fixed # Computes the negated value of the given number.
+Fixed.add(a: Fixed, b: Fixed): Fixed # Adds the two fixed point numbers.
+Fixed.sub(a: Fixed, b: Fixed): Fixed # Subtract one from another fixed point number.
+Fixed.mul(a: Fixed, b: Fixed): Fixed # Multiply two fixed-point numbers.
+Fixed.mul(a: Fixed, b: int32): Fixed
+Fixed.mul_28(a: Fixed, b: int32): Fixed
+Fixed.div(a: Fixed, b: Fixed): Fixed # Divide one fixed-point number with another one.
+Fixed.div(a: Fixed, b: int32): Fixed
+Fixed.mod(a: Fixed, b: Fixed): Fixed # Returns the remainder of the division of `a` by `b`.
+Fixed.inv(x: Fixed): Fixed # Compute the reciprocal of a complex number (1 / a)
+Fixed.fract(x: Fixed): Fixed # Returns the fractional part of the fixed point number
+Fixed.floor(x: Fixed): Fixed # Computes the largest integer that is less than or equal to `x`.
+Fixed.ceil(x: Fixed): Fixed # Computes the smallest integer that is greater than or equal to `x`.
+Fixed.round(x: Fixed): Fixed # Computes the nearest integer to `x`.
+Fixed.isFinite(x: Fixed): bool # Determines whether the given fixed point value is finite: `!isNan(x) && !isInf(x)`
+Fixed.isNan(x: Fixed): bool
+Fixed.compare(a: Fixed, b: Fixed): int32 # Determines whether the given fixed point is less than the other one.
+Fixed.log2(x: Fixed): Fixed # Returns the binary logarithm of the argument `x`.\n\tlog2(x) = log2((2 ** n) * ((x / 2) ** n)) =\n\t= log2(2 ** n) + log2((x / 2) ** n) = n + log2(q)\n\tn = most significant bit of x (BSR (bit scan reverse))\n\tq = (x / 2) ** n = (x > 1) ? (x >> n) : (x << -n)\n\tx > 1 <=> n - precision > 0\n\tlog2(q) = look up from table
+Fixed.log(x: Fixed): Fixed # Returns the natural logarithm of the argument `x`.
+Fixed.log10(x: Fixed): Fixed # Returns the decimal logarithm of the argument `x`.
+Fixed.log(x: Fixed, base: Fixed): Fixed # Returns the logarithm of the argument `x`.
+Fixed.pow2(x: Fixed): Fixed # pow2(x) <=> 2 ** x\npow2(x) = pow2(n + q) = pow2(n) * pow2(q)\nlet n = floor(x);\n let q = fract(x);\n pow2(n) = 2 ** n = 1 << n\npow2(q) = 1 + look up from table\npow2(x) = (x >= 0) ? (pow2(q) << n) : (pow2(q) >> -n)\n---------------------------------------------------
+Fixed.exp(x: Fixed): Fixed # Returns the base-e exponential: $ e^x $.
+Fixed.exp10(x: Fixed): Fixed # Returns the base 10 exponential: $ 10^x $.
+Fixed.sqrt(x: Fixed): Fixed # Returns the square root of the parameter `x`: $\sqrt{x}$.
+Fixed.pow(x: Fixed, y: Fixed): Fixed # Returns `x` raised to the power of `y`: $ x^y $.
+Fixed.horner(x: int32, a0: int32, a1: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32, a3: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32, a3: int32, a4: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32, a3: int32, a4: int32, a5: int32): int32
+Fixed.sin(x: Fixed): Fixed # Returns the sine of the radian argument `x`.
+Fixed.sinh(x: Fixed): Fixed # Returns the hyperbolic sine of the radian argument `x`.
+Fixed.cos(x: Fixed): Fixed # Returns the cosine of the radian argument `x`.
+Fixed.tan(x: Fixed): Fixed # Returns the tangent of the radian argument `x`.
+Fixed.degrees(radians: Fixed): Fixed # Converts the input to degrees from radians: $radians * 180 / pi$
+Fixed.radians(degrees: Fixed): Fixed # Converts the input to radians from degrees: $degrees * pi / 180$
+Fixed(value: int32): Fixed # Convert the integer `value` to fixed-point value
+int32(value: Fixed): int32 # Convert the fixed point `value` to integer value
+Fixed(value: float64): Fixed # Convert the floating point `value` to fixed-point value
+float64(value: Fixed): float64 # Convert the fixed point `value` to floating point value
+Complex # Complex number
+Complex.re # The real component of a complex number.
+Complex.im # The imaginary component of a complex number.
+Complex(value: float64): Complex # Create a Complex number from the given `value`
+Complex(real: float64, imaginary: float64): Complex # Create a Complex number from the given `real` and `imaginary` values
+neg(a: Complex): Complex # Unary negation of a complex number: -a := Complex(-a.re, -a.im);
+add(a: Complex, b: Complex): Complex # Add two complex numbers: a + b := Complex(a.re + b.re, a.im + b.im);
+add(a: Complex, b: float64): Complex # Add a complex number `a` to a real number `b`
+add(a: float64, b: Complex): Complex # Add a complex number `b` to a real number `a`
+sub(a: Complex, b: Complex): Complex # Subtract two complex numbers: a - b := Complex(a.re - b.re, a.im - b.im);
+sub(a: Complex, b: float64): Complex # Subtract the real number `b` from the complex number `a`
+sub(a: float64, b: Complex): Complex # Subtract the complex number `b` from the real number `a`
+mul(a: Complex, b: Complex): Complex # Multiply two complex numbers: a * b := Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+mul(a: Complex, b: float64): Complex # Multiply a complex number `a` with a real number `b`
+mul(a: float64, b: Complex): Complex # Multiply a complex number `b` with a real number `a`
+div(a: Complex, b: Complex): Complex # Divide two complex numbers
+div(a: Complex, b: float64): Complex # Divide the complex number `a` by the real number `b`
+div(a: float64, b: Complex): Complex # Divide the real number `a` by the complex number `b`
+abs(a: Complex): float64 # Compute the absolute value of the complex number `a`
+arg(a: Complex): float64 # Compute the argument of the complex number `a`
+inv(a: Complex): Complex # Compute the reciprocal of a complex number (1 / a)
+conj(a: Complex): Complex # Compute the conjugate of the complex number `a`
+exp(a: Complex): Complex # Compute the exponential of a complex number: $ e^a $.
+log(a: Complex): Complex # Compute the natural logarithm of the complex number `a`.
+pow(a: Complex, b: Complex): Complex # Compute the complex number `a` raised to the power of `b`: $ a^b $.
+pow(a: Complex, b: float64): Complex # Compute the complex number `a` raised to the power of `b`: $ a^b $.
+sin(a: Complex): Complex # Compute the sine of the complex number `a`.
+cos(a: Complex): Complex # Compute the cosine of the complex number `a`.
+tan(a: Complex): Complex # Compute the tangent of the complex number `a`.
+cot(a: Complex): Complex # Compute the cotangent of the complex number `a`.
+sec(a: Complex): Complex # Compute the secant of the complex number `a`.
+csc(a: Complex): Complex # Compute the cosecant of the complex number `a`.
+sinh(a: Complex): Complex # Compute the hyperbolic sine of the complex number `a`.
+cosh(a: Complex): Complex # Compute the hyperbolic cosine of the complex number `a`.
+tanh(a: Complex): Complex # Compute the hyperbolic tangent of the complex number `a`.
+coth(a: Complex): Complex # Compute the hyperbolic cotangent of the complex number `a`.
+sech(a: Complex): Complex # Compute the hyperbolic secant of the complex number `a`.
+csch(a: Complex): Complex # Compute the hyperbolic cosecant of the complex number `a`.
+toCartesian(x: Complex): Complex # Convert the from polar(r,θ) to cartesian(x,y) coordinates
+toPolar(x: Complex): Complex # Convert the from cartesian(x,y) to polar(r,θ) coordinates
+vec4f # A 4d vector (4x float32)
+vec4f.<?>
+vec4f.<?>.x # X component of the vector
+vec4f.<?>.y # Y component of the vector
+vec4f.<?>.z # Z component of the vector
+vec4f.<?>.w # W component of the vector
+vec4f.x # X component of the vector
+vec4f.y # Y component of the vector
+vec4f.z # Z component of the vector
+vec4f.w # W component of the vector
+vec4f.data # Access the components as an array
+vec4f(x: float32, y: float32, z: float32, w: float32): vec4f # Initialize with given x, y, z, w components
+vec4f(x: float32, y: float32, z: float32): vec4f # Initialize with  (x: x, y: y, z: z, w: 1)
+vec4f(x: float32, y: float32): vec4f # Initialize with (x: x, y: y, z: 0, w: 1)
+vec4f(xyz: vec4f, w: float32): vec4f # Initialize x, y, z components using the components form the given vector, and w with the given value
+vec4f(val: float32): vec4f # Initialize x, y, z, w components with the given scalar value
+neg(rhs: vec4f): vec4f # Returns a negated copy of the vector.
+add(lhs: vec4f, rhs: vec4f): vec4f # Component wise add the two vectors.
+sub(lhs: vec4f, rhs: vec4f): vec4f # Component wise subtract the two vectors.
+mul(lhs: vec4f, rhs: vec4f): vec4f # Component wise multiply the two vectors.
+div(lhs: vec4f, rhs: vec4f): vec4f # Component wise divide the two vectors.
+add(a: float32, b: vec4f): vec4f # Component wise add vector and scalar.
+add(a: vec4f, b: float32): vec4f # Component wise add vector and scalar.
+sub(a: float32, b: vec4f): vec4f # Component wise subtract vector and scalar.
+sub(a: vec4f, b: float32): vec4f # Component wise subtract vector and scalar.
+mul(a: float32, b: vec4f): vec4f # Component wise multiply vector and scalar.
+mul(a: vec4f, b: float32): vec4f # Component wise multiply vector and scalar.
+div(a: float32, b: vec4f): vec4f # Component wise divide vector and scalar.
+div(a: vec4f, b: float32): vec4f # Component wise divide vector and scalar.
+abs(a: vec4f): vec4f # Component wise absolute value of a vector.
+min(lhs: vec4f, rhs: vec4f): vec4f # Component wise minimum of the two vectors.
+max(lhs: vec4f, rhs: vec4f): vec4f # Component wise maximum of the two vectors.
+clamp(vec: vec4f, min: vec4f, max: vec4f): vec4f # Clamp the vector component wise to the range [min ... max]
+clamp(vec: vec4f, min: float32, max: float32): vec4f # Clamp each component of the vector to the range [min ... max]
+mix(a: vec4f, b: vec4f, t: float32): vec4f # linear interpolate
+dp3(lhs: vec4f, rhs: vec4f): float32 # Dot product of the first 3 elements
+dph(lhs: vec4f, rhs: vec4f): float32 # Homogeneous dot product
+dp4(lhs: vec4f, rhs: vec4f): float32 # Dot product
+cross(a: vec4f, b: vec4f): vec4f # Cross product of the first 3 elements
+length(v: vec4f): float32 # Length of the vector(xyz)
+normalize(v: vec4f): vec4f # Normalize the vector(xyz)
+eval(v: vec4f, x: float32): float32 # Evaluate as a polynomial in point x
+mat4f # A 4x4 matrix
+mat4f.m # Access elements as an array: m[1][0]
+mat4f.data # Access elements as a flatten array: data[4] => m[1][0]
+mat4f.v # Access elements as an array of vectors: v[1].x => m[1][0]
+mat4f.<?>
+mat4f.<?>.x # The first row as a vector
+mat4f.<?>.y # The second row as a vector
+mat4f.<?>.z # The third row as a vector
+mat4f.<?>.w # The fourth row as a vector
+mat4f.x # The first row as a vector
+mat4f.y # The second row as a vector
+mat4f.z # The third row as a vector
+mat4f.w # The fourth row as a vector
+mat4f.<?>
+mat4f.<?>.xx # The first element of the first row
+mat4f.<?>.xy # The second element of the first row
+mat4f.<?>.xz # The third element of the first row
+mat4f.<?>.xw # The fourth element of the first row
+mat4f.<?>.yx # The first element of the second row
+mat4f.<?>.yy # The second element of the second row
+mat4f.<?>.yz # The third element of the second row
+mat4f.<?>.yw # The fourth element of the second row
+mat4f.<?>.zx # The first element of the third row
+mat4f.<?>.zy # The second element of the third row
+mat4f.<?>.zz # The third element of the third row
+mat4f.<?>.zw # The fourth element of the third row
+mat4f.<?>.wx # The first element of the fourth row
+mat4f.<?>.wy # The second element of the fourth row
+mat4f.<?>.wz # The third element of the fourth row
+mat4f.<?>.ww # The fourth element of the fourth row
+mat4f.xx # The first element of the first row
+mat4f.xy # The second element of the first row
+mat4f.xz # The third element of the first row
+mat4f.xw # The fourth element of the first row
+mat4f.yx # The first element of the second row
+mat4f.yy # The second element of the second row
+mat4f.yz # The third element of the second row
+mat4f.yw # The fourth element of the second row
+mat4f.zx # The first element of the third row
+mat4f.zy # The second element of the third row
+mat4f.zz # The third element of the third row
+mat4f.zw # The fourth element of the third row
+mat4f.wx # The first element of the fourth row
+mat4f.wy # The second element of the fourth row
+mat4f.wz # The third element of the fourth row
+mat4f.ww # The fourth element of the fourth row
+mat4f(xx: float32, xy: float32, xz: float32, xw: float32, yx: float32, yy: float32, yz: float32, yw: float32, zx: float32, zy: float32, zz: float32, zw: float32, wx: float32, wy: float32, wz: float32, ww: float32): mat4f # Initialize all elements with the given values
+mat4f(x: vec4f, y: vec4f, z: vec4f, w: vec4f): mat4f # Initialize matrix with row vectors
+dp3(mat: mat4f, vec: vec4f): vec4f # Multiply with vector: dot product of the first 3 elements
+dph(mat: mat4f, vec: vec4f): vec4f # Multiply with vector: homogeneous dot product
+dp4(mat: mat4f, vec: vec4f): vec4f # Multiply with vector: full dot product
+transpose(mat: mat4f): mat4f # Transpose the matrix
+mul(lhs: mat4f, rhs: mat4f): mat4f # Multiply two matrices (rows * cols)
+rotation(center: vec4f, direction: vec4f, angle: float32): mat4f # Build a rotation matrix
+rotation(direction: vec4f, angle: float32): mat4f # Build a rotation matrix
+translation(direction: vec4f, amount: float32): mat4f # Build a translation matrix
+scale(direction: vec4f, amount: float32): mat4f # Build a scaling matrix
+inverse(mat: mat4f): mat4f # Build the inverse of the matrix
+vec2d # A 2d vector (2x float64)
+vec2d.<?>
+vec2d.<?>.x # X component of the vector
+vec2d.<?>.y # Y component of the vector
+vec2d.x # X component of the vector
+vec2d.y # Y component of the vector
+vec2d.data # Access the components as an array
+vec2d(x: float64, y: float64): vec2d # Initialize with given x, y components
+add(a: vec2d, b: vec2d): vec2d # Component wise add the two vectors.
+sub(a: vec2d, b: vec2d): vec2d # Component wise subtract the two vectors.
+mul(a: vec2d, b: vec2d): vec2d # Component wise multiply the two vectors.
+div(a: vec2d, b: vec2d): vec2d # Component wise divide the two vectors.
+min(a: vec2d, b: vec2d): vec2d # Component wise select the minimum from the two vectors.
+max(a: vec2d, b: vec2d): vec2d # Component wise select the maximum from the two vectors.
+ceq(a: vec2d, b: vec2d): vec2d # Compare the two vectors for equality.
+dot(a: vec2d, b: vec2d): float64 # Dot product of thw two vectors
+Timeunit # enumeration of some known time unit, used for conversions and to specify the precision
+Timeunit.Nanos
+Timeunit.Micros
+Timeunit.Millis
+Timeunit.Seconds
+Timeunit.Minutes
+Timeunit.Hours
+Timeunit.Days
+convert(value: int64, from: Timeunit, to: Timeunit): int64 # Convert the given integer `value` from the `from` to `to` unit
+convert(value: float64, from: Timeunit, to: Timeunit): float64 # Convert the given floating point `value` from the `from` to `to` unit
+Duration # Timespan is just a duration\nfor example: 33 seconds
+Duration.value
+Duration.precision
+Duration.value(duration: Duration, precision: Timeunit): int64 # Returns the value of the `duration` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
+Duration.add(lhs: Duration, rhs: Duration): Duration # Add two durations
+Duration(value: int64, precision: Timeunit): Duration # Construct a duration from the given `value` at the given `precision`
+Timestamp # Timestamp is a position in time, without timezone information\nin case locale is needed use Datetime.
+Timestamp.value
+Timestamp.precision # The time unit specifying the precision of the timestamp
+Timestamp.value(timestamp: Timestamp, precision: Timeunit): int64 # Returns the value of `timestamp` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
+Timestamp.diff(a: Timestamp, b: Timestamp, precision: Timeunit): int64 # Returns the difference of `a` and `b` at the given `precision`
+Timestamp.diff(a: Timestamp, b: Timestamp): Duration # Returns the difference of `a` and `b
+Timestamp.compare(a: Timestamp, b: Timestamp): int32 # Returns whether the firs timestamp is less(<0), equal(=0), or greater(>0) than the second timestamp
+Timestamp.equal(a: Timestamp, b: Timestamp, precision: Timeunit): bool # Check whether the two timestamps `a` and `b` are equal at the given `precision`
+Timestamp.equal(a: Timestamp, b: Timestamp): bool # Check whether the two timestamps `a` and `b` are equal
+Timestamp.add(lhs: Timestamp, value: int64, precision: Timeunit): Timestamp # Increment the the current timestamp with the given `value` at the given `precision`
+Timestamp.floor(value: Timestamp, precision: Timeunit): Timestamp # Floor the current timestamp, leaving the field specified as the most significant field.\nFor example, if you have the timestamp: 2002-03-28 13:45:01.231,\nusing resolution Timeunit.Days, it should return 2002-03-28 00:00:00.000.\nusing resolution Timeunit.Hours, it should return 2002-03-28 13:00:00.000.\nusing resolution Timeunit.Minutes, it should return 2002-03-28 13:45:00.000.\n\t * @param unit Resolution of the operation.
+Timestamp.ceil(value: Timestamp, precision: Timeunit): Timestamp # Ceil the current timestamp, leaving the field specified as the most significant field.\nFor example, if you have the timestamp: 2002-03-28 13:45:01.231,\nusing resolution Timeunit.Days, it should return 2002-03-29 00:00:00.000.\nusing resolution Timeunit.Hours, it should return 2002-03-28 14:00:00.000.\nusing resolution Timeunit.Minutes, it should return 2002-03-28 13:46:00.000.\n\t * @param unit Resolution of the operation.
+Timestamp.distribute(this: Timestamp, unit: Timeunit, duration: uint64): Timestamp # Distribute randomly between current value and the duration at the given time-unit resolution.\nFor example, if you had the timestamp: 2002-03-28 13:45:01.231,\nusing distribute(Timeunit.Hours, 2), it will return a date between 2002-03-28 13:46:01.231 and 2002-03-28 15:46:01.231.\n\t * @param unit  Resolution of the duration.\n@param duration The duration of the distribution time frame, negative values are allowed.
+Timestamp.distribute(this: Timestamp, unit: Timeunit, start: int32, end: int32): Timestamp # Distribute randomly between start and end at the given time-unit resolution.\nFor example, if you have the timestamp of 2002-03-28 13:46:01.231,\nusing distribute(Timeunit.Hours, 15, 17) as start and end, it will return a date between 2002-03-28 15:46:01.231 and 2002-03-28 17:46:01.231.\nin case you need a timestamp between 15:00:00.000 and 17:00:00.000 yo will need to use the floor method before or after this operation.\n\t * @param unit  Resolution of the operation.\n@param start The beginning of the distribution time frame.\n@param end   The end of the distribution time frame.
+Timestamp.now(): Timestamp # get the current utc time as timestamp from the system
+Timestamp(value: int64, precision: Timeunit): Timestamp # Create a timestamp from the given `value` at the given `precision`
+Timezone
+Timezone.name
+Timezone.offset(zone: Timezone, timestamp: Timestamp, isDaylightSaving: bool): Duration
+Timezone.offset(zone: Timezone, timestamp: Timestamp): Duration
+Timezone.utc(): Timezone
+Timezone.lookup(name: char[]): Timezone
+Timezone.local(): Timezone
+Month # Month of year, January is 1, February is 2, ...
+Month.January
+Month.February
+Month.March
+Month.April
+Month.May
+Month.June
+Month.July
+Month.August
+Month.September
+Month.October
+Month.November
+Month.December
+Month(index: int32): Month # FIXME: implement enum indexing
+indexOf(value: Month): int32 # FIXME: implement enum indexing
+Weekday # Day of week, Monday is 1, Tuesday is 2, ...
+Weekday.Monday
+Weekday.Tuesday
+Weekday.Wednesday
+Weekday.Thursday
+Weekday.Friday
+Weekday.Saturday
+Weekday.Sunday
+Weekday(index: int32): Weekday # FIXME: implement enum indexing
+indexOf(value: Weekday): int32 # FIXME: implement enum indexing
+Calendar # Type of the calendar
+Calendar.Gregorian
+Datetime # DateTime represents the parts of an instant in time.
+Datetime.year # Year: 1970
+Datetime.month # Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
+Datetime.day # Day of month: 1 ... 30
+Datetime.hour # Hour of day: 0 ... 23
+Datetime.minute # Minute of hour: 0 ... 59
+Datetime.second # Second of minute: 0 ... 59
+Datetime.millis # Milliseconds of second: 0 ... 999
+Datetime.timezone
+Datetime.weekOfYear # Nth week of the year: 1 ... 53
+Datetime.dayOfYear # Nth day of the year: 1 ... 365
+Datetime.dayOfWeek # Day of week: 1 ... 7 / [Mon, Tue, ...]
+Datetime.leapYear # this is a leap year
+Datetime.DaysToMonth365
+Datetime.DaysToMonth366
+Datetime.DaysTil1970
+Datetime.isLeapYear(year: int32): bool # Checks weather the given year is a leap year or not
+Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime # Add the amount of `years`, `months` and `days` to the datetime
+Timestamp(value: Datetime): Timestamp # Convert the given Datetime `value` to a timestamp (milliseconds since 1970)
+Datetime(timestamp: Timestamp, calendar: Calendar, timezone: Timezone): Datetime # Convert the given `timestamp` to a datetime(year, month, day, ...) using the given `calendar` and `timezone`
+Datetime(timestamp: Timestamp): Datetime # Convert the given timestamp to a datetime
+Datetime(year: int32, month: int32, day: int32, hour: int32, minute: int32, second: int32, millis: int32, zone: Timezone): Datetime # Construct the Datetime from the given parts
+Datetime(year: int32, month: int32, day: int32, hour: int32, minute: int32, second: int32, millis: int32): Datetime # Construct the Datetime from the given parts
+Datetime(year: int32, month: int32, day: int32, hour: int32, minute: int32, second: int32, zone: Timezone): Datetime # Construct the Datetime from the given parts
+Datetime(year: int32, month: int32, day: int32, zone: Timezone): Datetime # Construct the Datetime from the given parts
+Datetime(year: int32, month: int32, day: int32): Datetime # Construct the Datetime from the given parts
+length(str: char[*]): int32 # Computes the length of the string
+indexOf(str: char[*], chr: char): int32 # Returns the index of the first occurrence of a character in string
+lastIndexOf(str: char[*], chr: char): int32 # Returns the index of the last occurrence of a character in string
+startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool # Check if a string begins with a specified string, using a custom comparator
+endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool # Check if a string ends in a specified string, using a custom comparator
+compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32 # Check if the two strings are equal, less or greater, using a custom comparator
+ignCaseCmp(chr: char, with: char): int32 # ignore case character comparator
+caseCmp(chr: char, with: char): int32 # default character comparator
+toHex(value: int32): int32 # convert lower part (4 bits) of the input value to the corresponding lower case hexadecimal character
+startsWith(str: char[*], with: char[*]): bool # Check if a string begins with a specified string, using case-sensitive comparison
+endsWith(str: char[*], with: char[*]): bool # Check if a string ends in a specified string, using case-sensitive comparison
+compare(str: char[*], with: char[*]): int32 # Check if the two strings are equal, less or greater, using case-sensitive comparison
+equals(str: char[*], with: char[*]): bool # Check if the two strings are equal, using case-sensitive comparison
+contains(str: char[*], chr: char): bool # Check if a string contains the given character
+float64(value: char[]): float64 # Convert a string to a 64 bit floating point value
+FormatFlags # Flags to convert numbers to string
+FormatFlags.sign # forced show sign '+' or '-'
+FormatFlags.padChr # padding character: usually '0' or space
+FormatFlags.width # padding length
+FormatFlags.precision # precision length
+FormatFlags.trimDecimal # trim extra `0` decimal digits
+FormatFlags.read(format: char[], pos: int32): FormatFlags # read and process c style format flags like: "%02d"
+FormatFlags.defPad(this: FormatFlags, width: int32, padChr: char): FormatFlags # override the default padding, in case it's length is zero
+append(output: char[], pos: int32, value: char[*]): int32 # Append a string to the output at the given position
+append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: float64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint32, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint16, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint8, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int32, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int16, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int8, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: float32, format: FormatFlags): int32 # Append a number to the output at the given position
+DatetimeFormat # datetime regional formatter, currently 'en' if instantiated with: `DatetimeFormat fmt = {};`
+DatetimeFormat.monthsLong
+DatetimeFormat.monthsShort
+DatetimeFormat.weeksLong
+DatetimeFormat.weeksShort
+DatetimeFormat.amPmUpper
+DatetimeFormat.amPmLower
+DatetimeFormat.dateLong
+DatetimeFormat.timeLong
+DatetimeFormat.dateShort
+DatetimeFormat.timeShort
+DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, value: Datetime, format: char[]): int32
+DatetimeFormat.format(formatter: DatetimeFormat, output: char[], value: Datetime, format: char[]): int32 # Format date to text\n@param value date to format\n@param output write output to this buffer\n@param format format string\n \t@null defaults to: "%Y.%m.%d"
+format(value: Datetime, output: char[], format: char[]): int32 # extension method for backward compatibility, using english region
+append(output: char[], pos: int32, value: int32): int32 # Append a number to the output at the given position
+Closeable # Represents the base class of closeable objects like files, streams, etc
+Closeable.close(this: Closeable): void # Release the resources hold by this object.
+Closeable.closeSafe(this: Closeable): void
+ByteReader # ByteReader can be used to read bytes from a stream (~= java:InputStream)
+ByteReader.read(this: ByteReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
+ByteReader.read(this: ByteReader): int32 # Read a single byte from the stream, a negative number is returned in case of error
+ByteWriter # ByteWriter can be used to write bytes to a stream (~= java:OutputStream)
+ByteWriter.write(this: ByteWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
+ByteWriter.flush(this: ByteWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+ByteWriter.write(this: ByteWriter, oneByte: uint8): void # Write a single byte to the stream
+ByteWriter.copy(this: ByteWriter, reader: ByteReader): int32 # Copy all bytes from the reader to the writer
+CopyReader
+CopyReader.source
+CopyReader.clone
+CopyReader.read(this: CopyReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
+CopyReader.close(this: CopyReader): void # Release the resources hold by this object.
+ByteBuffer
+ByteBuffer.position
+ByteBuffer.capacity
+ByteBuffer.length
+ByteBuffer.buffer
+ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32
+ByteBuffer.read(this: ByteBuffer, bytes: uint8[]): int32
+ByteBuffer.read(this: ByteBuffer): int32
+ByteBuffer.read(this: ByteBuffer): int32
+ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void
+ByteBuffer.write(this: ByteBuffer, bytes: uint8[]): void
+ByteBuffer.flush(this: ByteBuffer): void
+ByteBuffer.flush(this: ByteBuffer): void
+ByteBuffer.close(this: ByteBuffer): void
+ByteBuffer.close(this: ByteBuffer): void
+unicode
+TextReader # TextReader can be used to read decoded text from a stream, including basic parsing
+TextReader.reader # @public
+TextReader.decode(this: TextReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
+TextReader.close(this: TextReader): void # Release the resources hold by this object.
+TextReader.decode(this: TextReader): int32 # Read a single character from the stream, a negative number is returned in case of error
+TextWriter # TextWriter can be used to write encoded text to a stream, including basic printing
+TextWriter.Writeable # @public
+TextWriter.Writeable.write(this: Writeable, writer: TextWriter): void
+TextWriter.writer # @public
+TextWriter.format # default formatter
+TextWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
+TextWriter.flush(this: TextWriter): void
+TextWriter.flush(this: TextWriter): void
+TextWriter.close(this: TextWriter): void # Release the resources hold by this object.
+TextWriter.write(this: TextWriter, value: char[]): TextWriter # Write an array of raw characters to the stream (no encoding)
+TextWriter.write(this: TextWriter, value: char): TextWriter # Write a single raw character to the stream (no encoding)
+TextWriter.write(this: TextWriter, value: bool): TextWriter # Write the value of the boolean parameter: "true" or "false"
+TextWriter.write(this: TextWriter, value: int32, flags: FormatFlags): TextWriter # Write the value of the 32-bit integer parameter
+TextWriter.write(this: TextWriter, value: int64, flags: FormatFlags): TextWriter # Write the value of the 64-bit integer parameter
+TextWriter.write(this: TextWriter, value: uint32, flags: FormatFlags): TextWriter # Write the value of the 32-bit unsigned integer parameter
+TextWriter.write(this: TextWriter, value: uint64, flags: FormatFlags): TextWriter # Write the value of the 64-bit unsigned integer parameter
+TextWriter.write(this: TextWriter, value: float32, flags: FormatFlags): TextWriter # Write the value of the 32-bit floating-point parameter
+TextWriter.write(this: TextWriter, value: float64, flags: FormatFlags): TextWriter # Write the value of the 64-bit floating-point parameter
+TextWriter.write(this: TextWriter, value: Writeable): TextWriter # Write the value of the writeable parameter
+TextWriter.writeln(this: TextWriter): TextWriter # Write a newline character
+TextWriter.writeln(this: TextWriter, value: Writeable): TextWriter # @public
+TextWriter.copy(writer: TextWriter, reader: TextReader): int32 # Convert from one encoding to another one.\n@returns converted character count.\n\t * example: convert utf-8 encoded file to ascii\nTextWriter output = AsciiWriter("out.txt");\nTextReader input = Utf8Reader("in.txt");\noutput.write(input);
+Base64Encoder # Base64 encoder
+Base64Encoder.lookup
+Base64Encoder.writer # @public
+Base64Encoder.buffer
+Base64Encoder.bufferSize
+Base64Encoder.padding
+Base64Encoder.wrap # wrap at the given position with a newline
+Base64Encoder.wrapSize
+Base64Encoder.flushBuffer(this: Base64Encoder): void
+Base64Encoder.write(this: Base64Encoder, data: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
+Base64Encoder.flush(this: Base64Encoder): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+Base64Encoder.close(this: Base64Encoder): void # Release the resources hold by this object.
+Base64Decoder # Base64 decoder
+Base64Decoder.lookup
+Base64Decoder.reader # @public
+Base64Decoder.bitsDecoded
+Base64Decoder.charDecoded
+Base64Decoder.read(this: Base64Decoder, data: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
+Base64Decoder.close(this: Base64Decoder): void # Release the resources hold by this object.
+AsciiReader # Ascii reader converts the given input by mapping every byte to a character
+AsciiReader.decode(this: AsciiReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
+AsciiWriter # Ascii Writer converts the given input by chopping each character to a byte
+AsciiWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
+Utf8Reader # Utf-8 decoder
+Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
+Utf8Writer # Utf-8 encoder
+Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
+Easing # Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
+Easing.linear(t: float64): float64 # @public
+Easing.quad(t: float64): float64 # @public
+Easing.cubic(t: float64): float64 # @public
+Easing.quart(t: float64): float64 # @public
+Easing.quint(t: float64): float64 # @public
+Easing.expo(t: float64): float64 # @public
+Easing.sine(t: float64): float64 # @public
+Easing.circle(t: float64): float64 # @public
+Easing.elastic(t: float64): float64 # @public
+Easing.back(t: float64): float64 # @public
+Easing.bounce(t: float64): float64 # @public
+in(ease(ratio: float64): float64, ratio: float64): float64 # ease in, ex: Easing.elastic.in(t)
+out(ease(ratio: float64): float64, ratio: float64): float64 # ease out, ex: Easing.elastic.out(t)
+inOut(ease(ratio: float64): float64, ratio: float64): float64 # ease in and out, ex: Easing.elastic.inOut(t)
+outIn(ease(ratio: float64): float64, ratio: float64): float64 # ease out and in, ex: Easing.elastic.outIn(t)
+scalar
+Polynomial # @public
+Polynomial.coefficients
+Polynomial.capacity
+Polynomial.c_zero
+Polynomial.c_unit
+Polynomial.write(this: Polynomial, writer: TextWriter): void
+Polynomial.destroy(this: Polynomial): void # Dispose the polynomial, free up used memory for coefficients
+Polynomial.destroy(this: Polynomial): void # Dispose the polynomial, free up used memory for coefficients
+Polynomial.create(degree: int32, values: float64[]): Polynomial
+Polynomial.degree(this: Polynomial): int32 # Compute the degree of the polynomial
+Polynomial.get(this: Polynomial, index: int32): float64 # Get the nth coefficient of the polynomial
+Polynomial.set(this: Polynomial, index: int32, value: float64): float64 # Set the nth coefficient of the polynomial
+Polynomial.neg(a: Polynomial): Polynomial # Negate the polynomial
+Polynomial.add(a: Polynomial, b: Polynomial): Polynomial # Add two polynomials
+Polynomial.sub(a: Polynomial, b: Polynomial): Polynomial # Subtract two polynomials
+Polynomial.mul(a: Polynomial, b: Polynomial): Polynomial # Multiply two polynomials
+Polynomial.evaluate(this: Polynomial, value: float64): float64 # Evaluate the polynomial using Horner's method
+Polynomial.derivative(this: Polynomial): Polynomial # Compute the derivative of the polynomial
+Polynomial.integral(this: Polynomial, c: float64): Polynomial # Compute the integral of the polynomial
+Polynomial(copy: Polynomial): Polynomial # Create a new polynomial by copying the given one.
+Polynomial(values: float64[]): Polynomial # Create a new polynomial with the given values, coefficients are reversed(lowest index === highest degree)
+File # @builtin
+File.open(path: char[*]): File # @builtin
+File.create(path: char[*]): File # @builtin
+File.append(path: char[*]): File # @builtin
+File.peek(file: File): int32 # @builtin
+File.tell(file: File): int64 # @builtin
+File.seek(file: File, position: int64): File # @builtin
+File.seekCur(file: File, position: int64): File # @builtin
+File.seekEnd(file: File, position: int64): File # @builtin
+File.read(file: File, buff: uint8[]): int32 # @builtin
+File.write(file: File, buff: uint8[]): int32 # @builtin
+File.flush(file: File): void # @builtin
+File.close(file: File): void # @builtin
+File.in # @builtin
+File.out # @builtin
+File.err # @builtin
+File.log # @builtin
+read(file: File): int32 # extension method to read a single byte from a file
+write(file: File, value: int32): int32 # extension method to write a single byte into a file
+FileReader # @public
+FileReader.file
+FileReader.read(this: FileReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
+FileReader.close(this: FileReader): void # Release the resources hold by this object.
+FileWriter # @public
+FileWriter.file # @public
+FileWriter.write(this: FileWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
+FileWriter.flush(this: FileWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+FileWriter.close(this: FileWriter): void # Release the resources hold by this object.
+BufferedFileWriter # @public
+BufferedFileWriter.buffer
+BufferedFileWriter.bufferSize
+BufferedFileWriter.flushBuffer(this: BufferedFileWriter): void
+BufferedFileWriter.write(this: BufferedFileWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
+BufferedFileWriter.flush(this: BufferedFileWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+BufferedFileWriter.close(this: BufferedFileWriter): void # Release the resources hold by this object.
+FileReader(path: char[*]): FileReader # @public
+FileWriter(path: char[*], append: bool): FileWriter # @public
+BufferedFileWriter(path: char[*], append: bool): BufferedFileWriter # @public
+Rect # The Rect type represents a rectangle in the plain.
+Rect.x0 # Represents the left edge of the rectangle
+Rect.y0 # Represents the top edge of the rectangle
+Rect.x1 # Represents the right edge of the rectangle
+Rect.y1 # Represents the bottom edge of the rectangle
+Image # @builtin
+Image.create(width: int32, height: int32, depth: int32): Image # @builtin
+Image.create3d(width: int32, height: int32): Image # @builtin
+Image.recycle(recycle: Image, width: int32, height: int32, depth: int32, flags: int32): Image # @builtin
+Image.slice(image: Image, rect: Rect): Image # @builtin
+Image.destroy(image: Image): void # @builtin
+Image.openBmp(path: char[*], depth: int32): Image # @builtin
+Image.openPng(path: char[*], depth: int32): Image # @builtin
+Image.openJpg(path: char[*], depth: int32): Image # @builtin
+Image.openImg(path: char[*], depth: int32): Image # @builtin
+Image.openTtf(path: char[*], height: int32): Image # @builtin
+Image.openFnt(path: char[*]): Image # @builtin
+Image.saveBmp(image: Image, path: char[*], flags: int32): void # @builtin
+Image.width(image: Image): int32 # @builtin
+Image.height(image: Image): int32 # @builtin
+Image.depth(image: Image): int32 # @builtin
+Image.get(image: Image, x: int32, y: int32): int32 # @builtin
+Image.set(image: Image, x: int32, y: int32, color: uint32): void # @builtin
+Image.tex(image: Image, x: float32, y: float32): vec4f # @builtin
+Image.clipText(font: Image, rect: Rect, text: char[*]): void # @builtin
+Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32): void # @builtin
+Image.fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # @builtin
+Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void # @builtin
+Image.blend.color # @builtin
+Image.blend.alpha # @builtin
+Image.blend.dstAlpha # @builtin
+Image.blend.blendVec4f # @builtin
+Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void # @builtin
+Image.blur(image: Image, radius: int32, sigma: float64): void # @builtin
+Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void # @builtin
+Image.colorMat(image: Image, roi: Rect, mat: float32[16]): void # @builtin
+Image.calcHueHist(image: Image, roi: Rect, lut: uint32[256]): void # @builtin
+Image.calcLumHist(image: Image, roi: Rect, lut: uint32[256]): void # @builtin
+Image.calcRgbHist(image: Image, roi: Rect, lut: uint32[256]): void # @builtin
+Image.drawMesh(image: Image, mesh: Mesh, mode: int32): int32 # @builtin
+Mesh # @builtin
+Mesh.create(size: int32): Mesh # @builtin
+Mesh.recycle(recycle: Mesh, size: int32): Mesh # @builtin
+Mesh.destroy(mesh: Mesh): void # @builtin
+Mesh.openObj(path: char[*]): Mesh # @builtin
+Mesh.open3ds(path: char[*]): Mesh # @builtin
+Mesh.saveObj(mesh: Mesh, path: char[*]): void # @builtin
+Mesh.normalize(mesh: Mesh, tolerance: float32, center: float32[3], resize: float32[3]): void # @builtin
+Mesh.addVertex(mesh: Mesh, x: float32, y: float32, z: float32): int32 # @builtin
+Mesh.addLine(mesh: Mesh, v1: int32, v2: int32): int32 # @builtin
+Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32): int32 # @builtin
+Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32, v4: int32): int32 # @builtin
+Mesh.setVertex(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool # @builtin
+Mesh.setNormal(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool # @builtin
+Mesh.setTexture(mesh: Mesh, idx: int32, s: float32, t: float32): bool # @builtin
+Mesh.ambient(mesh: Mesh, r: float32, g: float32, b: float32): void # @builtin
+Mesh.diffuse(mesh: Mesh, r: float32, g: float32, b: float32): void # @builtin
+Mesh.specular(mesh: Mesh, r: float32, g: float32, b: float32): void # @builtin
+Mesh.shine(mesh: Mesh, value: float32): void # @builtin
+Mesh.texture(mesh: Mesh, texture: Image): void # @builtin
+Mesh.keepBuffer # @builtin
+Mesh.cullBack # @builtin
+Mesh.cullFront # @builtin
+Mesh.cullMode # @builtin
+Mesh.drawPlot # @builtin
+Mesh.drawWire # @builtin
+Mesh.drawFill # @builtin
+Mesh.drawMode # @builtin
+Mesh.useTexture # @builtin
+Mesh.useLights # @builtin
+Mesh.drawBounds # @builtin
+Mesh.vertices # @builtin
+Mesh.triangles # @builtin
+Mesh.segments # @builtin
+gradient(image: Image, roi: Rect, type: int32, repeat: bool, colors: uint32[]): void # @builtin
+gradient.Linear # @builtin
+gradient.Radial # @builtin
+gradient.Square # @builtin
+gradient.Spiral # @builtin
+gradient.Conical # @builtin
+gradient.MaskLinear # @builtin
+gradient.MaskRadial # @builtin
+gradient.MaskSquare # @builtin
+camera(proj: float32[16], position: float32[4], forward: float32[4], right: float32[4], up: float32[4]): void # @builtin
+lights # @builtin
+lights.enabled(light: int32): bool # @builtin
+lights.enable(light: int32, on: bool): void # @builtin
+lights.position(light: int32, x: float32, y: float32, z: float32): void # @builtin
+lights.ambient(light: int32, r: float32, g: float32, b: float32): void # @builtin
+lights.diffuse(light: int32, r: float32, g: float32, b: float32): void # @builtin
+lights.specular(light: int32, r: float32, g: float32, b: float32): void # @builtin
+lights.attenuation(light: int32, constant: float32, linear: float32, quadratic: float32): void # @builtin
+Window # @builtin
+Window.KEY_PRESS # @builtin
+Window.KEY_RELEASE # @builtin
+Window.MOUSE_WHEEL # @builtin
+Window.MOUSE_PRESS # @builtin
+Window.MOUSE_MOTION # @builtin
+Window.MOUSE_RELEASE # @builtin
+Window.FINGER_PRESS # @builtin
+Window.FINGER_MOTION # @builtin
+Window.FINGER_RELEASE # @builtin
+Window.EVENT_TIMEOUT # @builtin
+Window.WINDOW_INIT # @builtin
+Window.WINDOW_CLOSE # @builtin
+Window.WINDOW_ENTER # @builtin
+Window.WINDOW_LEAVE # @builtin
+Window.KEY_CODE_ESC # @builtin
+Window.KEY_CODE_BACK # @builtin
+Window.KEY_CODE_TAB # @builtin
+Window.KEY_CODE_ENTER # @builtin
+Window.KEY_CODE_CAPSLOCK # @builtin
+Window.KEY_CODE_PRINT_SCREEN # @builtin
+Window.KEY_CODE_SCROLL_LOCK # @builtin
+Window.KEY_CODE_PAUSE # @builtin
+Window.KEY_CODE_INSERT # @builtin
+Window.KEY_CODE_HOME # @builtin
+Window.KEY_CODE_PAGE_UP # @builtin
+Window.KEY_CODE_DELETE # @builtin
+Window.KEY_CODE_END # @builtin
+Window.KEY_CODE_PAGE_DOWN # @builtin
+Window.KEY_CODE_RIGHT # @builtin
+Window.KEY_CODE_LEFT # @builtin
+Window.KEY_CODE_DOWN # @builtin
+Window.KEY_CODE_UP # @builtin
+Window.KEY_CODE_L_SHIFT # @builtin
+Window.KEY_CODE_R_SHIFT # @builtin
+Window.KEY_CODE_L_CTRL # @builtin
+Window.KEY_CODE_R_CTRL # @builtin
+Window.KEY_CODE_L_ALT # @builtin
+Window.KEY_CODE_R_ALT # @builtin
+Window.KEY_CODE_L_GUI # @builtin
+Window.KEY_CODE_R_GUI # @builtin
+Window.KEY_MASK_SHIFT # @builtin
+Window.KEY_MASK_CTRL # @builtin
+Window.KEY_MASK_ALT # @builtin
+Window.show(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void # @builtin
+Window.setTitle(title: char[*]): void # @builtin
+Window.quit(): int32 # @builtin
+Window.font(height: int32): Image # @builtin
+Window.font # @builtin
+empty(rectangle: Rect): bool # Checks whether the given `rectangle` is empty or not.
+contains(rect: Rect, x: int32, y: int32): bool # Checks whether the given `rectangle` contains the point (`x`, `y`).
+width(rectangle: Rect): int32 # Computes the width of the given `rectangle`.
+width(rectangle: Rect, width: int32): void # Sets the width of the given `rectangle`.
+height(rectangle: Rect): int32 # Computes the height of the given `rectangle`.
+height(rectangle: Rect, height: int32): void # Sets the height of the given `rectangle`.
+setSize(rectangle: Rect, width: int32, height: int32): void # Sets the width and height of the given `rectangle`.
+positionX(rectangle: Rect, x: int32): void # Sets the x position of the given `rectangle`.
+positionY(rectangle: Rect, y: int32): void # Sets the y position of the given `rectangle`.
+position(rectangle: Rect, x: int32, y: int32): void # Sets the x and y position of the given `rectangle`.
+adjust(rect: Rect, dx0: int32, dy0: int32, dx1: int32, dy1: int32): void # @public
+padded(rect: Rect, padding: int32): void # @public
+translate(rectangle: Rect, dx: int32, dy: int32): void # Moves the given `rectangle` by `dx` and `dy`.
+translateX(rectangle: Rect, dx: int32): void # Moves the given `rectangle` horizontally by `dx`.
+translateY(rectangle: Rect, dy: int32): void # Moves the given `rectangle` vertically by `dy`.
+argb # an 32 bit argb color
+argb.v # value of color
+argb.<?>
+argb.<?>.b # blue component
+argb.<?>.g # green component
+argb.<?>.r # red component
+argb.<?>.a # alpha component
+argb.b # blue component
+argb.g # green component
+argb.r # red component
+argb.a # alpha component
+argb(argb: uint32): argb # cast unsigned integer to argb value
+uint32(value: argb): uint32 # cast argb value to unsigned integer
+sat_s8(c: int32): uint32 # clamp signed gray or color component to fit in 8 bits (0 ... 255)
+sat_u8(c: uint32): uint32 # clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
+pack(c: uint32): argb # pack an argb color from the given component
+pack(r: uint32, g: uint32, b: uint32): argb # pack an argb color from the given components
+pack(a: uint32, r: uint32, g: uint32, b: uint32): argb # pack an argb color from the given components
+gray(c: int32): argb # construct a rgb8 color from the given gray value, clamp the input
+gray(c: uint32): argb # construct a rgb8 color from the given gray value, clamp the input
+gray(c: float32): argb # construct a rgb8 color from the given gray value, clamp the input
+gray(c: float64): argb # construct a rgb8 color from the given gray value, clamp the input
+argb(r: int32, g: int32, b: int32): argb # construct a rgb8 color from the given components, clamp the input
+argb(r: uint32, g: uint32, b: uint32): argb # construct a rgb8 color from the given components, clamp the input
+argb(r: float32, g: float32, b: float32): argb # construct a rgb8 color from the given components, clamp the input
+argb(r: float64, g: float64, b: float64): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: int32, r: int32, g: int32, b: int32): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: uint32, r: uint32, g: uint32, b: uint32): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: float32, r: float32, g: float32, b: float32): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: float64, r: float64, g: float64, b: float64): argb # construct a rgb8 color from the given components, clamp the input
+ach(color: argb): int32 # get the Alpha channel of the color
+rch(color: argb): int32 # get the Red channel of the color
+gch(color: argb): int32 # get the Green channel of the color
+bch(color: argb): int32 # get the Blue channel of the color
+lum(color: argb): int32 # get the luminosity of the color (0.299 * color.r + 0.587 * color.g + 0.114 * color.b)
+hue(rgb: argb): uint32 # get the hue of the color
+mix_s8(t: int32, a: uint32, b: uint32): int32 # compute the linear interpolation of the values `a` and `b` by `t` in range 0...255
+mix_s16(t: int32, a: uint32, b: uint32): int32 # compute the linear interpolation of the values `a` and `b` by `t` in range 0...65535
+mix_rgb8(t: int32, a: argb, b: argb): argb # compute the linear interpolation of the colors `a` and `b` by `t` in range 0...255
+lerpLut(lut: argb[], colors: argb[]): void # linear interpolate a lookup-table with the given colors
+alphaLut(lut: uint32[], hardness: int32, alpha: int32, reflect: bool): void # linear interpolate a alpha lookup-table with the given colors
+vec4f(rgb: argb): vec4f # convert an argb color to a floating point vector
+argb(vec: vec4f): argb # convert a floating point vector to an argb color
+lum(vec: vec4f): float32 # calculate the luminosity of a color
+rgb2hsl(rgb: vec4f): vec4f # Convert color from Rgb color space to Hsl color space
+hsl2rgb(hsl: vec4f): vec4f # Convert color from Hsl color space to Rgb color space
+Image(width: int32, height: int32, depth: int32): Image # Create an image with the given with, height and depth
+Image(fileName: char[*], depth: int32): Image # Create an image by opening an image file
+Image(fileName: char[*]): Image # Create an image by opening an image file
+clip(image: Image, roi: Rect): bool # Clip the rectangle against the given image boundaries
+set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
+drawAntiAliased
+fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
+fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
+drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, width: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `width` and `color`
+drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `color`
+fillRect(image: Image, roi: Rect, color: uint32): void # Fill a rectangle on the `image` specified by `roi` with the given `color`
+drawRect(image: Image, roi: Rect, color: uint32): void # Draw a rectangle on the `image` specified by `roi` with the given `color`
+fillRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+drawRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+fillRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+drawRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Draw the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill an ellipse on the `image` specified by the given coordinates and the given `color`
+drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw an ellipse on the `image` specified by the given coordinates and the given `color`
+fillOval(image: Image, roi: Rect, color: uint32): void # Fill an ellipse on the `image` specified by `roi` with the given `color`
+drawOval(image: Image, roi: Rect, color: uint32): void # Draw an ellipse on the `image` specified by `roi` with the given `color`
+drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line, including ending pixel
+drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line between the given coordinates(excluding the rightmost bottom pixel)
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void # Draw a quadratic bezier curve
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void # Draw a cubic bezier curve
+fill(image: Image, color: uint32): Image # Fill the entire image with the given color
+drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: int32): void # Draw the given ASCII `text` to the `image` at the given `x`, `y` coordinate, with the given `font` and `color`
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, roi: Rect, col: argb): void # fill the destination with the given `col` (alpha channel is used)
+blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32): void # copy the `src` image to the destination with the given transparency
+blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination masked with destination alpha
+copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy or convert `src` image to the destination `image`
+Image(copy: Image): Image # Create an image by copying another one
+tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
+eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
+transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
+resize(destination: Image, rect: Rect, source: Image, region: Rect, interpolation: int32): void # Resize the given `region` of the `source` image into the `destination` image using the `interpolation`.
+Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
+blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
+colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel defined by the `roi` on the `image`
+colorMat(image: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
+Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
+Camera # Simple camera for 3d transformations and projection.
+Camera.position # @public
+Camera.forward # @public
+Camera.right # @public
+Camera.up # @public
+Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f # Create an orthographic(`fov` == 0) or perspective projection matrix
+Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera # Create a camera at the given `position` looking at the given `target`
+Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can be multiplied with the projection matrix
+Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # get the matrix of the camera multiplied with the projection matrix
+Camera.move(camera: Camera, direction: vec4f, amount: float32): void # Move the camera in the given `direction` with the given `amount`
+Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): void # Rotate the camera around `orbit` in the given `direction` with the given `amount`
+Window # @public
+Window.timeoutMax
+Window.timeoutFps(fps: float64): int64 # calculate the timeout based on the given fps
+Window.show(image: Image, onEvent(action: int32, button: int32, ex: int32, ey: int32): int32): void # Show the given `image` in a window and delegate the events to the `onEvent` callback
+Window.show(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(image0: Image, image1: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(image: Image): void # Show the image in a window
+Window.show(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
+Window.show(width: int32, height: int32, eval(in: vec4f): vec4f): void # Show the the procedural image generated by the `eval` function
+Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window
+Style # Style used to layout and draw text and views.
+Style.dark # Default dark theme color for background
+Style.light # Default light theme color for background
+Style.blue # Default blue accent color for controls
+Style.green # Default green accent color for controls
+Style.gray # Default gray accent color for controls
+Style.orange # Default orange accent color for controls
+Style.red # Default red accent color for controls
+Style.magenta # Default magenta accent color for controls
+Style.cyan # Default cyan accent color for controls
+Style.theme
+Style.accent
+Style.align # Alignment of text in views
+Style.padding # Padding around text in views
+Style.font # The font to be used to draw text
+Style.format # Formatting to be used printing numbers, dates, etc
+Style.backgroundColor # @public
+Style.hoveredColor # @public
+Style.focusedColor # @public
+Style.valueColor # @public
+Style.textColor # @public
+Style.top
+Style.left
+Style.right
+Style.bottom
+Style.center
+Style.topLeft
+Style.topRight
+Style.bottomLeft
+Style.bottomRight
+Style.vertical
+Style.verticalTop
+Style.verticalBottom
+Style.horizontal
+Style.horizontalLeft
+Style.horizontalRight
+Style.fill
+Style.hovered
+Style.pressed
+Style.focused
+Style.align(parent: Rect, rect: Rect, align: int32): void # Place the given `rect` inside the `parent` rectangle conforming to `align`
+Style.measure(this: Style, rect: Rect, text: char[*]): void # Measure the given `text` whit `this` style.
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[*], align: int32): void # Measure and align the given `text` whit `this` style.
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[*]): void # Measure and align the given `text` whit `this` style.
+Style.setColor(style: Style, background: argb, accent: argb): void # Setup a custom color for the style
+Style.vertical(align: int32): bool
+Style.horizontal(align: int32): bool
+KeyEvent # @public
+KeyEvent.release # @public
+KeyEvent.isShift # @public
+KeyEvent.isCtrl # @public
+KeyEvent.isAlt # @public
+KeyEvent.repeat # @public
+KeyEvent.key # @public
+TouchEvent # @public
+TouchEvent.release # @public
+TouchEvent.isShift # @public
+TouchEvent.isCtrl # @public
+TouchEvent.isAlt # @public
+TouchEvent.clicks # @public
+TouchEvent.button # @public
+TouchEvent.dx # @public
+TouchEvent.dy # @public
+TouchEvent.x # @public
+TouchEvent.y # @public
+TouchEvent.test(event: TouchEvent, rect: Rect): bool # @public
+TouchEvent.isMotion(event: TouchEvent): bool # @public
+TouchEvent.isPress(event: TouchEvent): bool # @public
+TouchEvent.isLongPress(event: TouchEvent): bool # @public
+TouchEvent.isPress(event: TouchEvent, button: int32): bool # @public
+View # View is the base class of all user interface elements.\nit has width and height, forming a rectangular shape on screen.\nby it's own a view has no position, it must be positioned in a layout.
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style # style to be used when measuring and drawing the view
+View.data # user attached data
+View.parent(this: View): View # Returns the parent of the view
+View.onClick(this: View): bool # Callback function executed when the view is clicked
+View.onClick(this: View): bool # Callback function executed when the view is clicked
+View.onReset(this: View): bool # Callback function executed when the view is double clicked
+View.onReset(this: View): bool # Callback function executed when the view is double clicked
+View.onCreate(this: View, parent: View): void # Callback function executed when the view is created
+View.onCreate(this: View, parent: View): void # Callback function executed when the view is created
+View.onDestroy(this: View): void # Callback function executed when the view is destroyed
+View.onDestroy(this: View): void # Callback function executed when the view is destroyed
+View.onKeyEvent(this: View, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+View.onKeyEvent(this: View, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+View.onMeasure(this: View, rect: Rect): bool # Callback function executed when the view needs to be measured
+View.onMeasure(this: View, rect: Rect): bool # Callback function executed when the view needs to be measured
+View.onDraw(this: View, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void # @public
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+focus(view: View): void
+invalidate(view: View, layout: bool): void
+Layout # Layout is a view containing other views positioned by it.\nthe Layout class does not clip its children.\nthe size of the Layout class should contain all the views.
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.items
+Layout.itemCount
+Layout.itemCapacity
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop # Space between layout and its content at top.
+Layout.paddingLeft # Space between layout and its content at left.
+Layout.paddingRight # Space between layout and its content at right.
+Layout.paddingBottom # Space between layout and its content at bottom.
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View # Returns the pressed view in the current layout
+Layout.getFocused(this: Layout): View # Returns the focused view in the current layout
+Layout.setFocused(this: Layout, focus: View): bool # Sets the focused view in the current layout
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, alignment: int32, views: View[]): Layout # Append the given `views` to `this` layout with the given `alignment`
+Layout.size(this: Layout): int32 # @public
+Layout.getView(this: Layout, idx: int32): View # @public
+Layout.setAlignment(this: Layout, idx: int32, alignment: int32): void # @public
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout # Set the padding of `this` layout to the given values
+Layout.onClick(this: Layout): bool # Callback function executed when the view is clicked
+Layout.onReset(this: Layout): bool # Callback function executed when the view is double clicked
+Layout.onCreate(this: Layout, parent: View): void # Callback function executed when the view is created
+Layout.onDestroy(this: Layout): void # Callback function executed when the view is destroyed
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+Layout.onMeasure(this: Layout, measured: Rect): bool # Callback function executed when the view needs to be measured
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void # Callback function executed when the view needs to be drawn
+Layout.Custom(rowsCols: int32, alignment: int32, items: View[]): Layout # Create a custom Layout containing the given `items` all of them aligned as `alignment`
+Layout.Row(items: View[]): Layout # Create a Row-layout containing the given `items` arranged vertically in a single row
+Layout.Column(items: View[]): Layout # Create a Column-layout containing the given `items` arranged horizontally in a single column
+Layout.Stack(items: View[]): Layout # Create a Stack-layout containing the given `items` stacked on top of each other
+Widget # Widget is a special kind of layout, which can clip the content of its elements.\na widget may clip its children and apply scrolling to them, even show a scrollbar.
+Widget.measure
+Widget.redraw
+Widget.focus
+Widget.scrollX
+Widget.scrollY
+Widget.focusNext(view: View, prev: bool): bool
+Widget.addItems(this: Widget, align: int32, views: View[]): Widget # Append the given `views` to `this` widget with the given `alignment`
+Widget.addItems(this: Widget, views: View[]): Widget # Append the given `views` to `this` widget
+Widget.focus(this: Widget, value: View): Widget # Set the initial focused wie in the widget
+Widget.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout # Set the padding of `this` widget to the given values
+Widget.padding(this: Widget, vertical: int32, horizontal: int32): Layout # Set the padding of `this` widget to the given values
+Widget.padding(this: Widget, padding: int32): Widget # Set the padding of `this` widget to the given value
+Widget.onCreate(this: Widget, parent: View): void # Callback function executed when the view is created
+Widget.onKeyEvent(this: Widget, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+Widget.onMeasure(this: Widget, measured: Rect): bool # Callback function executed when the view needs to be measured
+Widget.onDraw(this: Widget, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+getWidget(view: View): Widget # Return the root widget of the given `view`
+focus(view: View): void # Set the given `view` focused
+invalidate(view: View, layout: bool): void # Invalidate the view, so the next frame it will be redrawn, and measured in case `layout` is set to true
+invalidate(view: View): void # Invalidate the view, so the next frame it will be measured and redrawn
+isFocused(view: View): bool # Returns weather the given `view` is in focused state or not.
+isPressed(view: View): bool # Returns weather the given `view` is in pressed state or not.
+isDirty(view: View): bool # Returns weather the given `view` needs to be measured or not.
+Button # @public
+Button.text # @public
+Button.onMeasure(this: Button, rect: Rect): bool # Callback function executed when the view needs to be measured
+Button.onDraw(this: Button, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+Switch # @public
+Switch.onOff
+Switch.text # @public
+Switch.states # @public
+Switch.selected # @public
+Switch.resetValue
+Switch.clickToFocus # clicking on a non focused view will not update the value, it will just focus it.
+Switch.checked(this: Switch): bool # @public
+Switch.onUpdate(this: Switch, selected: int32): bool # @public
+Switch.onUpdate(this: Switch, selected: int32): bool # @public
+Switch.onReset(this: Switch): bool # Callback function executed when the view is double clicked
+Switch.onClick(this: Switch): bool # Callback function executed when the view is clicked
+Switch.onCreate(this: Switch, parent: View): void # Callback function executed when the view is created
+Switch.onKeyEvent(this: Switch, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+Switch.onTouchEvent(this: Switch, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+Switch.onMeasure(this: Switch, rect: Rect): bool # Callback function executed when the view needs to be measured
+Switch.onDraw(this: Switch, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+Slider # @public
+Slider.text # @public
+Slider.value # @public
+Slider._value
+Slider.minimum # @public
+Slider.maximum # @public
+Slider.stepSize # @public
+Slider.resetValue
+Slider.clickToFocus # clicking on a non focused view will not update the value, it will just focus it.
+Slider.onUpdate(this: Slider, value: float64): bool # @public
+Slider.onUpdate(this: Slider, value: float64): bool # @public
+Slider.onReset(this: Slider): bool # Callback function executed when the view is double clicked
+Slider.onCreate(this: Slider, parent: View): void # Callback function executed when the view is created
+Slider.onKeyEvent(this: Slider, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+Slider.onTouchEvent(this: Slider, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+Slider.onMeasure(this: Slider, rect: Rect): bool # Callback function executed when the view needs to be measured
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void # @public
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void # @public
+Slider.onDraw(this: Slider, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+Histogram # @public
+Histogram.lines # @public
+Histogram.color # @public
+Histogram.data # @public
+Histogram.update(this: Histogram, image: Image): void # @public
+Histogram.onUpdate(this: Histogram, idx: int32, value: int32): bool # @public
+Histogram.onUpdate(this: Histogram, idx: int32, value: int32): bool # @public
+Histogram.onReset(this: Histogram): bool # Callback function executed when the view is double clicked
+Histogram.onCreate(this: Histogram, parent: View): void # Callback function executed when the view is created
+Histogram.onTouchEvent(this: Histogram, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+Histogram.onMeasure(this: Histogram, rect: Rect): bool # Callback function executed when the view needs to be measured
+Histogram.onDraw(this: Histogram, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+DebugView # debug view to count draws
+DebugView.text
+DebugView.started
+DebugView.maxDuration
+DebugView.durations
+DebugView.measures # Number of measures, initialize to `-1` to ignore
+DebugView.draws # Number of draw calls, initialize to `-1` to ignore
+DebugView.startTimer(this: DebugView): void # Start time measurement until this view is drawn on screen
+DebugView.update(this: DebugView): void
+DebugView.onClick(this: DebugView): bool # Callback function executed when the view is clicked
+DebugView.onReset(this: DebugView): bool # Callback function executed when the view is double clicked
+DebugView.onCreate(this: DebugView, parent: View): void # Callback function executed when the view is created
+DebugView.onMeasure(this: DebugView, rect: Rect): bool # Callback function executed when the view needs to be measured
+DebugView.onDraw(this: DebugView, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+Panel # @public
+Panel.visible # @public
+Panel.visible(this: Panel, value: bool): bool # @public
+Panel.onMeasure(this: Panel, rect: Rect): bool # Callback function executed when the view needs to be measured
+TabPage
+TabPage.tabs
+TabPage.active
+TabPage.background
+TabPage.onCreate(this: TabPage, parent: View): void # Callback function executed when the view is created
+TabPage.onMeasurePage(layout: Layout, rect: Rect): bool
+TabPage.onDrawPage(panel: Layout, offs: Image, rect: Rect): void
+TabPage.onDrawBar(tabs: Layout, offs: Image, rect: Rect): void
+TabPage.onDrawTab(tab: Button, offs: Image, rect: Rect): void
+TabPage.onDrawSeparator(this: View, offs: Image, rect: Rect): void
+TabPage.onClickTab(button: Button): bool
+TabPage.addItems(this: TabPage, text: char[*], align: int32, views: View[]): TabPage
+Select # @public
+Select.text # @public
+Select.states
+Select.selected
+Select.header
+Select.panel
+Select.selectedData(select: Select): variant # @public
+Select.expand(select: Select, value: bool): bool
+Select.onItemClick(select: Select, view: Button): bool
+Select.setSelectedIndex(select: Select, index: int32): Select # @public
+Select.addItems(this: Select, align: int32, views: View[]): Select # @public
+Select.addItem(this: Select, text: char[*], data: variant): Select # @public
+Select.addItem(this: Select, text: char[*]): Select # @public
+FxWidget # Widget used to display controls in image processing demos
+FxWidget.showOriginal # @public
+FxWidget.align # @public
+FxWidget.margin # @public
+FxWidget.radius # @public
+FxWidget.onTouchEvent(this: FxWidget, rect: Rect, event: TouchEvent): bool # Callback function executed when the view receives a TouchEvent: press, motion or release
+FxWidget.onKeyEvent(this: FxWidget, event: KeyEvent): bool # Callback function executed when the view receives a KeyEvent: press or release
+FxWidget.onMeasure(this: FxWidget, measured: Rect): bool # Callback function executed when the view needs to be measured
+FxWidget.onDraw(this: FxWidget, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
+FxWidget.onProcess(widget: FxWidget): void # Callback to be executed when the value of a control changes
+FxWidget.onProcess(widget: FxWidget): void # Callback to be executed when the value of a control changes
+Widget(width: int32, height: int32, style: Style): Widget # Create a widget with the given `width`, `height` and `style`
+Widget(width: int32, height: int32): Widget # Create a widget with the given `width`, `height` and a default style
+FxWidget(onProcess(widget: FxWidget): void, views: View[]): FxWidget # Create a widget with the given `views` used in image processing demos
+FxWidget(views: View[]): FxWidget # @public
+hasFocused(this: Layout, items: View[]): bool # @public
+hasPressed(this: Layout, items: View[]): bool # @public
+Window # @public
+Window.show(offscreen: Image, widget: Widget): void # Show the given `widget` in a window drawn to the `offscreen` image
+Window.show(widget: Widget): void # Show the given `widget` in a window
