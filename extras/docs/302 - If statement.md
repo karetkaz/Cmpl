@@ -9,7 +9,7 @@ The static if construct can be used as a compile time check.
 **Example**
 ```
 // if double is not defined, define it as float64
-static if (typename(double) == null) {
+static if (struct(double) == null) {
 inline double = float64;
 }
 ```

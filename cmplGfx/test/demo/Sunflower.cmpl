@@ -1,0 +1,65 @@
+// Sunflower demo.
+// https://demonstrations.wolfram.com/SunflowerSeedArrangements/
+// https://blog.wolfram.com/2011/07/28/how-i-made-wine-glasses-from-sunflowers/
+
+Image offs = Image(1440, 900, 32);
+
+Slider sldSeeds = {
+	text: "seeds";
+	minimum: 10;
+	maximum: 50000;
+	value: 10000;
+	stepSize: 1;
+};
+Slider sldSize = {
+	text: "size";
+	minimum: 2;
+	maximum: 32;
+	value: 6;
+};
+
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+	width: 200;
+};
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	if (action < Window.EVENT_PROCESSED) {
+		// action was not processed by the widget, do not redraw
+		return Window.timeoutMax;
+	}
+
+	static int color = 0xff9900;
+	static int centerX = offs.width() / 2;
+	static int centerY = offs.height() / 2;
+
+	static float64 TAU = Float64.pi * 2;
+	static float64 PHI = (Float64.sqrt(5) + 1) / 2;
+
+	float64 r = sldSize.value;
+	float64 scale = r - r / 4;
+
+	debug.startTimer();
+	offs.fill(0);
+	int seeds = sldSeeds.value;
+	for (int i = 0; i < seeds; i += 1) {
+		float64 theta = i * TAU / PHI;
+		float64 s = scale * Float64.sqrt(i);
+		float64 x = centerX + s * Float64.cos(theta);
+		float64 y = centerY - s * Float64.sin(theta);
+		offs.fillOval(x, y, x + r, y + r, color);
+	}
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent, FxWidget(
+	sldSeeds, sldSize,
+	null, debug
+));
+offs.destroy();

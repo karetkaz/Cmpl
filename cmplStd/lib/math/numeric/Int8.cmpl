@@ -1,0 +1,217 @@
+/// 8-bit unsigned integer operations
+static struct Uint8 {
+	enum {
+		bits: 8;
+		min: 0x00;
+		max: 0xff;
+	}
+
+	/// Computes the bitwise NOT of an 8-bit unsigned value
+	uint8 cmt(uint8 x) { return inline(uint32(x), u32.cmt); }
+
+	/// Computes the bitwise OR of two 8-bit unsigned integers
+	uint8 or(uint8 x, uint8 y) { return inline(uint32(x), uint32(y), u32.or); }
+
+	/// Computes the bitwise XOR of two 8-bit unsigned integers
+	uint8 xor(uint8 x, uint8 y) { return inline(uint32(x), uint32(y), u32.xor); }
+
+	/// Computes the bitwise AND of two 8-bit unsigned integers
+	uint8 and(uint8 x, uint8 y) { return inline(uint32(x), uint32(y), u32.and); }
+
+	/// Performs a logical right shift of x by n bits for an 8-bit unsigned integer
+	uint8 shr(uint8 x, uint32 n) { return inline(uint32(x), uint32(n), u32.shr); }
+
+	/// Performs a logical left shift of x by n bits for an 8-bit unsigned integer
+	uint8 shl(uint8 x, uint32 n) { return inline(uint32(x), uint32(n), u32.shl); }
+
+	/// Returns the signum of the input (`0` if zero, `1` if positive)
+	int32 sign(uint8 x) { return int32(x > 0); }
+
+	/// Returns the absolute value of the input
+	uint8 abs(uint8 x) { return x; }
+
+	/// Returns the smaller value from the input values
+	uint8 min(uint8 a, uint8 b) { return a < b ? a : b; }
+
+	/// Returns the greater value from the input values
+	uint8 max(uint8 a, uint8 b) { return a > b ? a : b; }
+
+	/// Returns the `value` clamped between the provided `min` and `max`
+	uint8 clamp(uint8 value, uint8 min, uint8 max) { return min(max(value, min), max); }
+
+	/// Extract and zero-extends a bit field from a byte value
+	uint8 zeroExtend(uint8 value, int32 offs, int32 size) {
+		return uint32(uint32(value) << (bits - (offs + size))) >> (bits - size);
+	}
+
+	/// Adds two 8-bit unsigned integers with carry out
+	uint8 add(uint8 x, uint8 y, uint8 overflow&) {
+		uint32 result = uint32(x) + uint32(y);
+		overflow = result >> bits;
+		return result;
+	}
+
+	/// Subtracts two 8-bit unsigned integers with borrow out
+	uint8 sub(uint8 x, uint8 y, uint8 overflow&) {
+		uint32 result = uint32(x) - uint32(y);
+		overflow = result >> bits;
+		return result;
+	}
+
+	/// Multiplies two 8-bit unsigned integers with overflow out
+	uint8 mul(uint8 x, uint8 y, uint8 overflow&) {
+		uint32 result = uint32(x) * uint32(y);
+		overflow = result >> bits;
+		return result;
+	}
+
+	/// Compares two 8-bit unsigned integers
+	int32 compare(uint8 x, uint8 y) {
+		return uint32(x) - uint32(y);
+	}
+
+	/// Returns the minimum number of bits required to represent the value of `x`
+	int32 length(uint8 x) {
+		static if (preferNativeCalls && struct(uint32.len) != null) {
+			// use the native method if available
+			return uint32.len(x);
+		}
+
+		uint32 bits = x;	// speed up by by avoiding load and store indirect memory
+		int32 result = 0;
+
+		if ((bits >> 4) != 0) {
+			result += 4;
+			bits >>= 4;
+		}
+		if ((bits >> 2) != 0) {
+			result += 2;
+			bits >>= 2;
+		}
+		if ((bits >> 1) != 0) {
+			result += 1;
+			bits >>= 1;
+		}
+		return result + bits;
+	}
+
+	/// Returns the number of leading zero bits in x
+	int32 leadingZeros(uint8 x) { return bits - length(x); }
+
+	/// Returns the number of trailing zero bits in x
+	int32 trailingZeros(uint8 x) {
+		if (x == 0) {
+			return bits;
+		}
+
+		return length(x & -x) - 1;
+	}
+
+	/// Finds the index of the most significant(highest) set bit.
+	int32 scanReverse(uint8 x) { return length(x) - 1; }
+
+	/// Finds the index of the least significant(lowest) set bit
+	// or return x == 0 ? -1 : trailingZeros(x);
+	int32 scanForward(uint8 x) { return length(x & -x) - 1; }
+
+	/// Returns the number of set bits ("population count") in x
+	int32 countOnes(uint8 x) {
+		static if (preferNativeCalls && struct(uint32.pop) != null) {
+			// use the native method if available
+			return uint32.pop(x);
+		}
+
+		x -= (x >> 1) & 0x55;
+		x = (x & 0x33) + ((x >> 2) & 0x33);
+		return (x + (x >> 4)) & 0xf;
+	}
+
+	/// Returns the value of x rotated left by (n mod size) bits
+	uint8 rotateLeft(uint8 x, int32 n) {
+		n &= bits - 1;
+		return (x << n) | (x >> (bits - n));
+	}
+
+	/// Returns the value of x rotated right by (n mod size) bits
+	// inline rotateRight(uint8 x, int32 n) = rotateLeft(x, -n);
+	uint8 rotateRight(uint8 x, int32 n) {
+		n &= bits - 1;
+		return (x >> n) | (x << (bits - n));
+	}
+
+	/// Returns the value of x with its bits in reversed order
+	uint8 reverseBits(uint8 x) {
+		x = ((x >> 1) & 0x55) | ((x & 0x55) << 1);
+		x = ((x >> 2) & 0x33) | ((x & 0x33) << 2);
+		return (x >> 4) | (x << 4);
+	}
+
+	/// Reverses the byte order of an 8-bit unsigned integer
+	uint8 reverseBytes(uint8 x) {
+		return x;
+	}
+}
+
+/// 8-bit signed integer operations
+static struct Int8 {
+	enum {
+		bits: Uint8.bits;
+		min: -128;
+		max: 127;
+	}
+
+	/// Computes the arithmetic negation of an 8-bit signed integer
+	int8 neg(int8 x, int8 overflow&) {
+		overflow = int8(x == min);
+		return inline(int32(x), i32.neg);
+	}
+
+	/// Performs an arithmetic right shift of an 8-bit signed integer
+	int8 shr(int8 x, int32 n) { return inline(int32(x), int32(n), u32.sar); }
+
+	/// Adds two 8-bit signed integers with carry out
+	int8 add(int8 x, int8 y, int8 overflow&) {
+		int32 result = int32(x) + int32(y);
+		overflow = result >> bits;
+		return result;
+	}
+
+	/// Subtracts two 8-bit signed integers with borrow out
+	int8 sub(int8 x, int8 y, int8 overflow&) {
+		int32 result = int32(x) - int32(y);
+		overflow = result >> bits;
+		return result;
+	}
+
+	/// Multiplies two 8-bit signed integers with overflow out
+	int8 mul(int8 x, int8 y, int8 overflow&) {
+		int32 result = int32(x) * int32(y);
+		overflow = result >> bits;
+		return result;
+	}
+
+	/// Compares two 8-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
+	int32 compare(int8 x, int8 y) {
+		return int32(x) - int32(y);
+	}
+
+	/// Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+	int32 sign(int8 x) {return int32(x > 0) - int32(x < 0); }
+
+	/// Returns the absolute value of the input
+	int8 abs(int8 x) { return x < 0 ? -x : x; }
+
+	/// Returns the smaller value from the input values
+	int8 min(int8 a, int8 b) { return a < b ? a : b; }
+
+	/// Returns the greater value from the input values
+	int8 max(int8 a, int8 b) { return a > b ? a : b; }
+
+	/// Returns the `value` clamped between the provided `min` and `max`
+	int8 clamp(int8 value, int8 min, int8 max) { return min(max(value, min), max); }
+
+	/// Extract and sign-extends a bit field from a signed byte value
+	int8 signExtend(int8 value, int32 offs, int32 size) {
+		return int32(int32(value) << (bits - (offs + size))) >> (bits - size);
+	}
+}

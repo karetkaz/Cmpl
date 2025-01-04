@@ -1,0 +1,27 @@
+struct Uint128 {
+	uint32 words[4];
+	inline BigUint = Uint128;
+	inline "./UintImpl.cmpl";
+}
+inline Uint128(uint64 value) = Uint128.make(value);
+
+struct Uint256 {
+	uint32 words[8];
+	inline BigUint = Uint256;
+	inline "./UintImpl.cmpl";
+}
+inline Uint256(uint64 value) = Uint256.make(value);
+
+struct Uint512 {
+	uint32 words[16];
+	inline BigUint = Uint512;
+	inline "./UintImpl.cmpl";
+}
+inline Uint512(uint64 value) = Uint512.make(value);
+
+/* todo: allow arbitrary precision big unsigned integers
+struct UintBig {
+	uint32 words[];
+	inline BigUint = UintBig;
+	// todo: inline "./UintImpl.cmpl";
+}*/

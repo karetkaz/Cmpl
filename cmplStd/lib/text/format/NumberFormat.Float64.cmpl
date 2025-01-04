@@ -1,0 +1,163 @@
+/// formated print a floating-point value to the given `output` buffer
+static int format(NumberFormat format!, char output&[], int pos, float64 value) {
+	if (value < 0) {
+		pos = append(output, pos, format.negativeSymbol);
+		value = -value;
+	} else {
+		pos = append(output, pos, format.positiveSymbol);
+	}
+
+	if (value - value != 0) {
+		if (value != value) {
+			return append(output, pos, format.undefinedSymbol);
+		}
+		return append(output, pos, format.infinitySymbol);
+	}
+
+	struct BigUint {
+		uint32 words[32];
+		inline "cmplStd/lib/math/numeric/UintImpl.cmpl";
+	}
+
+	uint64 bits = Float64.toBits(value);
+	bool negative = (bits >> 63) != 0;
+	int32 exponent = (bits >> 52) & 0x7ff;
+	uint64 mantissa = bits & ((1U << 52) - 1);
+	if (exponent == 0) {
+		// Special-case for de-normals - no special exponent value and no implied one.
+		exponent = -1022;
+	} else {
+		exponent -= 1023;
+		mantissa += 1U << 52;
+	}
+
+	char digitSymbols![] = format.digitSymbols;
+	assert(digitSymbols.length > 1, "radix is too small", format);
+
+	BigUint integerPart = BigUint.make(mantissa);
+	if (exponent < 52) {
+		integerPart.shiftRight(52 - exponent);
+	} else {
+		integerPart.shiftLeft(exponent - 52);
+	}
+
+	int width = Int32.abs(format.width);
+	int integerPos = pos;
+	int groupPosition = format.firstGrouping(pos);
+	for (; !integerPart.isZero(); width -= 1) {
+		if (pos >= output.length) {
+			output.remove(integerPos, integerPos + 1);
+			pos -= 1;
+		}
+		if (pos == groupPosition) {
+			pos = append(output, pos, format.groupingSymbol);
+			groupPosition = format.digitGrouping(pos);
+			continue;
+		}
+		uint32 remainder = integerPart.divRem(digitSymbols.length);
+		pos = append(output, pos, digitSymbols[remainder]);
+	}
+	for (; width > 0; width -= 1) {
+		if (pos >= output.length) {
+			break;
+		}
+		if (pos == groupPosition) {
+			pos = append(output, pos, format.groupingSymbol);
+			groupPosition = format.digitGrouping(pos);
+			continue;
+		}
+		pos = append(output, pos, format.paddingSymbol);
+	}
+
+	// Put the digits in the correct order.
+	reverse(output, integerPos, pos);
+	pos = append(output, pos, format.fractionSymbol);
+
+	BigUint fractionPart = BigUint.make(mantissa);
+	fractionPart.shiftLeft(fractionPart.bits() - (52 - exponent));
+
+	int precision = Int32.abs(format.precision);
+	int fractionPos = pos;
+	groupPosition = format.fractGrouping(pos);
+	for (; precision > 0 && !fractionPart.isZero(); ) {
+		if (pos >= output.length) {
+			break;
+		}
+		if (pos == groupPosition) {
+			pos = append(output, pos, format.groupingSymbol);
+			groupPosition = format.fractGrouping(pos);
+			continue;
+		}
+		uint32 overflow = fractionPart.mulOvf(digitSymbols.length);
+		pos = append(output, pos, digitSymbols[overflow]);
+		precision -= 1;
+	}
+
+	if (precision == 0 || pos >= output.length) {
+		// round if needed: `0.358` is `0.36` printed using 2 precision digits
+		uint32 overflow = fractionPart.mulOvf(digitSymbols.length);
+		bool carry = overflow >= digitSymbols.length / 2;
+
+		for (int i = pos-1; carry && i >= integerPos; i -= 1) {
+			char idx = digitSymbols.indexOf(output[i]);
+			if (idx < 0) {
+				continue;
+			}
+			idx += 1;
+			carry = idx >= digitSymbols.length;
+			if (carry) {
+				idx = 0;
+			}
+			output[i] = digitSymbols[idx];
+		}
+		if (carry) {
+			// one extra digit is needed: 9.9999 => 10.000
+			for (int i = pos; i > integerPos; i -= 1) {
+				output[i] = output[i - 1];
+			}
+			output[integerPos] = digitSymbols[1];
+			pos += 1;
+			groupPosition += 1;
+		}
+	}
+
+	// add or remove trailing zeros
+	if (format.trailingZeros) {
+		for (; precision > 0; ) {
+			if (pos >= output.length) {
+				break;
+			}
+			if (pos == groupPosition) {
+				pos = append(output, pos, format.groupingSymbol);
+				groupPosition = format.fractGrouping(pos);
+				continue;
+			}
+			pos = append(output, pos, digitSymbols[0]);
+			precision -= 1;
+		}
+	} else {
+		// remove trailing zeros
+		for (;pos > fractionPos;) {
+			if (digitSymbols.indexOf(output[pos - 1]) > 0) {
+				// stop if a digit is found, but not the first
+				break;
+			}
+			pos -= 1;
+		}
+	}
+	if (pos == fractionPos && pos < output.length) {
+		if (!format.trailingSeparator) {
+			// remove trailing separator
+			pos -= 1;
+		}
+	}
+
+	if (pos >= output.length) {
+		error("buffer overrun", pos);
+		output[output.length - 1] = 0;
+		return output.length;
+	}
+
+	output[pos] = 0;
+	return pos;
+}

@@ -1,0 +1,67 @@
+/// apply a color lookup table to each pixel component (alpha channel as luminosity), defined by the `roi` on the `image`
+void colorMap(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256]) {
+	static if (preferNativeCalls && struct(Image.copy.lookupLrgb) != null) {
+		return Image.copy(image, x, y, src, roi, lut, Image.copy.lookupLrgb);
+	}
+
+	inline fxpBits = 20;
+	inline fxp(float64 v) = int32(v * (1 << fxpBits));
+	static int32 rgb2luv[] = {
+		fxp( 0.299), fxp( 0.587), fxp( 0.114),
+		fxp(-0.147), fxp(-0.289), fxp( 0.437),
+		fxp( 0.615), fxp(-0.515), fxp(-0.100),
+	};
+	static int32 luv2rgb[] = {
+		fxp(1), fxp( 0.000), fxp( 1.140),
+		fxp(1), fxp(-0.394), fxp(-0.581),
+		fxp(1), fxp( 2.028), fxp( 0.000),
+	};
+
+	static argb mapLuv(argb lut[256], argb base, argb with) {
+		// lookup also luminosity using the alpha channel:
+		// convert the color from `rgb` to `luv` color space,
+		// lookup luminosity, then convert back and store the new color
+		int32 r = lut[with.r].r;
+		int32 g = lut[with.g].g;
+		int32 b = lut[with.b].b;
+
+		int32 l = (r * rgb2luv[0] + g * rgb2luv[1] + b * rgb2luv[2]) >> fxpBits;
+		int32 u = (r * rgb2luv[3] + g * rgb2luv[4] + b * rgb2luv[5]) >> fxpBits;
+		int32 v = (r * rgb2luv[6] + g * rgb2luv[7] + b * rgb2luv[8]) >> fxpBits;
+
+		l = lut[sat_s8(l)].a;
+
+		return {
+			r: sat_s8((l * luv2rgb[0] + u * luv2rgb[1] + v * luv2rgb[2]) >> fxpBits);
+			g: sat_s8((l * luv2rgb[3] + u * luv2rgb[4] + v * luv2rgb[5]) >> fxpBits);
+			b: sat_s8((l * luv2rgb[6] + u * luv2rgb[7] + v * luv2rgb[8]) >> fxpBits);
+		};
+	}
+	return image.copy(x, y, src, roi, lut, mapLuv);
+}
+
+/// apply a color lookup table to the red, green and blue pixel components, defined by the `roi` on the `image`
+void colorMapRgb(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256]) {
+	static if (preferNativeCalls && struct(Image.copy.lookupRgb) != null) {
+		return Image.copy(image, x, y, src, roi, lut, Image.copy.lookupRgb);
+	}
+	static argb mapRgb(argb lut[256], argb base, argb with) {
+		return {
+			r: lut[with.r].r;
+			g: lut[with.g].g;
+			b: lut[with.b].b;
+		};
+	}
+	return image.copy(x, y, src, roi, lut, mapRgb);
+}
+
+/// apply a color lookup table to the red, green and blue pixel components, defined by the `roi` on the `image`
+void colorMap3d(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256*256*256]) {
+	static if (preferNativeCalls && struct(Image.copy.lookup3d) != null) {
+		return Image.copy(image, x, y, src, roi, lut, Image.copy.lookup3d);
+	}
+	static argb mapRgb(argb lut[256], argb base, argb with) {
+		return lut[with.r + 256 * (with.g + 256 * with.b)];
+	}
+	return image.copy(x, y, src, roi, lut, mapRgb);
+}

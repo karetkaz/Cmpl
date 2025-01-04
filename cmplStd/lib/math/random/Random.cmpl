@@ -1,0 +1,120 @@
+/// A very simple random number generator
+// based on: http://www.codeproject.com/Articles/25172/Simple-Random-Number-Generation
+// based on: http://iquilezles.org/www/articles/sfrand/sfrand.htm
+struct Random {
+	uint32 m_w = 521288629;
+	uint32 m_z = 362436069;
+
+	/// Calculate the next uniformly distributed random number
+	static int32 nextInt32(Random random&) {
+		random.m_z = 36969 * (random.m_z & 0xffff) + (random.m_z >> 16);
+		random.m_w = 18000 * (random.m_w & 0xffff) + (random.m_w >> 16);
+		return (random.m_z << 16) + random.m_w;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static int64 nextInt64(Random random&) {
+		uint64 hi = nextInt32(&random);
+		uint32 lo = nextInt32(&random);
+		return (hi << 32) | lo;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static float32 nextFloat32(Random random&) {
+		uint32 value = nextInt32(&random);
+		return Float32.fromBits((value >> 9) | 0x3f800000) - 1;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static float64 nextFloat64(Random random&) {
+		uint32 hi = nextInt32(&random);
+		uint32 lo = nextInt32(&random);
+		return Float64.fromBits((hi >> 12) | 0x3ff00000, lo) - 1;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static int32 nextInt32(Random random&, int32 min, int32 max) {
+		if (min > max) {
+			int32 tmp = min;
+			min = max;
+			max = tmp;
+		}
+		int32 result = nextInt32(&random) % (max - min);
+		if (result < 0) {
+			result += max - min;
+		}
+		return result + min;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static int64 nextInt64(Random random&, int64 min, int64 max) {
+		if (min > max) {
+			int64 tmp = min;
+			min = max;
+			max = tmp;
+		}
+		int64 result = nextInt64(&random) % (max - min);
+		if (result < 0) {
+			result += max - min;
+		}
+		return result + min;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static float32 nextFloat32(Random random&, float32 min, float32 max) {
+		if (min > max) {
+			float32 tmp = min;
+			min = max;
+			max = tmp;
+		}
+		float32 result = nextFloat32(&random) % (max - min);
+		if (result < 0) {
+			result += max - min;
+		}
+		return result + min;
+	}
+
+	/// Calculate the next uniformly distributed random number
+	static float64 nextFloat64(Random random&, float64 min, float64 max) {
+		if (min > max) {
+			float64 tmp = min;
+			min = max;
+			max = tmp;
+		}
+		float64 result = nextFloat64(&random) % (max - min);
+		if (result < 0) {
+			result += max - min;
+		}
+		return result + min;
+	}
+
+	/// Get normal (Gaussian) random sample with mean 0 and standard deviation 1
+	static float64 nextNormal(Random random&) {
+		// Use Box-Muller algorithm
+		float64 rho = Float64.sqrt(-2 * Float64.ln(nextFloat64(&random)));
+		float64 theta = 2 * Float64.pi * nextFloat64(&random);
+		return rho * Float64.cos(theta);
+	}
+
+	/// Get normal (Gaussian) random sample with specified mean and standard deviation
+	static float64 nextNormal(Random random&, float64 mean, float64 standardDeviation) {
+		assert(standardDeviation > 0, "Shape must be positive. Received", standardDeviation);
+		return mean + standardDeviation * nextNormal(&random);
+	}
+}
+
+/// Create a random number generator based on the given seed
+Random Random(int64 seed) {
+	return {
+		// use low 32 bits
+		m_w: uint32(seed);
+	};
+}
+
+/// Create a random number generator based on the current time
+Random Random() {
+	return {
+		// use low 32 bits
+		m_w: uint32(System.millis());
+	};
+}

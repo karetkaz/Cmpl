@@ -1,0 +1,78 @@
+/// Number formater
+struct NumberFormat {
+	/// number digits to be used for formatting
+	static char digits![] = "0123456789abcdefghijklmnopqrstuv";
+	// static char hex_digits[] = hex[...16]; // hexadecimal
+	// static char dec_digits[] = hex[...10]; // decimal
+	// static char oct_digits[] = hex[...8];  // octal
+	// static char bin_digits[] = hex[...2];  // binary
+
+	/// specify the digit symbols and the radix to be used for formatting
+	/// binary: "01", decimal: "0123456789", hexadecimal: "0123456789abcdef"
+	char digitSymbols![] = digits[...10];
+
+	/// the prefix symbol to be used for positive values
+	char positiveSymbol = '';
+	/// the prefix symbol to be used for negative values
+	char negativeSymbol = '-';
+	/// the symbol to be used for floating-point infinity values
+	char infinitySymbol![] = "inf";
+	/// the symbol to be used for floating-point `not a number` values
+	char undefinedSymbol![] = "nan";
+
+	// International("123'456'789"): digitGrouping = 3, firstGrouping = 0 || 3, fractGrouping = 0
+	// Myriads("1'2345'6789"): digitGrouping = 4, firstGrouping = 0 || 4, fractGrouping = 0
+	// Indian("12'34'56'789"): digitGrouping = 2, firstGrouping = 3, fractGrouping = 0
+
+	/// the symbol to be used for grouping values
+	char groupingSymbol = '';
+	/// the number of digits to group together
+	uint32 digitGrouping = 0;
+	/// the number of digits making the first group
+	uint32 firstGrouping = 0;
+	/// the number of digits to be grouped in the fractional part
+	uint32 fractGrouping = 0;
+
+	/// symbol used for padding the integer and fractional parts
+	char paddingSymbol = digits[0];
+	/// minimum integer digits: 0: ".7", 1: "0.7", 2: "00.7", ...
+	int32 width = -1;
+
+	/// the symbol to be used between floating-point integer and fractional part as separator
+	char fractionSymbol = '.';
+	/// keep trailing separator: false: "6", true: "6."
+	bool trailingSeparator = false;
+
+	/// floating-point precision to be used for the fractional part
+	int32 precision = -6;
+	/// keep trailing zeroes: false: "0.7", true: ".700000" (for precision: 6)
+	bool trailingZeros = false;
+
+	static int digitGrouping(NumberFormat format!, int pos) {
+		if (format.digitGrouping <= 0 || format.groupingSymbol == 0) {
+			return -1;
+		}
+		return pos + format.digitGrouping;
+	}
+
+	static int firstGrouping(NumberFormat format!, int pos) {
+		if (format.firstGrouping <= 0) {
+			return digitGrouping(format, pos);
+		}
+		if (format.groupingSymbol == 0) {
+			return -1;
+		}
+		return pos + format.firstGrouping;
+	}
+
+	static int fractGrouping(NumberFormat format!, int pos) {
+		if (format.fractGrouping <= 0 || format.groupingSymbol == 0) {
+			return -1;
+		}
+		return pos + format.fractGrouping;
+	}
+
+	inline "./NumberFormat.Integer.cmpl";
+	inline "./NumberFormat.Float64.cmpl";
+	inline "./NumberFormat.Fixed32.cmpl";
+}

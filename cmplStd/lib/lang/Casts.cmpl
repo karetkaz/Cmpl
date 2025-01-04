@@ -1,0 +1,259 @@
+/// Explicit cast of base types
+inline int32(int32 value) = inline(value);
+/// Explicit cast of base types
+inline int64(int64 value) = inline(value);
+/// Explicit cast of base types
+inline uint32(uint32 value) = inline(value);
+/// Explicit cast of base types
+inline uint64(uint64 value) = inline(value);
+/// Explicit cast of base types
+inline float32(float32 value) = inline(value);
+/// Explicit cast of base types
+inline float64(float64 value) = inline(value);
+
+/// Explicit cast of base types
+inline int32(int64 value) = inline(int64(value), i64.i32);
+/// Explicit cast of base types
+inline int32(uint32 value) = inline(value);
+/// Explicit cast of base types
+inline int32(uint64 value) = inline(uint64(value), u64.i32);
+/// Explicit cast of base types
+inline int32(float32 value) = inline(float32(value), f32.i32);
+/// Explicit cast of base types
+inline int32(float64 value) = inline(float64(value), f64.i32);
+
+/// Explicit cast of base types
+inline int64(int32 value) = inline(int32(value), i32.i64);
+/// Explicit cast of base types
+inline int64(uint64 value) = inline(value);
+/// Explicit cast of base types
+inline int64(uint32 value) = inline(uint32(value), u32.i64);
+/// Explicit cast of base types
+inline int64(float32 value) = inline(float32(value), f32.i64);
+/// Explicit cast of base types
+inline int64(float64 value) = inline(float64(value), f64.i64);
+
+/// Explicit cast of base types
+inline uint32(int32 value) = inline(value);
+/// Explicit cast of base types
+inline uint32(int64 value) = inline(int64(value), i64.u32);
+/// Explicit cast of base types
+inline uint32(uint64 value) = inline(uint64(value), u64.u32);
+/// Explicit cast of base types
+inline uint32(float32 value) = inline(float32(value), cvt.f32_u32);
+/// Explicit cast of base types
+inline uint32(float64 value) = inline(float64(value), cvt.f64_u32);
+
+/// Explicit cast of base types
+inline uint64(int32 value) = inline(int32(value), i32.i64); // safe to use i32 to i64
+/// Explicit cast of base types
+inline uint64(int64 value) = inline(value);
+/// Explicit cast of base types
+inline uint64(uint32 value) = inline(uint32(0), uint32(value)); // todo: inline(value, cvt.u32_u64);
+/// Explicit cast of base types
+inline uint64(float32 value) = inline(float32(value), cvt.f32_u64);
+/// Explicit cast of base types
+inline uint64(float64 value) = inline(float64(value), cvt.f64_u64);
+
+/// Explicit cast of base types
+inline float32(int32 value) = inline(int32(value), i32.f32);
+/// Explicit cast of base types
+inline float32(int64 value) = inline(int64(value), i64.f32);
+/// Explicit cast of base types
+inline float32(uint32 value) = inline(uint32(value), cvt.u32_f32);
+/// Explicit cast of base types
+inline float32(uint64 value) = inline(uint64(value), cvt.u64_f32);
+/// Explicit cast of base types
+inline float32(float64 value) = inline(float64(value), f64.f32);
+
+/// Explicit cast of base types
+inline float64(int32 value) = inline(int32(value), i32.f64);
+/// Explicit cast of base types
+inline float64(int64 value) = inline(int64(value), i64.f64);
+/// Explicit cast of base types
+inline float64(uint32 value) = inline(uint32(value), cvt.u32_f64);
+/// Explicit cast of base types
+inline float64(uint64 value) = inline(uint64(value), cvt.u64_f64);
+/// Explicit cast of base types
+inline float64(float32 value) = inline(float32(value), f32.f64);
+
+/// Explicit cast of base types
+inline bool(bool value) = inline(value);
+/// Explicit cast of base types
+inline bool(int8 value) = inline(int32(value), i32.bool); // int32(value) != 0;
+/// Explicit cast of base types
+inline bool(int16 value) = inline(int32(value), i32.bool); // int32(value) != 0;
+/// Explicit cast of base types
+inline bool(int32 value) = inline(int32(value), i32.bool); // value != 0;
+/// Explicit cast of base types
+inline bool(int64 value) = inline(int64(value), i64.bool); // value != 0D;
+/// Explicit cast of base types
+inline bool(uint8 value) = inline(uint32(value), i32.bool); // uint32(value) != 0u;
+/// Explicit cast of base types
+inline bool(uint16 value) = inline(uint32(value), i32.bool); // uint32(value) != 0u;
+/// Explicit cast of base types
+inline bool(uint32 value) = inline(uint32(value), i32.bool); // value != 0u;
+/// Explicit cast of base types
+inline bool(uint64 value) = inline(uint64(value), i64.bool); // value != 0U;
+/// Explicit cast of base types
+inline bool(float32 value) = inline(float32(value), f32.bool); // value != 0f && value == value;
+/// Explicit cast of base types
+inline bool(float64 value) = inline(float64(value), f64.bool); // value != 0F && value == value;
+
+/// Explicit cast of base types
+inline int8(bool value) = inline(value);
+/// Explicit cast of base types
+inline int8(int8 value) = inline(value);
+/// Explicit cast of base types
+inline int8(int16 value!) = inline(pointer(value), ldi_s8);
+/// Explicit cast of base types
+inline int8(int32 value!) = inline(pointer(value), ldi_s8);
+/// Explicit cast of base types
+inline int8(int64 value!) = inline(pointer(value), ldi_s8);
+/// Explicit cast of base types
+inline int8(uint8 value!) = inline(pointer(value), ldi_u8); // value & 0xff
+/// Explicit cast of base types
+inline int8(uint16 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline int8(uint32 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline int8(uint64 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline int8(float32 value) = inline(int32(value));
+/// Explicit cast of base types
+inline int8(float64 value) = inline(int32(value));
+
+/// Explicit cast of base types
+inline uint8(bool value) = inline(value);
+/// Explicit cast of base types
+inline uint8(int8 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(int16 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(int32 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(int64 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(uint8 value) = inline(value);
+/// Explicit cast of base types
+inline uint8(uint16 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(uint32 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(uint64 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint8(float32 value) = inline(uint32(value));
+/// Explicit cast of base types
+inline uint8(float64 value) = inline(uint32(value));
+
+/// Explicit cast of base types
+inline int16(bool value) = inline(value);
+/// Explicit cast of base types
+inline int16(int8 value!) = inline(pointer(value), ldi_s8);
+/// Explicit cast of base types
+inline int16(int16 value) = inline(value);
+/// Explicit cast of base types
+inline int16(int32 value!) = inline(pointer(value), ldi_s16);
+/// Explicit cast of base types
+inline int16(int64 value!) = inline(pointer(value), ldi_s16);
+/// Explicit cast of base types
+inline int16(uint8 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline int16(uint16 value) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline int16(uint32 value) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline int16(uint64 value!) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline int16(float32 value) = inline(int32(value));
+/// Explicit cast of base types
+inline int16(float64 value) = inline(int32(value));
+
+/// Explicit cast of base types
+inline uint16(bool value) = inline(value);
+/// Explicit cast of base types
+inline uint16(int8 value!) = inline(pointer(value), ldi_s8);
+/// Explicit cast of base types
+inline uint16(int16 value!) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline uint16(int32 value!) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline uint16(int64 value!) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline uint16(uint8 value!) = inline(pointer(value), ldi_u8);
+/// Explicit cast of base types
+inline uint16(uint16 value) = inline(value);
+/// Explicit cast of base types
+inline uint16(uint32 value!) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline uint16(uint64 value!) = inline(pointer(value), ldi_u16);
+/// Explicit cast of base types
+inline uint16(float32 value) = inline(uint32(value));
+/// Explicit cast of base types
+inline uint16(float64 value) = inline(uint32(value));
+
+/// Explicit cast of base types
+inline int32(bool value) = inline(value); // fixme: value ? 0 : 1;
+/// Explicit cast of base types
+inline int32(int8 value!) = inline(pointer(value), ldi_s8);	// sign extend: -128 .. 127
+/// Explicit cast of base types
+inline int32(uint8 value!) = inline(pointer(value), ldi_u8);	// zero extend: 0 .. 255
+/// Explicit cast of base types
+inline int32(int16 value!) = inline(pointer(value), ldi_s16);
+/// Explicit cast of base types
+inline int32(uint16 value!) = inline(pointer(value), ldi_u16);
+
+/// Explicit cast of base types
+inline uint32(bool value) = inline(value); // fixme: value ? 0 : 1;
+/// Explicit cast of base types
+inline uint32(int8 value!) = inline(pointer(value), ldi_s8);	// sign extend: -128 .. 127
+/// Explicit cast of base types
+inline uint32(uint8 value!) = inline(pointer(value), ldi_u8);	// zero extend: 0 .. 255
+/// Explicit cast of base types
+inline uint32(int16 value!) = inline(pointer(value), ldi_s16);
+/// Explicit cast of base types
+inline uint32(uint16 value!) = inline(pointer(value), ldi_u16);
+
+/// Explicit cast of base types
+inline int64(bool value) = int64(int32(value));
+/// Explicit cast of base types
+inline int64(int8 value) = int64(int32(value));
+/// Explicit cast of base types
+inline int64(uint8 value) = int64(uint32(value));
+/// Explicit cast of base types
+inline int64(int16 value) = int64(int32(value));
+/// Explicit cast of base types
+inline int64(uint16 value) = int64(uint32(value));
+
+/// Explicit cast of base types
+inline uint64(bool value) = uint64(uint32(value));
+/// Explicit cast of base types
+inline uint64(int8 value) = uint64(int32(value));
+/// Explicit cast of base types
+inline uint64(uint8 value) = uint64(uint32(value));
+/// Explicit cast of base types
+inline uint64(int16 value) = uint64(int32(value));
+/// Explicit cast of base types
+inline uint64(uint16 value) = uint64(uint32(value));
+
+/// Explicit cast of base types
+inline float32(bool value) = float32(int32(value));
+/// Explicit cast of base types
+inline float32(int8 value) = float32(int32(value));
+/// Explicit cast of base types
+inline float32(uint8 value) = float32(uint32(value));
+/// Explicit cast of base types
+inline float32(int16 value) = float32(int32(value));
+/// Explicit cast of base types
+inline float32(uint16 value) = float32(uint32(value));
+
+/// Explicit cast of base types
+inline float64(bool value) = float64(int32(value));
+/// Explicit cast of base types
+inline float64(int8 value) = float64(int32(value));
+/// Explicit cast of base types
+inline float64(uint8 value) = float64(uint32(value));
+/// Explicit cast of base types
+inline float64(int16 value) = float64(int32(value));
+/// Explicit cast of base types
+inline float64(uint16 value) = float64(uint32(value));

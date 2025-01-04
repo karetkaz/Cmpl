@@ -1,0 +1,70 @@
+// standard library extension
+
+// Known boolean values
+enum: bool {
+	true: 0 == 0;
+	false: 0 != 0;
+}
+
+inline "./lib/lang/Casts.cmpl";
+inline "./lib/lang/Pointer.cmpl";
+static if (struct(raise) == function) {
+// extension methods for debugging
+inline "./lib/lang/Debug.cmpl";
+}
+
+/// Returns the size of the given type
+inline sizeof(typename type) = typename.refSize(type);
+
+// Math
+inline "./lib/math/numeric/Int8.cmpl";
+inline "./lib/math/numeric/Int16.cmpl";
+inline "./lib/math/numeric/Int32.cmpl";
+inline "./lib/math/numeric/Int64.cmpl";
+inline "./lib/math/numeric/Float64.cmpl";
+inline "./lib/math/numeric/Float32.cmpl";
+static if (int == int32) { inline Int = Int32; }
+static if (int == int64) { inline Int = Int64; }
+
+inline "./lib/math/numeric/Fixed32.cmpl";
+inline "./lib/math/numeric/Complex.cmpl";
+//todo: inline "./lib/math/numeric/Rational.cmpl"?;
+//todo: inline "./lib/math/numeric/Decimal.cmpl"?;
+//todo: inline "./lib/math/numeric/BigInteger.cmpl"?;   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
+//todo: inline "./lib/math/numeric/BigDecimal.cmpl"?;   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
+inline "./lib/math/vector/Vector2d.cmpl";
+inline "./lib/math/vector/Vector4f.cmpl";
+inline "./lib/math/vector/Matrix4f.cmpl";
+inline "./lib/math/random/Random.cmpl";
+//todo: inline "./lib/math/random/Perlin.cmpl"?;
+inline "./lib/math/Statistics.cmpl";
+
+
+// Time
+inline "./lib/time/Timeunit.cmpl";
+inline "./lib/time/Duration.cmpl";
+inline "./lib/time/Timestamp.cmpl";
+inline "./lib/time/Timezone.cmpl";
+inline "./lib/time/Datetime.cmpl";
+
+
+// Text
+inline "./lib/text/cstr.cmpl";
+inline "./lib/text/Format.cmpl";
+inline "./lib/text/stream/ByteStream.cmpl";
+inline "./lib/text/stream/TextStream.cmpl";
+inline "./lib/text/encoding/binary/Base64.cmpl";
+inline "./lib/text/encoding/Ascii.cmpl";
+inline "./lib/text/encoding/Utf8.cmpl";
+//todo: inline "./lib/text/String.cmpl";
+//todo: inline "./lib/text/Collator.cmpl";
+//todo: inline "./lib/text/serialization/csv.cmpl";
+//todo: inline "./lib/text/serialization/json.cmpl";
+//todo: inline "./lib/text/serialization/yaml.cmpl";
+//todo: inline "./lib/text/serialization/xml.cmpl";
+
+
+// etc
+inline "./lib/math/Easing.cmpl";
+//inline "./lib/math/Perlin.cmpl";
+inline "./lib/math/vector/Polynomial.cmpl"?;

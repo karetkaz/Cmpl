@@ -1,0 +1,278 @@
+#!/usr/bin/env -S cmpl -run/g
+
+// test the emulated math trigonometry functions
+static struct Math {
+	static if (false) {
+//		inline "cmplStd/tmp/wip.math/math.fdlibm.cmpl"; // best
+//		inline "cmplStd/tmp/wip.math/math.cephes.cmpl"; // good
+//		inline "cmplStd/tmp/wip.math/math.watcom.cmpl"; // fast
+		inline "cmplStd/tmp/wip.math/math.plan9.cmpl";  // fast
+	} else {
+		inline preferNativeCalls = false;
+		inline "cmplStd/lib/math/numeric/Float64.cmpl";
+		float64 ln(float64 x) {return Float64.ln(x);}
+		float64 exp(float64 x) {return Float64.exp(x);}
+		float64 sqrt(float64 x) {return Float64.sqrt(x);}
+		float64 pow(float64 x, float64 y) {return Float64.pow(x, y);}
+
+		float64 sin(float64 x) {return Float64.sin(x);}
+		float64 cos(float64 x) {return Float64.cos(x);}
+		float64 tan(float64 x) {return Float64.tan(x);}
+
+		float64 sinh(float64 x) {return Float64.sinh(x);}
+		float64 cosh(float64 x) {return Float64.cosh(x);}
+		float64 tanh(float64 x) {return Float64.tanh(x);}
+
+		float64 asin(float64 x) {return Float64.asin(x);}
+		float64 acos(float64 x) {return Float64.acos(x);}
+		float64 atan(float64 x) {return Float64.atan(x);}
+		float64 atan2(float64 y, float64 x) {return Float64.atan2(y, x);}
+	}
+}
+
+debug(typename.lookup(Math.ln).file());
+struct Test {
+	static float64 initError = float64.exp2(-100);	// 52 bits of mantissa
+	static float64 values![] = {
+		+Float64.nan;
+		+Float64.inf;
+		1e100;
+		Float64.pi;
+		Float64.e;
+		+1;
+		.5;
+		1e-50;
+		Float64.ulp(1);
+		+0;
+		-0;
+		-Float64.ulp(1);
+		-1e-50;
+		-.5;
+		-1;
+		-Float64.e;
+		-Float64.pi;
+		-1e100;
+		-Float64.inf;
+	};
+
+	int32 steps = 100000;
+	float64 lo = 0;	// min: from
+	float64 hi = 1;	// max: to
+
+	float64 lnErr = initError;
+	float64 expErr = initError;
+	float64 sqrtErr = initError;
+	float64 powErr = initError;
+
+	float64 sinMaxErr = initError;
+	float64 cosMaxErr = initError;
+	float64 tanMaxErr = initError;
+
+	float64 sinhMaxErr = initError;
+	float64 coshMaxErr = initError;
+	float64 tanhMaxErr = initError;
+
+	float64 asinMaxErr = initError;
+	float64 acosMaxErr = initError;
+	float64 atanMaxErr = initError;
+	float64 atan2MaxErr = initError;
+
+	static variant normalize(Test test&) {
+		inline log(float64 x) = -Float64.log2(x);
+		static if (struct(test.lnErr) != null) { test.lnErr = log(test.lnErr); }
+		static if (struct(test.expErr) != null) { test.expErr = log(test.expErr); }
+		static if (struct(test.sqrtErr) != null) { test.sqrtErr = log(test.sqrtErr); }
+		static if (struct(test.powErr) != null) { test.powErr = log(test.powErr); }
+		static if (struct(test.atan2MaxErr) != null) { test.atan2MaxErr = log(test.atan2MaxErr); }
+
+		static if (struct(test.sinMaxErr) != null) { test.sinMaxErr = log(test.sinMaxErr); }
+		static if (struct(test.cosMaxErr) != null) { test.cosMaxErr = log(test.cosMaxErr); }
+		static if (struct(test.tanMaxErr) != null) { test.tanMaxErr = log(test.tanMaxErr); }
+
+		static if (struct(test.sinhMaxErr) != null) { test.sinhMaxErr = log(test.sinhMaxErr); }
+		static if (struct(test.coshMaxErr) != null) { test.coshMaxErr = log(test.coshMaxErr); }
+		static if (struct(test.tanhMaxErr) != null) { test.tanhMaxErr = log(test.tanhMaxErr); }
+
+		static if (struct(test.asinMaxErr) != null) { test.asinMaxErr = log(test.asinMaxErr); }
+		static if (struct(test.acosMaxErr) != null) { test.acosMaxErr = log(test.acosMaxErr); }
+		static if (struct(test.atanMaxErr) != null) { test.atanMaxErr = log(test.atanMaxErr); }
+
+		return test;
+	}
+
+	static void assertEq(float64 expected, float64 returned, float64 maxErr&, char func[*], float64 details...) {
+		if (returned == expected) {
+			return;
+		}
+
+		if (Float64.isUndefined(returned) && Float64.isUndefined(expected)) {
+			// nan === nan in this case
+			return;
+		}
+
+		float64 diff = Float64.abs(returned - expected);
+		if (maxErr >= diff) {
+			return;
+		}
+		maxErr = diff;
+
+		/*if (diff - diff != 0) { // nan or inf
+		if (diff != diff || diff > 1e-5) {
+			struct AssertError {
+				float64 expected;
+				float64 returned;
+				char func[*];
+				float64 details[];
+				float64 maxErr&;
+			}
+			AssertError error = {
+				expected: expected;
+				returned: returned;
+				func: func;
+				details: details;
+				maxErr: maxErr;
+			};
+			abort("error", error);
+		}// */
+	}
+}
+Test tests[] = {
+	{lo: 0, hi: 1},
+	{lo: 1, hi: 2},
+	{lo: 5, hi: 6},
+	{lo: 5000, hi: 5001},
+	{lo: -1, hi: 1},
+	{lo: -2 * Float64.pi, hi: 2 * Float64.pi},
+	{lo: -8 * Float64.pi, hi: 8 * Float64.pi},
+	{lo: -1e30, hi: 1e30},
+};
+for (int n = 0; n < tests.length; n += 1) {
+	Test test& = tests[n];
+	float64 scale = (test.hi - test.lo) / test.steps;
+	float64 translate = test.lo;
+
+	for (float64 i = 0; i < test.steps; i += 1) {
+		float64 x = i * scale + translate;
+		for (int j = 0; j < Test.values.length; j += 1) {
+			float64 y = Test.values[j];
+			static if (struct(test.powErr) != null) {
+				Test.assertEq(float64.pow(x, y), Math.pow(x, y), &test.powErr, "pow(x, y)", x, y);
+//				Test.assertEq(float64.pow(y, x), Math.pow(y, x), &test.powErr, "pow(y, x)", y, x);
+			}
+			static if (struct(test.atan2MaxErr) != null) {
+				Test.assertEq(float64.atan2(x, y), Math.atan2(x, y), &test.atan2MaxErr, "atan2(x, y)", x, y);
+				Test.assertEq(float64.atan2(y, x), Math.atan2(y, x), &test.atan2MaxErr, "atan2(y, x)", y, x);
+			}
+		}
+
+		static if (struct(test.lnErr) != null) { Test.assertEq(float64.ln(x), Math.ln(x), &test.lnErr, "log(x)", x); }
+		static if (struct(test.expErr) != null) { Test.assertEq(float64.exp(x), Math.exp(x), &test.expErr, "exp(x)", x); }
+		static if (struct(test.sqrtErr) != null) { Test.assertEq(float64.sqrt(x), Math.sqrt(x), &test.sqrtErr, "sqrt(x)", x); }
+
+		static if (struct(test.sinMaxErr) != null) { Test.assertEq(float64.sin(x), Math.sin(x), &test.sinMaxErr, "sin(x)", x); }
+		static if (struct(test.sinhMaxErr) != null) { Test.assertEq(float64.sinh(x), Math.sinh(x), &test.sinhMaxErr, "sinh(x)", x); }
+		static if (struct(test.asinMaxErr) != null) { Test.assertEq(float64.asin(x), Math.asin(x), &test.asinMaxErr, "asin(x)", x); }
+
+		static if (struct(test.cosMaxErr) != null) { Test.assertEq(float64.cos(x), Math.cos(x), &test.cosMaxErr, "cos(x)", x); }
+		static if (struct(test.coshMaxErr) != null) { Test.assertEq(float64.cosh(x), Math.cosh(x), &test.coshMaxErr, "cosh(x)", x); }
+		static if (struct(test.acosMaxErr) != null) { Test.assertEq(float64.acos(x), Math.acos(x), &test.acosMaxErr, "acos(x)", x); }
+
+		static if (struct(test.tanMaxErr) != null) { Test.assertEq(float64.tan(x), Math.tan(x), &test.tanMaxErr, "tan(x)", x); }
+		static if (struct(test.tanhMaxErr) != null) { Test.assertEq(float64.tanh(x), Math.tanh(x), &test.tanhMaxErr, "tanh(x)", x); }
+		static if (struct(test.atanMaxErr) != null) { Test.assertEq(float64.atan(x), Math.atan(x), &test.atanMaxErr, "atan(x)", x); }
+	}
+
+	debug("results", Test.normalize(&test));
+}
+
+static if (false) { // test ulp of one
+float64 value = Float64.ulp(1);
+char buff[128] = {...};
+
+value.format(buff, 0, "%.100f");
+debug(buff);
+
+float64.print(buff, value, 0, 0, 100);
+debug(buff);
+
+// https://www.jessesquires.com/blog/2017/10/01/floating-point-swift-ulp-and-epsilon
+// java: 0.0000000000000002220446049250313000000000000000000000000000000000000000000000000000000000000000000000
+// cfmt: 0.0000000000000002220446049250313080847263336181640625000000000000000000000000000000000000000000000000
+// cmpl: 0.0000000000000002220446049250313080847263336181640625000000000000000000000000000000000000000000000000
+}
+
+static if (false) {// calculate constant e
+static float64 exp() {
+	float64 tmp = 1;
+	float64 result = 1;
+	for (float64 i = 1; tmp > 0; i += 1) {
+		//debug("e", result, tmp, i);
+		result += tmp /= i;
+	}
+	return result;// - Float64.ulp(result);
+}
+
+char text[256] = {...};
+
+float64 e = exp();
+Bits.fromFloat64(e).format(text, "Computed.e = 0x%08x");
+debug(text);
+
+Bits.fromFloat64(Float64.e).format(text, "Float64.e = 0x%08x");
+debug(text);
+
+debug("stdc.e = 0x4005bf0a8b145769");
+}
+
+static if (false) {/* References:
+https://github.com/amd/aocl-libm-ose
+https://www.mathworks.com/help/matlab/trigonometry.html
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math
+https://thebookofshaders.com/glossary/?search=smoothstep
+https://thebookofshaders.com/glossary/
+https://registry.khronos.org/OpenGL-Refpages/es3/
+https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__DOUBLE.html
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-intrinsic-functions
+https://developer.download.nvidia.com/cg/index_stdlib.html
+
+
+https://elixir.bootlin.com/glibc/glibc-2.36.9000/source/sysdeps/ieee754/dbl-64
+
+https://netlib.org/fdlibm/
+https://netlib.org/cephes/
+
+https://github.com/golang/go/tree/master/src/math
+	https://github.com/akavel/gostdc/
+
+https://git.musl-libc.org/cgit/musl/tree/src/math
+	https://elixir.bootlin.com/musl/v1.2.3/source/src/math
+
+https://github.com/llvm/llvm-project/blob/main/libc/src/math/generic
+https://github.com/gcc-mirror/gcc/tree/master/libgo/go/math
+https://github.com/open-watcom/open-watcom-v2/tree/master/bld/mathlib/c
+https://opensource.apple.com/source/Libm/Libm-315/Source/Intel/
+https://github.com/JuliaLang/julia/blob/master/base/math.jl
+https://android.googlesource.com/platform/bionic/+/master/libm/upstream-freebsd/lib/msun/src/
+
+https://mazzo.li/posts/vectorized-atan2.html
+https://docwiki.embarcadero.com/Libraries/en/System.Math
+
+
+https://gist.github.com/Witiko/6462162
+https://github.com/alexhuntley/Plots/blob/main/plots/shaders/fragment.glsl
+
+http://www.retro11.de/ouxr/29bsd/usr/src/lib/m/
+http://git.9front.org/plan9front/purgatorio/a8083462e62459b2ae8a243dc4ba88416eba03b1/libkern/f.html
+
+
+https://github.com/JuliaMath/openlibm/blob/master/src/e_pow.c
+https://9p.io/sources/plan9/sys/src/libc/port/
+https://cs.opensource.google/search?q=atan2&start=201
+
+https://github.com/aantthony/graph.tk/blob/master/math.js
+https://github.com/MikeMcl/decimal.js/blob/master/decimal.js
+
+
+https://github.com/kchapelier/node-mathp/tree/master/functions
+https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Functions
+*/}

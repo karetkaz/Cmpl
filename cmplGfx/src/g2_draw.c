@@ -20,7 +20,7 @@ void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t 
 	};
 
 	bltProc blt = getBltProc(blt_set_col, image->depth);
-	char *dptr = (char*) clipRect(image, &rect);
+	char *dptr = clipRect(image, &rect);
 	if (dptr == NULL || blt == NULL) {
 		return;
 	}
@@ -33,7 +33,6 @@ void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t 
 }
 
 void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t color) {
-
 	if ((font->flags & ImageType) != ImageFnt) {
 		return;
 	}
@@ -42,13 +41,13 @@ void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t col
 	struct GxRect clip = {
 		.x0 = x0 + face->pad_x,
 		.y0 = y0 + face->pad_y,
-		.x1 = clip.x0 + face->width,
-		.y1 = clip.y0 + font->height,
+		.x1 = x0 + face->pad_x + face->width,
+		.y1 = y0 + face->pad_y + font->height,
 	};
 
 	bltProc blt = getBltProc(blt_set_mix, image->depth);
-	char *dptr = (char *) clipRect(image, &clip);
-	char *sptr = (char *) face->basePtr;
+	char *dptr = clipRect(image, &clip);
+	char *sptr = face->basePtr;
 
 	if (dptr == NULL || sptr == NULL || blt == NULL) {
 		return;
@@ -63,12 +62,7 @@ void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t col
 }
 
 // todo: no unicode support, only ascii text
-void clipText(GxRect rect, GxImage font, const char *text) {
-	char chr;
-	int x = 0;
-	int y = 0;
-	int x0 = x;
-
+void clipText(GxRect rect, GxImage font, const char *text, size_t length) {
 	if ((font->flags & ImageType) != ImageFnt) {
 		return;
 	}
@@ -82,25 +76,32 @@ void clipText(GxRect rect, GxImage font, const char *text) {
 		return;
 	}
 
-	while ((chr = *text++) != 0) {
+	int x = 0;
+	int y = 0;
+
+	for (size_t i = 0; i < length; i++) {
+		char chr = text[i];
 		switch (chr) {
 			default:
 				x += font->LLUTPtr->data[chr & 0xff].width;
 				break;
 
+			case 0:
+				return;
+
 			case '\r':
-				if (*text == '\n') {
+				if (text[i + 1] == '\n') {
 					// windows style line end (CrLf)
 					break;
 				}
 				// fall through
 			case '\n':
-				if (*text == '\0') {
+				if (text[i + 1] == '\0') {
 					// new line at end ot text
 					break;
 				}
 				y += font->height;
-				x = x0;
+				x = 0;
 				break;
 
 				/* todo calculate correct position based on the current width
@@ -116,7 +117,7 @@ void clipText(GxRect rect, GxImage font, const char *text) {
 	}
 	rect->y1 += y;
 }
-void drawText(GxImage image, GxRect rect, GxImage font, const char *text, uint32_t color) {
+void drawText(GxImage image, GxRect rect, GxImage font, const char *text, size_t length, uint32_t color) {
 	if ((font->flags & ImageType) != ImageFnt) {
 		return;
 	}
@@ -129,21 +130,25 @@ void drawText(GxImage image, GxRect rect, GxImage font, const char *text, uint32
 
 	int x = rect->x0;
 	int y = rect->y0;
-	for (int chr = *text; chr != 0; chr = *++text) {
+	for (size_t i = 0; i < length; i++) {
+		char chr = text[i];
 		switch (chr) {
 			default:
 				drawChar(image, x, y, font, chr, color);
 				x += font->LLUTPtr->data[chr & 0xff].width;
 				break;
 
+			case 0:
+				return;
+
 			case '\r':
-				if (*text == '\n') {
+				if (text[i + 1] == '\n') {
 					// windows style line end (CrLf)
 					break;
 				}
 				// fall through
 			case '\n':
-				if (*text == '\0') {
+				if (text[i + 1] == '\0') {
 					// new line at end of text
 					break;
 				}

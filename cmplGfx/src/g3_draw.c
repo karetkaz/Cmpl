@@ -1,7 +1,7 @@
 #include <math.h>
 #include "gx_surf.h"
 #include "g3_draw.h"
-#include "utils.h"
+#include "util.h"
 
 void getFrustum(struct vector planes[6], matrix mat) {
 	// near and far: -1 < z < 1

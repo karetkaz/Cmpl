@@ -2,18 +2,20 @@
 
 #define KEY_PRESS 1
 #define KEY_RELEASE 2
-#define MOUSE_WHEEL 3
-#define MOUSE_PRESS 4
-#define MOUSE_MOTION 5
-#define MOUSE_RELEASE 6
-#define FINGER_PRESS 7
-#define FINGER_MOTION 8
-#define FINGER_RELEASE 9
-#define EVENT_TIMEOUT 10
-#define WINDOW_INIT 100
-#define WINDOW_CLOSE 102
-#define WINDOW_ENTER 103
-#define WINDOW_LEAVE 104
+#define MOUSE_PRESS 3
+#define MOUSE_MOTION 4
+#define MOUSE_RELEASE 5
+#define FINGER_PRESS 6
+#define FINGER_MOTION 7
+#define FINGER_RELEASE 8
+#define EVENT_TIMEOUT 9
+#define GESTURE_SCROLL 10
+// #define GESTURE_ZOOM 11
+// #define GESTURE_ROTATE 12
+#define WINDOW_INIT 13
+#define WINDOW_CLOSE 14
+#define WINDOW_ENTER 15
+#define WINDOW_LEAVE 16
 
 extern const int KEY_CODE_ESC;
 extern const int KEY_CODE_BACKSPACE;

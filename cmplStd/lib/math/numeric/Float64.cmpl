@@ -1,0 +1,1092 @@
+/// 64 bit floating point struct and mathematical methods
+static struct Float64 { // todo:  : static Arithmetic, static Comparable
+
+	// Some useful mathematical constants
+	enum: float64 {
+		nan: 0 / 0.;
+		inf: 1 / 0.;
+
+		e: 2.71828182845904523536028747135266249775724709369995957496696763; // https://oeis.org/A001113
+		pi: 3.14159265358979323846264338327950288419716939937510582097494459; // https://oeis.org/A000796
+		phi: 1.61803398874989484820458683436563811772030917980576286213544862; // https://oeis.org/A001622
+
+		sqrt2: 1.41421356237309504880168872420969807856967187537694807317667974; // https://oeis.org/A002193
+		sqrtE: 1.64872127070012814684865078781416357165377610071014801157507931; // https://oeis.org/A019774
+		sqrtPi: 1.77245385090551602729816748334114518279754945612238712821380779; // https://oeis.org/A002161
+		sqrtPhi: 1.27201964951406896425242246173749149171560804184009624861664038; // https://oeis.org/A139339
+
+		ln2: 0.693147180559945309417232121458176568075500134360255254120680009; // https://oeis.org/A002162
+		log2E: 1 / ln2;
+		ln10: 2.30258509299404568401799145468436420760110148862877297603332790; // https://oeis.org/A002392
+		log10E: 1 / ln10;
+
+		smallestNormal: 2.2250738585072014e-308; // 2**-1022
+	}
+
+	/// Determines whether the given floating point value is undefined: not-a-number
+	static bool isUndefined(float64 x) {
+		return x != x;
+	}
+
+	/// Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
+	static bool isFinite(float64 x) {
+		return x - x == 0;
+	}
+
+	/// Determines whether the given floating point value is ±infinity
+	static bool isInfinity(float64 x) {
+		return x != 0 && x == 2 * x;
+	}
+
+	static bool isPosInf(float64 x) {
+		return x > 0 && x == 2 * x;
+	}
+
+	static bool isNegInf(float64 x) {
+		return x < 0 && x == 2 * x;
+	}
+
+	/// return the 64 bit floating point value as an integer
+	static uint64 toBits(float64 value) { return inline(value); }
+
+	/// return the 64 bit integer as a floating point value
+	static float64 fromBits(uint64 value) { return inline(value); }
+
+	/// return the two 32 bit integers merged as a floating point value
+	static float64 fromBits(uint32 hi, uint32 lo) { return fromBits((uint64(hi) << 32) | lo); }
+
+
+	/// Computes the largest integer value not greater than the input
+	static float64 floor(float64 x) {
+		float64 mod = x % 1;
+		if (mod < 0) {
+			mod += 1;
+		}
+		return x - mod;
+	}
+
+	/// Computes the smallest integer not less than the input
+	static float64 ceil(float64 x) {
+		return -floor(-x);
+	}
+
+	/// Computes the nearest integer to the input
+	static float64 round(float64 x) {
+		return floor(x + .5);
+	}
+
+
+	/// Returns the positive modulus of the input
+	static float64 absMod(float64 val, float64 mod) {
+		if ((val %= mod) < 0) {
+			return val + mod;
+		}
+		return val;
+	}
+
+
+	/// Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+	inline sign(float64 x) = int32(x > 0) - int32(x < 0);
+
+	/// Returns the absolute value of the input
+	static float64 abs(float64 x) {
+		return x < 0 ? -x : x;
+	}
+
+	/// Compute least significant bit (Unit in Last Position) for a number.
+	static float64 ulp(float64 x) {
+		if (isInfinity(x)) {
+			return inf;
+		}
+		return abs(x - fromBits(toBits(x) ^ 1));
+	}
+
+	/// Returns the smaller value from the input values
+	inline min(float64 a, float64 b) = a < b ? a : b;
+
+	/// Returns the greater value from the input values
+	inline max(float64 a, float64 b) = a > b ? a : b;
+
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(float64 value, float64 min, float64 max) = min(max(value, min), max);
+
+	/// Returns the linear interpolation between `a` and `b` by `t`
+	inline mix(float64 a, float64 b, float64 t) = a + t * (b - a);
+
+	inline smoothstep(float64 t) = t * t * (3 - 2 * t);
+
+	/// Returns the Hermite interpolation between two values
+	inline smoothstep(float64 min, float64 max, float64 t) = smoothstep(clamp((t - min) / (max - min), 0F, 1F));
+
+	/// Returns the smaller value from the input values
+	static float64 min(float64 values...) {
+		if (values.length == 0) {
+			return nan;
+		}
+		float64 result = values[0];
+		for (int i = 1; i < values.length; i += 1) {
+			if (result > values[i]) {
+				result = values[i];
+			}
+		}
+		return result;
+	}
+
+	/// Returns the greater value from the input values
+	static float64 max(float64 values...) {
+		if (values.length == 0) {
+			return nan;
+		}
+		float64 result = values[0];
+		for (int i = 1; i < values.length; i += 1) {
+			if (result < values[i]) {
+				result = values[i];
+			}
+		}
+		return result;
+	}
+
+	/// Returns the sum of the input values
+	static float64 sum(float64 values...) {
+		float64 result = 0;
+		for (int i = 0; i < values.length; i += 1) {
+			result += values[i];
+		}
+		return result;
+	}
+
+	/// Returns the mean of the input values
+	static float64 mean(float64 values...) {
+		return sum(...values) / values.length;
+	}
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
+	inline eval(float64 x, float64 a0, float64 a1) = a1 * x + a0;
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
+	inline eval(float64 x, float64 a0, float64 a1, float64 a2) = eval(x, a1, a2) * x + a0;
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
+	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3) = eval(x, a1, a2, a3) * x + a0;
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
+	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4) = eval(x, a1, a2, a3, a4) * x + a0;
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
+	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5) = eval(x, a1, a2, a3, a4, a5) * x + a0;
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
+	static float64 eval(float64 x, float64 polynomial...) {
+		float64 result = 0;
+		for (int i = polynomial.length - 1; i >= 0; i -= 1) {
+			result = result * x + polynomial[i];
+		}
+		return result;
+	}
+
+	/// Decompose a value into integer and fractional parts
+	static float64 modf(float64 x, float64 intPart&) {
+		if (x < 1) {
+			if (x < 0) {
+				float64 result = modf(-x, &intPart);
+				intPart = -intPart;
+				return -result;
+			}
+			intPart = 0;
+			return x;
+		}
+		float64 result = x % 1;
+		intPart = x - result;
+		return result;
+	}
+
+	static float64 copysign(float64 x, float64 y) {
+		uint64 sign = toBits(y) & (1U << 63);
+		uint64 val = toBits(x) & ~(1U << 63);
+		return fromBits(sign | val);
+	}
+
+// pow
+
+	/** Frexp breaks f into a normalized fraction and an integral power of two.
+	 * It returns frac and exp satisfying f == frac × 2**exp,
+	 * with the absolute value of frac in the interval [½, 1).
+	 *
+	 * Special cases are:
+	 *   * Frexp(±0) = ±0, 0
+	 *   * Frexp(±Inf) = ±Inf, 0
+	 *   * Frexp(NaN) = NaN, 0
+	 */
+	// adapted from: https://github.com/golang/go/blob/master/src/math/frexp.go
+	static float64 frexp(float64 f, int32 exp&) {
+		static if (preferNativeCalls && struct(float64.frexp) != null) {
+			// use the native method if available
+			return float64.frexp(f, &exp);
+		}
+		inline mask     = 0x7FFU;
+		inline shift    = 64 - 11 - 1;
+		inline bias     = 1023;
+		inline signMask = 1U << 63;
+		inline fracMask = 1U << shift - 1;
+
+		// special cases
+		if (f == 0) {
+			exp = 0;
+			return f;
+		}
+		if (isInfinity(f) || isUndefined(f)) {
+			exp = 0;
+			return f;
+		}
+
+		if (abs(f) < smallestNormal) {
+			// normalize
+			f *= 1 << 52;
+			exp -= 52;
+		} else {
+			exp = 0;
+		}
+
+		uint64 x = toBits(f);
+		exp += int32((x >> shift) & mask) - bias + 1;
+		x &= ~(mask << shift);
+		x |= (-1U + bias) << shift;
+		return fromBits(x);
+	}
+
+	/** Ldexp is the inverse of Frexp.
+	 * It returns frac × 2**exp.
+	 *
+	 * Special cases are:
+	 *	 * Ldexp(±0, exp) = ±0
+	 *	 * Ldexp(±Inf, exp) = ±Inf
+	 *	 * Ldexp(NaN, exp) = NaN
+	 */
+	// adapted from: https://github.com/golang/go/blob/master/src/math/ldexp.go
+	static float64 ldexp(float64 f, int32 exp) {
+		static if (preferNativeCalls && struct(float64.ldexp) != null) {
+			// use the native method if available
+			return float64.ldexp(f, exp);
+		}
+		inline mask     = 0x7FFU;
+		inline shift    = 64 - 11 - 1;
+		inline bias     = 1023;
+		inline signMask = 1U << 63;
+		inline fracMask = 1U << shift - 1;
+
+		// special cases
+		if (f == 0) {
+			// correctly return -0
+			return f;
+		}
+		if (f != f || f - f != 0) {
+			// not a number or non finite number
+			return f;
+		}
+
+		if (abs(f) < smallestNormal) {
+			// normalize
+			f *= 1 << 52;
+			exp -= 52;
+		}
+
+		uint64 x = toBits(f);
+		exp += (int32(x >> shift) & mask) - bias;
+
+		if (exp < -1075) {
+			// trace("underflow", exp);
+			return copysign(0., f);
+		}
+		if (exp > 1023) {
+			// trace("overflow", exp);
+			return copysign(inf, f);
+		}
+		float64 m = 1;
+		if (exp < -1022) {
+			// denormal
+			exp += 53;
+			m = 1 / float64(1 << 53); // 2**-53
+		}
+		x &= ~(mask << shift);
+		x |= uint64(exp+bias) << shift;
+		return m * fromBits(x);
+	}
+
+	/// Returns the natural logarithm of the argument `x`.
+	// adapted from: https://github.com/golang/go/blob/master/src/math/log.go
+	static float64 ln(float64 x) {
+		static if (preferNativeCalls && struct(float64.ln) != null) {
+			// use the native method if available
+			return float64.ln(x);
+		}
+
+		enum: float64 {
+			Ln2Hi : 6.93147180369123816490e-01; // 3fe62e42 fee00000
+			Ln2Lo : 1.90821492927058770002e-10; // 3dea39ef 35793c76
+			L1    : 6.666666666666735130e-01;   // 3FE55555 55555593
+			L2    : 3.999999999940941908e-01;   // 3FD99999 9997FA04
+			L3    : 2.857142874366239149e-01;   // 3FD24924 94229359
+			L4    : 2.222219843214978396e-01;   // 3FCC71C5 1D8E78AF
+			L5    : 1.818357216161805012e-01;   // 3FC74664 96CB03DE
+			L6    : 1.531383769920937332e-01;   // 3FC39A09 D078C69F
+			L7    : 1.479819860511658591e-01;   // 3FC2F112 DF3E5244
+		}
+
+		// special cases
+		if (isUndefined(x) || isPosInf(x)) {
+			return x;
+		}
+		if (x < 0) {
+			return Float64.nan;
+		}
+		if (x == 0) {
+			return -Float64.inf;
+		}
+
+		// reduce
+		int32 ki;
+		float64 f1 = frexp(x, &ki);
+		if (f1 < sqrt2 / 2) {
+			f1 *= 2;
+			ki -= 1;
+		}
+		float64 f = f1 - 1;
+		float64 k = float64(ki);
+
+		// compute
+		float64 s = f / (2 + f);
+		float64 s2 = s * s;
+		float64 s4 = s2 * s2;
+		float64 t1 = s2 * (L1 + s4 * (L3 + s4 * (L5 + s4 * L7)));
+		float64 t2 = s4 * (L2 + s4 * (L4 + s4 * L6));
+		float64 R = t1 + t2;
+		float64 hfsq = 0.5 * f * f;
+		return k * Ln2Hi - ((hfsq - (s * (hfsq + R) + k * Ln2Lo)) - f);
+	}
+
+	/// Returns the base-e exponential: $ e^x $.
+	// adapted from: https://github.com/golang/go/blob/master/src/math/exp.go
+	static float64 exp(float64 x) {
+		static if (preferNativeCalls && struct(float64.exp) != null) {
+			// use the native method if available
+			return float64.exp(x);
+		}
+
+		// exp1 returns e**r × 2**k where r = hi - lo and |r| ≤ ln(2)/2.
+		float64 expmulti(float64 hi, float64 lo, int32 k) {
+			enum: float64 {
+				P1:  1.66666666666666657415e-01;  // 0x3FC55555; 0x55555555
+				P2: -2.77777777770155933842e-03; // 0xBF66C16C; 0x16BEBD93
+				P3:  6.61375632143793436117e-05;  // 0x3F11566A; 0xAF25DE2C
+				P4: -1.65339022054652515390e-06; // 0xBEBBBD41; 0xC5D26BF1
+				P5:  4.13813679705723846039e-08;  // 0x3E663769; 0x72BEA4D0
+			}
+
+			float64 r = hi - lo;
+			float64 t = r * r;
+			float64 c = r - t * (P1 + t * (P2 + t * (P3 + t * (P4 + t * P5))));
+			float64 y = 1 - ((lo - (r * c) / (2 - c)) - hi);
+			// TODO(rsc): make sure Ldexp can handle boundary k
+			return ldexp(y, k);
+		}
+		enum: float64 {
+			Ln2Hi: 6.93147180369123816490e-01;
+			Ln2Lo: 1.90821492927058770002e-10;
+			Log2e: 1.44269504088896338700e+00;
+
+			Overflow : 7.09782712893383973096e+02;
+			Underflow: -7.45133219101941108420e+02;
+			NearZero : 1.0 / (1 << 28); // 2**-28
+		}
+
+		// special cases
+		if (isUndefined(x) || isPosInf(x)) {
+			return x;
+		}
+		if (isNegInf(x)) {
+			return 0;
+		}
+		if (x > Overflow) {
+			return Float64.inf;
+		}
+		if (x < Underflow) {
+			return 0;
+		}
+		if (-NearZero < x && x < NearZero) {
+			return 1 + x;
+		}
+
+		// reduce; computed as r = hi - lo for extra precision.
+		int32 k = 0;
+		if (x < 0) {
+			k = Log2e * x - .5;
+		}
+		if (x > 0) {
+			k = Log2e * x + .5;
+		}
+		float64 hi = x - k * Ln2Hi;
+		float64 lo = k * Ln2Lo;
+
+		// compute
+		return expmulti(hi, lo, k);
+	}
+
+	/// Returns the base-2 logarithm of the argument `x`.
+	static float64 log2(float64 x) {
+		static if (preferNativeCalls && struct(float64.log2) != null) {
+			// use the native method if available
+			return float64.log2(x);
+		}
+		return ln(x) / ln2;
+	}
+
+	///	Returns the base-2 exponential of the argument `x`.
+	static float64 exp2(float64 x) {
+		static if (preferNativeCalls && struct(float64.exp2) != null) {
+			// use the native method if available
+			return float64.exp2(x);
+		}
+		return exp(x * ln2);
+	}
+
+	/// Returns the base-10 logarithm of the argument `x`.
+	static float64 log10(float64 x) {
+		return ln(x) / ln10;
+	}
+
+	/// Returns the logarithm of the specified `base` of the argument `x`.
+	static float64 log(float64 x, float64 base) {
+		return ln(x) / ln(base);
+	}
+
+	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
+	// adapted from: https://github.com/golang/go/blob/master/src/math/sqrt.go
+	static float64 sqrt(float64 x) {
+		static if (preferNativeCalls && struct(float64.sqrt) != null) {
+			// use the native method if available
+			return float64.sqrt(x);
+		}
+
+		// Special cases are:
+		//   * Sqrt(+Inf) = +Inf
+		//   * Sqrt(±0) = ±0
+		//   * Sqrt(x < 0) = NaN
+		//   * Sqrt(NaN) = NaN
+
+		if (x == 0 || x.isUndefined() || isPosInf(x)) {
+			return x;
+		}
+		if (x < 0) {
+			return nan;
+		}
+
+		inline mask     = 0x7FFU;
+		inline shift    = 64 - 11 - 1;
+		inline bias     = 1023;
+
+		uint64 ix = toBits(x);
+		// normalize x
+		int32 exp = int32((ix >> shift) & mask);
+		if (exp == 0) { // subnormal x
+			for (;(ix & (1U << shift)) == 0;) {
+				ix <<= 1;
+				exp -= 1;
+			}
+			exp += 1;
+		}
+		exp -= bias; // unbias exponent
+		ix &= ~(mask << shift);
+		ix |= 1U << shift;
+		if ((exp & 1) == 1) { // odd exp, double x to make it even
+			ix <<= 1;
+		}
+		exp >>= 1; // exp = exp/2, exponent of square root
+		// generate sqrt(x) bit by bit
+		ix <<= 1;
+		uint64 s = 0;
+		uint64 q = 0;               // q = sqrt(x)
+		uint64 r = 1U << (shift + 1); // r = moving bit from MSB to LSB
+		for (;r != 0;) {
+			uint64 t = s + r;
+			if (t <= ix) {
+				s = t + r;
+				ix -= t;
+				q += r;
+			}
+			ix <<= 1;
+			r >>= 1;
+		}
+		// final rounding
+		if (ix != 0) { // remainder, result not exact
+			q += q & 1; // round according to extra bit
+		}
+		ix = (q >> 1) + (uint64(exp - 1 + bias) << shift); // significand + biased exponent
+		return fromBits(ix);
+	}
+
+
+	/// Returns `x` raised to the power of `y`: $ x^y $.
+	// adapted from: https://github.com/golang/go/blob/master/src/math/pow.go
+	static float64 pow(float64 x, float64 y) {
+		static if (preferNativeCalls && struct(float64.pow) != null) {
+			// use the native method if available
+			return float64.pow(x, y);
+		}
+
+		bool isOddInt(float64 x) {
+			if (abs(x) >= (1D << 53)) {
+				// 1 << 53 is the largest exact integer in the float64 format.
+				// Any number outside this range will be truncated before the decimal point and therefore will always be
+				// an even integer.
+				// Without this check and if x overflows int64 the int64(xi) conversion below may produce incorrect results
+				// on some architectures (and does so on arm64). See issue #57465.
+				return false;
+			}
+			float64 xi;
+			float64 xf = modf(x, &xi);
+			return xf == 0 && (int64(xi) & 1) == 1;
+		}
+
+		if (y == 0 || x == 1) {
+			return 1;
+		}
+		if (y == 1) {
+			return x;
+		}
+		if (isUndefined(x) || isUndefined(y)) {
+			return nan;
+		}
+		if (x == 0) {
+			if (y < 0) {
+				if (isOddInt(y)) {
+					return copysign(inf, x);
+//					return x < 0 ? -inf : inf;
+				}
+				return inf;
+			}
+			if (y > 0) {
+				if (isOddInt(y)) {
+					return x;
+				}
+				return 0;
+			}
+		}
+		if (isInfinity(y)) {
+			if (x == -1) {
+				return 1;
+			}
+			if ((abs(x) < 1) == isPosInf(y)) {
+				return 0;
+			}
+			return inf;
+		}
+		if (isInfinity(x)) {
+			if (isNegInf(x)) {
+				return pow(1 / x, -y); // Pow(-0, -y)
+			}
+			if (y < 0) {
+				return 0;
+			}
+			if (y > 0) {
+				return inf;
+			}
+		}
+		if (y == 0.5) {
+			return sqrt(x);
+		}
+		if (y == -0.5) {
+			return 1 / sqrt(x);
+		}
+
+		float64 yi;
+		float64 yf = modf(abs(y), &yi);
+		if (yf != 0 && x < 0) {
+			return nan;
+		}
+
+		if (yi >= 2.*(1D << 62)) { // 1<<63
+			// yi is a large even int that will lead to overflow (or underflow to 0)
+			// for all x except -1 (x == 1 was handled earlier)
+			if (x == -1) {
+				return 1;
+			}
+			if ((abs(x) < 1) == (y > 0)) {
+				return 0;
+			}
+			return inf;
+		}
+
+		// ans = a1 * 2**ae (= 1 for now).
+		float64 a1 = 1;
+		int32 ae = 0;
+
+		// ans *= x**yf
+		if (yf != 0) {
+			if (yf > 0.5) {
+				yf -= 1;
+				yi += 1;
+			}
+			a1 = exp(yf * ln(x));
+		}
+
+		// ans *= x**yi
+		// by multiplying in successive squarings
+		// of x according to bits of yi.
+		// accumulate powers of two into exp.
+		int32 xe;
+		float64 x1 = frexp(x, &xe);
+		for (int64 i = yi; i != 0; i >>= 1) {
+			if (xe < -1<<12 || 1<<12 < xe) {
+				// catch xe before it overflows the left shift below
+				// Since i !=0 it has at least one bit still set, so ae will accumulate xe
+				// on at least one more iteration, ae += xe is a lower bound on ae
+				// the lower bound on ae exceeds the size of a float64 exp
+				// so the final call to Ldexp will produce under/overflow (0/Inf)
+				ae += xe;
+				break;
+			}
+			if ((i & 1) == 1) {
+				a1 *= x1;
+				ae += xe;
+			}
+			x1 *= x1;
+			xe <<= 1;
+			if (x1 < .5) {
+				x1 += x1;
+				xe -= 1;
+			}
+		}
+
+		// ans = a1*2**ae
+		// if y < 0 { ans = 1 / ans }
+		// but in the opposite order
+		if (y < 0) {
+			a1 = 1 / a1;
+			ae = -ae;
+		}
+		return ldexp(a1, ae);
+	}
+
+// trig
+
+	/// Converts the input to radians from degrees.
+	inline radians(float64 degrees) = float64(degrees * pi / 180);
+
+	/// Converts the input to degrees from radians.
+	inline degrees(float64 radians) = float64(radians * 180 / pi);
+
+
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/sin.c
+	static float64 sincos(float64 x, int32 quad) {
+		enum: float64 {
+			p0: .1357884097877375669092680e8;
+			p1: -.4942908100902844161158627e7;
+			p2: .4401030535375266501944918e6;
+			p3: -.1384727249982452873054457e5;
+			p4: .1459688406665768722226959e3;
+			q0: .8644558652922534429915149e7;
+			q1: .4081792252343299749395779e6;
+			q2: .9463096101538208180571257e4;
+			q3: .1326534908786136358911494e3;
+		}
+
+		if (x < 0) {
+			x = -x;
+			quad += 2;
+		}
+
+		float64 y;
+		x *= 2 / pi;	/* underflow? */
+		if (x > 32764) {
+			float64 e;
+			y = modf(x, &e);
+			e += quad;
+
+			float64 f;
+			modf(0.25 * e, &f);
+			quad = e - 4 * f;
+		} else {
+			int32 k = x;
+			y = x - k;
+			quad += k;
+			quad &= 3;
+		}
+		if (quad & 1) {
+			y = 1 - y;
+		}
+		if (quad > 1) {
+			y = -y;
+		}
+
+		float64 ysq = y * y;
+		float64 p = y * eval(ysq, p0, p1, p2, p3, p4);
+		float64 q = eval(ysq, q0, q1, q2, q3 + ysq);
+		return p / q;
+	}
+
+	// adapted from: https://github.com/jeremybarnes/cephes/blob/master/cmath/tan.c
+	static float64 tancot(float64 x, int32 flag) {
+		enum: float64 {
+			dp1: 7.853981554508209228515625E-1;
+			dp2: 7.94662735614792836714E-9;
+			dp3: 3.06161699786838294307E-17;
+
+			p0: -1.30936939181383777646e4;
+			p1: 1.15351664838587416140e6;
+			p2: -1.79565251976484877988e7;
+
+			q0: 1.00000000000000000000e0;
+			q1: 1.36812963470692954678e4;
+			q2: -1.32089234440210967447e6;
+			q3: 2.50083801823357915839e7;
+			q4: -5.38695755929454629881e7;
+
+			lossth: 1.073741824e9;
+		}
+
+		/* make argument positive but save the sign */
+		float64 sign = 1;
+		if (x < 0) {
+			x = -x;
+			sign = -1;
+		}
+
+		if (x > lossth) {
+			//error("total loss of precision");
+			return 0;
+		}
+
+		/* compute x mod PIO4 */
+		float64 y = floor(x / (pi / 4));
+
+		/* strip high bits of integer part */
+		float64 z = ldexp(y, -3);
+		z = floor(z);        /* integer part of y/8 */
+		z = y - ldexp(z, 3);  /* y - 16 * (y/16) */
+
+		/* integer and fractional part modulo one octant */
+		int32 j = z;
+
+		/* map zeros and singularities to origin */
+		if (j & 1) {
+			j += 1;
+			y += 1.0;
+		}
+
+		z = ((x - y * dp1) - y * dp2) - y * dp3;
+
+		float64 zz = z * z;
+		if (zz > 1.0e-14) {
+			y = z + z * (zz * eval(zz, p2, p1, p0) / eval(zz, q4, q3, q2, q1, q0));
+		} else {
+			y = z;
+		}
+
+		if (j & 2) {
+			if (flag) {
+				y = -y;
+			} else {
+				y = -1 / y;
+			}
+		} else {
+			if (flag) {
+				y = 1 / y;
+			}
+		}
+
+		return sign * y;
+	}
+
+	/// Returns the inverse tangent of `y / x`.
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/atan.c
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/atan2.c
+	static float64 atan2(float64 y, float64 x) {
+		static if (preferNativeCalls && struct(float64.atan2) != null) {
+			// use the native method if available
+			return float64.atan2(y, x);
+		}
+
+		if (y + x == y) {
+			if (y >= 0) {
+				return pi / 2;
+			}
+			return -pi / 2;
+		}
+
+		enum: float64 {
+			sq2p1: 2.414213562373095048802e0;
+			sq2m1: .414213562373095048802e0;
+
+			p4: .161536412982230228262e2;
+			p3: .26842548195503973794141e3;
+			p2: .11530293515404850115428136e4;
+			p1: .178040631643319697105464587e4;
+			p0: .89678597403663861959987488e3;
+
+			q4: .5895697050844462222791e2;
+			q3: .536265374031215315104235e3;
+			q2: .16667838148816337184521798e4;
+			q1: .207933497444540981287275926e4;
+			q0: .89678597403663861962481162e3;
+		}
+
+		// xatan evaluates a series valid in the range [-0.414...,+0.414...]. (tan(pi/8))
+		float64 xatan(float64 x) {
+			float64 z = x * x;
+			float64 p = eval(z, p0, p1, p2, p3, p4);
+			float64 q = eval(z, q0, q1, q2, q3, q4 + z);
+			return p / q * x;
+		}
+
+		// satan reduces its argument (known to be positive) to the range [0,0.414...] and calls xatan.
+		float64 satan(float64 x) {
+			if (x < sq2m1) {
+				return xatan(x);
+			}
+			if (x > sq2p1) {
+				return pi / 2 - xatan(1 / x);
+			}
+			return pi / 4 + xatan((x - 1) / (x + 1));
+		}
+
+		y = y / x;
+		if (y <= 0) {
+			y = -satan(-y);
+			if (x < 0) {
+				y += pi;
+			}
+		} else {
+			y = satan(y);
+			if (x < 0) {
+				y -= pi;
+			}
+		}
+
+		return y;
+	}
+
+
+	/// Returns the sine of the radian argument `x`.
+	static float64 sin(float64 x) {
+		static if (preferNativeCalls && struct(float64.sin) != null) {
+			// use the native method if available
+			return float64.sin(x);
+		}
+
+		return sincos(x, 0);
+	}
+
+	/// Returns the inverse sine of the radian argument `x`.
+	static float64 asin(float64 x) {
+		static if (preferNativeCalls && struct(float64.asin) != null) {
+			// use the native method if available
+			return float64.asin(x);
+		}
+		return atan2(x, sqrt((1 + x) * (1 - x)));
+	}
+
+	/// Returns the hyperbolic sine of the radian argument `x`.
+	static float64 sinh(float64 x) {
+		static if (preferNativeCalls && struct(float64.sinh) != null) {
+			// use the native method if available
+			return float64.sinh(x);
+		}
+
+		if (x == 0) {
+			return 0;
+		}
+		return (exp(x) - exp(-x)) / 2;
+	}
+
+	/// Returns the inverse hyperbolic sine of the radian argument `x`.
+	static float64 asinh(float64 x) {
+		return ln(x + sqrt(x * x + 1));
+	}
+
+
+	/// Returns the cosine of the radian argument `x`.
+	static float64 cos(float64 x) {
+		static if (preferNativeCalls && struct(float64.cos) != null) {
+			// use the native method if available
+			return float64.cos(x);
+		}
+
+		if (x < 0) {
+			x = -x;
+		}
+		return sincos(x, 1);
+	}
+
+	/// Returns the inverse cosine of the radian argument `x`.
+	static float64 acos(float64 x) {
+		static if (preferNativeCalls && struct(float64.acos) != null) {
+			// use the native method if available
+			return float64.acos(x);
+		}
+		return atan2(sqrt((1 + x) * (1 - x)), x);
+	}
+
+	/// Returns the hyperbolic cosine of the radian argument `x`.
+	static float64 cosh(float64 x) {
+		static if (preferNativeCalls && struct(float64.cosh) != null) {
+			// use the native method if available
+			return float64.cosh(x);
+		}
+
+		if (x == 0) {
+			return 1;
+		}
+		return (exp(x) + exp(-x)) / 2;
+	}
+
+	/// Returns the inverse hyperbolic cosine of the radian argument `x`.
+	static float64 acosh(float64 x) {
+		//return ln(x + sqrt((x - 1) / (x + 1)) * (x + 1));
+		return ln(x + sqrt(x * x - 1));
+	}
+
+
+	/// Returns the tangent of the radian argument `x`.
+	static float64 tan(float64 x) {
+		static if (preferNativeCalls && struct(float64.tan) != null) {
+			// use the native method if available
+			return float64.tan(x);
+		}
+
+		if (x == 0) {
+			return x;
+		}
+		if (x != x) {
+			// nan
+			return x;
+		}
+		if (x == 2 * x) {
+			// infinity
+			return nan;
+		}
+
+		return tancot(x, 0);
+	}
+
+	/// Returns the inverse tangent of the radian argument `x`.
+	static float64 atan(float64 x) {
+		static if (preferNativeCalls && struct(float64.atan) != null) {
+			// use the native method if available
+			return float64.atan(x);
+		}
+		return atan2(x, 1);
+	}
+
+	/// Returns the hyperbolic tangent of the radian argument `x`.
+	static float64 tanh(float64 x) {
+		static if (preferNativeCalls && struct(float64.tanh) != null) {
+			// use the native method if available
+			return float64.tanh(x);
+		}
+		return 1 - 2 / (exp(2 * x) + 1);
+	}
+
+	/// Returns the inverse hyperbolic tangent of the radian argument `x`.
+	static float64 atanh(float64 x) {
+		if (x >= 1) {
+			return inf;
+		}
+		if (x <= -1) {
+			return -inf;
+		}
+		return ln((1 + x) / (1 - x)) / 2;
+	}
+
+
+	/// Returns the secant of the radian argument `x`.
+	static float64 sec(float64 x) {
+		return 1 / cos(x);
+	}
+
+	/// Returns the inverse secant of the radian argument `x`.
+	static float64 asec(float64 x) {
+		if (x == 0) {
+			return inf;
+		}
+		return acos(1 / x);
+	}
+
+	/// Returns the hyperbolic secant of the radian argument `x`.
+	static float64 sech(float64 x) {
+		return 1 / cosh(x);
+	}
+
+	/// Returns the inverse hyperbolic secant of the radian argument `x`.
+	static float64 asech(float64 x) {
+		if (x == 0) {
+			return inf;
+		}
+		if (x == 1) {
+			return 0;
+		}
+		return ln((sqrt(1 - x * x) + 1) / x);
+	}
+
+
+	/// Returns the cosecant of the radian argument `x`.
+	static float64 csc(float64 x) {
+		return 1 / sin(x);
+	}
+
+	/// Returns the inverse cosecant of the radian argument `x`.
+	static float64 acsc(float64 x) {
+		if (x == 0) {
+			return inf;
+		}
+		return asin(1 / x);
+	}
+
+	/// Returns the hyperbolic cosecant of the radian argument `x`.
+	static float64 csch(float64 x) {
+		return 1 / sinh(x);
+	}
+
+	/// Returns the inverse hyperbolic cosecant of the radian argument `x`.
+	static float64 acsch(float64 x) {
+		if (x == 0) {
+			return inf;
+		}
+		if (x < 0) {
+			return ln((1 - sqrt(1 + x * x)) / x);
+		}
+		return ln((1 + sqrt(1 + x * x)) / x);
+	}
+
+
+	/// Returns the cotangent of the radian argument `x`.
+	static float64 cot(float64 x) {
+		if (x == 0) {
+			return inf;
+		}
+		return tancot(x, 1);
+	}
+
+	/// Returns the inverse cotangent of the radian argument `x`.
+	static float64 acot(float64 x) {
+		if (x == 0) {
+			return pi / 2;
+		}
+		return atan(1 / x);
+	}
+
+	/// Returns the hyperbolic cotangent of the radian argument `x`.
+	static float64 coth(float64 x) {
+		return 1 / tanh(x);
+	}
+
+	/// Returns the inverse hyperbolic cotangent of the radian argument `x`.
+	static float64 acoth(float64 x) {
+		if (x == 1) {
+			return inf;
+		}
+		if (x == -1) {
+			return -inf;
+		}
+		return ln((x + 1) / (x - 1)) / 2;
+	}
+}

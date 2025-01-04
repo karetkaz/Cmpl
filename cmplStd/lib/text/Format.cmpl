@@ -1,0 +1,433 @@
+/// Append a string to the output at the given position
+int append(char output&[], int pos, char str[]) {
+	if (pointer(str) == null) {
+		return append(output, pos, "NULL");
+	}
+	for (int i = 0; i < str.length; i += 1) {
+		if (pos >= output.length) {
+			break;
+		}
+		output[pos] = str[i];
+		pos += 1;
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+	output[pos] = 0;
+	return pos;
+}
+
+/// Append a character to the output at the given position
+int append(char output&[], int pos, char chr) {
+	if (chr == 0 || pos >= output.length) {
+		return pos;
+	}
+	output[pos] = chr;
+	return pos + 1;
+}
+
+inline "./format/NumberFormat.cmpl";
+inline "./format/DatetimeFormat.cmpl";
+
+// read and process c style format flags like: "%02d"
+static NumberFormat parseFormat(char format[], int fmt&) {
+	char chr = format[fmt];
+	if (chr != '%') {
+		return {};
+	}
+
+	NumberFormat result = {};
+	chr = format[fmt += 1];
+	if (chr == '+') {
+		// force sign
+		result.positiveSymbol = '+';
+		chr = format[fmt += 1];
+	}
+
+	if (chr == '0' || chr == ' ') {// || chr == '_') {
+		result.paddingSymbol = chr;
+		chr = format[fmt += 1];
+	}
+
+	if (chr >= '0' && chr <= '9') {
+		int width = 0;
+		for (;chr >= '0' && chr <= '9';) {
+			width = width * 10 + chr - '0';
+			chr = format[fmt += 1];
+		}
+		result.width = width;
+	}
+
+	if (chr == '.') {
+		int precision = 0;
+		chr = format[fmt += 1];
+		for (;chr >= '0' && chr <= '9';) {
+			precision = precision * 10 + chr - '0';
+			chr = format[fmt += 1];
+		}
+		result.precision = precision;
+	}
+
+	if (chr == 'b') {
+		result.digitSymbols = NumberFormat.digits[...2];
+	}
+	else if (chr == 'o') {
+		result.digitSymbols = NumberFormat.digits[...8];
+	}
+	else if (chr == 'd') {
+		result.digitSymbols = NumberFormat.digits[...10];
+	}
+	else if (chr == 'x') {
+		result.digitSymbols = NumberFormat.digits[...16];
+	}
+	return result;
+}
+
+/**
+ * Format integer to text
+ * @param value value to format
+ * @param output write output to this buffer
+ * @param pos starting position for output
+ * @param format format string
+ *  	%b format as binary
+ *  	%o format as octal
+ *  	%d format as decimal
+ *  	%x format as hexadecimal
+ *  	%i format with custom radix passed as precision
+ */
+int format(uint64 value, char output&[], int out, char format[]) {
+	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
+		char chr = format[fmt];
+		if (chr != '%') {
+			output[out] = chr;
+			out += 1;
+			continue;
+		}
+
+		NumberFormat formatter = parseFormat(format, &fmt);
+		chr = format[fmt];
+
+		if (chr == '%') {
+			out = append(output, out, '%');
+			continue;
+		}
+		else if (chr == 'i') {
+			assert(formatter.precision > 1, "radix must be set and must be at least 2");
+			assert(formatter.precision < NumberFormat.digits.length, "maximum radix value is", NumberFormat.digits.length);
+			formatter.digitSymbols = NumberFormat.digits[...formatter.precision];
+		}
+		else if (chr != 'b' && chr != 'o' && chr != 'd' && chr != 'x') {
+			abort("invalid format character", chr);
+		}
+
+		if (formatter.digitSymbols.length != 10) {
+			out = formatter.formatNoSign(output, out, value);
+		} else {
+			out = formatter.format(output, out, value);
+		}
+	}
+
+	if (out >= output.length) {
+		out = output.length - 1;
+	}
+	output[out] = 0;
+	return out;
+}
+
+/**
+ * Format integer to text
+ * @param value value to format
+ * @param output write output to this buffer
+ * @param pos starting position for output
+ * @param format format string
+ *  	%b format as binary
+ *  	%o format as octal
+ *  	%d format as decimal
+ *  	%x format as hexadecimal
+ *  	%i format with custom radix passed as precision
+ */
+int format(int64 value, char output&[], int out, char format[]) {
+	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
+		char chr = format[fmt];
+		if (chr != '%') {
+			output[out] = chr;
+			out += 1;
+			continue;
+		}
+
+		NumberFormat formatter = parseFormat(format, &fmt);
+		chr = format[fmt];
+
+		if (chr == '%') {
+			out = append(output, out, '%');
+			continue;
+		}
+		else if (chr == 'i') {
+			assert(formatter.precision > 1, "radix must be set and must be at least 2");
+			assert(formatter.precision < NumberFormat.digits.length, "maximum radix value is", NumberFormat.digits.length);
+			formatter.digitSymbols = NumberFormat.digits[...formatter.precision];
+		}
+		else if (chr != 'b' && chr != 'o' && chr != 'd' && chr != 'x') {
+			abort("invalid format character", chr);
+		}
+
+		if (formatter.digitSymbols.length != 10) {
+			out = formatter.formatNoSign(output, out, value);
+		} else {
+			out = formatter.format(output, out, value);
+		}
+	}
+
+	if (out >= output.length) {
+		out = output.length - 1;
+	}
+	output[out] = 0;
+	return out;
+}
+
+/**
+ * Format integer to text
+ * @param value value to format
+ * @param output write output to this buffer
+ * @param pos starting position for output
+ * @param format format string
+ *  	%b format as binary
+ *  	%o format as octal
+ *  	%d format as decimal
+ *  	%x format as hexadecimal
+ *  	%i format with custom radix passed as precision
+ */
+int format(int32 value, char output&[], int out, char format[]) {
+	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
+		char chr = format[fmt];
+		if (chr != '%') {
+			output[out] = chr;
+			out += 1;
+			continue;
+		}
+
+		NumberFormat formatter = parseFormat(format, &fmt);
+		chr = format[fmt];
+
+		if (chr == '%') {
+			out = append(output, out, '%');
+			continue;
+		}
+		else if (chr == 'i') {
+			assert(formatter.precision > 1, "radix must be set and must be at least 2");
+			assert(formatter.precision < NumberFormat.digits.length, "maximum radix value is", NumberFormat.digits.length);
+			formatter.digitSymbols = NumberFormat.digits[...formatter.precision];
+		}
+		else if (chr != 'b' && chr != 'o' && chr != 'd' && chr != 'x') {
+			abort("invalid format character", chr);
+		}
+
+		if (formatter.digitSymbols.length != 10) {
+			out = formatter.formatNoSign(output, out, uint32(value));
+		} else {
+			out = formatter.format(output, out, int64(value));
+		}
+	}
+
+	if (out >= output.length) {
+		out = output.length - 1;
+	}
+	output[out] = 0;
+	return out;
+}
+
+/**
+ * Format a 64-bit floating-point value
+ * @param value value to format
+ * @param output write output to this buffer
+ * @param pos starting position for output
+ * @param format format string
+ *  	%d format as decimal(%lg): => 3.141593
+ *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
+ *  	%b, %o, %x can be used to display the binary representation of the number
+ */
+//  	%e todo: format as exponential(%le): 3.141593e+00
+//  	%x todo: format as hexadecimal(%la): 0x1.921fb54442d18p+1
+int format(float64 value, char output&[], int out, char format[]) {
+	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
+		char chr = format[fmt];
+		if (chr != '%') {
+			output[out] = chr;
+			out += 1;
+			continue;
+		}
+
+		NumberFormat formatter = parseFormat(format, &fmt);
+		chr = format[fmt];
+
+		if (chr == '%') {
+			out = append(output, out, '%');
+			continue;
+		}
+		else if (chr == 'd') { // decimal: 3.1415
+			formatter.trailingZeros = false;
+			out = formatter.format(output, out, value);
+		}
+		else if (chr == 'f') { // fixed: 3.141500
+			formatter.trailingZeros = true;
+			out = formatter.format(output, out, value);
+		}
+		else if (chr == 'b' || chr == 'o' || chr == 'x') {
+			if (formatter.precision > 0) {
+				formatter.digitGrouping = formatter.precision;
+				formatter.groupingSymbol = '.';
+			}
+			out = formatter.formatNoSign(output, out, Float64.toBits(value));
+		}
+		else {
+			abort("invalid format character", chr);
+		}
+	}
+
+	if (out >= output.length) {
+		out = output.length - 1;
+	}
+	output[out] = 0;
+	return out;
+}
+
+/**
+ * Format a 32-bit floating-point value
+ * @param value value to format
+ * @param output write output to this buffer
+ * @param pos starting position for output
+ * @param format format string
+ *  	%d format as decimal(%lg): => 3.141593
+ *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
+ *  	%b, %o, %x can be used to display the binary representation of the number
+ */
+//  	%e todo: format as exponential(%le): 3.141593e+00
+int format(float32 value, char output&[], int out, char format[]) {
+	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
+		char chr = format[fmt];
+		if (chr != '%') {
+			output[out] = chr;
+			out += 1;
+			continue;
+		}
+
+		NumberFormat formatter = parseFormat(format, &fmt);
+		chr = format[fmt];
+
+		if (chr == '%') {
+			out = append(output, out, '%');
+			continue;
+		}
+		else if (chr == 'd') { // decimal: 3.1415
+			formatter.trailingZeros = false;
+			out = formatter.format(output, out, float64(value));
+		}
+		else if (chr == 'f') { // fixed: 3.141500
+			formatter.trailingZeros = true;
+			out = formatter.format(output, out, float64(value));
+		}
+		else if (chr == 'b' || chr == 'o' || chr == 'x') {
+			if (formatter.precision > 0) {
+				formatter.digitGrouping = formatter.precision;
+				formatter.groupingSymbol = '.';
+			}
+			out = formatter.formatNoSign(output, out, Float32.toBits(value));
+		}
+		else {
+			abort("invalid format character", chr);
+		}
+	}
+
+	if (out >= output.length) {
+		out = output.length - 1;
+	}
+	output[out] = 0;
+	return out;
+}
+
+/**
+ * Format a 32-bit fixed-point value
+ * @param value value to format
+ * @param output write output to this buffer
+ * @param pos starting position for output
+ * @param format format string
+ *  	%d format as decimal(%lg): => 3.141593
+ *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
+ *  	%b, %o, %x can be used to display the binary representation of the number
+ */
+//  	%e todo: format as exponential(%le): 3.141593e+00
+int format(Fixed32 value, char output&[], int out, char format[]) {
+	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
+		char chr = format[fmt];
+		if (chr != '%') {
+			output[out] = chr;
+			out += 1;
+			continue;
+		}
+
+		NumberFormat formatter = parseFormat(format, &fmt);
+		chr = format[fmt];
+
+		if (chr == '%') {
+			out = append(output, out, '%');
+		}
+		else if (chr == 'd') { // decimal: 3.1415
+			formatter.trailingZeros = false;
+			out = formatter.format(output, out, value);
+		}
+		else if (chr == 'f') { // fixed: 3.141500
+			formatter.trailingZeros = true;
+			out = formatter.format(output, out, value);
+		}
+		else if (chr == 'b' || chr == 'o' || chr == 'x') {
+			if (formatter.precision > 0) {
+				formatter.digitGrouping = formatter.precision;
+				formatter.groupingSymbol = '.';
+			}
+			out = formatter.formatNoSign(output, out, uint32(value.bits()));
+		}
+		else {
+			abort("invalid format character", chr);
+		}
+	}
+
+	if (out >= output.length) {
+		out = output.length - 1;
+	}
+	output[out] = 0;
+	return out;
+}
+
+/// extension method for backward compatibility
+int format(Datetime value!, char output&[], int out, char format[]) {
+	static DatetimeFormat fmt! = {
+		numberFormat: {};
+	};
+	return fmt.format(output, out, value, format);
+}
+
+/// extension method for backward compatibility
+inline format(Datetime value!, char output&[], char format[]) = format(value, output, 0, format);
+
+/// extension method for debugging and testing
+inline format(float64 value, char output&[], char format[]) = format(value, output, 0, format);
+/// extension method for debugging and testing
+inline format(float32 value, char output&[], char format[]) = format(value, output, 0, format);
+/// extension method for debugging and testing
+inline format(Fixed32 value, char output&[], char format[]) = format(value, output, 0, format);
+
+/// extension method for debugging and testing
+inline format(uint32 value, char output&[], int pos, char format[]) = format(uint64(value), output, pos, format);
+// extension method for debugging and testing
+// inline format(int32 value, char output&[], int pos, char format[]) = format(int64(value), output, pos, format);
+
+/// extension method for debugging and testing
+inline format(uint64 value, char output&[], char format[]) = format(value, output, 0, format);
+/// extension method for debugging and testing
+inline format(int64 value, char output&[], char format[]) = format(value, output, 0, format);
+
+/// extension method for debugging and testing
+inline format(uint32 value, char output&[], char format[]) = format(value, output, 0, format);
+/// extension method for debugging and testing
+inline format(int32 value, char output&[], char format[]) = format(value, output, 0, format);

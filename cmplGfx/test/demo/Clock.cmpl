@@ -1,0 +1,103 @@
+// analog clock using antialias lines
+
+inline hourText = 0xadadad;
+inline hourHand = 0xff0000;
+inline minuteHand = 0x00ff00;
+inline secondHand = 0xffffff;
+Image offs = Image(320, 320, 32);
+
+void drawLine(Image image, int32 x0, int32 y0, int32 x1, int32 y1, bool smooth, uint32 color) {
+	static struct SmoothDraw {
+		inline drawAntiAliased = true;
+		inline "cmplGfx/lib/draw/draw.line.cmpl";
+	}
+	static struct RoughDraw {
+		inline drawAntiAliased = false;
+		inline "cmplGfx/lib/draw/draw.line.cmpl";
+	}
+
+	if (smooth) {
+		return SmoothDraw.drawLineIncl(image, x0, y0, x1, y1, color);
+	}
+	return RoughDraw.drawLineIncl(image, x0, y0, x1, y1, color);
+}
+
+int32 onEvent(int32 action, int32 button, int32 ex, int32 ey) {
+	static bool smooth = true;
+	if (action == Window.KEY_RELEASE) {
+		if (button == Window.KEY_CODE_ESC) {
+			// exit with escape button
+			return Window.quit();
+		}
+		if (button == ' ') {
+			smooth = !smooth;
+		}
+	}
+
+	// clear surface
+	offs.fill(0x00000000);
+
+	Image font = Window.font;
+	int32 x1 = offs.width() / 2;
+	int32 y1 = offs.height() / 2;
+	int32 r = Int32.min(x1, y1) - 2;
+	offs.fillOval(x1 - r, y1 - r, x1 + r, y1 + r, 0x4a4a4a);
+
+	if (hourText != 0) {
+		for (int32 i = 1; i <= 12; i += 1) {
+			float64 size = r - font.height() * 3 / 4;
+			float64 angle = Float64.radians(i % 12 * (360 / 12) - 90);
+			int32 x2 = x1 + int32(Float64.cos(angle) * size);
+			int32 y2 = y1 + int32(Float64.sin(angle) * size);
+			char text[8] = {...};
+			i.format(text, "%d");
+			offs.drawText(x2 - 4, y2 - 8, font, text, hourText);
+		}
+	}
+
+	char txtClock[] = "Utc Clock";
+	Rect roiClock = {};
+	inline padding = 5;
+	inline radius = 5;
+	font.clipText(&roiClock, txtClock);
+	roiClock.position(x1 - roiClock.width() / 2, y1 + y1 / 3);
+	roiClock.padded(padding);
+	offs.fillRRect(roiClock, radius, 0x101010);
+	roiClock.padded(-padding);
+	offs.drawText(roiClock, font, txtClock, 0xadadad);
+
+	inline secondsInMillis = 1000;
+	inline minutesInMillis = 60 * secondsInMillis;
+	inline hoursInMillis = 60 * minutesInMillis;
+
+	float64 time = System.millis();
+	if (hourHand != 0) {
+		float64 size = r * 2 / 4.;
+		float64 angle = Float64.radians(((time / hoursInMillis) % 12) * (360 / 12) - 90);
+		float64 x2 = x1 + Float64.cos(angle) * size;
+		float64 y2 = y1 + Float64.sin(angle) * size;
+		offs.drawLine(x1, y1, x2, y2, smooth, hourHand);
+	}
+
+	if (minuteHand != 0) {
+		float64 size = r * 3 / 4.;
+		float64 angle = Float64.radians(((time / minutesInMillis) % 60) * 6 - 90);
+		float64 x2 = x1 + Float64.cos(angle) * size;
+		float64 y2 = y1 + Float64.sin(angle) * size;
+		offs.drawLine(x1, y1, x2, y2, smooth, minuteHand);
+	}
+
+	if (secondHand != 0) {
+		float64 size = r * 4 / 4. - 6;
+		float64 angle = Float64.radians(((time / secondsInMillis) % 60) * 6 - 90);
+		float64 x2 = x1 + Float64.cos(angle) * size;
+		float64 y2 = y1 + Float64.sin(angle) * size;
+		offs.drawLine(x1, y1, x2, y2, smooth, secondHand);
+	}
+
+	// sleep for a while
+	return Window.timeoutFps(24);
+}
+
+Window.show(offs, onEvent);
+offs.destroy();

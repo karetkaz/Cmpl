@@ -1,0 +1,20 @@
+// open and draw 3d mesh
+Image texture = Image("../asset/image/texture.png", 32);
+Mesh model = Mesh("../asset/mesh/teapot.obj");
+
+vec4f center = { x: 0, y: 0, z: 0, w: 1 };
+vec4f resize = { x: 1, y: 1, z: 1, w: 1 };
+model.normalize(0, &center.data, &resize.data);
+
+debug("model", model);
+
+// material Dash
+model.texture(texture);
+model.ambient(0.588235, 0.588235, 0.588235);
+model.diffuse(0.588235, 0.588235, 0.588235);
+model.specular(0.898039, 0.898039, 0.898039);
+model.shine(64);
+
+Window.show(1440, 900, 15, model);
+texture.destroy();
+model.destroy();

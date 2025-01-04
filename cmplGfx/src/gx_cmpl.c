@@ -1,10 +1,15 @@
 #include <cmpl.h>
-#include <utils.h>
 #include "g3_math.h"
 #include "gx_color.h"
 #include "gx_gui.h"
 #include "gx_surf.h"
 #include "g3_draw.h"
+
+// utility macros and external time related functions
+#define offsetOf(__RECORD, __FIELD) ((size_t) &((__RECORD*)NULL)->__FIELD)
+#define sizeOf(__RECORD, __FIELD) sizeof(((__RECORD*)NULL)->__FIELD)
+uint64_t timeMillis();
+
 
 static struct GxImage fnt[64] = {0};
 static GxImage defaultFont(int height);
@@ -26,8 +31,8 @@ static inline vector a2Vec(vector storage, float32_t values[3]) {
 	return storage;
 }
 
-static inline GxMesh meshMemMgr(rtContext ctx, GxMesh recycle, int size) {
-	GxMesh result = ctx->api.rtAlloc(ctx, recycle, size);
+static inline GxMesh meshMemMgr(nfcContext ctx, GxMesh recycle, int size) {
+	GxMesh result = ctx->rt->api.alloc(ctx, recycle, size);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -39,7 +44,7 @@ static const char *const proto_image_create2d = "Image create(int32 width, int32
 static const char *const proto_image_create3d = "Image create3d(int32 width, int32 height)";
 static const char *const proto_image_destroy = "void destroy(Image image)";
 static const char *const proto_image_recycle = "Image recycle(Image recycle, int32 width, int32 height, int32 depth, int32 flags)";
-static const char *const proto_image_slice = "Image slice(Image image, const Rect rect&)";
+static const char *const proto_image_slice = "Image slice(Image image, Rect rect?)";
 static vmError surf_recycle(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -49,7 +54,7 @@ static vmError surf_recycle(nfcContext ctx) {
 		int depth = rt->api.nextArg(&al)->i32;
 		GxImage result = createImage(NULL, width, height, depth, Image2d);
 		if (result != NULL) {
-			rethnd(ctx, result);
+			retHnd(ctx, result);
 			return noError;
 		}
 	}
@@ -58,7 +63,7 @@ static vmError surf_recycle(nfcContext ctx) {
 		int height = rt->api.nextArg(&al)->i32;
 		GxImage result = createImage(NULL, width, height, 32, Image3d);
 		if (result != NULL) {
-			rethnd(ctx, result);
+			retHnd(ctx, result);
 			return noError;
 		}
 	}
@@ -75,7 +80,7 @@ static vmError surf_recycle(nfcContext ctx) {
 		int flags = rt->api.nextArg(&al)->i32;
 		GxImage result = createImage(recycle, width, height, depth, flags);
 		if (result != NULL) {
-			rethnd(ctx, result);
+			retHnd(ctx, result);
 			return noError;
 		}
 	}
@@ -84,7 +89,7 @@ static vmError surf_recycle(nfcContext ctx) {
 		GxRect region = rt->api.nextArg(&al)->ref;
 		GxImage result = sliceImage(NULL, image, region);
 		if (result != NULL) {
-			rethnd(ctx, result);
+			retHnd(ctx, result);
 			return noError;
 		}
 	}
@@ -98,7 +103,7 @@ static const char *const proto_font_default = "Image font";
 static vmError surf_font(nfcContext ctx) {
 	GxImage result = NULL;
 	if (ctx->proto == proto_font_resized) {
-		int size = argi32(ctx, 0);
+		int size = argI32(ctx, 0);
 		result = defaultFont(size);
 	}
 	else if (ctx->proto == proto_font_default) {
@@ -109,67 +114,78 @@ static vmError surf_font(nfcContext ctx) {
 		return nativeCallError;
 	}
 
-	rethnd(ctx, result);
+	retHnd(ctx, result);
 	return noError;
 }
 
-static const char *const proto_image_openImg = "Image openImg(const char path[*], int32 depth)";
-static const char *const proto_image_openBmp = "Image openBmp(const char path[*], int32 depth)";
-static const char *const proto_image_openPng = "Image openPng(const char path[*], int32 depth)";
-static const char *const proto_image_openJpg = "Image openJpg(const char path[*], int32 depth)";
-static const char *const proto_image_openTtf = "Image openTtf(const char path[*], int32 height)";
-static const char *const proto_image_openFnt = "Image openFnt(const char path[*])";
+static const char *const proto_image_openImg = "Image openImg(char fileName[], int32 depth)";
+static const char *const proto_image_openBmp = "Image openBmp(char fileName[], int32 depth)";
+static const char *const proto_image_openPng = "Image openPng(char fileName[], int32 depth)";
+static const char *const proto_image_openJpg = "Image openJpg(char fileName[], int32 depth)";
+static const char *const proto_image_openTtf = "Image openTtf(char fileName[], int32 height)";
+static const char *const proto_image_openFnt = "Image openFnt(char fileName[])";
 static vmError surf_open(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
-	char *path = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr fileNameArr = rt->api.nextArg(&al)->arr;
+	char *fileName = fileNameArr.ref;
+	size_t fileNameLen = strlen(fileName);
+
+	if (fileNameLen > fileNameArr.length) {
+		ctx->rt->api.raise(ctx, raiseFatal, "non zero terminated strings not implemented yet");
+		return nativeCallError;
+	}
 
 	GxImage result = NULL;
 	if (ctx->proto == proto_image_openImg) {
 		int depth = rt->api.nextArg(&al)->i32;
-		result = loadImg(NULL, path, depth);
+		result = loadImg(NULL, fileName, depth);
 	}
 	else if (ctx->proto == proto_image_openTtf) {
 		int height = rt->api.nextArg(&al)->i32;
-		result = loadTtf(NULL, path, height, 31, 256);
+		result = loadTtf(NULL, fileName, height, 31, 256);
 	}
 	else if (ctx->proto == proto_image_openBmp) {
 		int depth = rt->api.nextArg(&al)->i32;
-		result = loadBmp(NULL, path, depth);
+		result = loadBmp(NULL, fileName, depth);
 	}
 #ifndef NO_LIBPNG
 	else if (ctx->proto == proto_image_openPng) {
 		int depth = rt->api.nextArg(&al)->i32;
-		result = loadPng(NULL, path, depth);
+		result = loadPng(NULL, fileName, depth);
 	}
 #endif
 #ifndef NO_LIBJPEG
 	else if (ctx->proto == proto_image_openJpg) {
 		int depth = rt->api.nextArg(&al)->i32;
-		result = loadJpg(NULL, path, depth);
+		result = loadJpg(NULL, fileName, depth);
 	}
 #endif
 	else if (ctx->proto == proto_image_openFnt) {
-		result = loadFnt(NULL, path);
+		result = loadFnt(NULL, fileName);
 	}
 
 	if (result == NULL) {
 		return nativeCallError;
 	}
-	rethnd(ctx, result);
+	retHnd(ctx, result);
 	return noError;
 }
 
-static const char *const proto_image_saveBmp = "void saveBmp(Image image, const char path[*], int32 flags)";
+static const char *const proto_image_saveBmp = "void saveBmp(Image image, char path[], int32 flags)";
 static vmError surf_save(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage surf = rt->api.nextArg(&al)->ref;
-	char *path = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr path = rt->api.nextArg(&al)->arr;
 	int flags = rt->api.nextArg(&al)->i32;
 
-	int result = saveBmp(path, surf, flags);
+	if (strlen(path.ref) > path.length) {
+		ctx->rt->api.raise(ctx, raiseFatal, "non zero terminated strings not implemented yet");
+		return nativeCallError;
+	}
 
+	int result = saveBmp(path.ref, surf, flags);
 	if (result != 0) {
 		return nativeCallError;
 	}
@@ -178,84 +194,84 @@ static vmError surf_save(nfcContext ctx) {
 
 static const char *const proto_image_width = "int32 width(Image image)";
 static vmError surf_width(nfcContext ctx) {
-	GxImage surf = arghnd(ctx, 0);
-	reti32(ctx, surf->width);
+	GxImage surf = argHnd(ctx, 0);
+	retI32(ctx, surf->width);
 	return noError;
 }
 
 static const char *const proto_image_height = "int32 height(Image image)";
 static vmError surf_height(nfcContext ctx) {
-	GxImage surf = arghnd(ctx, 0);
-	reti32(ctx, surf->height);
+	GxImage surf = argHnd(ctx, 0);
+	retI32(ctx, surf->height);
 	return noError;
 }
 
 static const char *const proto_image_depth = "int32 depth(Image image)";
 static vmError surf_depth(nfcContext ctx) {
-	GxImage surf = arghnd(ctx, 0);
-	reti32(ctx, surf->depth);
+	GxImage surf = argHnd(ctx, 0);
+	retI32(ctx, surf->depth);
 	return noError;
 }
 
 
 static const char *const proto_image_get = "int32 get(Image image, int32 x, int32 y)";
 static vmError surf_get(nfcContext ctx) {
-	GxImage surf = arghnd(ctx, 8);
-	int32_t x = argi32(ctx, 4);
-	int32_t y = argi32(ctx, 0);
+	GxImage surf = argHnd(ctx, 8);
+	int32_t x = argI32(ctx, 4);
+	int32_t y = argI32(ctx, 0);
 
-	reti32(ctx, getPixel(surf, x, y));
+	retU32(ctx, getPixel(surf, x, y));
 	return noError;
 }
 
 static const char *const proto_image_tex = "vec4f tex(Image image, float32 x, float32 y)";
 static vmError surf_tex(nfcContext ctx) {
-	GxImage surf = arghnd(ctx, 8);
-	int32_t x = argf32(ctx, 4)* 65535 * surf->width;
-	int32_t y = argf32(ctx, 0)* 65535 * surf->height;
-	struct vector result = vecldc(cast_rgb(getPixelLinear(surf, x, y)));
-	retset(ctx, &result, sizeof(struct vector));
+	GxImage surf = argHnd(ctx, 8);
+	int32_t x = argF32(ctx, 4)* 65535 * surf->width;
+	int32_t y = argF32(ctx, 0)* 65535 * surf->height;
+	vector result = getArg(ctx, ctx->argc - sizeof(struct vector));
+	vecldc(result, cast_rgb(getPixelLinear(surf, x, y)));
 	return noError;
 }
 
 static const char *const proto_image_set = "void set(Image image, int32 x, int32 y, uint32 color)";
 static vmError surf_set(nfcContext ctx) {
-	GxImage surf = arghnd(ctx, 12);
-	int32_t x = argi32(ctx, 8);
-	int32_t y = argi32(ctx, 4);
-	uint32_t color = argi32(ctx, 0);
+	GxImage surf = argHnd(ctx, 12);
+	int32_t x = argI32(ctx, 8);
+	int32_t y = argI32(ctx, 4);
+	uint32_t color = argI32(ctx, 0);
 
 	setPixel(surf, x, y, color);
 	return noError;
 }
 
-static const char *const proto_image_drawText = "void drawText(Image image, const Rect roi&, Image font, const char text[*], int32 color)";
+static const char *const proto_image_drawText = "void drawText(Image image, Rect roi!, Image font, char text[], int32 color)";
 static vmError surf_drawText(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage surf = rt->api.nextArg(&al)->ref;
 	GxRect rect = rt->api.nextArg(&al)->ref;
 	GxImage font = rt->api.nextArg(&al)->ref;
-	char *text = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr text = rt->api.nextArg(&al)->arr;
 	uint32_t color = rt->api.nextArg(&al)->u32;
 	struct GxRect textRect = *rect;
 	if (!clipRect(surf, &textRect)) {
 		return noError;
 	}
 
-	drawText(surf, rect, font, text, color);
+	drawText(surf, rect, font, text.ref, text.length, color);
 	return noError;
 }
 
-static const char *const proto_image_clipText = "void clipText(Image font, Rect rect&, const char text[*])";
+static const char *const proto_image_clipText = "void clipText(Image font, Rect rect&, char text[])";
 static vmError surf_clipText(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage font = rt->api.nextArg(&al)->ref;
 	GxRect rect = rt->api.nextArg(&al)->ref;
-	char *text = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr text = rt->api.nextArg(&al)->arr;
 
-	clipText(rect, font, text);
+	clipText(rect, font, text.ref, text.length);
 	return noError;
 }
 
@@ -279,14 +295,19 @@ static const char *const proto_image_blend_color = "color";
 static const char *const proto_image_blend_alpha = "alpha";
 static const char *const proto_image_blend_dstAlpha = "dstAlpha";
 static const char *const proto_image_blend_vec4f = "blendVec4f";
-static const char *const proto_image_blend = "void blend(Image image, int32 x, int32 y, const Image src, const Rect roi&, pointer extra, uint32 blend(pointer extra, uint32 base, uint32 with))";
+
+static const char *const proto_image_lookup_3d = "lookup3d";
+static const char *const proto_image_lookup_rgb = "lookupRgb";
+static const char *const proto_image_lookup_rgbl = "lookupLrgb";
+static const char *const proto_image_blend = "void copy(Image image, int32 x, int32 y, Image src, Rect roi?, pointer extra, uint32 blend(pointer extra, uint32 base, uint32 with))";
 typedef struct bltContext {
 	symn callback;
 	vmOffs extra;
-	rtContext rt;
+	nfcContext nfc;
 } *bltContext;
 static int blendCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
-	rtContext rt = ctx->rt;
+	nfcContext nfc = ctx->nfc;
+	rtContext rt = nfc->rt;
 #pragma pack(push, 4)
 	struct { argb with, base; vmOffs extra; } args = {
 			.extra = ctx->extra
@@ -295,25 +316,27 @@ static int blendCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
 		args.base = *dst;
 		args.with = *src;
-		if (rt->api.invoke(rt, ctx->callback, dst, &args, NULL) != noError) {
+		if (rt->api.invoke(nfc, ctx->callback, dst, &args, NULL) != noError) {
 			return -1;
 		}
 	}
 	return 0;
 }
 static int blendVec4fCb(argb* dst, argb *src, bltContext ctx, size_t cnt) {
-	rtContext rt = ctx->rt;
-	struct vector args[2];
+	nfcContext nfc = ctx->nfc;
+	rtContext rt = nfc->rt;
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-		args[0] = vecldc(*src);
-		args[1] = vecldc(*dst);
-		if (rt->api.invoke(rt, ctx->callback, args, args, NULL) != noError) {
+		struct vector args[2];
+		vecldc(args + 0, *src);
+		vecldc(args + 1, *dst);
+		if (rt->api.invoke(nfc, ctx->callback, args, args, NULL) != noError) {
 			return -1;
 		}
 		*dst = vecrgb(args);
 	}
 	return 0;
 }
+
 static int blendDstAlpha(argb* dst, argb *src, void *extra, size_t cnt) {
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
 		*dst = mix_rgb(ach(dst->val), *dst, *src);
@@ -321,23 +344,83 @@ static int blendDstAlpha(argb* dst, argb *src, void *extra, size_t cnt) {
 	(void) extra;
 	return 0;
 }
-static int blendColor(argb* dst, argb *src, argb *color, size_t cnt) {
-	int alpha = ach(color->val);
-	argb col = *color;
+static int blendColor(argb* dst, argb *src, void *extra, size_t cnt) {
+	argb col = *(argb *)extra;
+	int alpha = col.a;
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
 		*dst = mix_rgb(alpha, col, *src);
 	}
 	return 0;
 }
-static int blendAlpha(argb* dst, argb *src, argb *color, size_t cnt) {
-	int alpha = color->val;
+
+static int copyLut3d(argb* dst, argb *src, argb lut[256*256*256], size_t cnt) {
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-		dst->r = sat_s8(mix_s8(alpha, dst->r, src->r));
-		dst->g = sat_s8(mix_s8(alpha, dst->g, src->g));
-		dst->b = sat_s8(mix_s8(alpha, dst->b, src->b));
+		*dst = lut[src->r + 256 * (src->g + 256 * src->b)];
 	}
 	return 0;
 }
+static int copyLutRgb(argb* dst, argb *src, argb lut[256], size_t cnt) {
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		dst->b = lut[src->b].b;
+		dst->g = lut[src->g].g;
+		dst->r = lut[src->r].r;
+		// dst->a = extra[src->a].a;
+	}
+	return 0;
+}
+static int copyLutRgbl(argb* dst, argb *src, argb lut[256], size_t cnt) {
+	/*static const int32_t RGB2XYZ[12] = {
+		fxp16(0.412453), fxp16(0.357580), fxp16(0.180423), 0,
+		fxp16(0.212671), fxp16(0.715160), fxp16(0.072169), 0,
+		fxp16(0.019334), fxp16(0.119193), fxp16(0.950227), 0,
+	};
+	static const int32_t XYZ2RGB[12] = {
+		fxp16(+3.240479), fxp16(-1.537150), fxp16(-0.498535), 0,
+		fxp16(-0.969256), fxp16(+1.875992), fxp16(+0.041556), 0,
+		fxp16(+0.055648), fxp16(-0.204043), fxp16(+1.057311), 0,
+	};
+
+	static const int32_t RGB2YIQ[] = {
+		fxp16(0.299), fxp16( 0.587), fxp16( 0.114), 0,
+		fxp16(0.596), fxp16(-0.275), fxp16(-0.321), 0,
+		fxp16(0.212), fxp16(-0.523), fxp16( 0.311), 0,
+	};
+	static const int32_t YIQ2RGB[] = {
+		fxp16(1), fxp16( 0.956), fxp16( 0.621), 0,
+		fxp16(1), fxp16(-0.272), fxp16(-0.647), 0,
+		fxp16(1), fxp16(-1.105), fxp16( 1.702), 0,
+	};*/
+
+	static const int32_t rgb2luv[] = {
+		fxp16( 0.299), fxp16( 0.587), fxp16( 0.114), 0,
+		fxp16(-0.147), fxp16(-0.289), fxp16( 0.437), 0,
+		fxp16( 0.615), fxp16(-0.515), fxp16(-0.100), 0,
+	};
+	static const int32_t luv2rgb[] = {
+		fxp16(1), fxp16( 0.000), fxp16( 1.140), 0,
+		fxp16(1), fxp16(-0.394), fxp16(-0.581), 0,
+		fxp16(1), fxp16( 2.028), fxp16( 0.000), 0,
+	};
+
+	// use alpha channel as luminosity channel lookup for mapping
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		int32_t r = lut[src->r].r;
+		int32_t g = lut[src->g].g;
+		int32_t b = lut[src->b].b;
+
+		int32_t l = (r * rgb2luv[0x0] + g * rgb2luv[0x1] + b * rgb2luv[0x2]) >> 16;
+		int32_t u = (r * rgb2luv[0x4] + g * rgb2luv[0x5] + b * rgb2luv[0x6]) >> 16;
+		int32_t v = (r * rgb2luv[0x8] + g * rgb2luv[0x9] + b * rgb2luv[0xa]) >> 16;
+
+		l = lut[sat_s8(l)].a;
+
+		dst->r = sat_s8((l * luv2rgb[0x0] + u * luv2rgb[0x1] + v * luv2rgb[0x2]) >> 16);
+		dst->g = sat_s8((l * luv2rgb[0x4] + u * luv2rgb[0x5] + v * luv2rgb[0x6]) >> 16);
+		dst->b = sat_s8((l * luv2rgb[0x8] + u * luv2rgb[0x9] + v * luv2rgb[0xa]) >> 16);
+	}
+	return 0;
+}
+
 static vmError surf_blend(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -346,13 +429,13 @@ static vmError surf_blend(nfcContext ctx) {
 	int y = rt->api.nextArg(&al)->i32;
 	GxImage src = rt->api.nextArg(&al)->ref;
 	GxRect roi = rt->api.nextArg(&al)->ref;
-	size_t extra = argref(ctx, rt->api.nextArg(&al)->offset);
-	size_t offset = argref(ctx, rt->api.nextArg(&al)->offset);
-	symn builtin = rt->api.rtLookup(ctx->rt, offset, KIND_typ);
-	symn callback = rt->api.rtLookup(ctx->rt, offset, KIND_fun);
+	size_t extra = argRef(ctx, rt->api.nextArg(&al)->offset);
+	size_t offset = argRef(ctx, rt->api.nextArg(&al)->offset);
+	symn builtin = rt->api.lookup(ctx->rt, offset, KIND_typ);
+	symn callback = rt->api.lookup(ctx->rt, offset, KIND_fun);
 
 	if (callback == NULL && builtin == NULL && offset != 0) {
-		rt->api.raise(rt, raiseError, "Invalid callback");
+		rt->api.raise(ctx, raiseError, "Invalid callback");
 		return nativeCallError;
 	}
 
@@ -361,21 +444,21 @@ static vmError surf_blend(nfcContext ctx) {
 		bltProc blt = getBltProc(src->depth, surf->depth);
 
 		if (copyImage(surf, x, y, src, roi, NULL, blt) < 0) {
-			rt->api.raise(rt, raiseError, "failed to copy image: %T", ctx->sym);
+			rt->api.raise(ctx, raiseError, "failed to copy image: %T", ctx->sym);
 			return nativeCallError;
 		}
 		return noError;
 	}
 
 	if (surf->depth != 32 || src->depth != 32) {
-		rt->api.raise(rt, raiseError, "Image depths must be 32 to blend them with %T", ctx->sym);
+		rt->api.raise(ctx, raiseError, "Image depths must be 32 to blend them with %T", ctx->sym);
 		return nativeCallError;
 	}
 
 	struct bltContext args = {
 			.callback = callback,
 			.extra = extra,
-			.rt = rt,
+			.nfc = ctx,
 	};
 	bltProc blt = NULL;
 	void *arg = NULL;
@@ -384,38 +467,54 @@ static vmError surf_blend(nfcContext ctx) {
 		blt = (bltProc) blendCallback;
 		arg = &args;
 	}
-	else if (builtin->fmt == proto_image_blend_dstAlpha) {
-		blt = (bltProc) blendDstAlpha;
-		arg = NULL;
-	}
-	else if (builtin->fmt == proto_image_blend_alpha) {
-		//blt = getBltProc(blt_cpy_mix, surf->depth);
-		blt = (bltProc) blendAlpha;
-		arg = vmPointer(rt, extra);
-	}
-	else if (builtin->fmt == proto_image_blend_color) {
-		blt = (bltProc) blendColor;
-		arg = vmPointer(rt, extra);
-	}
 	else if (builtin->fmt == proto_image_blend_vec4f) {
-		args.callback = rt->api.rtLookup(ctx->rt, extra, KIND_fun);
+		args.callback = rt->api.lookup(ctx->rt, extra, KIND_fun);
 		blt = (bltProc) blendVec4fCb;
 		arg = &args;
 		if (args.callback == NULL) {
-			rt->api.raise(rt, raiseError, "invalid callback function: %T", ctx->sym);
+			rt->api.raise(ctx, raiseError, "invalid callback function: %T", ctx->sym);
 			return nativeCallError;
 		}
 	}
+	else if (builtin->fmt == proto_image_blend_alpha) {
+		blt = getBltProc(blt_cpy_mix, surf->depth);
+		arg = vmPointer(rt, extra);
+		if (blt == NULL || surf->depth != src->depth) {
+			rt->api.raise(ctx, raiseError, "invalid alpha mixer for depth: %d <- %d", surf->depth, src->depth);
+			return nativeCallError;
+		}
+	}
+	else if (builtin->fmt == proto_image_blend_dstAlpha) {
+		blt = (bltProc) blendDstAlpha;
+	}
+	else if (builtin->fmt == proto_image_blend_color) {
+		// blt = getBltProc(blt_set_mix, surf->depth);
+		blt = (bltProc) blendColor;
+		arg = vmPointer(rt, extra);
+	}
+
+	else if (builtin->fmt == proto_image_lookup_3d) {
+		blt = (bltProc) copyLut3d;
+		arg = vmPointer(rt, extra);
+	}
+	else if (builtin->fmt == proto_image_lookup_rgb) {
+		blt = (bltProc) copyLutRgb;
+		arg = vmPointer(rt, extra);
+	}
+	else if (builtin->fmt == proto_image_lookup_rgbl) {
+		blt = (bltProc) copyLutRgbl;
+		arg = vmPointer(rt, extra);
+	}
 
 	if (copyImage(surf, x, y, src, roi, arg, blt) < 0) {
-		rt->api.raise(rt, raiseError, "failed to copy image: %T", ctx->sym);
+		rt->api.raise(ctx, raiseError, "failed to copy image: %T", ctx->sym);
 		return nativeCallError;
 	}
 
 	return noError;
 }
 
-static const char *const proto_image_transform = "void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 interpolate, const float32 mat[16])";
+static const char *const proto_image_transform = "void transform(Image image, Rect rect?, Image src, Rect roi?, int32 interpolate, float32 mat[16])";
 static vmError surf_transform(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -428,7 +527,7 @@ static vmError surf_transform(nfcContext ctx) {
 
 	if (transformImage(surf, rect, src, roi, interpolate, mat) < 0) {
 		if (surf->depth != src->depth) {
-			ctx->rt->api.raise(ctx->rt, raiseError, "Invalid source depth: %d, in function: %T", src->depth, ctx->sym);
+			rt->api.raise(ctx, raiseError, "Invalid source depth: %d, in function: %T", src->depth, ctx->sym);
 		}
 		return nativeCallError;
 	}
@@ -449,9 +548,9 @@ static vmError surf_blur(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_image_calcHueHist = "void calcHueHist(Image image, const Rect roi&, uint32 lut[256])";
-static const char *const proto_image_calcLumHist = "void calcLumHist(Image image, const Rect roi&, uint32 lut[256])";
-static const char *const proto_image_calcRgbHist = "void calcRgbHist(Image image, const Rect roi&, uint32 lut[256])";
+static const char *const proto_image_calcHueHist = "void calcHueHist(Image image, Rect roi?, uint32 lut[256])";
+static const char *const proto_image_calcLumHist = "void calcLumHist(Image image, Rect roi?, uint32 lut[256])";
+static const char *const proto_image_calcRgbHist = "void calcRgbHist(Image image, Rect roi?, uint32 lut[256])";
 static vmError surf_calcHist(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -460,7 +559,7 @@ static vmError surf_calcHist(nfcContext ctx) {
 	struct nfcArgArr lut = rt->api.nextArg(&al)->arr;
 
 	if (surf->depth != 32) {
-		ctx->rt->api.raise(ctx->rt, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
+		rt->api.raise(ctx, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
 		return nativeCallError;
 	}
 
@@ -478,7 +577,7 @@ static vmError surf_calcHist(nfcContext ctx) {
 
 	const char *dptr = clipRect(surf, &rect);
 	if (dptr == NULL) {
-		ctx->rt->api.raise(ctx->rt, raiseVerbose, "Empty roi, in function: %T", ctx->sym);
+		rt->api.raise(ctx, raiseVerbose, "Empty roi, in function: %T", ctx->sym);
 		return noError;
 	}
 
@@ -552,128 +651,31 @@ static vmError surf_calcHist(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_image_colorMap = "void colorMap(Image image, const Rect roi&, const uint32 lut[256])";
-static vmError surf_colorMap(nfcContext ctx) {
-	rtContext rt = ctx->rt;
-	struct nfcArgs al = rt->api.nfcArgs(ctx);
-	GxImage surf = rt->api.nextArg(&al)->ref;
-	GxRect roi = rt->api.nextArg(&al)->ref;
-	struct nfcArgArr lut = rt->api.nextArg(&al)->arr;
-	int useLuminosity = 0;
+static const char *const proto_image_colorMat =  "void colorMatrix(Image image, int32 x, int32 y, Image src, Rect roi?, float32 mat[16])";
+static int colorMatrix(argb* dst, argb *src, int32_t fxp4x3[16], size_t cnt) {
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		int32_t r = src->r;
+		int32_t g = src->g;
+		int32_t b = src->b;
 
-	if (surf->depth != 32) {
-		ctx->rt->api.raise(ctx->rt, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
-		return nativeCallError;
+		dst->r = sat_s8((r * fxp4x3[0x0] + g * fxp4x3[0x1] + b * fxp4x3[0x2] + fxp4x3[0x3]) >> 16);
+		dst->g = sat_s8((r * fxp4x3[0x4] + g * fxp4x3[0x5] + b * fxp4x3[0x6] + fxp4x3[0x7]) >> 16);
+		dst->b = sat_s8((r * fxp4x3[0x8] + g * fxp4x3[0x9] + b * fxp4x3[0xa] + fxp4x3[0xb]) >> 16);
 	}
-
-	/*if (lut.length != 256) {
-		ctx->rt->api.raise(ctx, raiseError, "Invalid table size: %d (should be 256), in function: %T", lut.length, ctx->sym);
-		return nativeCallError;
-	}*/
-
-	struct GxRect rect = {
-		.x0 = roi ? roi->x0 : 0,
-		.y0 = roi ? roi->y0 : 0,
-		.x1 = roi ? roi->x1 : surf->width,
-		.y1 = roi ? roi->y1 : surf->height,
-	};
-
-	argb *lutPtr = (argb *) lut.ref;
-	char *dstPtr = clipRect(surf, &rect);
-	if (dstPtr == NULL) {
-		ctx->rt->api.raise(ctx->rt, raiseVerbose, "Empty roi, in function: %T", ctx->sym);
-		return noError;
-	}
-
-	for (int i = 0; i < 256; ++i) {
-		if (lutPtr[i].a != i) {
-			useLuminosity = 1;
-			break;
-		}
-	}
-
-	if (!useLuminosity) {
-		for (int y = rect.y0; y < rect.y1; y += 1) {
-			argb *cBuff = (argb *) dstPtr;
-			for (int x = rect.x0; x < rect.x1; x += 1) {
-				cBuff->b = lutPtr[cBuff->b].b;
-				cBuff->g = lutPtr[cBuff->g].g;
-				cBuff->r = lutPtr[cBuff->r].r;
-				cBuff += 1;
-			}
-			dstPtr += surf->scanLen;
-		}
-		return noError;
-	}
-
-	/*static const int32_t RGB2XYZ[12] = {
-		fxp16(0.412453), fxp16(0.357580), fxp16(0.180423), 0,
-		fxp16(0.212671), fxp16(0.715160), fxp16(0.072169), 0,
-		fxp16(0.019334), fxp16(0.119193), fxp16(0.950227), 0,
-	};
-	static const int32_t XYZ2RGB[12] = {
-		fxp16(+3.240479), fxp16(-1.537150), fxp16(-0.498535), 0,
-		fxp16(-0.969256), fxp16(+1.875992), fxp16(+0.041556), 0,
-		fxp16(+0.055648), fxp16(-0.204043), fxp16(+1.057311), 0,
-	};
-
-	static const int32_t RGB2YIQ[] = {
-		fxp16(0.299), fxp16( 0.587), fxp16( 0.114), 0,
-		fxp16(0.596), fxp16(-0.275), fxp16(-0.321), 0,
-		fxp16(0.212), fxp16(-0.523), fxp16( 0.311), 0,
-	};
-	static const int32_t YIQ2RGB[] = {
-		fxp16(1), fxp16( 0.956), fxp16( 0.621), 0,
-		fxp16(1), fxp16(-0.272), fxp16(-0.647), 0,
-		fxp16(1), fxp16(-1.105), fxp16( 1.702), 0,
-	};*/
-
-	static const int32_t rgb2luv[] = {
-		fxp16( 0.299), fxp16( 0.587), fxp16( 0.114), 0,
-		fxp16(-0.147), fxp16(-0.289), fxp16( 0.437), 0,
-		fxp16( 0.615), fxp16(-0.515), fxp16(-0.100), 0,
-	};
-	static const int32_t luv2rgb[] = {
-		fxp16(1), fxp16( 0.000), fxp16( 1.140), 0,
-		fxp16(1), fxp16(-0.394), fxp16(-0.581), 0,
-		fxp16(1), fxp16( 2.028), fxp16( 0.000), 0,
-	};
-
-	// use alpha channel as luminosity channel lookup for mapping
-	for (int y = rect.y0; y < rect.y1; y += 1) {
-		argb *cBuff = (argb *) dstPtr;
-
-		for (int x = rect.x0; x < rect.x1; x += 1) {
-			int32_t r = lutPtr[cBuff->r].r;
-			int32_t g = lutPtr[cBuff->g].g;
-			int32_t b = lutPtr[cBuff->b].b;
-
-			int32_t l = (r * rgb2luv[0x0] + g * rgb2luv[0x1] + b * rgb2luv[0x2]) >> 16;
-			int32_t u = (r * rgb2luv[0x4] + g * rgb2luv[0x5] + b * rgb2luv[0x6]) >> 16;
-			int32_t v = (r * rgb2luv[0x8] + g * rgb2luv[0x9] + b * rgb2luv[0xa]) >> 16;
-
-			l = lutPtr[sat_s8(l)].a;
-
-			cBuff->r = sat_s8((l * luv2rgb[0x0] + u * luv2rgb[0x1] + v * luv2rgb[0x2]) >> 16);
-			cBuff->g = sat_s8((l * luv2rgb[0x4] + u * luv2rgb[0x5] + v * luv2rgb[0x6]) >> 16);
-			cBuff->b = sat_s8((l * luv2rgb[0x8] + u * luv2rgb[0x9] + v * luv2rgb[0xa]) >> 16);
-			cBuff += 1;
-		}
-		dstPtr += surf->scanLen;
-	}
-	return noError;
+	return 0;
 }
-
-static const char *const proto_image_colorMat = "void colorMat(Image image, const Rect roi&, const float32 mat[16])";
 static vmError surf_colorMat(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage surf = rt->api.nextArg(&al)->ref;
+	int x = rt->api.nextArg(&al)->i32;
+	int y = rt->api.nextArg(&al)->i32;
+	GxImage src = rt->api.nextArg(&al)->ref;
 	GxRect roi = rt->api.nextArg(&al)->ref;
 	struct nfcArgArr mat = rt->api.nextArg(&al)->arr;
 
 	if (surf->depth != 32) {
-		ctx->rt->api.raise(ctx->rt, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
+		rt->api.raise(ctx, raiseError, "Invalid depth: %d, in function: %T", surf->depth, ctx->sym);
 		return nativeCallError;
 	}
 
@@ -688,50 +690,29 @@ static vmError surf_colorMat(nfcContext ctx) {
 	for (int i = 0; i < 16; i++) {
 		cMat[i] = fxp16(matPtr[i]);
 	}
-
-	struct GxRect rect = {
-		.x0 = roi ? roi->x0 : 0,
-		.y0 = roi ? roi->y0 : 0,
-		.x1 = roi ? roi->x1 : surf->width,
-		.y1 = roi ? roi->y1 : surf->height,
-	};
-
-	char *dptr = clipRect(surf, &rect);
-	if (dptr == NULL) {
-		ctx->rt->api.raise(ctx->rt, raiseVerbose, "Empty roi, in function: %T", ctx->sym);
-		return noError;
-	}
-
-	for (int y = rect.y0; y < rect.y1; y += 1) {
-		argb *cBuff = (argb *) dptr;
-		for (int x = rect.x0; x < rect.x1; x += 1) {
-			int r = cBuff->r;
-			int g = cBuff->g;
-			int b = cBuff->b;
-			const int a = 256;
-			cBuff->r = sat_s8((r * cMat[0x0] + g * cMat[0x1] + b * cMat[0x2] + a * cMat[0x3]) >> 16);
-			cBuff->g = sat_s8((r * cMat[0x4] + g * cMat[0x5] + b * cMat[0x6] + a * cMat[0x7]) >> 16);
-			cBuff->b = sat_s8((r * cMat[0x8] + g * cMat[0x9] + b * cMat[0xa] + a * cMat[0xb]) >> 16);
-			cBuff += 1;
-		}
-		dptr += surf->scanLen;
+	cMat[0x3] *= 256;
+	cMat[0x7] *= 256;
+	cMat[0xb] *= 256;
+	if (copyImage(surf, x, y, src, roi, cMat, (bltProc) colorMatrix) < 0) {
+		rt->api.raise(ctx, raiseError, "failed to copy image: %T", ctx->sym);
+		return nativeCallError;
 	}
 	return noError;
 }
 
-static const char *const proto_image_gradient = "void gradient(Image image, const Rect roi&, int32 type, bool repeat, uint32 colors...)";
+static const char *const proto_image_gradient = "void gradient(Image image, Rect roi?, int32 type, bool repeat, uint32 colors...)";
 static vmError surf_gradient(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage surf = rt->api.nextArg(&al)->ref;
-	GxRect rect = rt->api.nextArg(&al)->ref;
+	GxRect roi = rt->api.nextArg(&al)->ref;
 	GradientFlags type = rt->api.nextArg(&al)->i32;
 	int repeat = rt->api.nextArg(&al)->i32;
 	struct nfcArgArr colors = rt->api.nextArg(&al)->arr;
 	if (repeat) {
 		type |= flag_repeat;
 	}
-	drawGradient(surf, rect, type, colors.length, colors.ref);
+	drawGradient(surf, roi, type, colors.length, colors.ref);
 	return noError;
 }
 
@@ -747,14 +728,14 @@ static vmError mesh_recycle(nfcContext ctx) {
 		size = rt->api.nextArg(&al)->i32;
 	}
 	if (ctx->proto == proto_mesh_create) {
-		recycle = meshMemMgr(ctx->rt, NULL, sizeof(struct GxMesh));
+		recycle = meshMemMgr(ctx, NULL, sizeof(struct GxMesh));
 		size = rt->api.nextArg(&al)->i32;
 	}
 	GxMesh result = createMesh(recycle, (size_t) size);
 	if (result == NULL) {
 		return nativeCallError;
 	}
-	retref(ctx, vmOffset(ctx->rt, result));
+	retRef(ctx, vmOffset(ctx->rt, result));
 	return noError;
 }
 
@@ -764,7 +745,7 @@ static vmError mesh_destroy(nfcContext ctx) {
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxMesh mesh = rt->api.nextArg(&al)->ref;
 	destroyMesh(mesh);
-	meshMemMgr(ctx->rt, mesh, 0);
+	meshMemMgr(ctx, mesh, 0);
 	return noError;
 }
 
@@ -776,18 +757,22 @@ static vmError surf_drawMesh(nfcContext ctx) {
 	GxMesh mesh = rt->api.nextArg(&al)->ref;
 	int32_t mode = rt->api.nextArg(&al)->i32;
 
-	reti32(ctx, drawMesh(surf, mesh, cam, lights, mode));
+	retI32(ctx, drawMesh(surf, mesh, cam, lights, mode));
 	return noError;
 }
 
-static const char *const proto_mesh_openObj = "Mesh openObj(const char path[*])";
-static const char *const proto_mesh_open3ds = "Mesh open3ds(const char path[*])";
+static const char *const proto_mesh_openObj = "Mesh openObj(char path[])";
+static const char *const proto_mesh_open3ds = "Mesh open3ds(char path[])";
 static vmError mesh_open(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
-	char *path = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr path = rt->api.nextArg(&al)->arr;
+	if (strlen(path.ref) > path.length) {
+		ctx->rt->api.raise(ctx, raiseFatal, "non zero terminated strings not implemented yet");
+		return nativeCallError;
+	}
 
-	GxMesh result = meshMemMgr(ctx->rt, NULL, sizeof(struct GxMesh));
+	GxMesh result = meshMemMgr(ctx, NULL, sizeof(struct GxMesh));
 	if (result == NULL) {
 		return nativeCallError;
 	}
@@ -796,36 +781,40 @@ static vmError mesh_open(nfcContext ctx) {
 	result->hasTex = result->hasNrm = 0;
 	result->tricnt = result->vtxcnt = 0;
 	if (ctx->proto == proto_mesh_openObj) {
-		if (!readObj(result, path)) {
+		if (!readObj(result, path.ref)) {
 			return nativeCallError;
 		}
 	}
 	else if (ctx->proto == proto_mesh_open3ds) {
-		if (!read3ds(result, path)) {
+		if (!read3ds(result, path.ref)) {
 			return nativeCallError;
 		}
 	}
 	else {
-		meshMemMgr(ctx->rt, result, 0);
+		meshMemMgr(ctx, result, 0);
 		return nativeCallError;
 	}
 
-	retref(ctx, vmOffset(ctx->rt, result));
+	retRef(ctx, vmOffset(ctx->rt, result));
 	return noError;
 }
 
-static const char *const proto_mesh_saveObj = "void saveObj(Mesh mesh, const char path[*])";
+static const char *const proto_mesh_saveObj = "void saveObj(Mesh mesh, char path[])";
 static vmError mesh_save(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxMesh mesh = rt->api.nextArg(&al)->ref;
-	char *path = rt->api.nextArg(&al)->ref;
+	struct nfcArgArr path = rt->api.nextArg(&al)->arr;
+	if (strlen(path.ref) > path.length) {
+		ctx->rt->api.raise(ctx, raiseFatal, "non zero terminated strings not implemented yet");
+		return nativeCallError;
+	}
 
 	if (mesh == NULL) {
 		return nativeCallError;
 	}
 
-	if (!saveObj(mesh, path)) {
+	if (!saveObj(mesh, path.ref)) {
 		return nativeCallError;
 	}
 	return noError;
@@ -855,10 +844,10 @@ static vmError mesh_addVertex(nfcContext ctx) {
 	pos[2] = rt->api.nextArg(&al)->f32;
 	if (!addVtx(mesh, pos, NULL, NULL)) {
 		// return nativeCallError;
-		reti32(ctx, -1);
+		retI32(ctx, -1);
 		return noError;
 	}
-	reti32(ctx, mesh->vtxcnt - 1);
+	retI32(ctx, mesh->vtxcnt - 1);
 	return noError;
 }
 
@@ -890,10 +879,10 @@ static vmError mesh_addFace(nfcContext ctx) {
 	}
 	if (!res) {
 		// return nativeCallError;
-		reti32(ctx, -1);
+		retI32(ctx, -1);
 		return noError;
 	}
-	reti32(ctx, mesh->tricnt - 1);
+	retI32(ctx, mesh->tricnt - 1);
 	return noError;
 }
 
@@ -926,12 +915,12 @@ static vmError mesh_setVertex(nfcContext ctx) {
 		tex[1] = rt->api.nextArg(&al)->f32;
 		res = setVtx(mesh, idx, NULL, NULL, tex);
 	}
-	reti32(ctx, res != 0);
+	retI32(ctx, res != 0);
 	return noError;
 }
 
 typedef struct mainLoopArgs {
-	rtContext rt;
+	nfcContext nfc;
 	symn callback;
 	vmError error;
 	uint64_t timeout;
@@ -983,8 +972,9 @@ static void mainLoopCallback(mainLoopArgs args) {
 
 	symn callback = args->callback;
 	if (callback != NULL) {
-		rtContext rt = args->rt;
-		args->error = rt->api.invoke(rt, callback, &timeout, &args->event, args);
+		nfcContext nfc = args->nfc;
+		rtContext rt = nfc->rt;
+		args->error = rt->api.invoke(nfc, callback, &timeout, &args->event, args);
 		if (args->error != noError) {
 			return exitMainLoop(args);
 		}
@@ -1004,13 +994,13 @@ static vmError window_show(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage offScreen = rt->api.nextArg(&al)->ref;
-	size_t cbClosure = argref(ctx, rt->api.nextArg(&al)->offset);
-	size_t cbOffs = argref(ctx, rt->api.nextArg(&al)->offset);
+	size_t cbClosure = argRef(ctx, rt->api.nextArg(&al)->offset);
+	size_t cbOffs = argRef(ctx, rt->api.nextArg(&al)->offset);
 
 	struct mainLoopArgs args = {0};
-	args.rt = rt;
+	args.nfc = ctx;
 	args.error = noError;
-	args.callback = rt->api.rtLookup(ctx->rt, cbOffs, KIND_fun);
+	args.callback = rt->api.lookup(ctx->rt, cbOffs, KIND_fun);
 	args.event.closure = (vmOffs) cbClosure;
 
 	int timeout = 0;
@@ -1020,7 +1010,7 @@ static vmError window_show(nfcContext ctx) {
 		args.event.button = 0;
 		args.event.x = 0;
 		args.event.y = 0;
-		vmError error = rt->api.invoke(rt, args.callback, &timeout, &args.event, &args);
+		vmError error = rt->api.invoke(ctx, args.callback, &timeout, &args.event, &args);
 		if (error != noError) {
 			return error;
 		}
@@ -1041,21 +1031,25 @@ static vmError window_show(nfcContext ctx) {
 		args.event.button = 0;
 		args.event.x = 0;
 		args.event.y = 0;
-		rt->api.invoke(rt, args.callback, NULL, &args.event, &args);
+		rt->api.invoke(ctx, args.callback, NULL, &args.event, &args);
 	}
 
 	destroyWindow(args.window);
 	return args.error;
 }
 
-static const char *const proto_window_title = "void setTitle(const char title[*])";
+static const char *const proto_window_title = "void setTitle(char title[])";
 static vmError window_title(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	mainLoopArgs args = (mainLoopArgs) ctx->extra;
 	if (args != NULL && args->window != NULL) {
-		char *title = rt->api.nextArg(&al)->ref;
-		setWindowTitle(args->window, title);
+		struct nfcArgArr title = rt->api.nextArg(&al)->arr;
+		if (strlen(title.ref) > title.length) {
+			ctx->rt->api.raise(ctx, raiseFatal, "non zero terminated strings not implemented yet");
+			return nativeCallError;
+		}
+		setWindowTitle(args->window, title.ref);
 		return noError;
 	}
 	return nativeCallError;
@@ -1066,13 +1060,13 @@ static vmError window_quit(nfcContext ctx) {
 	mainLoopArgs args = (mainLoopArgs) ctx->extra;
 	if (args != NULL && args->window != NULL) {
 		exitMainLoop(args);
-		reti32(ctx, 0);
+		retI32(ctx, 0);
 		return noError;
 	}
 	return nativeCallError;
 }
 
-static const char *const proto_camera_set = "void camera(const float32 proj[16], const float32 position[4], const float32 forward[4], const float32 right[4], const float32 up[4])";
+static const char *const proto_camera_set = "void camera(float32 proj[16], float32 position[4], float32 forward[4], float32 right[4], float32 up[4])";
 static vmError camera_set(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -1108,7 +1102,7 @@ static vmError lights_manager(nfcContext ctx) {
 	}
 
 	if (ctx->proto == proto_lights_enabled) {
-		reti32(ctx, lights[light].attr);
+		retI32(ctx, lights[light].attr);
 		return noError;
 	}
 
@@ -1545,22 +1539,22 @@ static GxImage defaultFont(int height) {
 	return dst;
 }
 
-static symn typSigned(rtContext rt, int size) {
+static symn typSigned(rtContext ctx, int size) {
 	switch (size) {
 		default:
 			break;
 
 		case 1:
-			return rt->api.ccLookup(rt, NULL, "int8");
+			return ctx->api.ccLookup(ctx->cc, NULL, "int8");
 
 		case 2:
-			return rt->api.ccLookup(rt, NULL, "int16");
+			return ctx->api.ccLookup(ctx->cc, NULL, "int16");
 
 		case 4:
-			return rt->api.ccLookup(rt, NULL, "int32");
+			return ctx->api.ccLookup(ctx->cc, NULL, "int32");
 
 		case 8:
-			return rt->api.ccLookup(rt, NULL, "int64");
+			return ctx->api.ccLookup(ctx->cc, NULL, "int64");
 	}
 	return NULL;
 }
@@ -1573,10 +1567,9 @@ static void builtinBlend(const struct rtContextRec *rt, const char * proto, symn
 	type->fmt = proto;
 }
 
-const char cmplUnit[] = "/cmplGfx/lib.ci";
-int cmplInit(rtContext rt) {
-
-	struct {
+const char cmplUnit[] = "cmplGfx/lib.cmpl";
+int cmplInit(rtContext ctx, ccContext cc) {
+	const struct {
 		vmError (*func)(nfcContext);
 		const char *proto;
 	}
@@ -1612,7 +1605,6 @@ int cmplInit(rtContext rt) {
 		{surf_transform, proto_image_transform},
 		{surf_blur, proto_image_blur},
 
-		{surf_colorMap, proto_image_colorMap},
 		{surf_colorMat, proto_image_colorMat},
 		{surf_calcHist, proto_image_calcHueHist},
 		{surf_calcHist, proto_image_calcLumHist},
@@ -1646,7 +1638,8 @@ int cmplInit(rtContext rt) {
 		{mesh_material, proto_material_specular},
 		{mesh_material, proto_material_shine},
 		{mesh_material, proto_material_texture},
-	}, nfcLights[] = {
+	},
+	nfcLights[] = {
 		{lights_manager, proto_lights_enabled},
 		{lights_manager, proto_lights_enable},
 		{lights_manager, proto_lights_position},
@@ -1656,10 +1649,8 @@ int cmplInit(rtContext rt) {
 		{lights_manager, proto_lights_attenuation},
 	};
 
-	ccContext cc = rt->cc;
-
 	// rectangle in 2d
-	rt->api.ccAddUnit(cc, NULL, 0,
+	ctx->api.ccAddUnit(cc, NULL, 0,
 		"/// The Rect type represents a rectangle in the plain.\n"
 		"struct Rect:1 {\n"
 		"	/// Represents the left edge of the rectangle\n"
@@ -1674,44 +1665,57 @@ int cmplInit(rtContext rt) {
 	);
 
 	// surfaces are allocated outside the vm, and are handler types
-	symn symImage = rt->api.ccAddType(cc, "Image", sizeof(GxImage), 0);
+	symn symImage = ctx->api.ccAddType(cc, "Image", sizeof(GxImage), 0);
 	symImage->fmt = "%a";
 
 	// meshes are allocated inside the vm, and are reference types
-	symn symMesh = rt->api.ccAddType(cc, "Mesh", sizeof(struct GxMesh), 1);
+	symn symMesh = ctx->api.ccAddType(cc, "Mesh", sizeof(struct GxMesh), 1);
 
-	if (rt->api.ccExtend(cc, symMesh)) {
+	if (ctx->api.ccExtend(cc, symMesh)) {
 		for (size_t i = 0; i < sizeof(nfcMesh) / sizeof(*nfcMesh); i += 1) {
-			if (!rt->api.ccAddCall(cc, nfcMesh[i].func, nfcMesh[i].proto)) {
+			if (!ctx->api.ccAddCall(cc, nfcMesh[i].func, nfcMesh[i].proto)) {
 				return 1;
 			}
 		}
 
+		if (!ctx->api.ccAddCall(cc, camera_set, proto_camera_set)) {
+			return 1;
+		}
+
+		symn symLights = ctx->api.ccBegin(cc, "lights");
+		if (symLights != NULL) {
+			for (size_t i = 0; i < sizeof(nfcLights) / sizeof(*nfcLights); i += 1) {
+				if (!ctx->api.ccAddCall(cc, nfcLights[i].func, nfcLights[i].proto)) {
+					return 1;
+				}
+			}
+			ctx->api.ccEnd(cc, symLights);
+		}
+
 		// clear color and depth buffers
-		rt->api.ccDefInt(cc, "keepBuffer", keep_buff);
+		ctx->api.ccDefInt(cc, "keepBuffer", keep_buff);
 
 		// backface culling
-		rt->api.ccDefInt(cc, "cullBack", cull_back);
-		rt->api.ccDefInt(cc, "cullFront", cull_front);
-		rt->api.ccDefInt(cc, "cullMode", cull_mode);
+		ctx->api.ccDefInt(cc, "cullBack", cull_back);
+		ctx->api.ccDefInt(cc, "cullFront", cull_front);
+		ctx->api.ccDefInt(cc, "cullMode", cull_mode);
 
-		rt->api.ccDefInt(cc, "drawPlot", draw_plot);
-		rt->api.ccDefInt(cc, "drawWire", draw_wire);
-		rt->api.ccDefInt(cc, "drawFill", draw_fill);
-		rt->api.ccDefInt(cc, "drawMode", draw_mode);
+		ctx->api.ccDefInt(cc, "drawPlot", draw_plot);
+		ctx->api.ccDefInt(cc, "drawWire", draw_wire);
+		ctx->api.ccDefInt(cc, "drawFill", draw_fill);
+		ctx->api.ccDefInt(cc, "drawMode", draw_mode);
 
-		rt->api.ccDefInt(cc, "useTexture", draw_tex);
-		rt->api.ccDefInt(cc, "useLights", draw_lit);
-		rt->api.ccDefInt(cc, "drawBounds", draw_box);
+		ctx->api.ccDefInt(cc, "useTexture", draw_tex);
+		ctx->api.ccDefInt(cc, "useLights", draw_lit);
+		ctx->api.ccDefInt(cc, "drawBounds", draw_box);
 
-		symn vtxCount = rt->api.ccDefVar(cc, "vertices", typSigned(rt, sizeOf(struct GxMesh, vtxcnt)));
-		symn triCount = rt->api.ccDefVar(cc, "triangles", typSigned(rt, sizeOf(struct GxMesh, tricnt)));
-		symn segCount = rt->api.ccDefVar(cc, "segments", typSigned(rt, sizeOf(struct GxMesh, segcnt)));
+		symn vtxCount = ctx->api.ccDefVar(cc, "vertices", typSigned(ctx, sizeOf(struct GxMesh, vtxcnt)));
+		symn triCount = ctx->api.ccDefVar(cc, "triangles", typSigned(ctx, sizeOf(struct GxMesh, tricnt)));
+		symn segCount = ctx->api.ccDefVar(cc, "segments", typSigned(ctx, sizeOf(struct GxMesh, segcnt)));
 
 		ccKind symKind = symMesh->kind;
 		symMesh->kind &= ~ATTR_stat;
-		symMesh->kind |= ATTR_cnst;
-		rt->api.ccEnd(cc, symMesh);
+		ctx->api.ccEnd(cc, symMesh);
 		symMesh->kind = symKind;
 
 		vtxCount->offs = offsetOf(struct GxMesh, vtxcnt);
@@ -1719,10 +1723,10 @@ int cmplInit(rtContext rt) {
 		segCount->offs = offsetOf(struct GxMesh, segcnt);
 	}
 
-	if (rt->api.ccExtend(cc, symImage)) {
+	if (ctx->api.ccExtend(cc, symImage)) {
 		symn blend = NULL;
 		for (size_t i = 0; i < sizeof(nfcSurf) / sizeof(*nfcSurf); i += 1) {
-			symn nfc = rt->api.ccAddCall(cc, nfcSurf[i].func, nfcSurf[i].proto);
+			symn nfc = ctx->api.ccAddCall(cc, nfcSurf[i].func, nfcSurf[i].proto);
 			if (nfc == NULL) {
 				return 1;
 			}
@@ -1732,110 +1736,97 @@ int cmplInit(rtContext rt) {
 			}
 		}
 		if (blend != NULL && blend->params != NULL) {
-			if (rt->api.ccExtend(cc, blend)) {
+			if (ctx->api.ccExtend(cc, blend)) {
 				symn method = NULL;
 				for (symn p = blend->params; p; p = p->next) {
 					// blend callback is the last parameter
 					method = p;
 				}
 
-				builtinBlend(rt, proto_image_blend_color, method);// Image.blend.color
-				builtinBlend(rt, proto_image_blend_alpha, method);
-				builtinBlend(rt, proto_image_blend_dstAlpha, method);
-				builtinBlend(rt, proto_image_blend_vec4f, method);
-				rt->api.ccEnd(cc, blend);
+				builtinBlend(ctx, proto_image_blend_color, method);// Image.blend.color
+				builtinBlend(ctx, proto_image_blend_alpha, method);
+				builtinBlend(ctx, proto_image_blend_dstAlpha, method);
+				builtinBlend(ctx, proto_image_blend_vec4f, method);
+				builtinBlend(ctx, proto_image_lookup_3d, method);
+				builtinBlend(ctx, proto_image_lookup_rgb, method);
+				builtinBlend(ctx, proto_image_lookup_rgbl, method);
+				ctx->api.ccEnd(cc, blend);
 			}
 		}
-		rt->api.ccEnd(cc, symImage);
+		ctx->api.ccEnd(cc, symImage);
 	}
 
-	symn gradient = rt->api.ccAddCall(cc, surf_gradient, proto_image_gradient);
-	if (gradient != NULL && rt->api.ccExtend(cc, gradient)) {
-		rt->api.ccDefInt(cc, "Linear", gradient_lin);
-		rt->api.ccDefInt(cc, "Radial", gradient_rad);
-		rt->api.ccDefInt(cc, "Square", gradient_sqr);
-		rt->api.ccDefInt(cc, "Spiral", gradient_spr);
-		rt->api.ccDefInt(cc, "Conical", gradient_con);
-		rt->api.ccDefInt(cc, "MaskLinear", flag_alpha | gradient_lin);
-		rt->api.ccDefInt(cc, "MaskRadial", flag_alpha | gradient_rad);
-		rt->api.ccDefInt(cc, "MaskSquare", flag_alpha | gradient_sqr);
-		rt->api.ccEnd(cc, gradient);
+	symn gradient = ctx->api.ccAddCall(cc, surf_gradient, proto_image_gradient);
+	if (gradient != NULL && ctx->api.ccExtend(cc, gradient)) {
+		ctx->api.ccDefInt(cc, "Linear", gradient_lin);
+		ctx->api.ccDefInt(cc, "Radial", gradient_rad);
+		ctx->api.ccDefInt(cc, "Square", gradient_sqr);
+		ctx->api.ccDefInt(cc, "Spiral", gradient_spr);
+		ctx->api.ccDefInt(cc, "Conical", gradient_con);
+		ctx->api.ccDefInt(cc, "MaskLinear", flag_alpha | gradient_lin);
+		ctx->api.ccDefInt(cc, "MaskRadial", flag_alpha | gradient_rad);
+		ctx->api.ccDefInt(cc, "MaskSquare", flag_alpha | gradient_sqr);
+		ctx->api.ccEnd(cc, gradient);
 	}
 
-	if (!rt->api.ccAddCall(cc, camera_set, proto_camera_set)) {
-		return 1;
-	}
-
-	symn symLights = rt->api.ccBegin(cc, "lights");
-	if (symLights != NULL) {
-		for (size_t i = 0; i < sizeof(nfcLights) / sizeof(*nfcLights); i += 1) {
-			if (!rt->api.ccAddCall(cc, nfcLights[i].func, nfcLights[i].proto)) {
-				return 1;
-			}
-		}
-		rt->api.ccEnd(cc, symLights);
-	}
-
-
-	symn win = rt->api.ccBegin(cc, "Window");
+	symn win = ctx->api.ccBegin(cc, "Window");
 	if (win != NULL) {
-		rt->api.ccDefInt(cc, "KEY_PRESS", KEY_PRESS);
-		rt->api.ccDefInt(cc, "KEY_RELEASE", KEY_RELEASE);
-		rt->api.ccDefInt(cc, "MOUSE_WHEEL", MOUSE_WHEEL);
-		rt->api.ccDefInt(cc, "MOUSE_PRESS", MOUSE_PRESS);
-		rt->api.ccDefInt(cc, "MOUSE_MOTION", MOUSE_MOTION);
-		rt->api.ccDefInt(cc, "MOUSE_RELEASE", MOUSE_RELEASE);
-		rt->api.ccDefInt(cc, "FINGER_PRESS", FINGER_PRESS);
-		rt->api.ccDefInt(cc, "FINGER_MOTION", FINGER_MOTION);
-		rt->api.ccDefInt(cc, "FINGER_RELEASE", FINGER_RELEASE);
-		rt->api.ccDefInt(cc, "EVENT_TIMEOUT", EVENT_TIMEOUT);
+		ctx->api.ccDefInt(cc, "KEY_PRESS", KEY_PRESS);
+		ctx->api.ccDefInt(cc, "KEY_RELEASE", KEY_RELEASE);
+		ctx->api.ccDefInt(cc, "MOUSE_PRESS", MOUSE_PRESS);
+		ctx->api.ccDefInt(cc, "MOUSE_MOTION", MOUSE_MOTION);
+		ctx->api.ccDefInt(cc, "MOUSE_RELEASE", MOUSE_RELEASE);
+		ctx->api.ccDefInt(cc, "FINGER_PRESS", FINGER_PRESS);
+		ctx->api.ccDefInt(cc, "FINGER_MOTION", FINGER_MOTION);
+		ctx->api.ccDefInt(cc, "FINGER_RELEASE", FINGER_RELEASE);
+		ctx->api.ccDefInt(cc, "EVENT_TIMEOUT", EVENT_TIMEOUT);
+		ctx->api.ccDefInt(cc, "GESTURE_SCROLL", GESTURE_SCROLL);
+		ctx->api.ccDefInt(cc, "WINDOW_INIT", WINDOW_INIT);
+		ctx->api.ccDefInt(cc, "WINDOW_CLOSE", WINDOW_CLOSE);
+		ctx->api.ccDefInt(cc, "WINDOW_ENTER", WINDOW_ENTER);
+		ctx->api.ccDefInt(cc, "WINDOW_LEAVE", WINDOW_LEAVE);
 
-		rt->api.ccDefInt(cc, "WINDOW_INIT", WINDOW_INIT);
-		rt->api.ccDefInt(cc, "WINDOW_CLOSE", WINDOW_CLOSE);
-		rt->api.ccDefInt(cc, "WINDOW_ENTER", WINDOW_ENTER);
-		rt->api.ccDefInt(cc, "WINDOW_LEAVE", WINDOW_LEAVE);
+		ctx->api.ccDefInt(cc, "KEY_CODE_ESC", KEY_CODE_ESC);
+		ctx->api.ccDefInt(cc, "KEY_CODE_BACK", KEY_CODE_BACKSPACE);
+		ctx->api.ccDefInt(cc, "KEY_CODE_TAB", KEY_CODE_TAB);
+		ctx->api.ccDefInt(cc, "KEY_CODE_ENTER", KEY_CODE_RETURN);
+		ctx->api.ccDefInt(cc, "KEY_CODE_CAPSLOCK", KEY_CODE_CAPSLOCK);
 
-		rt->api.ccDefInt(cc, "KEY_CODE_ESC", KEY_CODE_ESC);
-		rt->api.ccDefInt(cc, "KEY_CODE_BACK", KEY_CODE_BACKSPACE);
-		rt->api.ccDefInt(cc, "KEY_CODE_TAB", KEY_CODE_TAB);
-		rt->api.ccDefInt(cc, "KEY_CODE_ENTER", KEY_CODE_RETURN);
-		rt->api.ccDefInt(cc, "KEY_CODE_CAPSLOCK", KEY_CODE_CAPSLOCK);
+		ctx->api.ccDefInt(cc, "KEY_CODE_PRINT_SCREEN", KEY_CODE_PRINT_SCREEN);
+		ctx->api.ccDefInt(cc, "KEY_CODE_SCROLL_LOCK", KEY_CODE_SCROLL_LOCK);
+		ctx->api.ccDefInt(cc, "KEY_CODE_PAUSE", KEY_CODE_PAUSE);
 
-		rt->api.ccDefInt(cc, "KEY_CODE_PRINT_SCREEN", KEY_CODE_PRINT_SCREEN);
-		rt->api.ccDefInt(cc, "KEY_CODE_SCROLL_LOCK", KEY_CODE_SCROLL_LOCK);
-		rt->api.ccDefInt(cc, "KEY_CODE_PAUSE", KEY_CODE_PAUSE);
+		ctx->api.ccDefInt(cc, "KEY_CODE_INSERT", KEY_CODE_INSERT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_HOME", KEY_CODE_HOME);
+		ctx->api.ccDefInt(cc, "KEY_CODE_PAGE_UP", KEY_CODE_PAGE_UP);
+		ctx->api.ccDefInt(cc, "KEY_CODE_DELETE", KEY_CODE_DELETE);
+		ctx->api.ccDefInt(cc, "KEY_CODE_END", KEY_CODE_END);
+		ctx->api.ccDefInt(cc, "KEY_CODE_PAGE_DOWN", KEY_CODE_PAGE_DOWN);
+		ctx->api.ccDefInt(cc, "KEY_CODE_RIGHT", KEY_CODE_RIGHT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_LEFT", KEY_CODE_LEFT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_DOWN", KEY_CODE_DOWN);
+		ctx->api.ccDefInt(cc, "KEY_CODE_UP", KEY_CODE_UP);
 
-		rt->api.ccDefInt(cc, "KEY_CODE_INSERT", KEY_CODE_INSERT);
-		rt->api.ccDefInt(cc, "KEY_CODE_HOME", KEY_CODE_HOME);
-		rt->api.ccDefInt(cc, "KEY_CODE_PAGE_UP", KEY_CODE_PAGE_UP);
-		rt->api.ccDefInt(cc, "KEY_CODE_DELETE", KEY_CODE_DELETE);
-		rt->api.ccDefInt(cc, "KEY_CODE_END", KEY_CODE_END);
-		rt->api.ccDefInt(cc, "KEY_CODE_PAGE_DOWN", KEY_CODE_PAGE_DOWN);
-		rt->api.ccDefInt(cc, "KEY_CODE_RIGHT", KEY_CODE_RIGHT);
-		rt->api.ccDefInt(cc, "KEY_CODE_LEFT", KEY_CODE_LEFT);
-		rt->api.ccDefInt(cc, "KEY_CODE_DOWN", KEY_CODE_DOWN);
-		rt->api.ccDefInt(cc, "KEY_CODE_UP", KEY_CODE_UP);
+		ctx->api.ccDefInt(cc, "KEY_CODE_L_SHIFT", KEY_CODE_L_SHIFT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_R_SHIFT", KEY_CODE_R_SHIFT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_L_CTRL", KEY_CODE_L_CTRL);
+		ctx->api.ccDefInt(cc, "KEY_CODE_R_CTRL", KEY_CODE_R_CTRL);
+		ctx->api.ccDefInt(cc, "KEY_CODE_L_ALT", KEY_CODE_L_ALT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_R_ALT", KEY_CODE_R_ALT);
+		ctx->api.ccDefInt(cc, "KEY_CODE_L_GUI", KEY_CODE_L_GUI);
+		ctx->api.ccDefInt(cc, "KEY_CODE_R_GUI", KEY_CODE_R_GUI);
 
-		rt->api.ccDefInt(cc, "KEY_CODE_L_SHIFT", KEY_CODE_L_SHIFT);
-		rt->api.ccDefInt(cc, "KEY_CODE_R_SHIFT", KEY_CODE_R_SHIFT);
-		rt->api.ccDefInt(cc, "KEY_CODE_L_CTRL", KEY_CODE_L_CTRL);
-		rt->api.ccDefInt(cc, "KEY_CODE_R_CTRL", KEY_CODE_R_CTRL);
-		rt->api.ccDefInt(cc, "KEY_CODE_L_ALT", KEY_CODE_L_ALT);
-		rt->api.ccDefInt(cc, "KEY_CODE_R_ALT", KEY_CODE_R_ALT);
-		rt->api.ccDefInt(cc, "KEY_CODE_L_GUI", KEY_CODE_L_GUI);
-		rt->api.ccDefInt(cc, "KEY_CODE_R_GUI", KEY_CODE_R_GUI);
-
-		rt->api.ccDefInt(cc, "KEY_MASK_SHIFT", KEY_MASK_SHIFT);
-		rt->api.ccDefInt(cc, "KEY_MASK_CTRL", KEY_MASK_CTRL);
-		rt->api.ccDefInt(cc, "KEY_MASK_ALT", KEY_MASK_ALT);
+		ctx->api.ccDefInt(cc, "KEY_MASK_SHIFT", KEY_MASK_SHIFT);
+		ctx->api.ccDefInt(cc, "KEY_MASK_CTRL", KEY_MASK_CTRL);
+		ctx->api.ccDefInt(cc, "KEY_MASK_ALT", KEY_MASK_ALT);
 
 		for (size_t i = 0; i < sizeof(nfcWindow) / sizeof(*nfcWindow); i += 1) {
-			if (!rt->api.ccAddCall(cc, nfcWindow[i].func, nfcWindow[i].proto)) {
+			if (!ctx->api.ccAddCall(cc, nfcWindow[i].func, nfcWindow[i].proto)) {
 				return 1;
 			}
 		}
 
-		rt->api.ccEnd(cc, win);
+		ctx->api.ccEnd(cc, win);
 	}
 
 	if (/*Initialize:*/ 1) {
@@ -1855,10 +1846,10 @@ int cmplInit(rtContext rt) {
 
 	return 0;
 }
-void cmplClose(rtContext rt) {
+void cmplClose(rtContext ctx) {
 	for (size_t i = 0; i < sizeof(fnt) / sizeof(*fnt); ++i) {
 		destroyImage(fnt + i);
 	}
 	quitWindowing();
-	(void) rt;
+	(void) ctx;
 }

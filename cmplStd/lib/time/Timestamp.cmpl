@@ -1,0 +1,138 @@
+/**
+ * Timestamp is a position in time, without timezone information
+ * in case locale is needed use Datetime.
+ */
+struct Timestamp {
+	int64 value = 0;
+
+	/// The time unit specifying the precision of the timestamp
+	static Timeunit precision! = Timeunit.Millis;
+
+	/// Returns the value of `timestamp` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
+	static int64 value(Timestamp timestamp, Timeunit precision) {
+		return convert(timestamp.value, Timestamp.precision, precision);
+	}
+
+	/// Returns the difference of `a` and `b` at the given `precision`
+	static int64 diff(Timestamp a, Timestamp b, Timeunit precision) {
+		return convert(a.value - b.value, Timestamp.precision, precision);
+	}
+
+	/// Returns the difference of `a` and `b
+	static Duration diff(Timestamp a, Timestamp b) {
+		return Duration(a.value - b.value, Timestamp.precision);
+	}
+
+	/// Returns whether the firs timestamp is less(<0), equal(=0), or greater(>0) than the second timestamp
+	static int32 compare(Timestamp a, Timestamp b) {
+		return int32(a.value > b.value) - int32(a.value < b.value);
+	}
+
+	/// Check whether the two timestamps `a` and `b` are equal at the given `precision`
+	static bool equal(Timestamp a, Timestamp b, Timeunit precision) {
+		return a.value(precision) == b.value(precision);
+	}
+
+	/// Check whether the two timestamps `a` and `b` are equal
+	static bool equal(Timestamp a, Timestamp b) {
+		return a.value == b.value;
+	}
+
+	/// Increment the the current timestamp with the given `value` at the given `precision`
+	static Timestamp add(Timestamp lhs, int64 value, Timeunit precision) {
+		return { value: lhs.value + convert(value, precision, Timestamp.precision) };
+	}
+
+	/**
+	 * Floor the current timestamp, leaving the field specified as the most significant field.
+	 * For example, if you have the timestamp: 2002-03-28 13:45:01.231,
+	 * using resolution Timeunit.Days, it should return 2002-03-28 00:00:00.000.
+	 * using resolution Timeunit.Hours, it should return 2002-03-28 13:00:00.000.
+	 * using resolution Timeunit.Minutes, it should return 2002-03-28 13:45:00.000.
+	 *
+	 * @param unit Resolution of the operation.
+	 */
+	static Timestamp floor(Timestamp value, Timeunit precision) {
+		if (precision <= Timestamp.precision) {
+			trace("small precision", precision);
+			return value;
+		}
+		int64 one = convert(1D, precision, Timestamp.precision);
+		return { value: value.value - value.value % one };
+	}
+
+	/**
+	 * Ceil the current timestamp, leaving the field specified as the most significant field.
+	 * For example, if you have the timestamp: 2002-03-28 13:45:01.231,
+	 * using resolution Timeunit.Days, it should return 2002-03-29 00:00:00.000.
+	 * using resolution Timeunit.Hours, it should return 2002-03-28 14:00:00.000.
+	 * using resolution Timeunit.Minutes, it should return 2002-03-28 13:46:00.000.
+	 *
+	 * @param unit Resolution of the operation.
+	 */
+	static Timestamp ceil(Timestamp value, Timeunit precision) {
+		if (precision <= Timestamp.precision) {
+			trace("small precision", precision);
+			return value;
+		}
+		int64 one = convert(1D, precision, Timestamp.precision);
+		int64 part = value.value % one;
+		if (part == 0) {
+			return value;
+		}
+		return { value: value.value - part + one };
+	}
+
+	/**
+	 * Distribute randomly between current value and the duration at the given time-unit resolution.
+	 * For example, if you had the timestamp: 2002-03-28 13:45:01.231,
+	 * using distribute(Timeunit.Hours, 2), it will return a date between 2002-03-28 13:46:01.231 and 2002-03-28 15:46:01.231.
+	 *
+	 * @param unit  Resolution of the duration.
+	 * @param duration The duration of the distribution time frame, negative values are allowed.
+	 */
+	static Timestamp distribute(Timestamp this, Timeunit unit, uint64 duration) {
+		abort("not implemented");
+		return { value: 0 };
+	}
+
+	/**
+	 * Distribute randomly between start and end at the given time-unit resolution.
+	 * For example, if you have the timestamp of 2002-03-28 13:46:01.231,
+	 * using distribute(Timeunit.Hours, 15, 17) as start and end, it will return a date between 2002-03-28 15:46:01.231 and 2002-03-28 17:46:01.231.
+	 * in case you need a timestamp between 15:00:00.000 and 17:00:00.000 yo will need to use the floor method before or after this operation.
+	 *
+	 * @param unit  Resolution of the operation.
+	 * @param start The beginning of the distribution time frame.
+	 * @param end   The end of the distribution time frame.
+	 */
+	static Timestamp distribute(Timestamp this, Timeunit unit, int start, int end) {
+		return this./*setField(unit, start).*/distribute(unit, end - start);
+	}
+
+	/// get the current utc time as timestamp from the system
+	static Timestamp now() {
+		return { value: convert(System.millis(), Timeunit.Millis, Timestamp.precision) };
+	}
+}
+
+/// Create a timestamp from the given `value` at the given `precision`
+Timestamp Timestamp(int64 value, Timeunit precision) {
+	return { value: convert(value, precision, Timestamp.precision) };
+}
+
+/*static if (struct(Duration) != null) {
+Timestamp add(Timestamp lhs, Duration rhs) {
+	return { value: lhs.value + rhs.value(Timestamp.precision) };
+}
+}*/
+
+/* TODO: inline initialization, operator overloading
+inline Timestamp(int64 value, Timeunit precision) = {
+	value: convert(value, precision, Timestamp.precision);
+};
+
+inline +(Timestamp lhs, Duration rhs) = Timestamp {
+	value: lhs.value + rhs.value(Timestamp.precision);
+};
+*/

@@ -1,0 +1,124 @@
+inline Signed = Int8;
+inline Unsigned = Uint8;
+
+enum {
+	bits: Unsigned.bits;
+	inc: 1;
+	rot: 10;
+}
+
+for (int32 i = 0; i < bits; i += 1) {
+	int32 x = 1 << i;
+	assertEq(i, Unsigned.scanReverse(x), "scanReverse", i);
+	assertEq(i, Unsigned.scanForward(x), "scanForward", i);
+
+	assertEq(Unsigned.leadingZeros(x), Unsigned.trailingZeros(Unsigned.reverseBits(x)), "leadingZeros", x, i);
+	assertEq(Unsigned.trailingZeros(x), Unsigned.leadingZeros(Unsigned.reverseBits(x)), "trailingZeros", x, i);
+	assertEq(Unsigned.trailingZeros(x), x == 0 ? bits : (Unsigned.length(x & -x) - 1), "assertion failed", x, i);
+
+	if (i != 0) {
+		assertEq(Unsigned.scanForward(i), bits - 1 - Unsigned.scanReverse(Unsigned.reverseBits(i)), "assertion failed", i);
+		assertEq(Unsigned.scanReverse(i), bits - 1 - Unsigned.scanForward(Unsigned.reverseBits(i)), "assertion failed", i);
+	} else {
+		assertEq(-1, Unsigned.scanForward(i), "assertion failed", i);
+		assertEq(-1, Unsigned.scanReverse(i), "assertion failed", i);
+	}
+
+	for (int32 rotate = 0; rotate < rot; rotate += 1) {
+		uint8 x = i & Unsigned.max;
+		uint8 y = Unsigned.rotateLeft(x, rotate);
+		uint8 z = Unsigned.rotateRight(y, rotate);
+		assertEq(x, z, "rotate failed", x, y, z, rotate);
+	}
+
+	assertEq(Unsigned.length(i), i == 0 ? 0 : uint64(Float64.log2((i & Unsigned.max) * 2)), "rotate failed", i);
+}
+
+for (uint32 i = Unsigned.min; i < Unsigned.max - inc; i += inc) {
+	uint8 ovf = 0;
+	assert(Unsigned.leadingZeros(i) == Unsigned.trailingZeros(Unsigned.reverseBits(i)), "leadingZeros", i);
+	assert(Unsigned.trailingZeros(i) == Unsigned.leadingZeros(Unsigned.reverseBits(i)), "trailingZeros", i);
+	assertEq(Unsigned.trailingZeros(i), i == 0 ? bits : (Unsigned.length(i & -i) - 1), "assertion failed", i);
+
+	assertEq(~i & Unsigned.max, Unsigned.cmt(i), "assertion failed", i);
+	assertEq(i == 0 ? 0 : 1, Unsigned.sign(i), "assertion failed", i);
+	assertEq(i < 0 ? -i : i, Unsigned.abs(i), "assertion failed", i);
+
+	for (uint32 j = Unsigned.min; j < Unsigned.max - inc; j += inc) {
+		int32 cmp = Unsigned.compare(i, j);
+		if (i == j) { assert(cmp == 0, "compare failed", i, j, cmp); }
+		if (i != j) { assert(cmp != 0, "compare failed", i, j, cmp); }
+		if (i <= j) { assert(cmp <= 0, "compare failed", i, j, cmp); }
+		if (i < j) { assert(cmp < 0, "compare failed", i, j, cmp); }
+		if (i >= j) { assert(cmp >= 0, "compare failed", i, j, cmp); }
+		if (i > j) { assert(cmp > 0, "compare failed", i, j, cmp); }
+
+		assertEq(i | j, Unsigned.or(i, j), "assertion failed", i, j);
+		assertEq(i ^ j, Unsigned.xor(i, j), "assertion failed", i, j);
+		assertEq(i & j, Unsigned.and(i, j), "assertion failed", i, j);
+
+		assertEq(i >> j, Unsigned.shr(i, j), "assertion failed", i, j);
+		assertEq(i << j & Unsigned.max, Unsigned.shl(i, j), "assertion failed", i, j);
+
+		assertEq(i < j ? i : j, Unsigned.min(i, j), "assertion failed", i, j);
+		assertEq(i > j ? i : j, Unsigned.max(i, j), "assertion failed", i, j);
+
+		uint32 add = i + j;
+		uint8 addLo = Unsigned.add(i, j, &ovf);
+		assertEq(add >> bits, ovf, "assertion failed", i, j, add);
+		assertEq(add & Unsigned.max, addLo & Unsigned.max, "assertion failed", i, j, add);
+
+		int32 sub = i - j;
+		uint8 subLo = Unsigned.sub(i, j, &ovf);
+		assertEq(sub >> bits & Unsigned.max, ovf, "assertion failed", i, j, sub);
+		assertEq(sub & Unsigned.max, subLo & Unsigned.max, "assertion failed", i, j, sub);
+
+		uint32 mul = i * j;
+		uint8 mulLo = Unsigned.mul(i, j, &ovf);
+		assertEq(mul >> bits, ovf, "assertion failed", i, j);
+		assertEq(mul & Unsigned.max, mulLo & Unsigned.max, "assertion failed", i, j);
+	}
+}
+
+for (int32 i = Signed.min; i < Signed.max - inc; i += inc) {
+	int8 ovf = 0;
+	int8 neg = Signed.neg(i, &ovf);
+	assertEq(-i != neg, ovf != 0, "assertion failed", i);
+	assertEq(-i & Unsigned.max, neg & Unsigned.max, "assertion failed", i);
+
+	assertEq(i == 0 ? 0 : i < 0 ? -1 : 1, Signed.sign(i), "assertion failed", i);
+	// todo: Int8.abs(-128) should be -128, 128 does not fit in 8 bits
+	assertEq(i < 0 ? -i : i, Signed.abs(i), "assertion failed", i);
+
+	for (int32 j = Signed.min; j < Signed.max - inc; j += inc) {
+		int32 cmp = Signed.compare(i, j);
+		if (i == j) { assert(cmp == 0, "compare failed", i, j, cmp); }
+		if (i != j) { assert(cmp != 0, "compare failed", i, j, cmp); }
+		if (i <= j) { assert(cmp <= 0, "compare failed", i, j, cmp); }
+		if (i < j) { assert(cmp < 0, "compare failed", i, j, cmp); }
+		if (i >= j) { assert(cmp >= 0, "compare failed", i, j, cmp); }
+		if (i > j) { assert(cmp > 0, "compare failed", i, j, cmp); }
+
+		// todo: assertEq(i < j ? i : j, Int8.min(i, j), "assertion failed", i, j);
+		// todo: assertEq(i > j ? i : j, Int8.max(i, j), "assertion failed", i, j);
+		int8 min = Signed.min(i, j);
+		assertEq(i < j ? i : j, min, "assertion failed", i, j);
+		int8 max = Signed.max(i, j);
+		assertEq(i > j ? i : j, max, "assertion failed", i, j);
+
+		int32 add = i + j;
+		int8 addLo = Signed.add(i, j, &ovf);
+		assertEq(add >> 8, ovf, "assertion failed", i, j, add);
+		assertEq(add & Unsigned.max, addLo & Unsigned.max, "assertion failed", i, j, add);
+
+		int32 sub = i - j;
+		int8 subLo = Signed.sub(i, j, &ovf);
+		assertEq(sub >> bits, ovf, "assertion failed", i, j, sub);
+		assertEq(sub & Unsigned.max, subLo & Unsigned.max, "assertion failed", i, j, sub);
+
+		int32 mul = i * j;
+		int8 mulLo = Signed.mul(i, j, &ovf);
+		assertEq(mul >> bits, ovf, "assertion failed", i, j);
+		assertEq(mul & Unsigned.max, mulLo & Unsigned.max, "assertion failed", i, j);
+	}
+}

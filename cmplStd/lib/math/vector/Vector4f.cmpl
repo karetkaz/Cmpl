@@ -1,0 +1,156 @@
+/// A 4d vector (4x float32)
+struct vec4f: 0 {
+	struct {
+		/// X component of the vector
+		float32 x;
+		/// Y component of the vector
+		float32 y;
+		/// Z component of the vector
+		float32 z;
+		/// W component of the vector
+		float32 w;
+	}
+	/// Access the components as an array
+	float32 data[4];
+
+	/// Returns a negated copy of the vector.
+	static vec4f neg(vec4f rhs) { return inline(inline(rhs), p128.neg4f); }
+
+	/// Component wise add the two vectors.
+	static vec4f add(vec4f lhs, vec4f rhs) { return inline(inline(lhs), inline(rhs), p128.add4f); }
+
+	/// Component wise subtract the two vectors.
+	static vec4f sub(vec4f lhs, vec4f rhs) { return inline(inline(lhs), inline(rhs), p128.sub4f); }
+
+	/// Component wise multiply the two vectors.
+	static vec4f mul(vec4f lhs, vec4f rhs) { return inline(inline(lhs), inline(rhs), p128.mul4f); }
+
+	/// Component wise divide the two vectors.
+	static vec4f div(vec4f lhs, vec4f rhs) { return inline(inline(lhs), inline(rhs), p128.div4f); }
+
+//	/// Dot product of the first 3 elements
+//	static float32 dp3(vec4f lhs, vec4f rhs) {
+//		// dp3(vec4f a, vec4f b) = a.x * b.x + a.y * b.y + a.z * b.z;
+//		return inline(inline(lhs), inline(rhs), p128.dp3);
+//	}
+//
+//	/// Homogeneous dot product
+//	static float32 dph(vec4f lhs, vec4f rhs) {
+//		// dph(vec4f a, vec4f b) = a.x * b.x + a.y * b.y + a.z * b.z + a.w;
+//		return inline(inline(lhs), inline(rhs), p128.dph);
+//	}
+//
+//	/// Dot product
+//	static float32 dp4(vec4f lhs, vec4f rhs) {
+//		// dp4(vec4f a, vec4f b) = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+//		return inline(inline(lhs), inline(rhs), p128.dp4);
+//	}
+
+	/// Evaluate as a polynomial in point x
+	static float32 eval(vec4f v, float32 x) {
+		return ((v.w * x + v.z) * x + v.y) * x + v.x;
+	}
+
+	/*
+	/// Component wise absolute value of a vector.
+	inline abs(vec4f a) = vec4f(Float32.abs(a.x), Float32.abs(a.y), Float32.abs(a.z), Float32.abs(a.w));
+
+	/// Component wise minimum of the two vectors.
+	inline min(vec4f lhs, vec4f rhs) = vec4f(inline(vec4f(lhs), vec4f(rhs), p128.min4f));
+
+	/// Component wise maximum of the two vectors.
+	inline max(vec4f lhs, vec4f rhs) = vec4f(inline(vec4f(lhs), vec4f(rhs), p128.max4f));
+
+	/// Clamp the vector component wise to the range [min ... max]
+	inline clamp(vec4f vec, vec4f min, vec4f max) = min(max(vec, min), max);
+
+	/// Clamp each component of the vector to the range [min ... max]
+	inline clamp(vec4f vec, float32 min, float32 max) = clamp(vec, vec4f(min), vec4f(max));
+	// */
+}
+
+/// Initialize with given x, y, z, w components
+inline vec4f(float32 x, float32 y, float32 z, float32 w) = inline(float32(w), float32(z), float32(y), float32(x));
+
+/// Initialize with  (x: x, y: y, z: z, w: 1)
+inline vec4f(float32 x, float32 y, float32 z) = vec4f(x, y, z, 1f);
+
+/// Initialize with (x: x, y: y, z: 0, w: 1)
+inline vec4f(float32 x, float32 y) = vec4f(x, y, 0f, 1f);
+
+/// Initialize x, y, z components using the components form the given vector, and w with the given value
+inline vec4f(vec4f xyz, float32 w) = vec4f(xyz.x, xyz.y, xyz.z, w);
+
+/// Initialize x, y, z, w components with the given scalar value
+inline vec4f(vec4f val) = vec4f(inline(val));
+
+/// Initialize all components using the components form the given vector
+inline vec4f(float32 val) = vec4f(val, val, val, val);
+
+/// Returns a negated copy of the vector.
+inline -(vec4f rhs) = vec4f(inline(vec4f(rhs), p128.neg4f));
+
+/// Component wise add the two vectors.
+inline +(vec4f lhs, vec4f rhs) = vec4f(inline(vec4f(lhs), vec4f(rhs), p128.add4f));
+/// Component wise add vector and scalar.
+inline +(vec4f lhs, float32 rhs) = lhs + vec4f(rhs);
+/// Component wise add vector and scalar.
+inline +(float32 lhs, vec4f rhs) = vec4f(lhs) + rhs;
+
+/// Component wise subtract the two vectors.
+inline -(vec4f lhs, vec4f rhs) = vec4f(inline(vec4f(lhs), vec4f(rhs), p128.sub4f));
+/// Component wise subtract vector and scalar.
+inline -(vec4f lhs, float32 rhs) = lhs - vec4f(rhs);
+/// Component wise subtract vector and scalar.
+inline -(float32 lhs, vec4f rhs) = vec4f(lhs) - rhs;
+
+/// Component wise multiply the two vectors.
+inline *(vec4f lhs, vec4f rhs) = vec4f(inline(vec4f(lhs), vec4f(rhs), p128.mul4f));
+/// Component wise multiply vector and scalar.
+inline *(vec4f lhs, float32 rhs) = lhs * vec4f(rhs);
+/// Component wise multiply vector and scalar.
+inline *(float32 lhs, vec4f rhs) = vec4f(lhs) * rhs;
+
+/// Component wise divide the two vectors.
+inline /(vec4f lhs, vec4f rhs) = vec4f(inline(vec4f(lhs), vec4f(rhs), p128.div4f));
+/// Component wise divide vector and scalar.
+inline /(vec4f lhs, float32 rhs) = lhs / vec4f(rhs);
+/// Component wise divide vector and scalar.
+inline /(float32 lhs, vec4f rhs) = vec4f(lhs) / rhs;
+
+/// Dot product of the first 3 elements
+inline dp3(vec4f lhs, vec4f rhs) = float32(inline(inline(lhs), inline(rhs), p128.dp3));
+
+/// Homogeneous dot product
+inline dph(vec4f lhs, vec4f rhs) = float32(inline(inline(lhs), inline(rhs), p128.dph));
+
+/// Dot product
+inline dp4(vec4f lhs, vec4f rhs) = float32(inline(inline(lhs), inline(rhs), p128.dp4));
+
+/// Cross product of the first 3 elements
+static vec4f cross(vec4f a, vec4f b) {
+	return {
+		x: a.y * b.z - a.z * b.y;
+		y: a.z * b.x - a.x * b.z;
+		z: a.x * b.y - a.y * b.x;
+		w: 1;
+	};
+}
+
+/// Length of the vector(xyz)
+inline length(vec4f v) = Float32.sqrt(dp3(v, v));
+/// Normalize the vector(xyz)
+inline normalize(vec4f v!) = v / vec4f(length(v));
+
+/// linear interpolate
+inline mix(vec4f a, vec4f b, float32 t) = vec4f(
+	Float32.mix(a.x, b.x, t),
+	Float32.mix(a.y, b.y, t),
+	Float32.mix(a.z, b.z, t),
+	Float32.mix(a.w, b.w, t)
+);
+
+/* TODO: leftovers
+inline ceq(vec4f x, vec4f y) = inline(ceq.p4f, vec4f(y), vec4f(x));
+inline bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
+*/

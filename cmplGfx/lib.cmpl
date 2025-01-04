@@ -1,0 +1,18 @@
+// graphics library extension
+
+inline "./lib/rect.cmpl";
+inline "./lib/color.cmpl";
+inline "./lib/image.cmpl";
+inline "./lib/draw.cmpl";
+
+inline "./lib/fx/image.blend.cmpl";
+inline "./lib/fx/image.transform.cmpl";
+inline "./lib/fx/image.blur.cmpl";
+inline "./lib/fx/color.lookup.cmpl";
+inline "./lib/fx/color.matrix.cmpl";
+
+inline "./lib/3d/mesh.cmpl";
+inline "./lib/3d/camera.cmpl";
+
+inline "./lib/ui/window.cmpl";
+inline "./lib/ui/micro.ui.cmpl";

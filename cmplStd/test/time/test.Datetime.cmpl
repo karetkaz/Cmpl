@@ -1,0 +1,55 @@
+static TextWriter out = AsciiWriter {
+	writer: FileWriter {
+		file: File.log;
+		close: null;
+	};
+};
+TextWriter write(TextWriter writer, char format[], Datetime datetime) {
+	char buffer[65536] = {...};
+	int n = datetime.format(buffer, format);
+	writer.write(buffer[...n]);
+	return writer;
+}
+
+for (int y = -10000; y < 10000; y += 1) {
+	bool leapYear = (y % 4 == 0) && (y % 100 != 0 || y % 400 == 0);
+	assert(leapYear == Datetime.isLeapYear(y), "leap year calculation error", y);
+}
+
+Datetime now = Datetime(Timestamp.now());
+Datetime year = Datetime(Timestamp(Datetime(now.year, 1, 1)));
+Timestamp start = Timestamp(year)
+	.add(Weekday.Monday - year.dayOfWeek, Timeunit.Days);
+Timestamp end = Timestamp(Datetime(now.year + 1, 1, 1))
+	.add(6, Timeunit.Days);
+
+int lastWeek = -1;
+for (Timestamp day = start; day.compare(end) < 0; day = day.add(1, Timeunit.Days)) {
+	Datetime date = Datetime(day);
+	if (lastWeek == date.weekOfYear) {
+		out.write("  %d", date);
+	} else {
+		// new week
+		if (lastWeek != -1) {
+			out.writeln();
+		}
+		out.write("Week %W, starts on: %Y/%m/%d", date);
+		lastWeek = date.weekOfYear;
+	}
+}
+
+/* References:
+https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/GregorianCalendar.cs
+https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/TimeZone.cs
+https://github.com/unicode-org/icu/blob/main/icu4j/main/classes/core/src/com/ibm/icu/util/Calendar.java
+https://github.com/JodaOrg/joda-time/blob/master/src/main/java/org/joda/time/DateTime.java
+https://github.com/HowardHinnant/date
+https://zetcode.com/articles/cdatetime/
+
+https://cs.opensource.google/go/go/+/master:src/time/time.go;l=1440
+https://github.com/tkuchiki/go-timezone
+https://github.com/srawlins/timezone
+https://github.com/nodatime/nodatime
+
+todo: add more assertions
+*/

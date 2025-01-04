@@ -1,21 +1,160 @@
-/*******************************************************************************
- *   File: lexer.c
- *   Date: 2011/06/23
- *   Desc: input and lexer
- *******************************************************************************
- * convert text to tokens
- */
-
-#include <limits.h>
+#include "lexer.h"
+#include "code.h"
+#include "util.h"
+#include "printer.h"
+#include "compiler.h"
 #include <fcntl.h>
-#include "utils.h"
-#include "internal.h"
-
-#if !(defined _MSC_VER)
 #include <unistd.h>
-#else
-#include <io.h>
-#endif
+#include <limits.h>
+
+enum {
+	OTHER = 0x00000000,
+
+	SPACE = 0x00000100,    // white spaces
+	UNDER = 0x00000200,    // underscore
+	PUNCT = 0x00000400,    // punctuation
+	CNTRL = 0x00000800,    // control characters
+
+	DIGIT = 0x00001000,    // digits: 0-9
+	LOWER = 0x00002000,    // lowercase letters: a-z
+	UPPER = 0x00004000,    // uppercase letters: A-Z
+	SCTRL = CNTRL | SPACE,   // whitespace or control chars
+	ALPHA = UPPER | LOWER,   // letters
+	ALNUM = DIGIT | ALPHA,   // letters and numbers
+	CWORD = UNDER | ALNUM,   // letters, numbers and underscore
+};
+
+static int const chr_map[256] = {
+	/* 000 nul */    CNTRL,
+	/* 001 soh */    CNTRL,
+	/* 002 stx */    CNTRL,
+	/* 003 etx */    CNTRL,
+	/* 004 eot */    CNTRL,
+	/* 005 enq */    CNTRL,
+	/* 006 ack */    CNTRL,
+	/* 007 bel */    CNTRL,
+	/* 010 bs  */    CNTRL,
+	/* 011 ht  */    SCTRL,    // horizontal tab
+	/* 012 nl  */    SCTRL,    // \n
+	/* 013 vt  */    SCTRL,    // vertical tab,
+	/* 014 ff  */    SCTRL,    // Form Feed,
+	/* 015 cr  */    SCTRL,    // \r
+	/* 016 so  */    CNTRL,
+	/* 017 si  */    CNTRL,
+	/* 020 dle */    CNTRL,
+	/* 021 dc1 */    CNTRL,
+	/* 022 dc2 */    CNTRL,
+	/* 023 dc3 */    CNTRL,
+	/* 024 dc4 */    CNTRL,
+	/* 025 nak */    CNTRL,
+	/* 026 syn */    CNTRL,
+	/* 027 etb */    CNTRL,
+	/* 030 can */    CNTRL,
+	/* 031 em  */    CNTRL,
+	/* 032 sub */    CNTRL,
+	/* 033 esc */    CNTRL,
+	/* 034 fs  */    CNTRL,
+	/* 035 gs  */    CNTRL,
+	/* 036 rs  */    CNTRL,
+	/* 037 us  */    CNTRL,
+	/* 040 sp  */    SPACE,    // space
+	/* 041 !   */    PUNCT,
+	/* 042 "   */    PUNCT,
+	/* 043 #   */    PUNCT,
+	/* 044 $   */    PUNCT,
+	/* 045 %   */    PUNCT,
+	/* 046 &   */    PUNCT,
+	/* 047 '   */    PUNCT,
+	/* 050 (   */    PUNCT,
+	/* 051 )   */    PUNCT,
+	/* 052 *   */    PUNCT,
+	/* 053 +   */    PUNCT,
+	/* 054 ,   */    PUNCT,
+	/* 055 -   */    PUNCT,
+	/* 056 .   */    PUNCT,
+	/* 057 /   */    PUNCT,
+	/* 060 0   */    DIGIT,
+	/* 061 1   */    DIGIT,
+	/* 062 2   */    DIGIT,
+	/* 063 3   */    DIGIT,
+	/* 064 4   */    DIGIT,
+	/* 065 5   */    DIGIT,
+	/* 066 6   */    DIGIT,
+	/* 067 7   */    DIGIT,
+	/* 070 8   */    DIGIT,
+	/* 071 9   */    DIGIT,
+	/* 072 :   */    PUNCT,
+	/* 073 ;   */    PUNCT,
+	/* 074 <   */    PUNCT,
+	/* 075 =   */    PUNCT,
+	/* 076 >   */    PUNCT,
+	/* 077 ?   */    PUNCT,
+	/* 100 @   */    PUNCT,
+	/* 101 A   */    UPPER,
+	/* 102 B   */    UPPER,
+	/* 103 C   */    UPPER,
+	/* 104 D   */    UPPER,
+	/* 105 E   */    UPPER,
+	/* 106 F   */    UPPER,
+	/* 107 G   */    UPPER,
+	/* 110 H   */    UPPER,
+	/* 111 I   */    UPPER,
+	/* 112 J   */    UPPER,
+	/* 113 K   */    UPPER,
+	/* 114 L   */    UPPER,
+	/* 115 M   */    UPPER,
+	/* 116 N   */    UPPER,
+	/* 117 O   */    UPPER,
+	/* 120 P   */    UPPER,
+	/* 121 Q   */    UPPER,
+	/* 122 R   */    UPPER,
+	/* 123 S   */    UPPER,
+	/* 124 T   */    UPPER,
+	/* 125 U   */    UPPER,
+	/* 126 V   */    UPPER,
+	/* 127 W   */    UPPER,
+	/* 130 X   */    UPPER,
+	/* 131 Y   */    UPPER,
+	/* 132 Z   */    UPPER,
+	/* 133 [   */    PUNCT,
+	/* 134 \   */    PUNCT,
+	/* 135 ]   */    PUNCT,
+	/* 136 ^   */    PUNCT,
+	/* 137 _   */    UNDER,
+	/* 140 `   */    PUNCT,
+	/* 141 a   */    LOWER,
+	/* 142 b   */    LOWER,
+	/* 143 c   */    LOWER,
+	/* 144 d   */    LOWER,
+	/* 145 e   */    LOWER,
+	/* 146 f   */    LOWER,
+	/* 147 g   */    LOWER,
+	/* 150 h   */    LOWER,
+	/* 151 i   */    LOWER,
+	/* 152 j   */    LOWER,
+	/* 153 k   */    LOWER,
+	/* 154 l   */    LOWER,
+	/* 155 m   */    LOWER,
+	/* 156 n   */    LOWER,
+	/* 157 o   */    LOWER,
+	/* 160 p   */    LOWER,
+	/* 161 q   */    LOWER,
+	/* 162 r   */    LOWER,
+	/* 163 s   */    LOWER,
+	/* 164 t   */    LOWER,
+	/* 165 u   */    LOWER,
+	/* 166 v   */    LOWER,
+	/* 167 w   */    LOWER,
+	/* 170 x   */    LOWER,
+	/* 171 y   */    LOWER,
+	/* 172 z   */    LOWER,
+	/* 173 {   */    PUNCT,
+	/* 174 |   */    PUNCT,
+	/* 175 }   */    PUNCT,
+	/* 176 ~   */    PUNCT,
+	/* 177    */    CNTRL,        // del
+	/* 200     */    OTHER,
+};
 
 static const struct {
 	char *name;
@@ -23,10 +162,8 @@ static const struct {
 } keywords[] = {
 	// Warning: keep keywords sorted by name, binary search is used to match keywords
 	{"break",    STMT_brk},
-	{"const",    CONST_kwd},
 	{"continue", STMT_con},
 	{"else",     ELSE_kwd},
-	{"emit",     EMIT_kwd},
 	{"enum",     ENUM_kwd},
 	{"for",      STMT_for},
 	{"if",       STMT_if},
@@ -38,18 +175,19 @@ static const struct {
 
 // lexer context
 typedef struct lexContext {
-	ccContext cc;
 	rtContext rt;
+	ccContext cc;
 
 	//~ current column = filePos - linePos
-	size_t filePos;		// current file position
-	int    nextChr;		// next look-ahead character
+	size_t filePos;         // current file position
+	size_t linePos;         // current line position
+	int nextChr;            // next look-ahead character
 
 	// buffered reading
-	int     _fin;		// file handle
-	char    *_ptr;		// pointer parsing through source
-	size_t  _cnt;		// chars left in buffer
-	uint8_t _buf[1024];	// memory file buffer
+	int fid;               // file handle
+	char *ptr;             // pointer parsing through source
+	size_t cnt;            // chars left in buffer
+	uint8_t buff[1024];     // memory file buffer
 } *lexContext;
 
 /**
@@ -59,27 +197,25 @@ typedef struct lexContext {
  * @return number of characters in buffer.
  */
 static size_t fillBuf(lexContext ctx) {
-	if (ctx->_fin >= 0) {
-		memcpy(ctx->_buf, ctx->_ptr, ctx->_cnt);
+	if (ctx->fid >= 0) {
+		memcpy(ctx->buff, ctx->ptr, ctx->cnt);
 
-		void *base = ctx->_buf + ctx->_cnt;
-		size_t size = sizeof(ctx->_buf) - ctx->_cnt;
-		ssize_t l = read(ctx->_fin, base, size);
-		if (l <= 0) {	// end of file or error
+		void *base = ctx->buff + ctx->cnt;
+		size_t size = sizeof(ctx->buff) - ctx->cnt;
+		ssize_t l = read(ctx->fid, base, size);
+		if (l <= 0) { // end of file or error
 			dieif(l < 0, ERR_INTERNAL_ERROR);
-			ctx->_buf[ctx->_cnt] = 0;
-			close(ctx->_fin);
-			ctx->_fin = -1;
+			ctx->buff[ctx->cnt] = 0;
 		}
-		ctx->_ptr = (char*)ctx->_buf;
-		ctx->_cnt += l;
+		ctx->ptr = (char *) ctx->buff;
+		ctx->cnt += l;
 	}
-	return ctx->_cnt;
+	return ctx->cnt;
 }
 
 /**
  * Read the next character from input stream.
-
+ *
  * @param ctx lexer context.
  * @return the next character or -1 on end, or error.
  */
@@ -91,17 +227,17 @@ static int readChr(lexContext ctx) {
 	}
 
 	// fill in the buffer.
-	if (ctx->_cnt < 2 && fillBuf(ctx) < 1) {
+	if (ctx->cnt < 2 && fillBuf(ctx) < 1) {
 		return -1;
 	}
 
-	chr = *ctx->_ptr;
+	chr = *ctx->ptr;
 	if (chr == '\n' || chr == '\r') {
 
 		// threat 'cr', 'lf' and 'cr + lf' as new line (lf: '\n')
-		if (chr == '\r' && ctx->_ptr[1] == '\n') {
-			ctx->_cnt -= 1;
-			ctx->_ptr += 1;
+		if (chr == '\r' && ctx->ptr[1] == '\n') {
+			ctx->cnt -= 1;
+			ctx->ptr += 1;
 			ctx->filePos += 1;
 		}
 
@@ -110,11 +246,13 @@ static int readChr(lexContext ctx) {
 			ctx->cc->line += 1;
 		}
 
+		// save where the next line begins.
+		ctx->linePos = ctx->filePos + 1;
 		chr = '\n';
 	}
 
-	ctx->_cnt -= 1;
-	ctx->_ptr += 1;
+	ctx->cnt -= 1;
+	ctx->ptr += 1;
 	ctx->filePos += 1;
 	return chr;
 }
@@ -126,10 +264,14 @@ static int readChr(lexContext ctx) {
  * @return the next character or -1 on end, or error.
  */
 static int peekChr(lexContext ctx) {
-	if (ctx->nextChr == -1) {
-		ctx->nextChr = readChr(ctx);
+	int chr = ctx->nextChr;
+	if (chr != -1) {
+		return chr;
 	}
-	return ctx->nextChr;
+
+	chr = readChr(ctx);
+	ctx->nextChr = chr;
+	return chr;
 }
 
 /**
@@ -140,7 +282,7 @@ static int peekChr(lexContext ctx) {
  * @return the character skipped.
  */
 static int skipChr(lexContext ctx, int chr) {
-	if (!chr || chr == peekChr(ctx)) {
+	if (chr == peekChr(ctx)) {
 		return readChr(ctx);
 	}
 	return 0;
@@ -154,12 +296,13 @@ static int skipChr(lexContext ctx, int chr) {
  * @return the character pushed back, -1 on fail.
  */
 static int backChr(lexContext ctx, int chr) {
-	if(ctx->nextChr != -1) {
+	if (ctx->nextChr != -1) {
 		// can not put back more than one character
 		fatal(ERR_INTERNAL_ERROR);
 		return -1;
 	}
-	return ctx->nextChr = chr;
+	ctx->nextChr = chr;
+	return chr;
 }
 
 /**
@@ -170,155 +313,8 @@ static int backChr(lexContext ctx, int chr) {
  * @return the kind of token, TOKEN_any (0) if error occurred.
  */
 static ccToken readTok(lexContext ctx, astn tok) {
-	enum {
-		OTHER = 0x00000000,
-
-		SPACE = 0x00000100,    // white spaces
-		UNDER = 0x00000200,    // underscore
-		PUNCT = 0x00000400,    // punctuation
-		CNTRL = 0x00000800,    // control characters
-
-		DIGIT = 0x00001000,    // digits: 0-9
-		LOWER = 0x00002000,    // lowercase letters: a-z
-		UPPER = 0x00004000,    // uppercase letters: A-Z
-		SCTRL = CNTRL|SPACE,   // whitespace or control chars
-		ALPHA = UPPER|LOWER,   // letters
-		ALNUM = DIGIT|ALPHA,   // letters and numbers
-		CWORD = UNDER|ALNUM,   // letters, numbers and underscore
-	};
-	static int const chr_map[256] = {
-		/* 000 nul */	CNTRL,
-		/* 001 soh */	CNTRL,
-		/* 002 stx */	CNTRL,
-		/* 003 etx */	CNTRL,
-		/* 004 eot */	CNTRL,
-		/* 005 enq */	CNTRL,
-		/* 006 ack */	CNTRL,
-		/* 007 bel */	CNTRL,
-		/* 010 bs  */	CNTRL,
-		/* 011 ht  */	SCTRL,	// horizontal tab
-		/* 012 nl  */	SCTRL,	// \n
-		/* 013 vt  */	SCTRL,	// vertical tab,
-		/* 014 ff  */	SCTRL,	// Form Feed,
-		/* 015 cr  */	SCTRL,	// \r
-		/* 016 so  */	CNTRL,
-		/* 017 si  */	CNTRL,
-		/* 020 dle */	CNTRL,
-		/* 021 dc1 */	CNTRL,
-		/* 022 dc2 */	CNTRL,
-		/* 023 dc3 */	CNTRL,
-		/* 024 dc4 */	CNTRL,
-		/* 025 nak */	CNTRL,
-		/* 026 syn */	CNTRL,
-		/* 027 etb */	CNTRL,
-		/* 030 can */	CNTRL,
-		/* 031 em  */	CNTRL,
-		/* 032 sub */	CNTRL,
-		/* 033 esc */	CNTRL,
-		/* 034 fs  */	CNTRL,
-		/* 035 gs  */	CNTRL,
-		/* 036 rs  */	CNTRL,
-		/* 037 us  */	CNTRL,
-		/* 040 sp  */	SPACE,	// space
-		/* 041 !   */	PUNCT,
-		/* 042 "   */	PUNCT,
-		/* 043 #   */	PUNCT,
-		/* 044 $   */	PUNCT,
-		/* 045 %   */	PUNCT,
-		/* 046 &   */	PUNCT,
-		/* 047 '   */	PUNCT,
-		/* 050 (   */	PUNCT,
-		/* 051 )   */	PUNCT,
-		/* 052 *   */	PUNCT,
-		/* 053 +   */	PUNCT,
-		/* 054 ,   */	PUNCT,
-		/* 055 -   */	PUNCT,
-		/* 056 .   */	PUNCT,
-		/* 057 /   */	PUNCT,
-		/* 060 0   */	DIGIT,
-		/* 061 1   */	DIGIT,
-		/* 062 2   */	DIGIT,
-		/* 063 3   */	DIGIT,
-		/* 064 4   */	DIGIT,
-		/* 065 5   */	DIGIT,
-		/* 066 6   */	DIGIT,
-		/* 067 7   */	DIGIT,
-		/* 070 8   */	DIGIT,
-		/* 071 9   */	DIGIT,
-		/* 072 :   */	PUNCT,
-		/* 073 ;   */	PUNCT,
-		/* 074 <   */	PUNCT,
-		/* 075 =   */	PUNCT,
-		/* 076 >   */	PUNCT,
-		/* 077 ?   */	PUNCT,
-		/* 100 @   */	PUNCT,
-		/* 101 A   */	UPPER,
-		/* 102 B   */	UPPER,
-		/* 103 C   */	UPPER,
-		/* 104 D   */	UPPER,
-		/* 105 E   */	UPPER,
-		/* 106 F   */	UPPER,
-		/* 107 G   */	UPPER,
-		/* 110 H   */	UPPER,
-		/* 111 I   */	UPPER,
-		/* 112 J   */	UPPER,
-		/* 113 K   */	UPPER,
-		/* 114 L   */	UPPER,
-		/* 115 M   */	UPPER,
-		/* 116 N   */	UPPER,
-		/* 117 O   */	UPPER,
-		/* 120 P   */	UPPER,
-		/* 121 Q   */	UPPER,
-		/* 122 R   */	UPPER,
-		/* 123 S   */	UPPER,
-		/* 124 T   */	UPPER,
-		/* 125 U   */	UPPER,
-		/* 126 V   */	UPPER,
-		/* 127 W   */	UPPER,
-		/* 130 X   */	UPPER,
-		/* 131 Y   */	UPPER,
-		/* 132 Z   */	UPPER,
-		/* 133 [   */	PUNCT,
-		/* 134 \   */	PUNCT,
-		/* 135 ]   */	PUNCT,
-		/* 136 ^   */	PUNCT,
-		/* 137 _   */	UNDER,
-		/* 140 `   */	PUNCT,
-		/* 141 a   */	LOWER,
-		/* 142 b   */	LOWER,
-		/* 143 c   */	LOWER,
-		/* 144 d   */	LOWER,
-		/* 145 e   */	LOWER,
-		/* 146 f   */	LOWER,
-		/* 147 g   */	LOWER,
-		/* 150 h   */	LOWER,
-		/* 151 i   */	LOWER,
-		/* 152 j   */	LOWER,
-		/* 153 k   */	LOWER,
-		/* 154 l   */	LOWER,
-		/* 155 m   */	LOWER,
-		/* 156 n   */	LOWER,
-		/* 157 o   */	LOWER,
-		/* 160 p   */	LOWER,
-		/* 161 q   */	LOWER,
-		/* 162 r   */	LOWER,
-		/* 163 s   */	LOWER,
-		/* 164 t   */	LOWER,
-		/* 165 u   */	LOWER,
-		/* 166 v   */	LOWER,
-		/* 167 w   */	LOWER,
-		/* 170 x   */	LOWER,
-		/* 171 y   */	LOWER,
-		/* 172 z   */	LOWER,
-		/* 173 {   */	PUNCT,
-		/* 174 |   */	PUNCT,
-		/* 175 }   */	PUNCT,
-		/* 176 ~   */	PUNCT,
-		/* 177    */	CNTRL,		// del
-		/* 200     */	OTHER,
-	};
-	const char *end = (char*)ctx->rt->_end;
-	char *beg = (char*)ctx->rt->_beg;
+	const char *end = (char *) ctx->rt->_end;
+	char *beg = (char *) ctx->rt->_beg;
 	int chr = readChr(ctx);
 
 	// skip white spaces and comments
@@ -352,10 +348,10 @@ static ccToken readTok(lexContext ctx, astn tok) {
 					}
 				}
 				if (chr == -1) {
-					warn(ctx->rt, raise_warn_lex9, ctx->cc->file, line, WARN_NO_NEW_LINE_AT_END);
+					warn(ctx->rt, ctx->cc->file, line, WARN_NO_NEW_LINE_AT_END);
 				}
-				else if (ctx->cc->line != line + 1) {
-					warn(ctx->rt, raise_warn_lex9, ctx->cc->file, line, WARN_COMMENT_MULTI_LINE, ptr);
+				else if (ctx->cc->file != NULL && ctx->cc->line > 0 && ctx->cc->line != line + 1) {
+					warn(ctx->rt, ctx->cc->file, line, WARN_COMMENT_MULTI_LINE, ptr);
 				}
 			}
 
@@ -385,10 +381,10 @@ static ccToken readTok(lexContext ctx, astn tok) {
 					if (prev_chr == '/' && chr == next) {
 						level += 1;
 						if (level > 1 && next == '*') {
-							warn(ctx->rt, raise_warn_lex9, ctx->cc->file, ctx->cc->line, WARN_COMMENT_NESTED);
+							warn(ctx->rt, ctx->cc->file, ctx->cc->line, WARN_COMMENT_NESTED);
 							level = 1;
 						}
-						chr = 0;	// disable reading as valid comment: /*/
+						chr = 0; // disable reading as valid comment: /*/
 					}
 
 					if (newLine > 0 && !(chr_map[chr & 0xff] & SPACE)) {
@@ -418,7 +414,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 
 			if (doc != NULL) {
 				if (!ctx->cc->genDocumentation) {
-					doc = (char *) type_doc_public;
+					doc = (char *) type_doc_builtin;
 					ptr = doc + strlen(doc) + 1;
 				}
 				else {
@@ -433,14 +429,14 @@ static ccToken readTok(lexContext ctx, astn tok) {
 				tok->type = ctx->cc->type_vid;
 				tok->file = ctx->cc->file;
 				tok->line = line;
-				tok->id.hash = rehash(doc, ptr - doc) % hashTableSize;
+				tok->id.hash = rehash(doc, ptr - doc);
 				tok->id.name = ccUniqueStr(ctx->cc, doc, ptr - doc, tok->id.hash);
 				return TOKEN_doc;
 			}
 		}
 
 		if (chr_map[chr & 0xff] == CNTRL) {
-			warn(ctx->rt, raiseWarn, ctx->cc->file, ctx->cc->line, ERR_INVALID_CHARACTER, chr);
+			warn(ctx->rt, ctx->cc->file, ctx->cc->line, ERR_INVALID_CHARACTER, chr);
 			while (chr == 0) {
 				chr = readChr(ctx);
 			}
@@ -457,7 +453,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 		return TOKEN_any;
 	}
 
-	char *ptr = beg = (char*)ctx->rt->_beg;
+	char *ptr = beg = (char *) ctx->rt->_beg;
 
 	// our token begins here
 	memset(tok, 0, sizeof(*tok));
@@ -465,7 +461,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 	tok->line = ctx->cc->line;
 
 	// scan
-	if (chr != -1) switch (chr) {
+	switch (chr) {
 		default:
 			if (chr_map[chr & 0xff] & DIGIT) {
 				goto read_num;
@@ -477,6 +473,9 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			tok->kind = TOKEN_any;
 			break;
 
+		case -1:
+			break;
+
 		case '.':
 			if (chr_map[peekChr(ctx) & 0xff] == DIGIT) {
 				goto read_num;
@@ -485,8 +484,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			if (skipChr(ctx, '.')) {
 				if (skipChr(ctx, '.')) {
 					tok->kind = PNCT_dot3;
-				}
-				else {
+				} else {
 					tok->kind = TOKEN_any;
 				}
 			}
@@ -525,11 +523,11 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			break;
 
 		case '?':
-			tok->kind = PNCT_qst;
+			tok->kind = OPER_sel;
 			break;
 
 		case ':':
-			tok->kind = PNCT_cln;
+			tok->kind = OPER_cln;
 			break;
 
 		case '~':
@@ -680,10 +678,10 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			tok->kind = OPER_mod;
 			break;
 
-		case '\'':			// \'[^\'\n]*
-		case '"': {			// \"[^\"\n]*
-			int multi_line = 0;		// multi line string constant.
-			int start_char = chr;	// literals start character.
+		case '\'': // \'[^\'\n]*
+		case '"': { // \"[^\"\n]*
+			int multi_line = 0; // multi line string constant.
+			int start_char = chr; // literals start character.
 
 			while (ptr < end && (chr = readChr(ctx)) != -1) {
 
@@ -774,7 +772,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 								}
 							}
 							if (oct & 0xffffff00) {
-								warn(ctx->rt, raise_warn_lex2, tok->file, tok->line, WARN_OCT_ESC_SEQ_OVERFLOW);
+								warn(ctx->rt, tok->file, tok->line, WARN_OCT_ESC_SEQ_OVERFLOW);
 							}
 							chr = oct & 0xff;
 							break;
@@ -836,7 +834,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			if (start_char == '"') {
 				tok->kind = TOKEN_val;
 				tok->type = ctx->cc->type_str;
-				tok->id.hash = rehash(beg, ptr - beg) % hashTableSize;
+				tok->id.hash = rehash(beg, ptr - beg);
 				tok->id.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->id.hash);
 			}
 			else {
@@ -847,10 +845,10 @@ static ccToken readTok(lexContext ctx, astn tok) {
 					return tok->kind = TOKEN_any;
 				}
 				if (ptr > beg + vm_stk_align + 1) {
-					warn(ctx->rt, raise_warn_lex2, tok->file, tok->line, WARN_CHR_CONST_OVERFLOW, ptr);
+					warn(ctx->rt, tok->file, tok->line, WARN_CHR_CONST_OVERFLOW, ptr);
 				}
 				else if (ptr > beg + ctx->cc->type_chr->size + 1) {
-					warn(ctx->rt, raise_warn_lex3, tok->file, tok->line, WARN_MULTI_CHAR_CONSTANT);
+					warn(ctx->rt, tok->file, tok->line, WARN_MULTI_CHAR_CONSTANT);
 				}
 
 				for (ptr = beg; *ptr; ++ptr) {
@@ -863,11 +861,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			}
 			break;
 		}
-		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
-			int lo = 0;
-			int hi = lengthOf(keywords);
-			int cmp = -1;
-
+		read_idf: {
+			// [a-zA-Z_][a-zA-Z0-9_]*
 			while (ptr < end && chr != -1) {
 				if (!(chr_map[chr & 0xff] & CWORD)) {
 					break;
@@ -878,41 +873,25 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			backChr(ctx, chr);
 			*ptr++ = 0;
 
-			// binary search for keyword
-			while (cmp != 0 && lo < hi) {
-				int mid = lo + ((hi - lo) / 2);
-				cmp = strcmp(keywords[mid].name, beg);
-				if (cmp < 0) {
-					lo = mid + 1;
-				}
-				else {
-					hi = mid;
+			// search for keyword
+			for (size_t i = 0; i < lengthOf(keywords); i++) {
+				if (strcmp(keywords[i].name, beg) == 0) {
+					tok->kind = keywords[i].type;
+					break;
 				}
 			}
-			if (cmp == 0) {
-				switch (keywords[hi].type) {
-					default:
-						tok->kind = keywords[hi].type;
-						break;
 
-					case EMIT_kwd:
-						tok->kind = TOKEN_var;
-						tok->type = ctx->cc->emit_opc;
-						tok->id.link = ctx->cc->emit_opc;
-						tok->id.hash = rehash(beg, ptr - beg) % hashTableSize;
-						tok->id.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->id.hash);
-						break;
-				}
-			}
-			else {
+			// not a keyword
+			if (tok->kind == 0) {
 				tok->kind = TOKEN_var;
 				tok->type = tok->id.link = NULL;
-				tok->id.hash = rehash(beg, ptr - beg) % hashTableSize;
+				tok->id.hash = rehash(beg, ptr - beg);
 				tok->id.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->id.hash);
 			}
 			break;
 		}
-		read_num: {			// int | ([0-9]+'.'[0-9]* | '.'[0-9]+)([eE][+-]?[0-9]+)?
+		read_num: {
+			// int | ([0-9]+'.'[0-9]* | '.'[0-9]+)([eE][+-]?[0-9]+)?
 			//~ 0[.oObBxX]?
 			int radix = 10;
 			if (chr == '0') {
@@ -924,7 +903,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 						radix = 8;
 						break;
 
-					case '.':		// do not skip
+					case '.': // do not skip
 						break;
 
 					case 'b':
@@ -981,11 +960,11 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			}
 
 			if (overflow != 0) {
-				warn(ctx->rt, raise_warn_lex2, tok->file, tok->line, WARN_VALUE_OVERFLOW);
+				warn(ctx->rt, tok->file, tok->line, WARN_VALUE_OVERFLOW);
 			}
 
 			ccKind cast = CAST_i64;
-			if ((int32_t)i64v == i64v) {
+			if ((int32_t) i64v == i64v) {
 				cast = CAST_i32;
 			}
 
@@ -1045,12 +1024,12 @@ static ccToken readTok(lexContext ctx, astn tok) {
 						error(ctx->rt, tok->file, tok->line, ERR_INVALID_EXPONENT);
 					}
 					else if (overflow) {
-						warn(ctx->rt, raise_warn_lex2, tok->file, tok->line, WARN_EXPONENT_OVERFLOW);
+						warn(ctx->rt, tok->file, tok->line, WARN_EXPONENT_OVERFLOW);
 					}
 
 					long double p = 1;
 					long double m = 10;
-					while (val) {		// pow(10, val);
+					while (val) { // pow(10, val);
 						if (val & 1) {
 							p *= m;
 						}
@@ -1065,6 +1044,11 @@ static ccToken readTok(lexContext ctx, astn tok) {
 					}
 					cast = CAST_f64;
 				}
+
+				*ptr = 0;
+				char *strtodEnd = ptr;
+				f64v = strtod(beg, &strtodEnd);
+				dieif(strtodEnd != ptr, ERR_INTERNAL_ERROR);
 			}
 
 			char *suffix = ptr;
@@ -1151,109 +1135,88 @@ static ccToken readTok(lexContext ctx, astn tok) {
 	return tok->kind;
 }
 
-astn peekTok(ccContext cc, ccToken match) {
-	// read lookahead token
-	astn token = cc->tokNext;
-	while (token != NULL) {
-		if (token->kind != TOKEN_doc) {
-			break;
-		}
-		token = token->next;
-	}
+astn nextToken(ccContext ctx, ccToken match, int raise) {
+	astn token = ctx->tokNext;
 	if (token == NULL) {
+		if (raise) {
+			error(ctx->rt, NULL, 0, "ERR_UNEXPECTED_END_OF_FILE");
+		}
 		return NULL;
 	}
-	if (match && match != token->kind) {
+
+	if (match != 0 && match != token->kind) {
+		if (raise) {
+			error(ctx->rt, token->file, token->line, ERR_UNMATCHED_TOKEN, token, match);
+		}
 		return NULL;
+	}
+
+	ctx->tokNext = token->next;
+	token->next = NULL;
+	return token;
+}
+
+ccToken skipToken(ccContext ctx, ccToken match, int raise) {
+	astn token = nextToken(ctx, match, raise);
+	if (token == NULL) {
+		return TOKEN_any;
+	}
+
+	ccToken result = token->kind;
+	recycle(ctx, token);
+	return result;
+}
+
+astn backToken(ccContext ctx, astn token) {
+	if (token != NULL) {
+		token->next = ctx->tokNext;
+		ctx->tokNext = token;
 	}
 	return token;
 }
 
-astn nextTok(ccContext cc, ccToken match, int raise) {
-	astn token = peekTok(cc, match);
-	if (token != NULL) {
-		while (cc->tokNext != NULL) {
-			astn temp = cc->tokNext;
-			if (temp == token) {
-				break;
-			}
-			cc->tokNext = temp->next;
-			recycle(cc, temp);
-		}
-		cc->tokNext = token->next;
-		token->next = NULL;
-		return token;
-	}
-	if (raise) {
-		const char *file = cc->file;
-		int line = cc->line;
-		token = cc->tokNext;
-		if (token && token->file && token->line) {
-			file = token->file;
-			line = token->line;
-		}
-		error(cc->rt, file, line, ERR_UNMATCHED_TOKEN, token, match);
-	}
-	return NULL;
-}
-
-ccToken skipTok(ccContext cc, ccToken match, int raise) {
-	astn token = nextTok(cc, match, raise);
-	if (token != NULL) {
-		ccToken result = token->kind;
-		recycle(cc, token);
-		return result;
-	}
-	return TOKEN_any;
-}
-
-astn backTok(ccContext cc, astn token) {
-	if (token != NULL) {
-		token->next = cc->tokNext;
-		cc->tokNext = token;
-	}
-	return token;
-}
-
-int ccOpen(ccContext cc, const char *file, int line, char *text) {
-	struct lexContext input;
-	if (text == NULL && file != NULL) {
-		if ((input._fin = open(file, O_RDONLY)) <= 0) {
+int ccParse(ccContext ctx, const char *file, int line, char *content) {
+	if (file == NULL && content == NULL) {
+		if (ctx->tokNext != NULL) {
+			astn ast = ctx->tokNext;
+			error(ctx->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
 			return -1;
 		}
-		input._ptr = 0;
-		input._cnt = 0;
+		// just making sure no tokens left in the stream
+		return 0;
 	}
-	else if (text != NULL) {
-		input._fin = -1;
-		input._ptr = text;
-		input._cnt = strlen(text);
-	}
-	else {
-		input._fin = -1;
-		input._ptr = 0;
-		input._cnt = 0;
+
+	struct lexContext input = {0};
+	if (content == NULL) {
+		input.fid = open(file, O_RDONLY);
+		if (input.fid <= 0) {
+			error(ctx->rt, file, line, ERR_OPENING_FILE, file);
+			return -1;
+		}
+	} else {
+		input.fid = -1;
+		input.ptr = content;
+		input.cnt = strlen(content);
 	}
 
 	if (file != NULL) {
-		file = ccUniqueStr(cc, file, -1, -1);
+		file = ccUniqueStr(ctx, file, -1, -1);
 	}
-	input.cc = cc;
-	input.rt = cc->rt;
+
+	input.cc = ctx;
+	input.rt = ctx->rt;
 	input.filePos = 0;
+	input.linePos = 0;
 	input.nextChr = -1;
 
-	cc->file = file;
-	cc->line = line;
+	ctx->file = file;
+	ctx->line = line;
 
 	if (fillBuf(&input) > 2) {
-		// skip first line if it begins with: #!
-		if (input._ptr[0] == '#' && input._ptr[1] == '!') {
+		// skip the first line if it begins with hash-bang: #!
+		if (input.ptr[0] == '#' && input.ptr[1] == '!') {
 			int chr = readChr(&input);
-			while (chr != -1) {
-				if (chr == '\n') {
-					break;
-				}
+			while (chr != -1 && chr != '\n') {
 				chr = readChr(&input);
 			}
 		}
@@ -1261,47 +1224,38 @@ int ccOpen(ccContext cc, const char *file, int line, char *text) {
 
 	astn head = NULL;
 	astn tail = NULL;
-	for ( ; ; ) {
-		astn tok = newNode(cc, TOKEN_any);
+	for (;;) {
+		astn tok = newNode(ctx, TOKEN_any);
 		if (tok == NULL) {
 			break;
 		}
 		if (!readTok(&input, tok)) {
-			recycle(cc, tok);
-			break;
-		}
-		if (head == NULL) {
-			head = tok;
+			if (peekChr(&input) == -1) {
+				recycle(ctx, tok);
+				break;
+			}
 		}
 		if (tail != NULL) {
 			tail->next = tok;
+		} else {
+			head = tok;
 		}
 		tail = tok;
 	}
-	if (tail != NULL) {
-		tail->next = cc->tokNext;
+
+	if (input.fid > 0) {
+		close(input.fid);
 	}
-	if (head != NULL) {
-		cc->tokNext = head;
+	if (tail == NULL) {
+		// warn(ctx->rt, ctx->file, ctx->line, EMPTY_FILE);
+		return 0;
 	}
+	if (content == NULL && tail->line == ctx->line) {
+		warn(ctx->rt, ctx->file, ctx->line, WARN_NO_NEW_LINE_AT_END);
+	}
+
+	// insert the newly parsed tokens at the beginning of the stream
+	tail->next = ctx->tokNext;
+	ctx->tokNext = head;
 	return 0;
-}
-
-int ccClose(ccContext cc) {
-	// not initialized
-	if (cc == NULL) {
-		return -1;
-	}
-
-	// check no token left to read
-	astn ast = nextTok(cc, TOKEN_any, 0);
-	if (ast != NULL) {
-		error(cc->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
-	}
-
-	// close input
-	ccOpen(cc, NULL, 0, NULL);
-
-	// return errors
-	return cc->rt->errors;
 }

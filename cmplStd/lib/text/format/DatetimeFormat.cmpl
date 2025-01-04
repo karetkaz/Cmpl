@@ -1,0 +1,318 @@
+/// datetime regional formatter, currently 'en' if instantiated with: `DatetimeFormat fmt = {};`
+struct DatetimeFormat {
+	static char monthsLongEn![][] = {
+		"January",
+		"February",
+		"March",
+		"April",
+		"May",
+		"June",
+		"July",
+		"August",
+		"September",
+		"October",
+		"November",
+		"December",
+	};
+	static char monthsShortEn![][] = {
+		"Jan", "Feb", "Mar", "Apr",
+		"May", "Jun", "Jul", "Aug",
+		"Sep", "Oct", "Nov", "Dec",
+	};
+	static char weeksLongEn![][] = {
+		"Monday",
+		"Tuesday",
+		"Wednesday",
+		"Thursday",
+		"Friday",
+		"Saturday",
+		"Sunday",
+	};
+	static char weeksShortEn![][] = {
+		"Mon", "Tue", "Wed",
+		"Thu", "Fri", "Sat",
+		"Sun",
+	};
+	static char amPmUpperEn![][] = {
+		"AM",
+		"PM"
+	};
+	static char amPmLowerEn![][] = {
+		"am",
+		"pm"
+	};
+
+	// formatter for the separate numbers
+	NumberFormat numberFormat;
+
+	char monthsLong![][] = monthsLongEn;
+	char monthsShort![][] = monthsShortEn;
+	char weeksLong![][] = weeksLongEn;
+	char weeksShort![][] = weeksShortEn;
+	char amPmUpper![][] = amPmUpperEn;
+	char amPmLower![][] = amPmLowerEn;
+	char dateLong![] = "%A %d %B %Y";
+	char timeLong![] = "%r";
+	char dateShort![] = "%x";
+	char timeShort![] = "%I:%M %p";
+
+	/** Format date to text
+	 * @param formatter the formatter to be used
+	 * @param output write output to this buffer
+	 * @param end position in buffer where to print the datetime
+	 * @param value date to format
+	 * @param format format string
+	 *  	@null defaults to: "%Y.%m.%d"
+	 */
+	static int format(DatetimeFormat formatter!, char output&[], int end, Datetime value!, char format[]) {
+		static int append(DatetimeFormat formatter!, char output&[], int end, uint64 value, int width, int defaultWidth, int pad) {
+			// todo: this should be the same and as simple as: NumberFormat format = { *: formatter.numberFormat, width, paddingSymbol };
+			NumberFormat format = {
+				digitSymbols: formatter.numberFormat.digitSymbols;
+				positiveSymbol: formatter.numberFormat.positiveSymbol;
+				negativeSymbol: formatter.numberFormat.negativeSymbol;
+				infinitySymbol: formatter.numberFormat.infinitySymbol;
+				undefinedSymbol: formatter.numberFormat.undefinedSymbol;
+				groupingSymbol: formatter.numberFormat.groupingSymbol;
+				digitGrouping: formatter.numberFormat.digitGrouping;
+				firstGrouping: formatter.numberFormat.firstGrouping;
+				fractGrouping: formatter.numberFormat.fractGrouping;
+				paddingSymbol: pad;
+				width: width > 0 ? width : defaultWidth;
+				fractionSymbol: formatter.numberFormat.fractionSymbol;
+				trailingSeparator: formatter.numberFormat.trailingSeparator;
+				precision: formatter.numberFormat.precision;
+				trailingZeros: formatter.numberFormat.trailingZeros;
+			};
+			return format.format(output, end, uint64(value));
+		}
+		inline hours24to12(int32 hour) = hour > 12 ? hour - 12 : hour == 0 ? 12 : hour;
+
+		if (pointer(format) == null) {
+			return formatter.format(output, end, value, "%Y.%m.%d");
+		}
+
+		char chr = 0;
+		for (int pos = 0; pos < format.length; pos += 1) {
+			if (end >= output.length) {
+				output[output.length - 1] = 0;
+				return output.length - 1;
+			}
+
+			chr = format[pos];
+			if (chr != '%') {
+				output[end] = chr;
+				end += 1;
+				continue;
+			}
+
+			pos += 1;
+			chr = format[pos];
+
+			/* By default, date pads numeric fields with zeroes. The following optional flags may follow '%':
+			 - (hyphen) do not pad the field
+			 _ (underscore) pad with spaces
+			 0 (zero) pad with zeros
+			 + pad with zeros, and put '+' before future years with >4 digits
+			 ^ use upper case if possible
+			 # use opposite case if possible
+			 */
+
+			char pad = '0';
+			if (chr == '-' || chr == '_' || chr == '0' || chr == '+' || chr == '^' || chr == '#') {
+				if (chr == '-') {
+					pad = 0;
+				}
+				else if (chr == '_') {
+					pad = ' ';
+				}
+				else if (chr == '0') {
+					pad = '0';
+				}
+				else {
+					abort("unimplemented format flag character [for padding]", chr);
+				}
+				pos += 1;
+				chr = format[pos];
+			}
+
+			/* After any flags comes an optional field width, as a decimal
+			 number; then an optional modifier, which is either E to use the
+			 locale's alternate representations if available, or O to use the
+			 locale's alternate numeric symbols if available.
+			 */
+
+			int32 width = 0;
+			for (;chr >= '0' && chr <= '9';) {
+				width = width * 10 + chr - '0';
+				pos += 1;
+				chr = format[pos];
+			}
+
+			char formatLocale = '0';
+			if (chr == 'E' || chr == 'O') {
+				abort("unimplemented format flag character [for locale]", chr);
+				formatLocale = chr;
+				pos += 1;
+				chr = format[pos];
+			}
+
+			chr = format[pos];
+
+			if (chr == '%') {
+				end = append(output, end, "%");
+			}
+			else if (chr == 'a') {
+				// %a     locale's abbreviated weekday name (e.g., en_US: [Sun, Mon, ..., Sat]; de_DE: [So, Mo, ..., Sa])
+				end = append(output, end, formatter.weeksShort[indexOf(value.dayOfWeek)]);
+			}
+			else if (chr == 'A') {
+				// %A     locale's full weekday name (e.g., en_US: [Sunday, ..., Saturday]; de_DE: [Sonntag, ..., Samstag])
+				end = append(output, end, formatter.weeksLong[indexOf(value.dayOfWeek)]);
+			}
+			else if (chr == 'b') {
+				// %b     locale's abbreviated month name (e.g., en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez])
+				end = append(output, end, formatter.monthsShort[indexOf(value.month)]);
+			}
+			else if (chr == 'B') {
+				// %B     locale's full month name (e.g., en_US: [January, ..., December];de_DE: [Januar, ..., Dezember])
+				end = append(output, end, formatter.monthsLong[indexOf(value.month)]);
+			}
+//			else if (chr == 'c') // todo: %c     locale's date and time (e.g., Thu Mar  3 23:05:25 2005)
+			else if (chr == 'C') {
+				// %C     century; like %Y, except omit last two digits (e.g., 20)
+				end = append(formatter, output, end, value.year / 100, width, 2, pad);
+			}
+			else if (chr == 'd') {
+				// %d     day of month (e.g., 01)
+				end = append(formatter, output, end, value.day, width, 2, pad);
+			}
+			else if (chr == 'D') {
+				// %D     date; same as %m/%d/%y
+				end = formatter.format(output, end, value, "%m/%d/%y");
+			}
+			else if (chr == 'e') {
+				// %e     day of month, space padded; same as %_d
+				end = append(formatter, output, end, value.day, width, 2, ' ');
+			}
+			else if (chr == 'F') {
+				// %F     full date; like %+4Y-%m-%d
+				end = formatter.format(output, end, value, "%04Y-%m-%d");
+			}
+//			else if (chr == 'g') // todo: %g     last two digits of year of ISO week number (see %G)
+//			else if (chr == 'G') // todo: %G     year of ISO week number (see %V); normally useful only with %V
+			else if (chr == 'h') {
+				// %h     same as %b
+				end = append(output, end, formatter.monthsShort[indexOf(value.month)]);
+			}
+			else if (chr == 'H') {
+				// %H     hour (00..23)
+				end = append(formatter, output, end, value.hour, width, 2, pad);
+			}
+			else if (chr == 'I') {
+				// %I     hour (01..12)
+				end = append(formatter, output, end, hours24to12(value.hour), width, 2, pad);
+			}
+			else if (chr == 'j') {
+				// %j     day of year (001..366)
+				end = append(formatter, output, end, value.dayOfYear, width, 3, pad);
+			}
+			else if (chr == 'k') {
+				// %k     hour, space padded ( 0..23); same as %_H
+				end = append(formatter, output, end, value.hour, width, 2, ' ');
+			}
+			else if (chr == 'l') {
+				// %l     hour, space padded ( 1..12); same as %_I
+				end = append(formatter, output, end, hours24to12(value.hour), width, 2, ' ');
+			}
+			else if (chr == 'm') {
+				// %m     month (01..12)
+				end = append(formatter, output, end, indexOf(value.month) + 1, width, 2, pad);
+			}
+			else if (chr == 'M') {
+				// %M     minute (00..59)
+				end = append(formatter, output, end, value.minute, width, 2, pad);
+			}
+			else if (chr == 'n') {
+				// %n     a newline
+				end = append(output, end, "\n");
+			}
+			else if (chr == 'N') {
+				// fixme: precision
+				// %N     nanoseconds (000000000..999999999)
+				end = append(formatter, output, end, value.millis * 1000000, width, 9, pad);
+			}
+			else if (chr == 'p') {
+				// %p     locale's equivalent of either AM or PM; blank if not known
+				end = append(output, end, formatter.amPmUpper[int(value.hour < 12)]);
+			}
+			else if (chr == 'P') {
+				// %P     like %p, but lower case
+				end = append(output, end, formatter.amPmLower[int(value.hour < 12)]);
+			}
+//			else if (chr == 'q') // todo: %q     quarter of year (1..4)
+//			else if (chr == 'r') // todo: %r     locale's 12-hour clock time (e.g., 11:11:04 PM)
+			else if (chr == 'R') {
+				// %R     24-hour hour and minute; same as %H:%M
+				end = formatter.format(output, end, value, "%H:%M");
+			}
+			else if (chr == 's') {
+				// %s     seconds since 1970-01-01 00:00:00 UTC
+				end = append(formatter, output, end, Timestamp(value).value(Timeunit.Seconds), width, width, pad);
+			}
+			else if (chr == 'S') {
+				// %S     second (00..60)
+				end = append(formatter, output, end, value.second, width, 2, pad);
+			}
+			else if (chr == 't') {
+				// %t     a tab
+				end = append(output, end, "\t");
+			}
+			else if (chr == 'T') {
+				// %T     time; same as %H:%M:%S
+				end = formatter.format(output, end, value, "%H:%M:%S");
+			}
+			else if (chr == 'u') {
+				// %u     day of week (1..7); 1 is Monday
+				end = append(formatter, output, end, indexOf(value.dayOfWeek) + 1, width, width, pad);
+			}
+//			else if (chr == 'U') // todo: %U     week number of year, with Sunday as first day of week (00..53)
+//			else if (chr == 'V') // todo: %V     ISO week number, with Monday as first day of week (01..53)
+//			else if (chr == 'w') // todo: %w     day of week (0..6); 0 is Sunday
+			else if (chr == 'W') {
+				// %W     week number of year, with Monday as first day of week (00..53)
+				end = append(formatter, output, end, value.weekOfYear, width, 2, pad);
+			}
+			else if (chr == 'x') {
+				// %x     locale's date representation (e.g., 12/31/99)
+				end = formatter.format(output, end, value, formatter.dateShort);
+			}
+			else if (chr == 'X') {
+				// %X     locale's time representation (e.g., 23:13:48)
+				end = formatter.format(output, end, value, formatter.timeShort);
+			}
+			else if (chr == 'y') {
+				// %y     last two digits of year (00..99)
+				end = append(formatter, output, end, value.year % 100, width, 2, pad);
+			}
+			else if (chr == 'Y') {
+				// %Y     year
+				end = append(formatter, output, end, value.year, width, width, pad);
+			}
+//			else if (chr == 'z') // todo: %z     +hhmm numeric time zone (e.g., -0400)
+//			else if (chr == '?') // todo: %:z    +hh:mm numeric time zone (e.g., -04:00)
+//			else if (chr == '?') // todo: %::z   +hh:mm:ss numeric time zone (e.g., -04:00:00)
+//			else if (chr == '?') // todo: %:::z  numeric time zone with : to necessary precision (e.g., -04, +05:30)
+//			else if (chr == 'Z') // todo: %Z     alphabetic time zone abbreviation (e.g., EDT)
+			else {
+				abort("unimplemented or invalid format character", chr);
+			}
+		}
+
+		if (end >= output.length) {
+			end = output.length - 1;
+		}
+		output[end] = 0;
+		return end;
+	}
+}

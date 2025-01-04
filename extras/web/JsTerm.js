@@ -79,9 +79,13 @@ function Terminal(output, interpret) {
 			//if (buffer.length > 1024) { flush(); }
 		},
 		clear: function () {
+			if (output.innerHTML === '') {
+				return false;
+			}
 			output.innerHTML = '';
 			scrollToEnd = true;
 			buffer = [];
+			return true;
 		},
 		text: function() {
 			let result = '';

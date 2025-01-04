@@ -1,0 +1,28 @@
+// procedural draw demo ~ Blobs
+// adapted from shadertoy.com
+
+vec4f blob(vec4f in) {
+
+	float64 time = in.w / 2;
+	vec2d p = vec2d(in.x * 2 - 1, in.y * 2 - 1);
+
+	//! the centre point of each blob
+	vec2d move1 = vec2d(Float64.cos(time * 4.5) * 0.4, Float64.sin(time * 1.5) * 0.4);
+	vec2d move2 = vec2d(Float64.cos(time * 2.0) * 0.4, Float64.sin(time * 3.0) * 0.4);
+	vec2d move3 = vec2d(Float64.cos(time * 7.0) * 0.4, Float64.sin(time * 2.0) * 0.4);
+	vec2d move4 = vec2d(Float64.cos(time * 2.0) * 0.4, Float64.sin(time * 4.3) * 0.4);
+
+	float64 metaball = 0;
+	//! sum the meatballs as the radius for each blob
+	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move1), p.sub(move1)) * 22);
+	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move2), p.sub(move2)) * 26);
+	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move3), p.sub(move3)) * 32);
+	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move4), p.sub(move4)) * 32);
+
+
+	//~ alter the cut-off power
+	metaball = Float64.clamp(Float64.pow(metaball, 8.), 0., 1.);
+	return vec4f(float32(metaball));
+}
+
+Window.show(512, 512, 4, blob);

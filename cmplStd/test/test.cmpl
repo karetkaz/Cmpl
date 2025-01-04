@@ -1,0 +1,53 @@
+// integer should be defined as one of: int8, int16, int32, int64, uint8, uint16, uint32, uint64, char
+inline integer = int64;
+
+
+// Aliasing
+inline "./lang/emit.cmpl";
+inline "./lang/inlineMacros.cmpl";
+inline "./lang/overload.inline.cmpl";
+
+// native calls
+inline "./lang/memory.cmpl";
+inline "./lang/tryExec.cmpl";
+inline "./lang/pointer.cmpl";
+
+
+// Variables
+inline "./lang/init.reference.cmpl";
+inline "./lang/init.variable.cmpl";
+
+// Functions
+inline "./lang/function.cmpl";
+inline "./lang/reflect.basic.cmpl";
+//inline "./lang/reflect.globals.cmpl";
+inline "./lang/reflect.serialize.cmpl";
+//inline "./lang/todo.funIterator.cmpl";
+
+// Records & Arrays
+inline "./lang/init.member.cmpl";
+inline "./lang/init.method.cmpl";
+// FIXME: inline "./lang/init.array.cmpl"?;
+
+inline "./lang/recUnion.cmpl";
+inline "./lang/recPacking.cmpl";
+
+// Enumerations
+//inline "./todo/enum.cmpl";
+
+
+// Operators
+inline "./lang/useOperator.cmpl";
+
+
+// statements
+inline "./lang/stmt.if.cmpl";
+inline "./lang/stmt.for.cmpl";
+
+
+// implemented functions
+inline "./math/test.Numbers.cmpl";
+//inline "./math/test.Fixed32.cmpl"; // todo: implement
+inline "./math/test.Math.cmpl";
+inline "./math/test.Complex.cmpl";
+//inline "./math/test.Polynomial.cmpl"; // fixme: requires file access

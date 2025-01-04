@@ -1,0 +1,107 @@
+/// Statistics class to compute the most frequent statistical functions
+// https://www.johndcook.com/blog/standard_deviation/
+// https://www.calculatorsoup.com/calculators/statistics/statistics.php
+struct RunningStat {
+	// count of values in the dataset
+	float64 count = 0;
+
+	// sum of all values
+	float64 sum = 0;
+
+	// minimum value
+	float64 min = 0;
+
+	// maximum value
+	float64 max = 0;
+
+	// computed average value
+	float64 mean = 0;
+
+	// sum of squared differences from the mean
+	float64 SMDif = 0;
+
+	/// reset the counters
+	static void clear(RunningStat this&) {
+		this.count = 0;
+	}
+
+	/// add a new value to the stats
+	static void push(RunningStat this&, float64 value) {
+		// See Knuth TAOCP vol 2, 3rd edition, page 232
+		if (this.count == 0) {
+			this.mean = value;
+			this.min = value;
+			this.max = value;
+			this.sum = value;
+			this.SMDif = 0;
+			this.count = 1;
+			return;
+		}
+
+		this.count += 1;
+		this.sum += value;
+		float64 oldMean = this.mean;
+		this.mean = oldMean + (value - oldMean) / this.count;
+		this.SMDif += (value - oldMean) * (value - this.mean);
+		if (this.min > value) {
+			this.min = value;
+		}
+		if (this.max < value) {
+			this.max = value;
+		}
+	}
+
+	/// add new values to the stats
+	static void push(RunningStat this&, float64 values...) {
+		for (int i = 0; i < values.length; i += 1) {
+			this.push(values[i]);
+		}
+	}
+
+	/// Returns the number of values added stats
+	static float64 count(RunningStat this!) {
+		return this.count;
+	}
+
+	/// Returns the smallest value added to the stats
+	static float64 min(RunningStat this!) {
+		if (this.count <= 0) {
+			return Float64.nan;
+		}
+		return this.min;
+	}
+
+	/// Returns the largest value added to the stats
+	static float64 max(RunningStat this!) {
+		if (this.count <= 0) {
+			return Float64.nan;
+		}
+		return this.max;
+	}
+
+	/// Returns the mean of all values added to the stats
+	static float64 mean(RunningStat this!) {
+		if (this.count <= 0) {
+			return 0;
+		}
+		return this.mean;
+	}
+
+	/// Returns the variance of all values added to the stats
+	static float64 variance(RunningStat this!) {
+		if (this.count <= 1) {
+			return 0;
+		}
+		return this.SMDif / (this.count - 1);
+	}
+
+	/// Returns the standard deviation of all values added to the stats
+	static float64 stddev(RunningStat this!) {
+		return Float64.sqrt(this.variance());
+	}
+
+	/// Returns the sum of all values added to the stats
+	static float64 sum(RunningStat this!) {
+		return this.sum;
+	}
+}

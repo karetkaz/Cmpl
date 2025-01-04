@@ -68,9 +68,9 @@ This might be useful to compare if variable references point to the same value o
 
 it may be defined as:
 ```
-const struct variant {
-	typename type;
-	pointer value;
+struct variant {
+	typename type!;
+	pointer value!;
 }
 ```
 
@@ -87,7 +87,7 @@ Using it as a function with an identifier argument, it will return the type of t
 **Example**
 ```
 // if integer is not defined, define it as int32
-static if (typename(integer) == null) {
+static if (struct(integer) == null) {
 inline integer = int32;
 }
 ```
@@ -95,7 +95,7 @@ inline integer = int32;
 **Example**
 ```
 // check if int128 is defined and is a type.
-bool hasInt128 = typename(int128) == typename;
+bool hasInt128 = struct(int128) == typename;
 ```
 
 ### function

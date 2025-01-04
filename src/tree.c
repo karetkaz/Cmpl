@@ -1,17 +1,17 @@
-/*******************************************************************************
- *   File: tree.c
- *   Date: 2011/06/23
- *   Desc: tree operations
- *******************************************************************************
- * create, modify and fold syntax tree
- */
+#include "tree.h"
+#include "type.h"
+#include "compiler.h"
+#include "printer.h"
 
-#include "internal.h"
+const struct tokenRec token_tbl[256] = {
+#define TOKEN_DEF(Name, Type, Args, Op, Text) {Text, Op, Type, Args},
+#include "token.i"
+};
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ create and recycle node
-astn newNode(ccContext cc, ccToken kind) {
-	astn result = cc->tokPool;
-	rtContext rt = cc->rt;
+astn newNode(ccContext ctx, ccToken kind) {
+	astn result = ctx->tokPool;
+	rtContext rt = ctx->rt;
 
 	dieif(rt->vm.nfc, "Can not create symbols while generating bytecode");
 
@@ -25,7 +25,7 @@ astn newNode(ccContext cc, ccToken kind) {
 		result = (astn) rt->_end;
 	}
 	else {
-		cc->tokPool = result->next;
+		ctx->tokPool = result->next;
 	}
 
 	memset(result, 0, sizeof(struct astNode));
@@ -33,57 +33,57 @@ astn newNode(ccContext cc, ccToken kind) {
 	return result;
 }
 
-astn dupNode(ccContext cc, astn node) {
-	astn result = newNode(cc, node->kind);
+astn dupNode(ccContext ctx, astn node) {
+	astn result = newNode(ctx, node->kind);
 	*result = *node;
 	return result;
 }
 
-void recycle(ccContext cc, astn node) {
-	dieif(cc->rt->vm.nfc, "Compiler state closed");
+void recycle(ccContext ctx, astn node) {
+	dieif(ctx->rt->vm.nfc, "Compiler state closed");
 	if (node == NULL) {
 		return;
 	}
-	node->next = cc->tokPool;
-	cc->tokPool = node;
+	node->next = ctx->tokPool;
+	ctx->tokPool = node;
 }
 
-static void recycleTree(ccContext cc, astn ast) {
+static void recycleTree(ccContext ctx, astn ast) {
 	// TODO recycle recursively
-	recycle(cc, ast);
+	recycle(ctx, ast);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ make a constant valued node
-astn intNode(ccContext cc, int64_t value) {
-	astn ast = newNode(cc, TOKEN_val);
+astn intNode(ccContext ctx, int64_t value) {
+	astn ast = newNode(ctx, TOKEN_val);
 	if (ast != NULL) {
-		ast->type = cc->type_i64;
+		ast->type = ctx->type_i64;
 		ast->cInt = value;
 	}
 	return ast;
 }
 
-astn fltNode(ccContext cc, float64_t value) {
-	astn ast = newNode(cc, TOKEN_val);
+astn fltNode(ccContext ctx, float64_t value) {
+	astn ast = newNode(ctx, TOKEN_val);
 	if (ast != NULL) {
-		ast->type = cc->type_f64;
+		ast->type = ctx->type_f64;
 		ast->cFlt = value;
 	}
 	return ast;
 }
 
-astn strNode(ccContext cc, const char *value) {
-	astn ast = newNode(cc, TOKEN_val);
+astn strNode(ccContext ctx, const char *value) {
+	astn ast = newNode(ctx, TOKEN_val);
 	if (ast != NULL) {
-		ast->type = cc->type_str;
+		ast->type = ctx->type_str;
 		ast->id.name = value;
 		ast->id.hash = -1;
 	}
 	return ast;
 }
 
-astn lnkNode(ccContext cc, symn ref) {
-	astn result = newNode(cc, TOKEN_var);
+astn lnkNode(ccContext ctx, symn ref) {
+	astn result = newNode(ctx, TOKEN_var);
 	if (result != NULL) {
 		result->type = isTypename(ref) ? ref : ref->type;
 		result->id.name = ref->name;
@@ -93,8 +93,8 @@ astn lnkNode(ccContext cc, symn ref) {
 	return result;
 }
 
-astn opNode(ccContext cc, symn type, ccToken kind, astn lhs, astn rhs) {
-	astn result = newNode(cc, kind);
+astn opNode(ccContext ctx, symn type, ccToken kind, astn lhs, astn rhs) {
+	astn result = newNode(ctx, kind);
 	if (result != NULL) {
 		result->op.lhso = lhs;
 		result->op.rhso = rhs;
@@ -133,12 +133,12 @@ int64_t intValue(astn ast) {
 				break;
 
 			case CAST_bit:
-			case CAST_ref:
 			case CAST_i32:
 			case CAST_i64:
 			case CAST_u32:
 			case CAST_u64:
-				return (int64_t) ast->cInt;
+			case CAST_ptr:
+				return ast->cInt;
 
 			case CAST_f32:
 			case CAST_f64:
@@ -164,7 +164,7 @@ float64_t fltValue(astn ast) {
 
 			case CAST_f32:
 			case CAST_f64:
-				return (float64_t) ast->cFlt;
+				return ast->cFlt;
 		}
 	}
 	fatal(ERR_INVALID_CONST_EXPR, ast);
@@ -173,7 +173,7 @@ float64_t fltValue(astn ast) {
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ utility functions
 
-ccKind eval(ccContext cc, astn res, astn ast) {
+ccKind eval(ccContext ctx, astn res, astn ast) {
 	struct astNode lhs, rhs;
 
 	if (ast == NULL || ast->type == NULL) {
@@ -188,12 +188,11 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 
 	if (res == ast) {
 		// result may be null(not needed)
-		ccKind result = eval(cc, &rhs, ast);
+		ccKind result = eval(ctx, &rhs, ast);
 		if (result != CAST_any) {
 			if (token_tbl[res->kind].args) {
-				recycleTree(cc, res->op.test);
-				recycleTree(cc, res->op.lhso);
-				recycleTree(cc, res->op.rhso);
+				recycleTree(ctx, res->op.lhso);
+				recycleTree(ctx, res->op.rhso);
 			}
 			res->kind = rhs.kind;
 			res->type = rhs.type;
@@ -228,15 +227,16 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 			cast = CAST_f64;
 			break;
 
-		case CAST_ref:
-			cast = CAST_ref;
+		case CAST_ptr:
+			cast = CAST_ptr;
 			break;
 
+		case CAST_vid:
 		case CAST_val:
 		case CAST_arr:
 		case CAST_var:
-		case CAST_vid:
-			debug("not evaluable: %t", ast);
+		case CAST_obj:
+			dbgInfo("not evaluable: %t", ast);
 			return CAST_any;
 	}
 
@@ -264,54 +264,37 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 					// length must be an inline expression
 					return CAST_any;
 				}
-				if (!isStatic(len) || !isConst(len)) {
+				if (!isStatic(len) || isMutable(len)) {
 					// extra caution, const and static should be also set for length
 					return CAST_any;
 				}
-				return eval(cc, res, len->init);
+				return eval(ctx, res, len->init);
 			}
 			if (!isTypeExpr(ast->op.lhso)) {
 				return CAST_any;
 			}
-			return eval(cc, res, ast->op.rhso);
+			return eval(ctx, res, ast->op.rhso);
 
 		case OPER_fnc: {
 			astn func = ast->op.lhso;
 			astn args = ast->op.rhso;
+			if (func != NULL) {
+				if (func->kind == RECORD_kwd) {
+					// struct(variable)
+					res->kind = TOKEN_val;
+					res->type = ctx->type_rec;
+					res->cInt = args->type->offs;
+					break;
+				}
 
-			// evaluate only: float(3) or (3 + 4).
-			if (func && !isTypeExpr(func)) {
+				// can not evaluate functions
+				dbgTraceAst(ast);
 				return CAST_any;
 			}
-			// cast must convert something to the given type.
-			if (args == NULL) {
-				return CAST_any;
-			}
 
-			// typename(int64) => typename
-			if (linkOf(func, 1) == cc->type_rec) {
-				if (args == NULL) {
-					traceAst(ast);
-					return CAST_any;
-				}
-				while (args->kind == OPER_dot) {
-					// if ast has no type => is not defined, return null
-					if (args->op.lhso->type == NULL) {
-						break;
-					}
-					args = args->op.rhso;
-				}
-				res->kind = TOKEN_val;
-				res->type = cc->type_rec;
-				if (args->kind == TOKEN_var) {
-					symn id = args->id.link;
-					res->cInt = id && id->type ? id->type->offs : 0;
-				}
-				break;
-			}
-
-			if (eval(cc, res, args) == CAST_any) {
-				traceAst(ast);
+			if (args == NULL || !eval(ctx, res, args)) {
+				// evaluate parametrized sub expressions: (3 + 5) * 3
+				dbgTraceAst(ast);
 				return CAST_any;
 			}
 			break;
@@ -329,14 +312,14 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 		case TOKEN_var: {
 			symn var = ast->id.link;		// link
 			if (isInline(var)) {
-				if (!eval(cc, res, var->init)) {
+				if (!eval(ctx, res, var->init)) {
 					return CAST_any;
 				}
 				cast = refCast(type);
 			}
 			else if (isTypename(var)) {
 				cast = refCast(type);
-				type = cc->type_rec;
+				type = ctx->type_rec;
 				res->kind = TOKEN_val;
 				res->cInt = var->offs;
 			}
@@ -347,13 +330,13 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 		}
 
 		case OPER_pls:		// '+'
-			if (!eval(cc, res, ast->op.rhso)) {
+			if (!eval(ctx, res, ast->op.rhso)) {
 				return CAST_any;
 			}
 			break;
 
 		case OPER_mns:		// '-'
-			if (!eval(cc, res, ast->op.rhso)) {
+			if (!eval(ctx, res, ast->op.rhso)) {
 				return CAST_any;
 			}
 
@@ -377,7 +360,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 			break;
 
 		case OPER_cmt:			// '~'
-			if (!eval(cc, res, ast->op.rhso)) {
+			if (!eval(ctx, res, ast->op.rhso)) {
 				return CAST_any;
 			}
 
@@ -396,7 +379,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 			break;
 
 		case OPER_not:			// '!'
-			if (!eval(cc, res, ast->op.rhso)) {
+			if (!eval(ctx, res, ast->op.rhso)) {
 				return CAST_any;
 			}
 
@@ -410,14 +393,15 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 				case CAST_i64:
 				case CAST_u32:
 				case CAST_u64:
-				case CAST_ref:
-					res->type = cc->type_bol;
+				case CAST_ptr:
+				case CAST_obj:
+					res->type = ctx->type_bol;
 					res->cInt = !res->cInt;
 					break;
 
 				case CAST_f32:
 				case CAST_f64:
-					res->type = cc->type_bol;
+					res->type = ctx->type_bol;
 					res->cInt = !res->cFlt;
 					break;
 			}
@@ -428,11 +412,11 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 		case OPER_mul:			// '*'
 		case OPER_div:			// '/'
 		case OPER_mod:			// '%'
-			if (!eval(cc, &lhs, ast->op.lhso)) {
+			if (!eval(ctx, &lhs, ast->op.lhso)) {
 				return CAST_any;
 			}
 
-			if (!eval(cc, &rhs, ast->op.rhso)) {
+			if (!eval(ctx, &rhs, ast->op.rhso)) {
 				return CAST_any;
 			}
 
@@ -449,7 +433,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 				case CAST_i64:
 				case CAST_u32:
 				case CAST_u64:
-					res->type = cc->type_i64;
+					res->type = ctx->type_i64;
 					switch (ast->kind) {
 						default:
 							fatal(ERR_INTERNAL_ERROR);
@@ -469,7 +453,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 
 						case OPER_div:
 							if (rhs.cInt == 0) {
-								error(cc->rt, ast->file, ast->line, "Division by zero: %t", ast);
+								error(ctx->rt, ast->file, ast->line, "Division by zero: %t", ast);
 								res->cInt = 0;
 								break;
 							}
@@ -478,7 +462,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 
 						case OPER_mod:
 							if (rhs.cInt == 0) {
-								error(cc->rt, ast->file, ast->line, "Division by zero: %t", ast);
+								error(ctx->rt, ast->file, ast->line, "Division by zero: %t", ast);
 								res->cInt = 0;
 								break;
 							}
@@ -489,7 +473,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 
 				case CAST_f32:
 				case CAST_f64:
-					res->type = cc->type_f64;
+					res->type = ctx->type_f64;
 					switch (ast->kind) {
 						default:
 							fatal(ERR_INTERNAL_ERROR);
@@ -527,18 +511,18 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 		case OPER_cle:			// '<='
 		case OPER_cgt:			// '>'
 		case OPER_cge:			// '>='
-			if (!eval(cc, &lhs, ast->op.lhso)) {
+			if (!eval(ctx, &lhs, ast->op.lhso)) {
 				return CAST_any;
 			}
 
-			if (!eval(cc, &rhs, ast->op.rhso)) {
+			if (!eval(ctx, &rhs, ast->op.rhso)) {
 				return CAST_any;
 			}
 
 			dieif(lhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
 			dieif(rhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
-			dieif(ast->type != cc->type_bol, ERR_INTERNAL_ERROR);
-			logif(lhs.type != rhs.type, "%?s:%?u", ast->file, ast->line);	// might happen: (typename(int) == null)
+			dieif(ast->type != ctx->type_bol, ERR_INTERNAL_ERROR);
+			logif(lhs.type != rhs.type, "%?s:%?u", ast->file, ast->line);	// might happen: (struct(int) == null)
 
 			res->kind = TOKEN_val;
 			res->type = ast->type;
@@ -554,7 +538,8 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 				case CAST_i64:
 				case CAST_u32:
 				case CAST_u64:
-				case CAST_ref:
+				case CAST_ptr:
+				case CAST_obj:
 					switch (ast->kind) {
 						default:
 							fatal(ERR_INTERNAL_ERROR);
@@ -632,21 +617,21 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 		case OPER_and:			// '&'
 		case OPER_ior:			// '|'
 		case OPER_xor:			// '^'
-			if (!eval(cc, &lhs, ast->op.lhso)) {
+			if (!eval(ctx, &lhs, ast->op.lhso)) {
 				return CAST_any;
 			}
 
-			if (!eval(cc, &rhs, ast->op.rhso)) {
+			if (!eval(ctx, &rhs, ast->op.rhso)) {
 				return CAST_any;
 			}
 
 			dieif(lhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
 			dieif(rhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
-			dieif(lhs.type != rhs.type, ERR_INTERNAL_ERROR);
-			dieif(ast->type != cc->type_i32
-				&& ast->type != cc->type_i64
-				&& ast->type != cc->type_u32
-				&& ast->type != cc->type_u64
+			logif(lhs.type != rhs.type, "%?s:%?u", ast->file, ast->line);	// might happen: uint64(x) >> int32(1)
+			dieif(ast->type != ctx->type_i32
+				&& ast->type != ctx->type_i64
+				&& ast->type != ctx->type_u32
+				&& ast->type != ctx->type_u64
 			, ERR_INTERNAL_ERROR);
 
 			res->kind = TOKEN_val;
@@ -695,19 +680,19 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 
 		case OPER_all:
 		case OPER_any:
-			if (!eval(cc, &lhs, ast->op.lhso)) {
+			if (!eval(ctx, &lhs, ast->op.lhso)) {
 				return CAST_any;
 			}
 
-			if (!eval(cc, &rhs, ast->op.rhso)) {
+			if (!eval(ctx, &rhs, ast->op.rhso)) {
 				return CAST_any;
 			}
 
 			dieif(lhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
 			dieif(rhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
-			dieif(lhs.type != cc->type_bol, ERR_INTERNAL_ERROR);
-			dieif(rhs.type != cc->type_bol, ERR_INTERNAL_ERROR);
-			dieif(ast->type != cc->type_bol, ERR_INTERNAL_ERROR);
+			dieif(lhs.type != ctx->type_bol, ERR_INTERNAL_ERROR);
+			dieif(rhs.type != ctx->type_bol, ERR_INTERNAL_ERROR);
+			dieif(ast->type != ctx->type_bol, ERR_INTERNAL_ERROR);
 
 			// TODO: try reconsidering these operators to behave like in lua or js
 			res->kind = TOKEN_val;
@@ -729,12 +714,13 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 			break;
 
 		case OPER_sel:
-			if (!eval(cc, &lhs, ast->op.test)) {
+			if (!eval(ctx, &lhs, ast->op.lhso)) {
 				return CAST_any;
 			}
 
 			dieif(lhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
-			return eval(cc, res, bolValue(&lhs) ? ast->op.lhso : ast->op.rhso);
+			dieif(ast->op.rhso == NULL || ast->op.rhso->kind != OPER_cln, ERR_INTERNAL_ERROR);
+			return eval(ctx, res, bolValue(&lhs) ? ast->op.rhso->op.lhso : ast->op.rhso->op.rhso);
 
 		case INIT_set:
 		case ASGN_set:
@@ -753,7 +739,6 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 				res->type = type;
 				break;
 
-			case CAST_ref:
 			case CAST_i64:
 				res->cInt = intValue(res);
 				res->type = type;
@@ -785,6 +770,12 @@ symn linkOf(astn ast, int follow) {
 		return NULL;
 	}
 
+	if (ast->kind == INLINE_kwd) {
+		return ast->type;
+	}
+	if (ast->kind == RECORD_kwd) {
+		return ast->type;
+	}
 	if (ast->kind == OPER_fnc) {
 		if (ast->op.lhso == NULL) {
 			// (rand(9.7)) => rand
@@ -810,18 +801,18 @@ symn linkOf(astn ast, int follow) {
 	}
 
 	if (ast->kind == TOKEN_var) {
-		// TODO: do we need to skip over aliases
 		symn lnk = ast->id.link;
-		if (follow) {
-			while (lnk != NULL) {
-				if (lnk->kind != KIND_def) {
-					break;
-				}
-				if (lnk->init == NULL || lnk->init->kind != TOKEN_var) {
-					break;
-				}
-				lnk = linkOf(lnk->init, follow);
+		if (!follow) {
+			return lnk;
+		}
+		while (lnk != NULL) {
+			if (lnk->kind != KIND_def) {
+				break;
 			}
+			if (lnk->init == NULL || lnk->init->kind != TOKEN_var) {
+				break;
+			}
+			lnk = linkOf(lnk->init, follow);
 		}
 		return lnk;
 	}
@@ -870,7 +861,7 @@ int isTypeExpr(astn ast) {
 	return 0;
 }
 
-static int isConstAst(astn ast, int varOnly) {
+static int isMutableAst(astn ast, int varOnly) {
 	if (ast == NULL) {
 		return 0;
 	}
@@ -880,10 +871,10 @@ static int isConstAst(astn ast, int varOnly) {
 			break;
 
 		case OPER_idx:
-			return isConstAst(ast->op.lhso, 0);
+			return isMutableAst(ast->op.lhso, 0);
 
 		case OPER_dot:
-			return isConstAst(ast->op.rhso, 0) || isConstAst(ast->op.lhso, 1);
+			return isMutableAst(ast->op.rhso, 0) || isMutableAst(ast->op.lhso, 1);
 
 		case TOKEN_var:
 			if (ast->id.link != NULL) {
@@ -897,7 +888,7 @@ static int isConstAst(astn ast, int varOnly) {
 						}
 						// fall through
 					case KIND_var:
-						return isConst(link);
+						return isMutable(link);
 				}
 			}
 			break;
@@ -905,6 +896,31 @@ static int isConstAst(astn ast, int varOnly) {
 
 	return 0;
 }
-int isConstVar(astn ast) {
-	return isConstAst(ast, 0);
+int isMutableVar(astn ast) {
+	return isMutableAst(ast, 0);
+}
+
+astn argNode(ccContext ctx, astn lhs, astn rhs) {
+	if (lhs == NULL) {
+		return rhs;
+	}
+	return opNode(ctx, ctx->type_vid, OPER_com, lhs, rhs);
+}
+
+astn chainArgs(astn args) {
+	if (args == NULL) {
+		return NULL;
+	}
+	if (args->kind == OPER_com) {
+		astn lhs = chainArgs(args->op.lhso);
+		astn rhs = chainArgs(args->op.rhso);
+		args = lhs;
+		while (lhs->next != NULL) {
+			lhs = lhs->next;
+		}
+		lhs->next = rhs;
+	} else {
+		args->next = NULL;
+	}
+	return args;
 }

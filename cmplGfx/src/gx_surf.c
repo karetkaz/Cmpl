@@ -1,8 +1,8 @@
 #include "gx_color.h"
 #include "gx_surf.h"
-#include "g3_math.h"
 
 #include <stdlib.h>
+#include <math.h>
 
 GxImage createImage(GxImage recycle, int width, int height, int depth, ImageFlags flags) {
 	if (recycle == NULL) {

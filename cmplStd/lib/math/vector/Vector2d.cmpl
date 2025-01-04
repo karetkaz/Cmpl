@@ -1,0 +1,43 @@
+/// A 2d vector (2x float64)
+struct vec2d: 0 {
+	struct {
+		/// X component of the vector
+		float64 x;
+		/// Y component of the vector
+		float64 y;
+	}
+	/// Access the components as an array
+	float64 data[2];
+
+	/// Component wise add the two vectors.
+	static vec2d add(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.add2d); }
+
+	/// Component wise subtract the two vectors.
+	static vec2d sub(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.sub2d); }
+
+	/// Component wise multiply the two vectors.
+	static vec2d mul(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.mul2d); }
+
+	/// Component wise divide the two vectors.
+	static vec2d div(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.div2d); }
+
+	/// Component wise select the minimum from the two vectors.
+	static vec2d min(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.min2d); }
+
+	/// Component wise select the maximum from the two vectors.
+	static vec2d max(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.max2d); }
+
+	/// Compare the two vectors for equality.
+	static bool ceq(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.ceq); }
+
+	/// Dot product of thw two vectors
+	static float64 dot(vec2d a, vec2d b) { return a.x * b.x + a.y * b.y; }
+}
+
+/// Initialize with given x, y components
+vec2d vec2d(float64 x, float64 y) {
+	return {
+		x: x;
+		y: y;
+	};
+}

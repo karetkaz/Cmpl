@@ -59,3 +59,35 @@ void sort(int values[], int compare(int a, int b)) {
 
 If a function name is a type name, by convention it is considered to be a constructor for that type,
 so it should return an instance of the type represented by its name.
+
+**Example**
+```cmpl
+inline string(bool value) = value ? "true" : "false";  // ok returns string.
+inline string(bool value) = value ? 42 : 0;  // w2 function 'string' returns 'int'
+int string() { ... } // w2 function 'string' returns 'int'
+```
+
+<!-- todo:
+## Special functions (pointer, typename and variant)
+```cmpl
+int value = 42;
+
+// get the offset of the variable:
+pointer p = pointer(value);
+
+// get the type of the variable:
+typename t = struct(value);
+
+// using typename inside the static if test expression
+// returns null if the symbol is not defined
+static if (struct(float) == null) {
+  // float is not defined, so define it
+  inline float = float32;
+}
+
+// variant construction:
+variant v = variant(value)
+// does the same as:
+variant v = variant(struct(value), pointer(value));
+```
+-->

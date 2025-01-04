@@ -1,0 +1,302 @@
+///@public
+static struct Window {
+	/// events with action having this bit set, were processed by the widget
+	inline EVENT_PROCESSED = 1 << 16;
+
+	/// Show the given `widget` in a window drawn to the `offscreen` image
+	static void show(Image offscreen, int32 onEvent(int32 action, int32 button, int32 x, int32 y), Widget widget) {
+		struct WindowData {
+			Image offscreen;
+			int32 onEvent(int32 action, int32 button, int32 x, int32 y);
+			Widget widget;
+			Rect rect;
+
+			int64 timeout = 0;
+
+			// Touch state
+			int32 clicks = 0;
+			int64 time = 0;
+			int32 button = 0;
+			int32 lastX = 0;
+			int32 lastY = 0;
+
+			// Keyboard state
+			bool isShift = false;
+			bool isCtrl = false;
+			bool isAlt = false;
+			int32 key = 0;
+			int32 repeat = 0;
+		}
+
+		static bool dispatchEvent(WindowData window&, Widget widget, int32 action, int32 button, int32 x, int32 y) {
+			if (widget.parent == null) {
+				// widget was not created, so create it first
+				widget.onCreate(widget, widget);
+			}
+			if (action == Window.WINDOW_INIT) {
+				return true;
+			}
+			if (action == Window.WINDOW_CLOSE) {
+				// TODO: implement reference counted gc
+				widget.onDestroy(widget);
+				widget.destroy();
+				return false;
+			}
+			if (action == Window.WINDOW_ENTER) {
+				// do not process event
+				return false;
+			}
+			if (action == Window.WINDOW_LEAVE) {
+				// clear hovered state
+				return widget.clearState(View.State.hovered);
+			}
+
+			if (action == Window.MOUSE_PRESS) {
+				if (window.button != button || window.lastX != x || window.lastY != y) {
+					window.clicks = 0;
+				}
+				int64 now = System.millis();
+				if ((now - window.time) / 1000. > .5) {
+					window.clicks = 0;
+				}
+				window.time = now;
+				if (button == 1) {
+					window.timeout = now + 1000;
+				} else {
+					window.timeout = 0;
+				}
+				window.button = button;
+				window.lastX = x;
+				window.lastY = y;
+				window.clicks += 1;
+
+				if (button != 1) {
+					return false;
+				}
+
+				TouchEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+			if (action == Window.MOUSE_MOTION) {
+				int32 lastX = window.lastX;
+				int32 lastY = window.lastY;
+				window.time = System.millis();
+				window.timeout = 0;
+				window.button = button;
+				window.lastX = x;
+				window.lastY = y;
+				window.clicks = 0;
+
+				if (button != 0 && button != 1) {
+					return false;
+				}
+				TouchEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					dx: x - lastX;
+					dy: y - lastY;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+			if (action == Window.MOUSE_RELEASE) {
+				int64 now = System.millis();
+				if ((now - window.time) / 1000. > .5) {
+					window.clicks = 0;
+				}
+				window.timeout = 0;
+				if (button != 1) {
+					return false;
+				}
+
+				TouchEvent event = {
+					release: true;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+
+			if (action == Window.KEY_PRESS) {
+				window.isShift = (y & Window.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Window.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Window.KEY_MASK_ALT) != 0;
+				if (window.key != button) {
+					window.key = button;
+					window.repeat = 0;
+				} else {
+					window.repeat += 1;
+				}
+
+				KeyEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					repeat: window.repeat;
+					key: button;
+				};
+				int32 r = widget.onKeyEvent(widget, event);
+				if (button == Window.KEY_CODE_TAB && r == View.State.ignored) {
+					if (!Widget.focusNext(widget, window.isShift)) {
+						// focus run out of last focused item
+						if (!Widget.focusNext(widget, window.isShift)) {
+							// there is no focusable view found
+							return false;
+						}
+					}
+					return true;
+				}
+				return r != View.State.ignored;
+			}
+			if (action == Window.KEY_RELEASE) {
+				window.isShift = (y & Window.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Window.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Window.KEY_MASK_ALT) != 0;
+				KeyEvent event = {
+					release: true;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					repeat: window.repeat;
+					key: button;
+				};
+				window.key = 0;
+				window.repeat = 0;
+				return widget.onKeyEvent(widget, event) != View.State.ignored;
+			}
+
+			if (action == Window.EVENT_TIMEOUT) {
+				return false;
+			}
+
+			debug("event not processed", action);
+			return false;
+		}
+
+		static int32 draw(WindowData window&, Widget widget) {
+			if (!widget.enabled) {
+				// widget is disabled, do not show it
+				return Window.timeoutMax;
+			}
+			int64 timeout = Window.timeoutMax;
+			if (window.timeout > 0) {
+				timeout = window.timeout - System.millis();
+				if (timeout < 0) {
+					timeout = Window.timeoutMax;
+				}
+			}
+
+			Image offs = window.offscreen;
+			Rect rect& = window.rect;
+			if (widget.measure) {
+				rect.setSize(offs.width(), offs.height());
+				widget.onMeasure(widget, &rect);
+				widget.measure = false;
+			}
+
+			widget.onDraw(offs, rect, 0);
+			widget.redraw = false;
+			return timeout;
+		}
+
+		static int32 windowEvent(WindowData win&, int32 action, int32 button, int32 x, int32 y) {
+			if (action == Window.FINGER_PRESS) {
+				// translate to mouse event
+				action = Window.MOUSE_PRESS;
+				button = 1;
+			}
+			if (action == Window.FINGER_MOTION) {
+				// translate to mouse event
+				action = Window.MOUSE_MOTION;
+				button = 1;
+			}
+			if (action == Window.FINGER_RELEASE) {
+				// translate to mouse event
+				action = Window.MOUSE_RELEASE;
+				button = 1;
+			}
+
+			Widget widget = win.widget;
+			if (win.dispatchEvent(widget, action, button, x, y)) {
+				action |= EVENT_PROCESSED;
+			}
+			int32 timeout = win.onEvent(action, button, x, y);
+			win.draw(widget);
+			return timeout;
+		}
+
+		WindowData window = {
+			offscreen: offscreen;
+			onEvent: onEvent;
+			widget: widget;
+			rect: {};
+		};
+		return Window.show(offscreen, window, pointer(windowEvent));
+	}
+
+	/// Show the given `widget` in a window
+	static void show(Widget widget) {
+		static int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+			if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+				return Window.quit();
+			}
+			return Window.timeoutMax;
+		}
+		Rect rect = {};
+		widget.onCreate(widget, widget);
+		widget.onMeasure(widget, &rect);
+		Image offscreen = Image(rect.width(), rect.height(), 32);
+		show(offscreen, onEvent, widget);
+		offscreen.destroy();
+	}
+}
+
+/* original design
+struct View: object {...}	// garbage collected
+struct Text: View {...}
+struct Label: View {...}
+struct Image: View {...}
+struct Check: View {...}	// Switch?
+struct Input: View {...}	// single line, multi line
+struct Select: View {...}	// ComboBox
+struct Slider: View {...}
+struct Button: View {...}
+
+struct Panel ~= Layout
+struct List: View {...}
+struct Grid: View {...}
+struct Page: View {...}
+struct Window: View {...}
+
+Window window = {
+	width: 100;
+	height: 100;
+	items: {
+		Button {
+			label: "button1";
+			onClick: print("x");
+		};
+	};
+};
+window.show();
+*/

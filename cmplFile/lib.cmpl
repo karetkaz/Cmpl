@@ -1,0 +1,65 @@
+/// extension method to read a single byte from a file
+int read(File file) {
+	uint8 buff[1] = {...};
+	if (file.read(buff) <= 0) {
+		return -1;
+	}
+	return buff[0] & 0xff;
+}
+
+/// extension method to read a line from a file, or fill the buffer, no zero termination
+int readLineRaw(File file, char buff&[]) {
+	assert(buff.length > 0);
+
+	for (int pos = 0; pos < buff.length; pos += 1) {
+		int chr = file.read();
+		if (chr < 0) {
+			// end of file
+			if (pos == 0) {
+				// nothing to read
+				return chr;
+			}
+
+			return pos;
+		}
+
+		if (chr == '\n' || chr == '\r') {
+			// end of line
+			if (chr == '\r' && file.peek() == '\n') {
+				// windows line endings
+				chr = file.read();
+			}
+
+			return pos;
+		}
+
+		buff[pos] = chr;
+	}
+
+	return buff.length;
+}
+
+/// extension method to read a line from a file, or fill the buffer
+bool readLine(File file, char buff&[]) {
+	int len = readLineRaw(file, buff[... (buff.length - 1)]);
+	if (len < 0) {
+		return false;
+	}
+	if (len == buff.length - 1) {
+		debug("line too long");
+	}
+	// zero terminate
+	buff[len] = 0;
+	return true;
+}
+
+
+/// extension method to write a single byte into a file
+int write(File file, int value) {
+	uint8 buff[1] = {value};
+	return file.write(buff);
+}
+
+static if (struct(Closeable) == object) {
+inline "./lib/FileStream.cmpl";
+}

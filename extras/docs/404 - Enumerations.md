@@ -41,11 +41,11 @@ coord e0;                       // error: enum variable must be initialized.
 An anonymous enumeration does not create the enumeration type,
 and it exposes the enumerated values to the declaring scope.
 
-**[Example](../../lib/std/math/Complex.ci)**
+**Example**
 ```
 struct complex {
-	const float64 re;       // real
-	const float64 im = 0;   // imaginary
+	float64 re;       // real
+	float64 im = 0;   // imaginary
 
 	enum: complex {
 		zero: { re: 0 };

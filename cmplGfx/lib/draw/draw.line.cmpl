@@ -1,0 +1,124 @@
+/// Draw a line, including ending pixel
+void drawLineIncl(Image image, int32 x0, int32 y0, int32 x1, int32 y1, uint32 color) {
+	inline mix(Image image, int32 x0, int32 y0, int32 alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
+
+	if (x0 == x1 || y0 == y1) {
+		// horizontal or vertical line && avoid division by zero
+		return image.fillRect(x0, y0, x1, y1, 1, color);
+	}
+
+	int32 dx = x1 - x0;
+	int32 dy = y1 - y0;
+
+	if (Int32.abs(dx) > Int32.abs(dy)) {
+		if (x0 > x1) {
+			int32 x = x0;
+			x0 = x1;
+			x1 = x;
+			y0 = y1;
+		}
+		int32 y = y0 << 16;
+		dy = (dy << 16) / dx;
+		if (x1 > image.width()) {
+			x1 = image.width();
+		}
+		if (x0 < 0) {
+			y -= dy * x0;
+			x0 = 0;
+		}
+
+		static if (drawAntiAliased) {
+			for (int32 x = x0; x <= x1; x += 1) {
+				int32 alpha = (~y >> 8) & 255;
+				image.mix(x, y >> 16, alpha, color);
+				image.mix(x, (y >> 16) + 1, 255 - alpha, color);
+				y += dy;
+			}
+		} else {
+			y += 0x8000;
+			for (int32 x = x0; x <= x1; x += 1) {
+				image.set(x, y >> 16, color);
+				y += dy;
+			}
+		}
+	} else {
+		if (y0 > y1) {
+			int32 y = y0;
+			y0 = y1;
+			y1 = y;
+			x0 = x1;
+		}
+		int32 x = x0 << 16;
+		dx = (dx << 16) / dy;
+		if (y1 > image.height()) {
+			y1 = image.height();
+		}
+		if (y0 < 0) {
+			x -= dx * y0;
+			y0 = 0;
+		}
+
+		static if (drawAntiAliased) {
+			for (int32 y = y0; y <= y1; y += 1) {
+				int32 alpha = (~x >> 8) & 255;
+				image.mix(x >> 16, y, alpha, color);
+				image.mix((x >> 16) + 1, y, 255 - alpha, color);
+				x += dx;
+			}
+		} else {
+			x += 0x8000;
+			for (int32 y = y0; y <= y1; y += 1) {
+				image.set(x >> 16, y, color);
+				x += dx;
+			}
+		}
+	}
+}
+
+/// Draw a line between the given coordinates(excluding the rightmost bottom pixel)
+void drawLine(Image image, int32 x0, int32 y0, int32 x1, int32 y1, uint32 color) {
+	inline p(int32 a, int32 b) = a - int32(b < a);
+	return drawLineIncl(image, p(x0 , x1), p(y0, y1), p(x1, x0), p(y1, y0), color);
+}
+
+/// Draw a quadratic bezier curve
+void drawBezier(Image image, int32 x0, int32 y0, int32 x1, int32 y1, int32 x2, int32 y2, uint32 color) {
+	int32 px_0 = x0;
+	int32 py_0 = y0;
+	int32 px_1 = 2 * (x1 - x0);
+	int32 py_1 = 2 * (y1 - y0);
+	int32 px_2 = x2 - 2 * x1 + x0;
+	int32 py_2 = y2 - 2 * y1 + y0;
+
+	float64 dt = 1. / 128;
+	for (float64 t = dt; t < 1; t += dt) {
+		x1 = (px_2 * t + px_1) * t + px_0;
+		y1 = (py_2 * t + py_1) * t + py_0;
+		drawLineIncl(image, x0, y0, x1, y1, color);
+		x0 = x1;
+		y0 = y1;
+	}
+	drawLine(image, x0, y0, x2, y2, color);
+}
+
+/// Draw a cubic bezier curve
+void drawBezier(Image image, int32 x0, int32 y0, int32 x1, int32 y1, int32 x2, int32 y2, int32 x3, int32 y3, uint32 color) {
+	int32 px_0 = x0;
+	int32 py_0 = y0;
+	int32 px_1 = 3 * (x1 - x0);
+	int32 py_1 = 3 * (y1 - y0);
+	int32 px_2 = 3 * (x2 - x1) - px_1;
+	int32 py_2 = 3 * (y2 - y1) - py_1;
+	int32 px_3 = x3 - px_2 - px_1 - px_0;
+	int32 py_3 = y3 - py_2 - py_1 - py_0;
+
+	float64 dt = 1. / 128;
+	for (float64 t = dt; t < 1; t += dt) {
+		x1 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
+		y1 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
+		drawLineIncl(image, x0, y0, x1, y1, color);
+		x0 = x1;
+		y0 = y1;
+	}
+	drawLine(image, x0, y0, x3, y3, color);
+}

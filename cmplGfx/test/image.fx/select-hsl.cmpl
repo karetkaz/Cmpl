@@ -1,0 +1,253 @@
+/* Select colors based on hue and luminance.
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse left or right in the window to adjust selected slider value
+ */
+
+Image back = Image("../asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+void drawColorSlider(Slider this, Image offs, Rect rect);
+bool syncMinMax(Slider this, float64 value);
+
+Histogram histogram = {
+	enabled: false;
+	color: true;
+};
+
+Slider sldHueMin = {
+	onDrawSlider: drawColorSlider;
+	onUpdate: syncMinMax;
+	text: "Hue.min";
+	focusable: false;
+	maximum: 359;
+	stepSize: 1;
+};
+Slider sldHueMax = {
+	onDrawSlider: drawColorSlider;
+	onUpdate: syncMinMax;
+	text: "Hue.max";
+	focusable: false;
+	maximum: 359;
+	stepSize: 1;
+};
+
+Slider sldLumMin = {
+	onDrawSlider: drawColorSlider;
+	onUpdate: syncMinMax;
+	text: "Luminance.min";
+	focusable: false;
+	maximum: 255;
+	stepSize: 1;
+};
+Slider sldLumMax = {
+	onDrawSlider: drawColorSlider;
+	onUpdate: syncMinMax;
+	text: "Luminance.max";
+	focusable: false;
+	maximum: 255;
+	value: 255;
+	stepSize: 1;
+};
+
+Slider sldVal = {
+	text: "Amount";
+	focusable: false;
+	value: .1;
+};
+
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+// blending method executed for each pixel in the image
+vec4f blendHsl(vec4f base, vec4f blend) {
+	float32 val = sldVal.value;
+
+	float32 lum = lum(blend);
+	float32 min = sldLumMin.value / 255f;
+	float32 max = sldLumMax.value / 255f;
+	if (lum < min) {
+		lum = Float32.smoothstep(0f, val, min - lum);
+	}
+	else if (lum > max) {
+		lum = Float32.smoothstep(0f, val, lum - max);
+	}
+	else {
+		lum = 0;
+	}
+
+	min = Float32.min(Float32.min(blend.x, blend.y), blend.z);
+	max = Float32.max(Float32.max(blend.x, blend.y), blend.z);
+	if (max == min) {
+		// return blue mask with computed alpha component
+		return mix(vec4f(0, 0, 1), base, lum);
+	}
+
+	float32 hue = 1;
+	float32 delta = max - min;
+	if (max == blend.x) {
+		hue = ((blend.y - blend.z) / delta) / 6;
+	}
+	else if (max == blend.y) {
+		hue = (2 + (blend.z - blend.x) / delta) / 6;
+	}
+	else {// if (max == blend.z)
+		hue = (4 + (blend.x - blend.y)  / delta) / 6;
+	}
+	if (hue < 0) {
+		hue += 1;
+	}
+	min = sldHueMin.value / 359f;
+	max = sldHueMax.value / 359f;
+	if (hue < min) {
+		hue = Float32.smoothstep(0f, val, min - hue);
+	}
+	else if (hue > max) {
+		hue = Float32.smoothstep(0f, val, hue - max);
+	}
+	else {
+		hue = 0;
+	}
+
+	// return red mask with computed alpha component
+	float32 a = 1 - (1 - hue) * (1 - lum);
+	return mix(vec4f(1, 0, 0), base, a);
+}
+
+void drawColorSlider(Slider this, Image offs, Rect rect) {
+	Style style! = this.style;
+	int32 yOff = 1;
+	int32 yOn = yOff + style.padding / 3;
+	int32 y = rect.y1;
+	if (this == sldHueMin || this == sldHueMax) {
+		int32 x1 = rect.x1;
+		int32 x0 = rect.x0 + int64(this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
+		for (int32 x = rect.x0; x < x0; x += 1) {
+			float32 val = float32(x - rect.x0) / rect.width();
+			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
+			offs.fillRect(x, y - yOn, x + 1, y, color.v);
+		}
+		for (int32 x = x0; x < x1; x += 1) {
+			float32 val = float32(x - rect.x0) / rect.width();
+			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
+			offs.fillRect(x, y - yOff, x + 1, y, color.v);
+		}
+		return;
+	}
+	if (this == sldLumMin || this == sldLumMax) {
+		int32 x1 = rect.x1;
+		int32 x0 = rect.x0 + int64(this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
+		for (int32 x = rect.x0; x < x0; x += 1) {
+			float32 val = float32(x - rect.x0) / rect.width();
+			argb color = argb(vec4f(val, val, val));
+			offs.fillRect(x, y - yOn, x + 1, y, color.v);
+		}
+		for (int32 x = x0; x < x1; x += 1) {
+			float32 val = float32(x - rect.x0) / rect.width();
+			argb color = argb(vec4f(val, val, val));
+			offs.fillRect(x, y - yOff, x + 1, y, color.v);
+		}
+		return;
+	}
+}
+void updateSlider(Slider min, Slider max, float64 value) {
+	float64 gap = max.value - min.value;
+	if (gap < 0) {
+		return;
+	}
+	if (value < min.value) {
+		min.onUpdate(value);
+		max.onUpdate(value + gap);
+	}
+	if (value > max.value) {
+		max.onUpdate(value);
+		min.onUpdate(value - gap);
+	}
+}
+bool syncMinMax(Slider this, float64 value) {
+	bool result = Slider.onUpdate(this, value);
+	if (this == sldHueMin || this == sldHueMax) {
+		if (sldHueMin.value > sldHueMax.value) {
+			Slider.onUpdate(sldHueMin, this.value);
+			Slider.onUpdate(sldHueMax, this.value);
+			return true;
+		}
+	}
+	if (this == sldLumMin || this == sldLumMax) {
+		if (sldLumMin.value > sldLumMax.value) {
+			Slider.onUpdate(sldLumMin, this.value);
+			Slider.onUpdate(sldLumMax, this.value);
+			return true;
+		}
+	}
+	return result;
+}
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	Widget widget = debug.getWidget();
+	bool processed = action >= Window.EVENT_PROCESSED;
+	action &= ~Window.EVENT_PROCESSED;
+
+	if (action == Window.MOUSE_MOTION || action == Window.MOUSE_PRESS) {
+		/* todo: ignore events if they are made in the widget
+		if (FxWidget.onTouchEvent(widget, rect, event)) {
+			// event processed by some view
+			return Window.timeoutMax;
+		}*/
+
+		if (button == 0) {
+			// just moving the mouse over
+			return Window.timeoutMax;
+		}
+		if (widget.hasPressed()) {
+			// a control is active, do not get the background color
+			return Window.timeoutMax;
+		}
+		vec4f col = rgb2hsl(vec4f(argb(back.get(x, y))));
+		updateSlider(sldHueMin, sldHueMax, col.x * 359);
+		updateSlider(sldLumMin, sldLumMax, col.z * 255);
+		sldLumMin.invalidate(false);	// force redraw
+		return Window.timeoutMax;
+	}
+	if (!processed && action != Window.MOUSE_RELEASE) {
+		return Window.timeoutMax;
+	}
+
+	if (widget.hasPressed()) {
+		return Window.timeoutMax;
+	}
+
+	debug("event", action, button, x, y);
+	debug.startTimer();
+
+	offs.copy(0, 0, back, null);
+	offs.copy(0, 0, back, null, blendHsl);
+	histogram.update(offs);
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent, FxWidget(
+	histogram,
+
+	null,
+	sldHueMin, sldHueMax,
+	sldLumMin, sldLumMax,
+	sldVal,
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

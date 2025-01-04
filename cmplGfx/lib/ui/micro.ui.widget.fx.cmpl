@@ -1,0 +1,162 @@
+/// Widget used to display controls in image processing demos
+struct FxWidget: Widget {
+	///@public
+	bool showOriginal = false;
+	///@public
+	int32 align = Style.fill;
+	///@public
+	int32 margin = 0;
+	///@public
+	int32 radius = 0;
+
+	// forward the drag event to the focused view
+	bool onTouchEvent(FxWidget this, Rect rect!, TouchEvent event!) {
+		if (Widget.onTouchEvent(this, rect, event)) {
+			return true;
+		}
+
+		if (!(event.button && (event.dx || event.dy))) {
+			// event is not a drag event
+			return false;
+		}
+
+		if (this.pressedIndex != -1) {
+			// there is a pressed view, and is different than the focused one
+			return false;
+		}
+
+		View view = Widget.getFocused(this);
+		if (view == null) {
+			// there is no focused view
+			return false;
+		}
+		Layout parent = view.parent.as(Layout);
+		Rect r& = parent.items[parent.focusedIndex].rect;
+		// forward the event to the view
+		return view.onTouchEvent(view, r, event);
+	}
+
+	State onKeyEvent(FxWidget this, KeyEvent event!) {
+		if (event.key == '[' || event.key == ']') {
+			bool changed = this.showOriginal != event.release;
+			this.showOriginal = !event.release && (event.repeat != 0 || !this.enabled);
+			// show hide on short press and release
+			if (event.repeat != 0 && event.release == this.enabled) {
+				// hide on long press, show on long release
+				return changed && event.repeat == 1;
+			}
+			if (event.repeat == 0 && !event.release) {
+				// show/hide when button is on released, not when pressed
+				return changed;
+			}
+
+			this.clearState(State.hovered);
+			// hide, show controls
+			if (event.key == '[') {
+				if (this.align == Style.topLeft) {
+					this.enabled = !this.enabled;
+					this.invalidate();
+					return true;
+				}
+				this.align = Style.topLeft;
+			}
+			if (event.key == ']') {
+				if (this.align == Style.topRight) {
+					this.enabled = !this.enabled;
+					this.invalidate();
+					return true;
+				}
+				this.align = Style.topRight;
+			}
+
+			this.enabled = true;
+			this.invalidate();
+			return true;
+		}
+
+		if (event.key == '\\') {
+			this.showOriginal = !event.release;
+			return event.repeat == 0 || event.release;
+		}
+
+		if (event.release) {
+			return Widget.onKeyEvent(this, event);
+		}
+
+		if (event.key == Window.KEY_CODE_BACK && event.isShift) {
+			return this.onReset(this);
+		}
+
+		return Widget.onKeyEvent(this, event);
+	}
+
+	bool onMeasure(FxWidget this, Rect measured&) {
+		int32 margin = this.margin;
+		int32 align = this.align;
+		Rect rect = {
+			x0: margin;
+			y0: margin;
+			x1: measured.width() - margin;
+			y1: measured.height() - margin;
+		};
+
+		measured.x1 = measured.x0 = 0;
+		measured.y1 = measured.y0 = 0;
+		Layout.onMeasure(this, &measured);
+		this.onLayout(this, &measured);
+		Style.align(rect, &measured, align);
+		return true;
+	}
+
+	void onDraw(FxWidget this, Image offs, Rect rect) {
+		offs = offs.slice(rect);
+		Style style& = this.style;
+		if (style.backgroundColor != -1) {
+			Rect r = { x0: 0, y0: 0, x1: offs.width(), y1: offs.height() };
+			offs.fillRRect(r, this.radius, style.backgroundColor);
+		}
+		Widget.onDraw(this, offs, rect);
+		offs.destroy();
+	}
+
+	/// returns true if the widget needs to show the original image
+	static bool showOriginal(Widget anyWidget) {
+		if (FxWidget widget = anyWidget.as(FxWidget)) {
+			return widget.showOriginal;
+		}
+		return false;
+	}
+}
+
+/// Create a widget with the given `width`, `height` and `style`
+Widget Widget(int32 width, int32 height, Style style!) {
+	Widget widget = {
+		width: width;
+		height: height;
+		style: style;
+	};
+	return widget.focus(widget);	// focus first visible view
+}
+
+/// Create a widget with the given `width`, `height` and a default style
+Widget Widget(int32 width, int32 height) {
+	return Widget(width, height, Widget.defaultStyle);
+}
+/// Create a widget with the given `views` used in image processing demos
+FxWidget FxWidget(View views?...) {
+	FxWidget widget = {
+		radius: 5;
+		margin: 10;
+		align: Style.topRight;
+		style: Widget.defaultStyle;
+
+		paddingTop: 3;
+		paddingLeft: 3;
+		paddingRight: 3;
+		paddingBottom: 3;
+	};
+
+	return widget
+		.focus(widget)	// focus first visible view
+		.addItems(...views);
+}

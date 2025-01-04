@@ -1,0 +1,184 @@
+inline scalar = float64;  // fixme: declare inside Polynomial
+
+///@public
+struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
+	scalar coefficients[*];
+	int capacity;
+
+	enum: scalar {
+		c_zero: 0;
+		c_unit: 1;
+	}
+
+	// Formatted printing of the polynomial to the text writer
+	void write(Polynomial this, TextWriter writer) {
+		bool first = true;
+		for (int i = this.capacity - 1; i >= 0; i -= 1) {
+			if (this.coefficients[i] == c_zero && !(first && i == 0)) {
+				continue;
+			}
+
+			scalar value = this.coefficients[i];
+			if (value < c_zero) {
+				value = -value;
+				if (!first) {
+					// binary operator
+					writer.write(" - ");
+				}
+				else {
+					// unary operator
+					writer.write("-");
+				}
+			}
+			else if (!first) {
+				// binary operator
+				writer.write(" + ");
+			}
+
+			if (value != c_unit || i == 0) {
+				writer.write(value, writer.format);
+			}
+
+			if (i > 0) {
+				writer.write("x");
+				if (i > 1) {
+					writer.write("^");
+					writer.write(i, writer.format);
+				}
+			}
+			first = false;
+		}
+	}
+
+	/// Dispose the polynomial, free up used memory for coefficients
+	void destroy(Polynomial this) {
+		pointer.alloc(this.coefficients, 0);
+	}
+
+	// Construct a new instance
+	static Polynomial create(int degree, scalar values[]) {
+		int capacity = Int.max(0, degree) + 1;
+		assert(capacity >= values.length);
+		scalar coefficients[*] = pointer.alloc(null, capacity * sizeof(scalar));
+		Polynomial result& = {
+			// fixme: coefficients: pointer.alloc(null, capacity * sizeof(scalar));
+			coefficients: coefficients;
+			capacity: capacity;
+		};
+
+		for (int i = 0; i < values.length; i += 1) {
+			result.coefficients[i] = values[i];
+		}
+		for (int i = values.length; i < capacity; i += 1) {
+			result.coefficients[i] = c_zero;
+		}
+		return result;
+	}
+
+	/// Compute the degree of the polynomial
+	static int degree(Polynomial this&) {
+		for (int i = this.capacity - 1; i > 0; i -= 1) {
+			if (this.coefficients[i] != c_zero) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	/// Get the nth coefficient of the polynomial
+	static scalar get(Polynomial this!, int index) {
+		assert(index >= 0, "negative index", index);
+		if (index >= this.capacity) {
+			return c_zero;
+		}
+		return this.coefficients[index];
+	}
+
+	/// Set the nth coefficient of the polynomial
+	static Polynomial set(Polynomial this&, int index, scalar value) {
+		assert(index >= 0, "negative index", index);
+		assert(index < this.capacity, "invalid index");
+		this.coefficients[index] = value;
+		return this;
+	}
+
+	/// Negate the polynomial
+	static Polynomial neg(Polynomial a!) {
+		Polynomial result& = create(degree(a), null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = -a.get(i);
+		}
+		return result;
+	}
+
+	/// Add two polynomials
+	static Polynomial add(Polynomial a!, Polynomial b!) {
+		Polynomial result& = create(Int.max(degree(a), degree(b)), null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = a.get(i) + b.get(i);
+		}
+		return result;
+	}
+
+	/// Subtract two polynomials
+	static Polynomial sub(Polynomial a!, Polynomial b!) {
+		Polynomial result& = create(Int.max(degree(a), degree(b)), null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = a.get(i) - b.get(i);
+		}
+		return result;
+	}
+
+	/// Multiply two polynomials
+	static Polynomial mul(Polynomial a!, Polynomial b!) {
+		int degreeA = degree(a);
+		int degreeB = degree(b);
+		Polynomial result& = create(degreeA + degreeB, null);
+		for (int i = 0; i <= degreeA; i += 1) {
+			for (int j = 0; j <= degreeB; j += 1) {
+				result.coefficients[i + j] += a.get(i) * b.get(j);
+			}
+		}
+		return result;
+	}
+
+	/// Evaluate the polynomial using Horner's method
+	static scalar evaluate(Polynomial this!, scalar value) {
+		scalar result = c_zero;
+		for (int i = degree(this); i >= 0; i -= 1) {
+			result = result * value + this.coefficients[i];
+		}
+		return result;
+	}
+
+	/// Compute the derivative of the polynomial
+	static Polynomial derivative(Polynomial this!) {
+		Polynomial result& = create(this.degree() - 1, null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = (i + 1) * this.coefficients[i + 1];
+		}
+		return result;
+	}
+
+	/// Compute the integral of the polynomial
+	static Polynomial integral(Polynomial this!, scalar c) {
+		Polynomial result& = create(this.degree() + 1, null);
+		result.coefficients[0] = c;
+		for (int i = 1; i < result.capacity; i += 1) {
+			result.coefficients[i] = this.coefficients[i - 1] / i;
+		}
+		return result;
+	}
+}
+
+/// Create a new polynomial by copying the given one.
+inline Polynomial(Polynomial copy!) = Polynomial.create(copy.degree(), copy.coefficients);
+
+/// Create a new polynomial with the given values, coefficients are reversed(lowest index === highest degree)
+Polynomial Polynomial(scalar values...) {
+	Polynomial result& = Polynomial.create(values.length - 1, null);
+	for (int i = 0; i < values.length; i += 1) {
+		result.coefficients[i] = values[values.length - i - 1];
+	}
+	return result;
+}

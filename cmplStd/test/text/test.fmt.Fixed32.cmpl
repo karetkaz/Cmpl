@@ -1,0 +1,50 @@
+#!/usr/bin/env -S cmpl -X+steps -run
+
+// test floating point number formatting
+NumberFormat format = {
+//	digitSymbols: NumberFormat.digits[...2];
+//	positiveSymbol: '+'; // force sign
+//	fractionSymbol: ',';
+//	groupingSymbol: ' ';
+//	groupingDigits: 8;
+
+//	width: 0;
+	precision: 32;
+	trailingZeros: true;
+//	trailingSeparator: true;
+};
+
+char expect[512] = {...};
+char buff[expect.length] = {...};
+
+//* testing the number formatter
+for (int i = 0; i < 1024; i += 1) {
+	Fixed32 value = Fixed32(Float64.log2(i));
+	format.format(expect, 0, float64(value));
+	format.format(buff, 0, value);
+	if (!equals(expect, buff)) {
+		NotEquals.debug("not equals", NotEquals(expect, buff, null));
+	}
+}//*/
+
+//format.format(buff, 0, Fixed32(100000));
+format.format(buff, 0, Fixed32(1024.1415));
+debug(buff);
+
+Fixed32(0).div(Fixed32(0)).format(buff, "nan: %d = 0x%x");
+debug(buff);
+
+Fixed32(1).div(Fixed32(0)).format(buff, "inf: %d = 0x%x");
+debug(buff);
+Fixed32(-1).div(Fixed32(0)).format(buff, "inf: %d = 0x%x");
+debug(buff);
+
+Fixed32.bits(Fixed32.nan - 1).format(buff, "val: %d = 0x%x");
+debug(buff);
+Fixed32.bits(Fixed32.nan + 1).format(buff, "val: %d = 0x%x");
+debug(buff);
+
+Fixed32.bits(Fixed32.nan - 2).format(buff, "val: %d = 0x%x");
+debug(buff);
+Fixed32.bits(Fixed32.nan + 2).format(buff, "val: %d = 0x%x");
+debug(buff);

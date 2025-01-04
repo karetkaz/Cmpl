@@ -394,7 +394,7 @@ let params = JsArgs('#', function (params, changes) {
 	}
 
 	if (changes.content !== undefined) {
-		setContent(content(params.content), getFile(), getLine(1));
+		setContent(content(params.content), getFile(), getLine());
 	}
 });
 
@@ -550,26 +550,13 @@ function saveInput(saveAs) {
 		}
 	}
 	let content = editor.getValue();
+	if (params.content !== undefined) {
+		params.update({ content: btoa(content), path});
+	}
 	openProjectFile({ content, path });
 	setStyle(document.body, '-edited');
 	editor.markClean();
-	if (params.content !== undefined) {
-		let oldValue = params.content;
-		let encB64 = true;
-		try {
-			oldValue = atob(oldValue);
-		} catch (err) {
-			encB64 = false;
-			console.debug(err);
-		}
-		if (oldValue !== content) {
-			params.update({ content: encB64 ? btoa(content) : content });
-		} else {
-			params.update({ path });
-		}
-	} else {
-		params.update({ path });
-	}
+
 	return path;
 }
 
@@ -616,7 +603,9 @@ function clearOutput() {
 	let item = selOutput.options[selOutput.selectedIndex];
 	if (item === optionOutput) {
 		item.onchange = function () {
-			terminal.clear();
+			if (!terminal.clear()) {
+				setStyle(document.body, 'bottom-bar', '?-output', '~output');
+			}
 		}
 	} else {
 		selOutput.removeChild(item);
@@ -660,7 +649,7 @@ function editOutput() {
 		optionOutput.onchange();
 	}
 	params.update({ content: null, path: null });
-	setContent(terminal.text());
+	setContent(terminal.text(), null, 1);
 	if (props.mobile) {
 		setStyle(document.body, '-output');
 	}
@@ -712,6 +701,9 @@ function execute(cmd, args) {
 				if (hasStyle('printCompilerSteps', 'checked')) {
 					experimentalFlags += '+steps';
 				}
+				if (hasStyle('allowPrivateAccess', 'checked')) {
+					experimentalFlags += '+public';
+				}
 			}
 			// do not use standard input
 			execArgs.push('-X' + experimentalFlags);
@@ -758,6 +750,11 @@ function execute(cmd, args) {
 			args.file = saveInput();
 			if (args.file == null) {
 				return;
+			}
+			let paths = args.file.match(/^(.*[/])?(.*)(\..*)$/);
+			if (paths) {
+				args.file = paths[2] + paths[3];
+				args.path = paths[1];
 			}
 
 			execArgs.push(args.file);

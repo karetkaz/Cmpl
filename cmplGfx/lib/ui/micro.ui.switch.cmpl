@@ -1,0 +1,153 @@
+///@public
+struct Switch: View {
+	static char onOff[][] = {
+		"off",
+		"on"
+	};
+
+	///@public
+	char text[];
+	///@public
+	char states[][] = onOff;
+
+	///@public
+	int selected = 0;
+	int resetValue = 0;
+
+	/// clicking on a non focused view will not change the value, it will just focus it.
+	bool clickToFocus = false;
+
+	/// update the selected value of this switch
+	bool onUpdate(Switch this, int selected) {
+		int maxValue = this.states.length;
+		if (maxValue == 0) {
+			// graphical switch
+			maxValue = 2;
+		}
+		if (selected >= maxValue) {
+			selected = maxValue - 1;
+		}
+		else if (selected < 0) {
+			selected = 0;
+		}
+
+		if (this.selected == selected) {
+			return this.isDirty();
+		}
+
+		this.selected = selected;
+		return true;
+	}
+
+	bool onReset(Switch this) {
+		return this.onUpdate(this, this.resetValue);
+	}
+
+	bool onClick(Switch this) {
+		if (this.focusable && this.clickToFocus) {
+			if (!this.isFocused()) {
+				return true;
+			}
+		}
+		int maxValue = this.states.length;
+		int value = this.selected + 1;
+		if (maxValue == 0) {
+			// graphical switch
+			maxValue = 2;
+		}
+		if (value >= maxValue) {
+			value = 0;
+		}
+		return this.onUpdate(this, value);
+	}
+
+	void onCreate(Switch this&, View parent) {
+		View.onCreate(this, parent);
+		// clamp to initial value and force update with a reset
+		Switch.onUpdate(this, this.selected);
+		this.resetValue = this.selected;
+		this.onReset(this);
+	}
+
+	State onKeyEvent(Switch this, KeyEvent event!) {
+		if (!this.enabled || event.release) {
+			return View.onKeyEvent(this, event);
+		}
+		if (event.key == '+' || event.key == '=') {
+			int value = this.selected + 1;
+			return this.onUpdate(this, value);
+		}
+		if (event.key == '-' || event.key == '_') {
+			int value = this.selected - 1;
+			return this.onUpdate(this, value);
+		}
+		return View.onKeyEvent(this, event);
+	}
+
+	bool onTouchEvent(Switch this, Rect rect!, TouchEvent event!) {
+		if (!this.enabled || !event.release) {
+			return View.onTouchEvent(this, rect, event);
+		}
+		if (event.isShift && event.clicks >= 0) {
+			int value = this.selected - 1;
+			return this.onUpdate(this, value);
+		}
+		return View.onTouchEvent(this, rect, event);
+	}
+
+	bool onMeasure(Switch this, Rect rect&) {
+		int32 maxWidth = 0;
+		Style style& = this.style;
+		for (int i = 0; i < this.states.length; i += 1) {
+			Rect measured = {};
+			style.measure(&measured, this.states[i]);
+			if (maxWidth < measured.width()) {
+				maxWidth = measured.width();
+			}
+		}
+		style.measure(&rect, this.text);
+		if (this.states.length == 0) {
+			rect.width(rect.width() + rect.height() * 3 / 2);
+		} else {
+			rect.width(rect.width() + maxWidth);
+		}
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(Switch this, Image offs, Rect rect) {
+		char value[] = null;
+		Style style& = this.style;
+		if (this.states.length == 0) {
+			Rect onOffRect = {
+				x0: rect.x0;
+				y0: rect.y0;
+				x1: rect.x0 + rect.height() * 3 / 2;
+				y1: rect.y1;
+			};
+			Style.align(rect, &onOffRect, Style.right);
+			rect.x1 = onOffRect.x0;
+
+			onOffRect.padded(-style.padding);
+			uint32 color = style.focusedColor;
+			if (this.selected != 0) {
+				color = style.valueColor;
+			}
+			else if (this.isFocused()) {
+				color = style.hoveredColor;
+			}
+			offs.fillRRect(onOffRect, onOffRect.height() / 2, color);
+
+			if (this.selected != 0) {
+				onOffRect.x0 = onOffRect.x1 - onOffRect.height();
+			} else {
+				onOffRect.x1 = onOffRect.x0 + onOffRect.height();
+			}
+
+			onOffRect.padded(-style.padding / 3);
+			offs.fillOval(onOffRect, style.textColor);
+		} else {
+			value = this.states[this.selected];
+		}
+		View.onDraw(this, offs, rect, this.text, value);
+	}
+}

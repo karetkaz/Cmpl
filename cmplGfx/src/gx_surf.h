@@ -239,8 +239,8 @@ void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t 
 
 void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t color);
 
-void clipText(GxRect rect, GxImage font, const char *text);
-void drawText(GxImage image, GxRect rect, GxImage font, const char *text, uint32_t color);
+void clipText(GxRect rect, GxImage font, const char *text, size_t length);
+void drawText(GxImage image, GxRect rect, GxImage font, const char *text, size_t length, uint32_t color);
 
 int fillImage(GxImage image, const GxRect roi, void *color, void *extra, bltProc blt);
 int copyImage(GxImage image, int x, int y, GxImage src, const GxRect roi, void *extra, bltProc blt);

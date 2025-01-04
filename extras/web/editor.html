@@ -49,12 +49,12 @@
 	<div id="output-toolbar" class="toolbar">
 		<span class="no-output left text" onclick="setStyle(body, 'output');">Output</span>
 		<span class="right text" id="editPosition" onclick="completeAction(':');"></span>
+		<span class="output left icon bold" title="Clear or close" onclick="clearOutput()">❌</span>
 		<select class="output left" id="selOutput" onchange="selectOutputTab(this);" onclick="event.stopPropagation()">
 			<option id="optionOutput">Output</option>
 			<option id="optionPinOutput" onchange="pinOutput();">Pin Output</option>
 			<option onchange="editOutput();">Edit Output</option>
 		</select>
-		<span class="output left icon bold" title="Clear or close" onclick="clearOutput()">❌</span>
 		<span class="output left icon bold" title="Scroll to top" onclick="terminal.scroll(false);">⏫</span>
 		<span class="output left icon bold" title="Scroll to end" onclick="terminal.scroll(true);">⏬</span>
 		<p id="output-pan-sidebar"></p>
@@ -75,10 +75,11 @@
 		</li>
 		<ul>
 			<div class="collapsed submenu">
-				<li onclick="setStyle(parentElement, '~collapsed')">Dependencies</li>
+				<li onclick="setStyle(parentElement, '~collapsed')">Options & Dependencies</li>
 				<ul>
 					<li id="preferNativeCalls" class="checked" onclick="setStyle(this, '~checked');">Prefer native functions</li>
 					<li id="printCompilerSteps" onclick="setStyle(this, '~checked');">Print compiler steps</li>
+					<li id="allowPrivateAccess" onclick="setStyle(this, '~checked');">Allow private access</li>
 					<hr>
 					<li id="libFile" onclick="onLibClick(this.id);">libFile</li>
 					<li id="libGfx" onclick="onLibClick(this.id);">libGfx</li>
@@ -214,6 +215,7 @@
 		<ul>
 			<li onclick="completeAction('!zoom:');">Zoom</li>
 			<li onclick="completeAction('!theme:');">Theme</li>
+			<li onclick="customCommands.fullScreen();">Full screen</li>
 			<li id="wrap-output" onclick="setStyle(body, '~wrap-output');">Wrap output</li>
 			<div class="collapsed submenu">
 				<li onclick="setStyle(parentElement, '~collapsed')">Fold</li>
@@ -318,12 +320,17 @@ function showCanvas(show) {
 	editor.setOption("readOnly", 'nocursor');
 	setStyle(document.body, 'canvas');
 
-	if (Browser.mainLoop.oldPause === undefined) {
-		Browser.mainLoop.oldPause = Browser.mainLoop.pause;
-		Browser.mainLoop.pause = function() {
+	if (typeof MainLoop === 'undefined' && Browser.mainLoop !== undefined) {
+        // for backward compatibility loading older compiler versions
+		MainLoop = Browser.mainLoop;
+	}
+
+	if (MainLoop.oldPause === undefined) {
+		MainLoop.oldPause = MainLoop.pause;
+		MainLoop.pause = function() {
 			editor.setOption("readOnly", false);
 			setStyle(document.body, '-canvas');
-			Browser.mainLoop.oldPause();
+			MainLoop.oldPause();
 			canvas.width = 0;
 		}
 	}
@@ -370,9 +377,18 @@ function centerCanvas(zoom) {
 	canvasMove.style.height = Math.max(canvas.height, canvas.parentElement.clientHeight);
 }
 
+function importScripts(...urls) {
+	for (let url of urls) {
+		let scriptElement = document.createElement('script');
+		scriptElement.src = url;
+		document.getElementsByTagName('head')[0].appendChild(scriptElement);
+	}
+}
+
 // libGfx for canvas based execution
 if (params.libGfx === undefined) {
 	var worker = new Worker('worker.js');
+	worker.postMessage({version: '/Cmpl/' + (params.version || 'build') + '/wasm/'});
 	worker.onmessage = function (event) {
 		//console.log('worker: ', event.data);
 		process(event.data);
@@ -388,7 +404,9 @@ if (params.libGfx === undefined) {
 			dump = extra.dump;
 		}
 		worker.postMessage({
-			dump, execute: args || []
+			execute: args || [],
+			path: extra.path,
+			dump
 		});
 	}
 }
@@ -396,26 +414,19 @@ else {
 	var Module = {
 		process: process,
 		initialized: false,
-		locatePath: params.version,
+		locatePath: '/Cmpl/' + (params.version || 'build') + '/wasm/',
 		canvas: document.getElementById('canvas'),
 		dynamicLibraries: [
 			'libFile.wasm',
 			'libGfx.wasm'
 		],
-		importScripts: function (...urls) {
-			for (let url of urls) {
-				// fixme: url = escape(url);
-				document.write('<script type="text/javascript" src="' + url + '"><\/script>');
-			}
-		},
+		preRun: [() => {ENV.CMPL_HOME = "/"}],
+		importScripts: importScripts,
 		print: function (message) {
 			// console.log(message);
 			process({ print: message });
 		},
-		printLog: function (message) {
-			console.debug(message);
-			// terminal.append(message);
-		},
+		printLog: console.debug,
 		printErr: function (message) {
 			console.error(message);
 			process({ error: message });
@@ -460,7 +471,9 @@ else {
 
 		setTimeout(function() {
 			let result = {};
+			let currentPath = FS.currentPath;
 			try {
+				FS.chdir(data.path || Module.workspace);
 				result.exitCode = callMain(args || []);
 				if (result.exitCode === 0 && data.dump != null) {
 					if (data.dump.constructor === String) {
@@ -475,6 +488,7 @@ else {
 				result.exitCode = -1;
 				console.error(error);
 			} finally {
+				FS.chdir(currentPath);
 				process(result);
 				if (canvas.width === 0) {
 					setStyle(document.body, '-canvas');
@@ -482,11 +496,10 @@ else {
 			}
 		});
 	}
-
-	document.write('<script type="text/javascript" src="module.js"><\/script>');
+	importScripts('module.js');
 }
 if (params.workspace == null && params.project == null && params.content == null && params.path == null) {
-	document.write('<script type="text/javascript" src="tests.js"><\/script>');
+	importScripts('/Cmpl/' + (params.version || 'build') + '/tests.js');
 }
 </script>
 </body>

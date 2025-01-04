@@ -1,52 +1,40 @@
-BINDIR?=build
+BINDIR?=.build
 CC_SRC=src
 GX_SRC=cmplGfx/src
 
 CFLAGS=-Wall -Wextra -g0 -O3 -std=gnu99
 EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=0 -s INVOKE_RUN=0 -s ASSERTIONS=0
-EMFLAGS+=--no-heap-copy --memory-init-file 0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=64MB -s STACK_SIZE=8MB
+EMFLAGS+=--no-heap-copy -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=64MB -s STACK_SIZE=8MB
 EMFLAGS+=-D NO_LIBJPEG -D NO_LIBPNG
 
-EM_EMBED='--preload-file' 'cmplStd/lib.ci' '--preload-file' 'cmplGfx/lib.ci' '--preload-file' 'cmplFile/lib.ci'
-EM_EMBED+=$(shell find cmplStd/lib -type f -name '*.ci' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
-EM_EMBED+=$(shell find cmplGfx/lib -type f -name '*.ci' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
-EM_EMBED+=$(shell find cmplFile/lib -type f -name '*.ci' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
-EM_SIDE_MODULE=-s SIDE_MODULE=2 -s "EXPORTED_FUNCTIONS=['_cmplUnit', '_cmplInit', 'cmplClose']"
+EM_EMBED='--preload-file' 'cmplStd/lib.cmpl' '--preload-file' 'cmplGfx/lib.cmpl' '--preload-file' 'cmplFile/lib.cmpl'
+EM_EMBED+=$(shell find cmplStd/lib -type f -name '*.cmpl' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
+EM_EMBED+=$(shell find cmplGfx/lib -type f -name '*.cmpl' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
+EM_EMBED+=$(shell find cmplFile/lib -type f -name '*.cmpl' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
+EM_SIDE_MODULE=-s SIDE_MODULE=2 -s "EXPORTED_FUNCTIONS=['_cmplInit', '_cmplUnit']"
 EM_MAIN_MODULE=-s MAIN_MODULE=1 -lidbfs.js
 
 CLIBS=-lm
 GXLIBS=-lm
-CFLAGS+=-I libs/stb
-EMFLAGS+=-I libs/stb
-
-ifneq "$(OS)" "Windows_NT"
-	GXLIBS+=-lpng -ljpeg
-	CFLAGS+=-fPIC
-	CLIBS+=-ldl
-	UNAME_S := $(shell uname -s)
-	ifeq ($(UNAME_S),Linux)
-		MKDIRF=--parents
-	endif
-	ifeq ($(UNAME_S),Darwin)
-		MKDIRF=-p
-	endif
-else
-	CFLAGS+=-D NO_LIBPNG -D NO_LIBJPEG
-endif
+CFLAGS+=-I extras/libs/stb -I include
+EMFLAGS+=-I extras/libs/stb -I include
 
 SRC_CC=\
 	$(CC_SRC)/*.h\
-	$(CC_SRC)/*.inl\
-	$(CC_SRC)/cgen.c\
 	$(CC_SRC)/code.c\
-	$(CC_SRC)/core.c\
-	$(CC_SRC)/lexer.c\
-	$(CC_SRC)/parser.c\
-	$(CC_SRC)/platform.c\
-	$(CC_SRC)/printer.c\
+	$(CC_SRC)/codeGen.c\
+	$(CC_SRC)/codeEmit.c\
+	$(CC_SRC)/codeExec.c\
+	$(CC_SRC)/codeFold.c\
 	$(CC_SRC)/tree.c\
 	$(CC_SRC)/type.c\
-	$(CC_SRC)/utils.c\
+	$(CC_SRC)/typeCheck.c\
+	$(CC_SRC)/lexer.c\
+	$(CC_SRC)/parser.c\
+	$(CC_SRC)/compiler.c\
+	$(CC_SRC)/debuger.c\
+	$(CC_SRC)/printer.c\
+	$(CC_SRC)/util.c\
 	cmplStd/src/lstd.c
 
 SRC_GX=\
@@ -62,8 +50,37 @@ SRC_GX=\
 
 SRC_GX_X11=$(SRC_GX) $(GX_SRC)/os_linux/gx_gui.x11.c $(CC_SRC)/os_linux/time.c
 SRC_GX_W32=$(SRC_GX) $(GX_SRC)/os_win32/gx_gui.w32.c $(CC_SRC)/os_win32/time.c
-SRC_GX_SDL=$(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
-SRC_CC_EXE=$(SRC_CC) $(CC_SRC)/main.c
+SRC_GX_SDL=$(SRC_GX) $(GX_SRC)/os_etc/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
+
+ifeq "$(OS)" "Windows_NT"
+	SRC_CC_EXE=$(SRC_CC)\
+		$(CC_SRC)/os_win32/time.c\
+		$(CC_SRC)/os_win32/path.c\
+		$(CC_SRC)/os_win32/plugin.c\
+		$(CC_SRC)/main.c
+
+	CFLAGS+=-D NO_LIBJPEG
+	CFLAGS+=-D NO_LIBPNG
+else
+	SRC_CC_EXE=$(SRC_CC)\
+		$(CC_SRC)/os_linux/time.c\
+		$(CC_SRC)/os_linux/path.c\
+		$(CC_SRC)/os_linux/plugin.c\
+		$(CC_SRC)/main.c
+
+	GXLIBS+=-lpng -ljpeg
+	CFLAGS+=-fPIC
+	CLIBS+=-ldl
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		MKDIRF=--parents
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		CFLAGS+=-I /opt/homebrew/include
+		GXLIBS+=-L /opt/homebrew/lib
+		MKDIRF=-p
+	endif
+endif
 
 cmpl: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_CC_EXE:%.c=%.o)))
 	gcc -o $(BINDIR)/cmpl $^ $(CLIBS)
@@ -81,13 +98,10 @@ libGfxSdl.so: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_SDL:%.c=%.o)))
 libFile.so: cmplFile/src/file.c
 	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libFile.so $^
 
-libOpenGL.so: cmplGL/src/openGL.c
-	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libOpenGL.so $^ -lGL -lGLU -lglut
-
 
 # Macos platform
 libGfx11.dylib: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_X11:%.c=%.o)))
-	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.dylib $^ $(GXLIBS)g -lX11
+	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.dylib $^ $(GXLIBS) -lX11
 
 libGfx.dylib: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_SDL:%.c=%.o)))
 	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.dylib $^ $(GXLIBS) -lSDL2
@@ -103,9 +117,6 @@ libGfx.dll: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_W32:%.c=%.o)))
 libFile.dll: cmplFile/src/file.c
 	gcc -shared $(CFLAGS) -I src -o $(BINDIR)/libFile.dll $^
 
-libOpenGL.dll: cmplGL/src/openGL.c
-	gcc -shared $(CFLAGS) -I src -o $(BINDIR)/libOpenGL.dll $^ -lopengl32 -lglu32 -lglut32
-
 
 # Webassembly platform
 cmpl.js: $(SRC_CC_EXE)
@@ -116,7 +127,7 @@ libFile.wasm: cmplFile/src/file.c
 	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc $(EMFLAGS) -o $(BINDIR)/libFile.wasm -I src $(EM_SIDE_MODULE) $(filter %.c, $^)
 
-libGfx.wasm: $(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
+libGfx.wasm: $(SRC_GX) $(GX_SRC)/os_etc/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
 	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc $(EMFLAGS) -o $(BINDIR)/libGfx.wasm -I src $(EM_SIDE_MODULE) $(filter %.c, $^)
 
@@ -126,6 +137,14 @@ cmpl.dbg.js: $(SRC_CC_EXE)
 
 
 $(BINDIR)/$(CC_SRC)/%.o: $(CC_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
+	@mkdir $(MKDIRF) "$(@D)" || true
+	gcc $(CFLAGS) -o "$@" -c "$<"
+
+$(BINDIR)/$(CC_SRC)/runtime/%.o: $(CC_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
+	@mkdir $(MKDIRF) "$(@D)" || true
+	gcc $(CFLAGS) -o "$@" -c "$<"
+
+$(BINDIR)/$(CC_SRC)/compiler/%.o: $(CC_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
 	@mkdir $(MKDIRF) "$(@D)" || true
 	gcc $(CFLAGS) -o "$@" -c "$<"
 

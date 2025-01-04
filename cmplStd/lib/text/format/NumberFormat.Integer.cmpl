@@ -1,0 +1,63 @@
+// formated print an integer value to the given `output` buffer, sign symbol is ignored
+static int formatNoSign(NumberFormat format!, char output&[], int pos, uint64 value) {
+	char digitSymbols![] = format.digitSymbols;
+	assert(digitSymbols.length > 1, "radix is too small");
+
+	int width = Int32.abs(format.width);
+	int integerPos = pos;
+	int groupPosition = format.firstGrouping(pos);
+	for (; value != 0; width -= 1) {
+		if (pos >= output.length) {
+			break;
+		}
+		if (pos == groupPosition) {
+			pos = append(output, pos, format.groupingSymbol);
+			groupPosition = format.digitGrouping(pos);
+			continue;
+		}
+		uint32 remainder = value % digitSymbols.length;
+		pos = append(output, pos, digitSymbols[remainder]);
+		value /= digitSymbols.length;
+	}
+	for (; width > 0; width -= 1) {
+		if (pos >= output.length) {
+			break;
+		}
+		if (pos == groupPosition) {
+			pos = append(output, pos, format.groupingSymbol);
+			groupPosition = format.digitGrouping(pos);
+			continue;
+		}
+		pos = append(output, pos, format.paddingSymbol);
+	}
+
+	// Put the digits in the correct order.
+	reverse(output, integerPos, pos);
+
+	if (pos >= output.length) {
+		error("buffer overrun", pos);
+		output[output.length - 1] = 0;
+		return output.length;
+	}
+
+	output[pos] = 0;
+	return pos;
+}
+
+/// formated print an integer value to the given `output` buffer
+static int format(NumberFormat format!, char output&[], int pos, int64 value) {
+	// Add on the sign and the decimal point.
+	if (value < 0) {
+		pos = append(output, pos, format.negativeSymbol);
+		value = -value;
+	} else {
+		pos = append(output, pos, format.positiveSymbol);
+	}
+	return formatNoSign(format, output, pos, uint64(value));
+}
+
+/// formated print an integer value to the given `output` buffer
+static int format(NumberFormat format!, char output&[], int pos, uint64 value) {
+	pos = append(output, pos, format.positiveSymbol);
+	return formatNoSign(format, output, pos, value);
+}

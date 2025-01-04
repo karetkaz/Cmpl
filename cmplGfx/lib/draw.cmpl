@@ -1,0 +1,44 @@
+static if (struct(drawAntiAliased) == null) {
+	// by default draw without antialiasing
+	inline drawAntiAliased = true;
+}
+inline "./draw/draw.rect.cmpl";
+inline "./draw/draw.rrect.cmpl";
+inline "./draw/draw.line.cmpl";
+
+// todo: https://rreusser.github.io/regl-gpu-lines/docs/debug.html
+// void fillTriangle(Image image, int x0, int y0, int x1, int y1, int x2, int y2, uint32 color, uint32 flags);
+
+/// Fill the entire image with the given color
+Image fill(Image image, uint32 color) {
+	image.fillRect(0, 0, image.width(), image.height(), color);
+	return image;
+}
+
+/// Fill an ellipse on the `image` specified by the given coordinates and the given `color`
+inline fillOval(Image image, int32 x0, int32 y0, int32 x1, int32 y1, uint32 color) = image.fillRRect(x0, y0, x1, y1, Int32.abs(x0 - x1), Int32.abs(y0 - y1), color);
+
+/// Draw an ellipse on the `image` specified by the given coordinates and the given `color`
+inline drawOval(Image image, int32 x0, int32 y0, int32 x1, int32 y1, uint32 color) = image.drawRRect(x0, y0, x1, y1, Int32.abs(x0 - x1), Int32.abs(y0 - y1), color);
+
+/// Fill an ellipse on the `image` specified by `roi` with the given `color`
+void fillOval(Image image, Rect roi!, uint32 color) {
+	if (roi.empty()) {
+		return;
+	}
+	image.fillOval(roi.x0, roi.y0, roi.x1, roi.y1, color);
+}
+
+/// Draw an ellipse on the `image` specified by `roi` with the given `color`
+void drawOval(Image image, Rect roi!, uint32 color) {
+	if (roi.empty()) {
+		return;
+	}
+	image.drawOval(roi.x0, roi.y0, roi.x1, roi.y1, color);
+}
+
+/// Draw the given ASCII `text` to the `image` at the given `x`, `y` coordinate, with the given `font` and `color`
+void drawText(Image image, int32 x, int32 y, Image font, char text[], int32 color) {
+	Rect rect = {x0: x, y0: y, x1: image.width(), y1: image.height()};
+	return image.drawText(rect, font, text, color);
+}

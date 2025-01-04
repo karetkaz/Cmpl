@@ -1,5 +1,5 @@
 #include "gx_surf.h"
-#include "g3_math.h"
+#include <math.h>
 
 struct gradient_data {
 	int	sx, sy, x, y;

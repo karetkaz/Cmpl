@@ -1,0 +1,266 @@
+/// 64-bit unsigned integer operations
+static struct Uint64 {
+	enum: uint64 {
+		bits: 64;
+		min: 0x0000000000000000;
+		max: 0xffffffffffffffff;
+	}
+
+	/// Computes the bitwise NOT of an 64-bit unsigned value
+	uint64 cmt(uint64 x) { return inline(uint64(x), u64.cmt); }
+
+	/// Computes the bitwise OR of two 64-bit unsigned integers
+	uint64 or(uint64 x, uint64 y) { return inline(uint64(x), uint64(y), u64.or); }
+
+	/// Computes the bitwise XOR of two 64-bit unsigned integers
+	uint64 xor(uint64 x, uint64 y) { return inline(uint64(x), uint64(y), u64.xor); }
+
+	/// Computes the bitwise AND of two 64-bit unsigned integers
+	uint64 and(uint64 x, uint64 y) { return inline(uint64(x), uint64(y), u64.and); }
+
+	/// Performs a logical right shift of x by n bits for an 64-bit unsigned integer
+	uint64 shr(uint64 x, int32 n) { return inline(uint64(x), int32(n), u64.shr); }
+
+	/// Performs a logical left shift of x by n bits for an 64-bit unsigned integer
+	uint64 shl(uint64 x, int32 n) { return inline(uint64(x), int32(n), u64.shl); }
+
+	/// Returns the signum of the input (`0` if zero, `1` if positive)
+	int32 sign(uint64 x) { return int32(x > 0); }
+
+	/// Returns the absolute value of the input
+	uint64 abs(uint64 x) { return x; }
+
+	/// Returns the smaller value from the input values
+	uint64 min(uint64 a, uint64 b) { return a < b ? a : b; }
+
+	/// Returns the greater value from the input values
+	uint64 max(uint64 a, uint64 b) { return a > b ? a : b; }
+
+	/// Returns the `value` clamped between the provided `min` and `max`
+	uint64 clamp(uint64 value, uint64 min, uint64 max) { return min(max(value, min), max); }
+
+	/// Extract and zero-extends a bit field from a value
+	uint64 zeroExtend(uint64 value, int32 offs, int32 size) {
+		return value << (bits - (offs + size)) >> (bits - size);
+	}
+
+	/// Adds two 64-bit unsigned integers with carry out
+	uint64 add(uint64 x, uint64 y, uint64 overflow&) {
+		uint64 result = x + y;
+		overflow = uint64(result < x);
+		return result;
+	}
+
+	/// Subtracts two 64-bit unsigned integers with borrow out
+	uint64 sub(uint64 x, uint64 y, uint64 overflow&) {
+		uint64 result = x - y;
+		overflow = uint64(x < result);
+		return result;
+	}
+
+	/// Multiplies two 64-bit unsigned integers with overflow out
+	uint64 mul(uint64 x, uint64 y, uint64 overflow&) {
+		enum { bits: Uint32.bits, mask: Uint32.max }
+		uint64 xl = x & mask;
+		uint64 xh = x >> bits;
+		uint64 yl = y & mask;
+		uint64 yh = y >> bits;
+
+		uint64 t0 = xl * yl;
+		uint64 t1 = xh * yl;
+		uint64 t2 = xl * yh;
+		uint64 t3 = xh * yh;
+
+		uint64 u1 = t1 + (t0 >> bits);
+		uint64 u2 = t2 + (u1 & mask);
+
+		overflow = t3 + (u2 >> bits) + (u1 >> bits);
+		return (u2 << bits) | (t0 & mask);
+	}
+
+	/// Compares two 64-bit unsigned integers
+	int32 compare(uint64 x, uint64 y) {
+		return uint32(x > y) - uint32(x < y);
+	}
+
+	/// Returns the minimum number of bits required to represent the value of `x`
+	int32 length(uint64 x) {
+		static if (preferNativeCalls && struct(uint64.len) != null) {
+			// use the native method if available
+			return uint64.len(x);
+		}
+
+		int32 result = 0;
+		if ((x >> 32) != 0) {
+			result += 32;
+			x >>= 32;
+		}
+		if ((x >> 16) != 0) {
+			result += 16;
+			x >>= 16;
+		}
+		if ((x >> 8) != 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x >> 4) != 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x >> 2) != 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x >> 1) != 0) {
+			result += 1;
+			x >>= 1;
+		}
+		return result + x;
+	}
+
+	/// Returns the number of leading zero bits in x
+	int32 leadingZeros(uint64 x) { return bits - length(x); }
+
+	/// Returns the number of trailing zero bits in x
+	int32 trailingZeros(uint64 x) {
+		if (x == 0) {
+			return bits;
+		}
+
+		return length(x & -x) - 1;
+	}
+
+	/// Finds the index of the most significant(highest) set bit.
+	int32 scanReverse(uint64 x) { return length(x) - 1; }
+
+	/// Finds the index of the least significant(lowest) set bit
+	// or return x == 0 ? -1 : trailingZeros(x);
+	int32 scanForward(uint64 x) { return length(x & -x) - 1; }
+
+	/// Returns the number of set bits ("population count") in x
+	int32 countOnes(uint64 x) {
+		static if (preferNativeCalls && struct(uint64.pop) != null) {
+			// use the native method if available
+			return uint64.pop(x);
+		}
+
+		x -= (x >> 1) & 0x5555555555555555;
+		x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
+		x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
+		x += x >> 8;
+		x += x >> 16;
+		x += x >> 32;
+		return x & 0x3f;
+	}
+
+	/// Returns the value of x rotated left by (n mod size) bits
+	uint64 rotateLeft(uint64 x, int32 n) {
+		n &= bits - 1;
+		return (x << n) | (x >> (bits - n));
+	}
+
+	/// Returns the value of x rotated right by (n mod size) bits
+	// inline rotateRight(uint16 x, int32 n) = rotateLeft(x, -n);
+	uint64 rotateRight(uint64 x, int32 n) {
+		n &= bits - 1;
+		return (x >> n) | (x << (bits - n));
+	}
+
+	/// Returns the value of x with its bits in reversed order
+	uint64 reverseBits(uint64 x) {
+		x = ((x >>  1) & 0x5555555555555555) | ((x & 0x5555555555555555) <<  1);
+		x = ((x >>  2) & 0x3333333333333333) | ((x & 0x3333333333333333) <<  2);
+		x = ((x >>  4) & 0x0f0f0f0f0f0f0f0f) | ((x & 0x0f0f0f0f0f0f0f0f) <<  4);
+		x = ((x >>  8) & 0x00ff00ff00ff00ff) | ((x & 0x00ff00ff00ff00ff) <<  8);
+		x = ((x >> 16) & 0x0000ffff0000ffff) | ((x & 0x0000ffff0000ffff) << 16);
+		return (x >> 32) | (x << 32);
+	}
+
+	/// Reverses the byte order of an 64-bit unsigned integer
+	// todo: convert a 64 bit value between Little endian and Big endian
+	uint64 reverseBytes(uint64 x) {
+		x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
+		x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
+		x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
+		return x;
+	}
+}
+
+/// 64-bit signed integer operations
+static struct Int64 {
+	enum: int64 {
+		bits: Uint32.bits;
+		max: Uint32.max >> 1;
+		min: ~max;
+	}
+
+	/// Computes the arithmetic negation of an 64-bit signed integer
+	int64 neg(int64 x, int64 overflow&) {
+		overflow = int64(x == min);
+		return inline(int64(x), i64.neg);
+	}
+
+	/// Performs an arithmetic right shift of an 64-bit signed integer
+	int64 shr(int64 x, int32 n) { return inline(int64(x), int32(n), u64.sar); }
+
+	/// Adds two 64-bit signed integers with carry out
+	int64 add(int64 x, int64 y, int64 overflow&) {
+		int64 result = x + y;
+		overflow = int64(((x ^ result) & (y ^ result)) < 0);
+		return result;
+	}
+
+	/// Subtracts two 64-bit signed integers with borrow out
+	int64 sub(int64 x, int64 y, int64 overflow&) {
+		int64 result = int64(x) - int64(y);
+		overflow = int64(((x ^ y) & (x ^ result)) < 0);
+		return result;
+	}
+
+	/// Multiplies two 64-bit signed integers with overflow out
+	int64 mul(int64 x, int64 y, int64 overflow&) {
+		bool neg = false;
+		if (x < 0) {
+			neg = !neg;
+			x = -x;
+		}
+		if (y < 0) {
+			neg = !neg;
+			y = -y;
+		}
+
+		uint64 u& = pointer(overflow);
+		int64 result = Uint64.mul(uint64(x), uint64(y), &u);
+		if (neg) {
+			result = -result;
+			// Overflow from low to high
+			u = ~u + int64(result == 0);
+		}
+		return result;
+	}
+
+	/// Compares two 64-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
+	int32 compare(int64 x, int64 y) {
+		return int32(x > y) - int32(x < y);
+	}
+
+	/// Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+	inline sign(int64 x) = int32(x > 0) - int32(x < 0);
+
+	/// Returns the absolute value of the input
+	inline abs(int64 x) = x < 0 ? -x : x;
+
+	/// Returns the smaller value from the input values
+	inline min(int64 a, int64 b) = a < b ? a : b;
+
+	/// Returns the greater value from the input values
+	inline max(int64 a, int64 b) = a > b ? a : b;
+
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(int64 value, int64 min, int64 max) = min(max(value, min), max);
+
+	/// Extract and sign-extends a bit field from a signed byte value
+	int64 signExtend(int64 value, int32 offs, int32 size) {
+		return value << (bits - (offs + size)) >> (bits - size);
+	}
+}

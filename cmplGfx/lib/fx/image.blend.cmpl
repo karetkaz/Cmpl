@@ -1,0 +1,201 @@
+/// copy the `src` image to the destination with an optional blend method
+void copy(Image image, int32 x0, int32 y0, Image src, Rect roi?, pointer extra, argb blend(pointer extra, argb base, argb with)) {
+	static if (preferNativeCalls && struct(Image.copy) != null) {
+		return Image.copy(image, x0, y0, src, roi, extra, pointer(blend));
+	}
+
+	assert(image.depth() == 32);
+	assert(src.depth() == 32);
+
+	// clip roi with source image
+	Rect rect = {
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
+	};
+	if (x0 < 0) {
+		rect.x0 -= x0;
+	}
+	if (y0 < 0) {
+		rect.y0 -= y0;
+	}
+	if (!src.clip(&rect)) {
+		// nothing to get
+		return;
+	}
+
+	// clip also destination
+	rect.positionX(x0 < 0 ? 0 : x0);
+	rect.positionY(y0 < 0 ? 0 : y0);
+	if (!image.clip(&rect)) {
+		// nothing to set
+		return;
+	}
+
+	if (blend == null) {
+		for (int y = rect.y0; y < rect.y1; y += 1) {
+			for (int x = rect.x0; x < rect.x1; x += 1) {
+				image.set(x, y, src.get(x - x0, y - y0));
+			}
+		}
+		return;
+	}
+
+	for (int y = rect.y0; y < rect.y1; y += 1) {
+		for (int x = rect.x0; x < rect.x1; x += 1) {
+			argb base = argb(image.get(x, y));
+			argb with = argb(src.get(x - x0, y - y0));
+			image.set(x, y, blend(extra, base, with));
+		}
+	}
+}
+
+/// copy the `src` image to the destination with an optional blend method
+void copy(Image image, int32 x0, int32 y0, Image src, Rect roi?, vec4f blend(vec4f base, vec4f with)) {
+	static if (preferNativeCalls && struct(Image.copy.blendVec4f) != null) {
+		return Image.copy(image, x0, y0, src, roi, blend, Image.copy.blendVec4f);
+	}
+	static argb blendVec4f(vec4f blend(vec4f base, vec4f with), argb base, argb with) {
+		return argb(blend(vec4f(base), vec4f(with)));
+	}
+	if (blend == null) {
+		return copy(image, x0, y0, src, roi, null, null);
+	}
+	return copy(image, x0, y0, src, roi, blend, pointer(blendVec4f));
+}
+
+/// copy or convert `src` image to the destination `image`
+void copy(Image image, int32 x, int32 y, Image src, Rect roi?) {
+	return copy(image, x, y, src, roi, null, null);
+}
+
+/// copy or convert `src` image to the destination `image`
+void copy(Image image, Image src) {
+	return copy(image, 0, 0, src, null, null, null);
+}
+
+/// fill the destination with the given `col` (alpha channel is used)
+void copy(Image image, Rect roi!, argb col) {
+	static if (preferNativeCalls && struct(Image.blend.color) != null) {
+		return image.blend(roi.x0, roi.y0, image, roi, col, Image.blend.color);
+	}
+	argb blender(argb color!, argb base, argb with) {
+		int alpha = ach(color);
+		return {
+			b: mix_s8(alpha, bch(color), bch(base));
+			g: mix_s8(alpha, gch(color), gch(base));
+			r: mix_s8(alpha, rch(color), rch(base));
+			a: alpha;
+		};
+	}
+	return copy(image, roi.x0, roi.y0, image, roi, col, blender);
+}
+
+/// fill the destination with the given `col` (alpha channel is used)
+void copy(Image image, argb col) {
+	static if (preferNativeCalls && struct(Image.blend.color) != null) {
+		return image.blend(0, 0, image, null, col, Image.blend.color);
+	}
+	return copy(image, Rect(0, 0, image.width(), image.height()), col);
+}
+
+/// copy the `src` image to the destination with the given transparency
+void blendAlpha(Image image, int32 x, int32 y, Image src, Rect roi?, int32 alpha) {
+	static if (preferNativeCalls && struct(Image.copy.alpha) != null) {
+		return Image.copy(image, x, y, src, roi, alpha, Image.copy.alpha);
+	}
+
+	static argb blender(int32 alpha!, argb base, argb with) {
+		return {
+			b: sat_s8(mix_s8(alpha, bch(base), bch(with)));
+			g: sat_s8(mix_s8(alpha, gch(base), gch(with)));
+			r: sat_s8(mix_s8(alpha, rch(base), rch(with)));
+			a: alpha;
+		};
+	}
+	return image.copy(x, y, src, roi, alpha, blender);
+}
+
+/// copy the `src` image to the destination masked with destination alpha
+void blendDstAlpha(Image image, int32 x, int32 y, Image src, Rect roi?) {
+	static if (preferNativeCalls && struct(Image.blend.dstAlpha) != null) {
+		return Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
+	}
+
+	argb blender(pointer null, argb base, argb with) {
+		int alpha = ach(base);
+		return {
+			b: mix_s8(alpha, bch(base), bch(with));
+			g: mix_s8(alpha, gch(base), gch(with));
+			r: mix_s8(alpha, rch(base), rch(with));
+			a: alpha;
+		};
+	}
+	return image.copy(x, y, src, roi, null, blender);
+}
+
+/// Create an image by copying another one
+Image Image(Image copy) {
+	Image result = Image.create(copy.width(), copy.height(), copy.depth());
+	result.copy(0, 0, copy, null);
+	return result;
+}
+
+/// copy the `src` image multiple times so it fills the whole `image`
+void tile(Image image, int x, int y, Image src, Rect roi?) {
+	Rect rect = {
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
+	};
+
+	if (!src.clip(&rect)) {
+		return;
+	}
+
+	if (x < 0) {
+		x = -(-x % rect.width());
+	}
+	if (y < 0) {
+		y = -(-y % rect.height());
+	}
+	int width = image.width();
+	int height = image.height();
+	for (int j = y; j < height; j += rect.height()) {
+		for (int i = x; i < width; i += rect.width()) {
+			image.copy(i, j, src, rect);
+		}
+	}
+}
+
+/// Fill the surface by evaluating the given function for each pixel
+void eval(Image image, Rect roi?, float32 aspect, float32 time, vec4f eval(vec4f in)) {
+	Rect rect = {
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : image.width();
+		y1: roi != null ? roi.y1 : image.height();
+	};
+
+	if (!image.clip(&rect)) {
+		return;
+	}
+
+	float32 w = rect.width();
+	float32 h = rect.height();
+	if (aspect == 0) {
+		aspect = w / h;
+	}
+	h *= aspect;
+
+	vec4f in = vec4f(0, 0, 0, time);
+	for (int y = rect.y0; y < rect.y1; y += 1) {
+		in.y = (y - rect.y0) / h;
+		for (int x = rect.x0; x < rect.x1; x += 1) {
+			in.x = (x - rect.x0) / w;
+			image.set(x, y, argb(eval(in)));
+		}
+	}
+}

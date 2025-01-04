@@ -1,0 +1,92 @@
+// Lens effect demo.
+Image back = Image("../asset/image/forest.jpg", 32);
+Image offs = Image(800, 600, 32);
+
+//vec2d mag[magRadius][magRadius]; todo: multi dimensional arrays
+
+float64 magFactor = 3.4;
+inline magSize = 512;
+vec2d mag[magSize * magSize] = {...};
+
+void init() {
+	int32 r = magSize / 2;
+	float64 s = Float64.sqrt(r * r - magFactor * magFactor);
+	for (int y = -r; y < r; y += 1) {
+		for (int x = -r; x < r; x += 1) {
+			float64 a = x;
+			float64 b = y;
+			if (x * x + y * y <= s * s) {
+				float64 z = Float64.sqrt(r * r - x * x - y * y);
+				if (z > 0) {
+					a = x * (r / magFactor) / z;
+					if (Float64.abs(a) > Float64.abs(x)) {
+						a = x;
+					}
+
+					b = y * (r / magFactor) / z;
+					if (Float64.abs(b) > Float64.abs(y)) {
+						b = y;
+					}
+				}
+			}
+			mag[(y + r) * magSize + x + r] = vec2d(a + r, b + r);
+		}
+	}
+}
+
+int32 mx = (offs.width() - magSize) / 2;
+int32 my = (offs.height() - magSize) / 2;
+
+int onEvent(int action, int button, int x, int y) {
+	inline scrollPad = -50;
+	static int32 scrollX = 0;
+	static int32 scrollY = 0;
+	static int32 ox = 0;
+	static int32 oy = 0;
+
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	bool draw = false;
+	if (action == Window.WINDOW_INIT) {
+		draw = true;
+		init();
+	}
+	if (action == Window.FINGER_MOTION) {
+		action = Window.MOUSE_MOTION;
+	}
+	if (action == Window.MOUSE_PRESS || action == Window.MOUSE_MOTION) {
+		if (button != 0) {
+			static if (scrollPad < 0) {
+				scrollX = Int32.clamp(scrollX + ox - x, -scrollPad - back.width(), offs.width() + scrollPad);
+				scrollY = Int32.clamp(scrollY + oy - y, -scrollPad - back.height(), offs.height() + scrollPad);
+			} else {
+				scrollX = Int32.clamp(scrollX + ox - x, offs.width() - back.width() - scrollPad, scrollPad);
+				scrollY = Int32.clamp(scrollY + oy - y, offs.height() - back.height() - scrollPad, scrollPad);
+			}
+			draw = true;
+		}
+		ox = x;
+		oy = y;
+	}
+	if (draw) {
+		offs.fill(0);
+		offs.copy(scrollX, scrollY, back, null);
+		int n = 0;
+		int nx = mx - scrollX;
+		int ny = my - scrollY;
+		for (int y = 0; y < magSize; y += 1) {
+			for (int x = 0 ;x < magSize; x += 1) {
+				vec2d p = mag[n];
+				offs.set(x + mx, y + my, back.get(nx + p.x, ny + p.y));
+				n += 1;
+			}
+		}
+	}
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent);
+offs.destroy();
+back.destroy();

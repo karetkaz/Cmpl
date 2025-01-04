@@ -1,0 +1,217 @@
+// draw line, rectangle and ellipse
+
+void drawLine(Image image, int32 x0, int32 y0, int32 x1, int32 y1, bool smooth, uint32 color) {
+	static struct SmoothDraw {
+		inline drawAntiAliased = true;
+		inline "cmplGfx/lib/draw/draw.line.cmpl";
+	}
+	static struct RoughDraw {
+		inline drawAntiAliased = false;
+		inline "cmplGfx/lib/draw/draw.line.cmpl";
+	}
+
+	if (smooth) {
+		return SmoothDraw.drawLine(image, x0, y0, x1, y1, color);
+	}
+	return RoughDraw.drawLine(image, x0, y0, x1, y1, color);
+}
+
+static Image offscreen = Image(1024, 1024, 32);
+int32 onEvent(int32 action, int32 button, int32 ex, int32 ey) {
+	static int32 ox = offscreen.width() / 2;
+	static int32 oy = offscreen.height() / 2;
+	static int32 x[2] = {ox - ox * 3 / 4, ox + ox * 3 / 4};
+	static int32 y[2] = {oy - oy * 3 / 4, oy + oy * 3 / 4};
+	static int32 mode = 0;
+	static int idx = -1;
+
+	static int32 zoomedColor = 0x000000;
+	static int32 strokeColor = 0x9a67be;
+	static int32 fillColor = 0x9a67be;
+	static int32 backColor = 0xffffff;
+	static int32 textColor = 0xff0000;
+	static int32 gridColor = 0x70ff70;
+	static int32 gridSize = 32;
+
+	static bool fine = !true;
+
+	static bool shift = false;
+	static bool ctrl = false;
+	static bool alt = false;
+
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+
+	if (action == Window.KEY_PRESS || action == Window.KEY_RELEASE) {
+		shift = (ey & Window.KEY_MASK_SHIFT) != 0;
+		ctrl = (ey & Window.KEY_MASK_CTRL) != 0;
+		alt = (ey & Window.KEY_MASK_ALT) != 0;
+
+		if (action == Window.KEY_PRESS) {
+			if (button == ' ') {
+				if (shift) {
+					gridSize = ~gridSize;
+				} else {
+					fillColor = ~fillColor;
+				}
+			}
+			if (button == 'g') {
+				if (shift) {
+					zoomedColor = ~zoomedColor;
+				} else {
+					gridColor = ~gridColor;
+				}
+			}
+			if (button == 't') {
+				textColor = ~textColor;
+			}
+			if (button == 'i') {
+				fine = !fine;
+			}
+			if (button == Window.KEY_CODE_BACK) {
+				int32 cx = offscreen.width() / 2;
+				int32 cy = offscreen.height() / 2;
+				x[0] = cx - cx * 3 / 4;
+				x[1] = cx + cx * 3 / 4;
+				y[0] = cy - cy * 3 / 4;
+				y[1] = cy + cy * 3 / 4;
+			}
+			if (button == Window.KEY_CODE_TAB) {
+				mode += shift ? -1 : 1;
+				if (mode < -1) {
+					mode = -1;
+				}
+				if (gridSize > 0 && mode > Int32.max(Int32.abs(x[1] - x[0]), Int32.abs(y[1] - y[0])) / gridSize / 2) {
+					mode = -1;
+				}
+			}
+			if (button >= '0' && button < '0' + x.length) {
+				idx = button - '0';
+			}
+			if (button == 's' && ctrl) {
+				offscreen.saveBmp("dump.rrect.bmp", 0);
+			}
+		}
+	}
+	if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
+		idx = 1;
+		inline minLen = 100;
+		inline dst(int32 dx, int32 dy) = Float32.sqrt(dx * dx + dy * dy);
+		inline dst(int32 i, int32 cx, int32 cy) = dst(x[i] - cx, y[i] - cy);
+		for (int32 i = 0; i < x.length; i += 1) {
+			int32 len = dst(i, ex, ey);
+			if (len < minLen && len < dst(idx, ex, ey)) {
+				idx = i;
+			}
+		}
+		ox = ex;
+		oy = ey;
+	}
+	if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
+		if (idx >= 0 && idx < x.length) {
+			x[idx] += ex - ox;
+			y[idx] += ey - oy;
+		}
+
+		ox = ex;
+		oy = ey;
+	}
+	if (action == Window.MOUSE_RELEASE || action == Window.FINGER_RELEASE) {
+		// release selected index
+		idx = -1;
+	}
+
+	offscreen.fill(backColor);
+	if (gridSize <= 0) {
+		int32 x0 = x[0];
+		int32 y0 = y[0];
+		int32 x1 = x[1];
+		int32 y1 = y[1];
+		if (mode < 0) {
+			offscreen.drawLine(x0, y0, x1, y1, fillColor >= 0, strokeColor);
+		} else {
+			if (fillColor >= 0) {
+				offscreen.fillRRect(x0, y0, x1, y1, mode, strokeColor);
+			} else {
+				offscreen.drawRRect(x0, y0, x1, y1, mode, strokeColor);
+			}
+		}
+		return Window.timeoutMax;
+	}
+
+	int32 x0 = x[0] / gridSize;
+	int32 y0 = y[0] / gridSize;
+	int32 x1 = x[1] / gridSize;
+	int32 y1 = y[1] / gridSize;
+	int32 roiPadding = 0;
+	Rect roi = {
+		x1: offscreen.width() - roiPadding;
+		y1: offscreen.height() - roiPadding;
+		x0: roi.x1 - offscreen.width() / gridSize;
+		y0: roi.y1 - offscreen.height() / gridSize;
+	};
+	if (mode < 0) {
+		offscreen.drawLine(roi.x0+x0, roi.y0+y0, roi.x0+x1, roi.y0+y1, fillColor >= 0, strokeColor);
+	} else {
+		if (fillColor >= 0) {
+			offscreen.fillRRect(roi.x0+x0, roi.y0+y0, roi.x0+x1, roi.y0+y1, mode, strokeColor);
+		} else {
+			offscreen.drawRRect(roi.x0+x0, roi.y0+y0, roi.x0+x1, roi.y0+y1, mode, strokeColor);
+		}
+	}
+	offscreen.resize(null, offscreen, roi, int32(fine));
+
+	if (gridColor >= 0) {
+		for(int32 y = 0; y < offscreen.height(); y += gridSize) {
+			offscreen.fillRect(0, y, offscreen.width(), y, 1, gridColor);
+		}
+		for(int32 x = 0; x < offscreen.width(); x += gridSize) {
+			offscreen.fillRect(x, 0, x, offscreen.height(), 1, gridColor);
+		}
+	}
+
+	if (textColor >= 0) {
+		NumberFormat fmt = {precision: 2};
+		char text[1024] = {...};
+		Rect rect = {};
+		int32 textSpacing = Window.font.height() + Window.font.height() / 2;
+
+		y0.format(text, x0.format(text, "0: (%d"), ", %d)");
+		Window.font.clipText(&rect, text);
+		rect.positionX(Int32.min(Int32.max(x[0], 0), offscreen.width() - rect.width()));
+		rect.positionY(Int32.min(Int32.max(y[0] - textSpacing, 0), offscreen.height() - rect.height()));
+		offscreen.fillRect(rect, ~textColor);
+		offscreen.drawText(rect, Window.font, text, textColor);
+
+		y1.format(text, x1.format(text, "1: (%d"), ", %d)");
+		Window.font.clipText(&rect, text);
+		rect.positionX(Int32.min(Int32.max(x[1], 0), offscreen.width() - rect.width()));
+		rect.positionY(Int32.min(Int32.max(y[1] + textSpacing, 0), offscreen.height() - rect.height()));
+		offscreen.fillRect(rect, ~textColor);
+		offscreen.drawText(rect, Window.font, text, textColor);
+	}
+	if (zoomedColor >= 0) {
+		x0 = x[0] - x[0] % gridSize;
+		y0 = y[0] - y[0] % gridSize;
+		x1 = x[1] - x[1] % gridSize;
+		y1 = y[1] - y[1] % gridSize;
+		x0 += gridSize / 2 * Int32.sign(x1 - x0);
+		y0 += gridSize / 2 * Int32.sign(y1 - y0);
+		x1 -= gridSize / 2 * Int32.sign(x1 - x0);
+		y1 -= gridSize / 2 * Int32.sign(y1 - y0);
+
+		if (mode < 0) {
+			offscreen.drawLine(x0, y0, x1, y1, zoomedColor);
+		} else {
+			offscreen.drawRRect(x0, y0, x1, y1, mode * gridSize, zoomedColor);
+			offscreen.drawRect(x0, y0, x1, y1, zoomedColor);
+			offscreen.drawOval(x0, y0, x1, y1, zoomedColor);
+		}
+	}
+	return Window.timeoutMax;
+}
+
+Window.show(offscreen, onEvent);
+offscreen.destroy();

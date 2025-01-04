@@ -18,46 +18,36 @@ To use the foreach like form of the for statement, two functions are required to
 **Example**
 ```
 struct Range {
-	const int min;
-	const int max;
+	int min;
+	int max;
 }
 inline Range(int min, int max) = { min: min, max: max };
 
 struct RangeIterator {
 	int current;
-	const int end;
-
-	// RangeIterator is iterable
-	static bool next(RangeIterator &this) {
-		if (this.current < this.end) {
-			this.current += 1;
-			return true;
-		}
-		return false;
-	}
+	int end;
 
 	// make RangeIterator iterable using an int
 	static bool next(RangeIterator &it, int &value) {
-		if (RangeIterator.next(it)) {
-			value = it.current;
-			return true;
+		if (this.current >= this.end) {
+			return false;
 		}
-		return false;
+
+		value = it.current;
+		it.current += 1;
+		return true;
 	}
 }
 
 // make the iterator for the Range type (make Range iterable)
-inline iterator(Range r) = RangeIterator {
-	current: r.min;
-	end: r.max;
+RangeIterator iterator(Range r) {
+	return {
+		current: r.min;
+		end: r.max;
+	};
 };
 
-// now we can iterate over any range using the iterator
-for (RangeIterator it : Range(10, 20)) {
-	println(it.current);
-}
-
-// also we can iterate over the range with an int value
+// now we can iterate over the range with an int value
 for (int i : Range(10, 20)) {
 	println(i);
 }

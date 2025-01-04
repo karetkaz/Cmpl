@@ -1,0 +1,34 @@
+// test the emit intrinsic of the language
+
+int32 emitldz32 = inline(int32(0));
+int64 emitldz64 = inline(int64(0));
+
+int32 emitA = 42;
+int32 emitB = 96;
+
+/// Emit the calculation of `emitA + emitB`
+int32 emitAddI32 = inline(int32(emitA), int32(emitB), i32.add);
+
+/// Emit the calculation of `10 / 5`
+int32 emitDivI32 = inline(int32(10), int32(5), i32.div);
+
+/// Emit the calculation of `float32.sin(3.14f / 2)`
+float32 emitNfcF32 = inline(float32(3.14), float32(2), f32.div, float32.sin);
+
+/// interpret a 32 bit floating point number as an 32 bit integer
+int32 floatAsInt32(float32 value) { return inline(value); }
+/// interpret a 64 bit floating point number as an 64 bit integer
+int64 floatAsInt64(float64 value) { return inline(value); }
+
+int32 emitFloatAsInt1 = floatAsInt32(500);
+int64 emitFloatAsInt2 = floatAsInt32(500);
+int32 emitFloatAsInt3 = floatAsInt64(500);
+int64 emitFloatAsInt4 = floatAsInt64(500);
+
+// create a slice with runtime length set to 3, from the given character sequence
+// a complicated way instead of `char strSlice[] = "string"[...3];`
+char emitSlice![] = inline(int(3), pointer("string"));
+
+// these should not compile
+//int64 i64Zero = inline(load.z32);  // TODO: change error message: invalid assignment/initialization: size of variable is different from the value's
+//int32 i32Zero = inline(load.z64);  // TODO: change error message: invalid assignment/initialization: size of variable is different from the value's

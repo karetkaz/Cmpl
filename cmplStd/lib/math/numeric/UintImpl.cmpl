@@ -1,0 +1,193 @@
+/// include this file from a UintXXX class, see UintBig.cmpl
+
+static BigUint make(uint64 value) {
+	BigUint result = {...};
+	for (int i = 0; i < result.words.length; i += 1) {
+		result.words[i] = value;
+		value >>= 32;
+	}
+	return result;
+}
+
+static BigUint make(int64 value) {
+	BigUint result = {...};
+	for (int i = 0; i < result.words.length; i += 1) {
+		result.words[i] = value;
+		value >>= 32;
+	}
+	return result;
+}
+
+static int32 bits(BigUint this!) {
+	return this.words.length * 32;
+}
+
+/// returns true if all elements of m_data are zero.
+static bool isZero(BigUint this!) {
+	for (int i = 0; i < this.words.length; i += 1) {
+		if (this.words[i] != 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/// shifts bits to left value in place
+static void shiftLeft(BigUint this&, int count) {
+	if (count <= 0) {
+		return;
+	}
+
+	int wordShift = count / 32;
+	int bitShift = count % 32;
+	uint64 value = 0;
+	if (wordShift < this.words.length) {
+		value = this.words[this.words.length - wordShift - 1];
+	} else {
+		wordShift = this.words.length;
+	}
+
+	for (int i = this.words.length - 1; i > wordShift; i -= 1) {
+		value = (value << 32) | this.words[i - wordShift - 1];
+		this.words[i] = value >> (32 - bitShift);
+	}
+	this.words[wordShift] = value << bitShift;
+	for (int i = wordShift - 1; i >= 0; i -= 1) {
+		this.words[i] = 0;
+	}
+}
+
+/// shifts bits to right value in place
+static void shiftRight(BigUint this&, int count) {
+	if (count <= 0) {
+		return;
+	}
+
+	int wordShift = count / 32;
+	int bitShift = count % 32;
+	uint64 value = 0;
+	if (wordShift < this.words.length) {
+		value = uint64(this.words[wordShift]) << 32;
+	} else {
+		wordShift = this.words.length;
+	}
+
+	int n = this.words.length - wordShift;
+	for (int i = 0; i < n - 1; i += 1) {
+		value = (value >> 32) | (uint64(this.words[wordShift + i + 1]) << 32);
+		this.words[i] = value >> bitShift;
+	}
+
+	if (n > 0) {
+		this.words[n - 1] = value >> 32 + bitShift;
+	}
+	for (int i = n; i < this.words.length; i += 1) {
+		this.words[i] = 0;
+	}
+}
+
+/// divides the value in place and returns the remainder
+static uint32 divRem(BigUint this&, uint32 value) {
+	uint32 remainder = 0;
+	// Standard long-division algorithm.
+	for (int i = this.words.length - 1; i >= 0; i -= 1) {
+		uint64 dividend = (uint64(remainder) << 32) + this.words[i];
+		this.words[i] = dividend / value;
+		remainder = dividend % value;
+	}
+
+	return remainder;
+}
+
+/// multiplies the value in place and returns the overflow
+static uint32 mulOvf(BigUint this&, uint32 value) {
+	uint32 overflow = 0;
+	for (int i = 0; i < this.words.length; i += 1) {
+		uint64 result = uint64(value) * this.words[i] + overflow;
+		this.words[i] = result;
+		overflow = result >> 32;
+	}
+	return overflow;
+}
+
+
+/// complements all elements of `words`.
+static BigUint cmt(BigUint this!) {
+	BigUint result = {...};
+	for (int i = 0; i < this.words.length; i += 1) {
+		result.words[i] = ~this.words[i];
+	}
+	return result;
+}
+
+static BigUint and(BigUint a!, BigUint b!) {
+	BigUint result = {...};
+	for (int i = 0; i < result.words.length; i += 1) {
+		result.words[i] = a.words[i] & b.words[i];
+	}
+	return result;
+}
+
+static BigUint or(BigUint a!, BigUint b!) {
+	BigUint result = {...};
+	for (int i = 0; i < result.words.length; i += 1) {
+		result.words[i] = a.words[i] | b.words[i];
+	}
+	return result;
+}
+
+static BigUint xor(BigUint a!, BigUint b!) {
+	BigUint result = {...};
+	for (int i = 0; i < result.words.length; i += 1) {
+		result.words[i] = a.words[i] ^ b.words[i];
+	}
+	return result;
+}
+
+/// returns the negation of the value.
+static BigUint neg(BigUint this!) {
+	// -value = ~value + 1
+	BigUint result = {...};
+	uint64 carry = 1;
+	for (int i = 0; i < this.words.length; i += 1) {
+		carry += ~this.words[i];
+		result.words[i] = carry;
+		carry >>= 32;
+	}
+	return result;
+}
+
+/// returns the sum of the values.
+static BigUint add(BigUint a!, BigUint b!) {
+	BigUint result = {...};
+	uint64 carry = 0;
+	for (int i = 0; i < result.words.length; i += 1) {
+		carry += uint64(a.words[i]) + b.words[i];
+		result.words[i] = carry;
+		carry >>= 32;
+	}
+	return result;
+}
+
+/// returns the difference of the values.
+static BigUint sub(BigUint a!, BigUint b!) {
+	BigUint result = {...};
+	uint64 borrow = 0;
+	for (int i = 0; i < result.words.length; i += 1) {
+		borrow += uint64(a.words[i]) - b.words[i];
+		result.words[i] = borrow;
+		borrow >>= 32;
+	}
+	return result;
+}
+
+/// Compares two 64-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
+static int32 compare(BigUint a!, BigUint b!) {
+	for (int i = a.words.length - 1; i >= 0; i -= 1) {
+		int32 c = Int32.compare(a.words[i], b.words[i]);
+		if (c != 0) {
+			return c;
+		}
+	}
+	return 0;
+}

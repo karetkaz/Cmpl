@@ -35,8 +35,8 @@ Syntax is similar to c / js influenced by:
 * [x] aliasing a type: `inline double = float64;`
 * [x] aliasing a constant: `inline pi = 3.14159265359;`
 * [x] aliasing an expression: `inline min(int a, int b) = a < b ? a : b;`
-* [ ] overloading an operator: `inline *(vec4f a, vec4f b) = emit(vec4f(a), vec4f(b), mul.p4f);`
-* [x] inline the content of a file: `inline "file.ci";`
+* [x] overloading operators: `inline *(vec4f a, vec4f b) = inline(vec4f(a), vec4f(b), mul.p4f);`
+* [x] inline the content of a file: `inline "./file.cmpl";`
 
 
 ### Conditional compile-time code generation and declarations with `static if` statement.
@@ -54,7 +54,6 @@ Syntax is similar to c / js influenced by:
 * [x] `this` is not needed using [Uniform Function Call Syntax](https://en.wikipedia.org/wiki/Uniform_Function_Call_Syntax).
 
 
-### `public`, `protected`, `private` access level modifiers are not part of the language.
-* [x] everything is accessible inside one file with no restriction.
-* [x] accessing a non-document commented variable, function field or method will raise a high-level warning that can be treated as an error.
+### no access level modifiers like: `public`, `protected`, `private`, ...
+* [x] accessing an undocument symbol from a different translation unit will raise a high-level warning that can be treated as an error.
 * [x] deprecation and any other annotations should be specified in the documentation comment.

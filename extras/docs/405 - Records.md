@@ -12,7 +12,7 @@ Records may contain only instance or static members and methods:
 
 ```
 struct Math {
-	static const float64 pi = 3.14159265358979323846264338327950288419716939937510582097494459;
+	static float64 pi! = 3.14159265358979323846264338327950288419716939937510582097494459;
 	...
 	static float64 min(float64 a, float64 b) {
 		return a < b ? a : b;
@@ -36,42 +36,15 @@ it will be accessible only through the declaring type:
 
 - if a `static` method is not implemented, it will become a [forward declared function](#forward-declared-functions)
 
-### Constant members
-
-[TODO: documentation]
-
-**[Example](../../lib/std/math/Complex.ci)**
-
-```
-struct complex {
-	const float64 re;           // real part
-	const float64 im = 0;       // imaginary part
-	...
-}
-
-complex a = {re: 2, im: -1};    // ok: all const members are initialized: re = 2 and im = -1
-complex b = {re: 2};            // ok: all const members are initialized: re = 2 and im = 0
-complex c = {im: 1};            // error: re must be initialized
-complex d;                      // error: re must be initialized
-a.re = 6;                       // error: re is constant and can not be assigned, only initialized.
-```
-
-if a member inside the record is declared as `const`, the compiler will require its initialization
-and reject further assignments:
-
-- `re` must be initialized each time a complex variable is instantiated (has no default field initializer).
-
-- if `im` is not explicitly initialized, it will be initialized with the default field initializer.
-
 ### Methods
 
 [TODO: fix documentation]
 
-**[Example](../../lib/todo/todo.Stream.ci)**
+**Example**
 
 ```
 struct TextReader: Closeable {
-	const ByteReader reader;
+	ByteReader reader!;
 
 	// abstract method
 	int decode(char chars[], ByteReader reader);
@@ -126,7 +99,7 @@ if a method inside the record is implemented, it will behave as a **virtual** me
 
 In the example:
 
-- `reader` is declared as `const`, so it must be initialized on instance creation, and can not be changed by assignment.
+- `reader` is declared as constant reference, so it must be initialized on instance creation, and can not be changed by assignment.
 
 	- the compiler will reject assignments as `instance.reader = null;`
 
@@ -150,13 +123,7 @@ In the example:
 
 Records which are declared `static` will have all members static (sort of a namespaces).
 These types of records will have no size, and can not be instantiated.
-The best example of its usage is `static struct Math {...}` 
-
-### Constant records
-
-[TODO: implementation]
-
-Records which are declared `const` will have all its members as constants (immutable record).
+The best example of its usage is `static struct Math {...}`
 
 ### Packed records
 
@@ -200,8 +167,8 @@ The base type of every extended type is the builtin type `object`.
 
 ```
 struct Complex: object {
-	const double re;
-	const double im = 0;
+	double re;
+	double im = 0;
 }
 
 Complex c1 = { re: 8 };

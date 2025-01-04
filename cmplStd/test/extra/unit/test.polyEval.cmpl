@@ -1,0 +1,82 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh -asm/s/0 -run/g 54
+
+float32 testFlt(float32 x, float32 a0, float32 a1, float32 a2, float32 a3) {
+	inline poly(float32 x, float32 a0, float32 a1) = a0 + a1 * x;
+	inline poly(float32 x, float32 a0, float32 a1, float32 a2) = poly(x, a0, poly(x, a1, a2));
+	inline poly(float32 x, float32 a0, float32 a1, float32 a2, float32 a3) = poly(x, a0, poly(x, a1, a2, a3));
+	return ((a3 * x + a2) * x + a1) * x + a0;
+//	return poly(x, a0, a1, a2, a3);
+}
+
+inline fxpBits = 28;
+static float32 one = 1 << fxpBits;
+float32 testFxp(int64 x, int32 a0, int32 a1, int32 a2, int32 a3) {
+	inline poly(int64 x, int32 a0, int32 a1) = a0 + (a1 * x >> fxpBits);
+	inline poly(int64 x, int32 a0, int32 a1, int32 a2) = poly(x, a0, poly(x, a1, a2));
+	inline poly(int64 x, int32 a0, int32 a1, int32 a2, int32 a3) = poly(x, a0, poly(x, a1, a2, a3));
+ 	return (((((a3 * x >> fxpBits) + a2) * x >> fxpBits) + a1) * x >> fxpBits) + a0;
+//	return poly(x, a0, a1, a2, a3);
+}
+inline a0 = 1.1;
+inline a1 = -3.7;
+inline a2 = 1.3;
+inline a3 = -1.4;
+float64 x1 = testFlt(2.5, a0, a1, a2, a3);
+float64 x2 = testFxp(2.5 * one, a0 * one, a1 * one, a2 * one, a3 * one) / one;
+
+/* - expected output:
+testFlt(x: float32, a0: float32, a1: float32, a2: float32, a3: float32): float32: function {
+.instructions: (23 bytes)
+	test.polyEval.cmpl:7: (23 bytes): return .result := ((a3 * x + a2) * x + a1) * x + a0;
+	dup.x32 sp(1)
+	dup.x32 sp(6)
+	mul.f32
+	dup.x32 sp(3)
+	add.f32
+	dup.x32 sp(6)
+	mul.f32
+	dup.x32 sp(4)
+	add.f32
+	dup.x32 sp(6)
+	mul.f32
+	dup.x32 sp(5)
+	add.f32
+	set.x32 sp(7)
+	ret
+}
+testFxp(x: int64, a0: int32, a1: int32, a2: int32, a3: int32): float32: function {
+.instructions: (46 bytes)
+	test.polyEval.cmpl:17: (46 bytes): return .result := ((((((a3) * x >> fxpBits) + (a2)) * x >> fxpBits) + (a1)) * x >> fxpBits) + (a0);
+	dup.x32 sp(1)
+	i32.2i64
+	dup.x64 sp(7)
+	mul.i64
+	load.c32 28
+	sar.b64
+	dup.x32 sp(4)
+	i32.2i64
+	add.i64
+	dup.x64 sp(7)
+	mul.i64
+	load.c32 28
+	sar.b64
+	dup.x32 sp(5)
+	i32.2i64
+	add.i64
+	dup.x64 sp(7)
+	mul.i64
+	load.c32 28
+	sar.b64
+	dup.x32 sp(6)
+	i32.2i64
+	add.i64
+	i64.2f32
+	set.x32 sp(8)
+	ret
+}
+
+---------- Globals:
+test.polyEval.cmpl:12: one: float32(268435456.000000)
+test.polyEval.cmpl:24: x1: float64(-21.900000)
+test.polyEval.cmpl:25: x2: float64(-21.900000)
+*/

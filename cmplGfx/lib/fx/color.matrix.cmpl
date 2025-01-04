@@ -1,0 +1,30 @@
+/// apply a color matrix to each pixel defined by the `roi` on the `image`
+void colorMat(Image image, int32 x, int32 y, Image src, Rect roi?, mat4f mat!) {
+	static if (preferNativeCalls && struct(Image.colorMatrix) != null) {
+		return Image.colorMatrix(image, x, y, src, roi, mat.data);
+	}
+
+	inline fxpBits = 16;
+	inline fxp(float64 v) = int32(v * (1 << fxpBits));
+	static argb colorMatrix(int32 m[12], argb base, argb with) {
+		int32 r = rch(with);
+		int32 g = gch(with);
+		int32 b = bch(with);
+		return {
+			r: sat_s8((r * m[0x0] + g * m[0x1] + b * m[0x2] + m[0x3]) >> fxpBits);
+			g: sat_s8((r * m[0x4] + g * m[0x5] + b * m[0x6] + m[0x7]) >> fxpBits);
+			b: sat_s8((r * m[0x8] + g * m[0x9] + b * m[0xa] + m[0xb]) >> fxpBits);
+			// a: sat_s8((r * m[0xc] + g * m[0xd] + b * m[0xe] + m[0xf]) >> fxpBits);
+		};
+	}
+
+	assert(image.depth() == 32);
+	int32 m[12] = {
+		fxp(mat.xx), fxp(mat.xy), fxp(mat.xz), fxp(256 * mat.xw),
+		fxp(mat.yx), fxp(mat.yy), fxp(mat.yz), fxp(256 * mat.yw),
+		fxp(mat.zx), fxp(mat.zy), fxp(mat.zz), fxp(256 * mat.zw),
+		// fxp(mat.wx), fxp(mat.wy), fxp(mat.wz), fxp(256 * mat.ww),
+	};
+
+	return image.copy(x, y, src, roi, m, colorMatrix);
+}

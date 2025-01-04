@@ -1,0 +1,101 @@
+static if (struct(Numbers) == null) {
+static if (struct(debug) == null) {
+	inline "cmplStd/lib/lang/Casts.cmpl";
+	inline debug(char message[*], variant details...) = raise(raise.debug, raise.noTrace, message, ...details);
+}
+
+struct Numbers {
+	int8 s8;
+	int16 s16;
+	int32 s32;
+	int64 s64;
+	uint8 u8;
+	uint16 u16;
+	uint32 u32;
+	uint64 u64;
+	float32 f32;
+	float64 f64;
+}
+void testInt8(int8 x) { inline "./TestCast.cmpl"; }
+void testInt16(int16 x) { inline "./TestCast.cmpl"; }
+void testInt32(int32 x) { inline "./TestCast.cmpl"; }
+void testInt64(int64 x) { inline "./TestCast.cmpl"; }
+void testUint8(uint8 x) { inline "./TestCast.cmpl"; }
+void testUint16(uint16 x) { inline "./TestCast.cmpl"; }
+void testUint32(uint32 x) { inline "./TestCast.cmpl"; }
+void testUint64(uint64 x) { inline "./TestCast.cmpl"; }
+void testFloat32(float32 x) { inline "./TestCast.cmpl"; }
+void testFloat64(float64 x) { inline "./TestCast.cmpl"; }
+
+void testAll(int32 x) {
+	testInt8(int8(x));
+	testInt16(int16(x));
+	testInt32(int32(x));
+	testInt64(int64(x));
+	testUint8(uint8(x));
+	testUint16(uint16(x));
+	testUint32(uint32(x));
+	testUint64(uint64(x));
+	testFloat32(float32(x));
+	testFloat64(float64(x));
+}
+
+testAll(0);
+testAll(3);
+testAll(-3);
+testAll(150);
+testAll(-150);
+testAll(90000);
+testAll(-90000);
+
+} else {
+Numbers y = {
+	s8: int8(x);
+	s16: int16(x);
+	s32: int32(x);
+	s64: int64(x);
+	u8: uint8(x);
+	u16: uint16(x);
+	u32: uint32(x);
+	u64: uint64(x);
+	f32: float32(x);
+	f64: float64(x);
+};
+Numbers z = {
+	s8: x;
+	s16: x;
+	s32: x;
+	s64: x;
+	u8: x;
+	u16: x;
+	u32: x;
+	u64: x;
+	f32: x;
+	f64: x;
+};
+/* todo: use alignment to read and write bytes efficiently, so gaps will be filled also
+if (pointer.compare(y, z, sizeof(Numbers)) != 0) {
+	struct ByteArray {
+		uint8 y[];
+		uint8 z[];
+	}
+	uint8 py[*] = pointer(y);
+	uint8 pz[*] = pointer(z);
+	ByteArray t = {
+		y: py[... sizeof(Numbers)];
+		z: pz[... sizeof(Numbers)];
+	};
+	abort("y != z", t, y);
+}// */
+assert(y.s8 == z.s8);
+assert(y.s16 == y.s16);
+assert(y.s32 == y.s32);
+assert(y.s64 == y.s64);
+assert(y.u8 == z.u8);
+assert(y.u16 == y.u16);
+assert(y.u32 == y.u32);
+assert(y.u64 == y.u64);
+assert(y.f32 == y.f32);
+assert(y.f64 == y.f64);
+debug("values", x, y);
+}

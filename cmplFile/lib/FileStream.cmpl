@@ -1,0 +1,92 @@
+///@public
+struct FileReader: ByteReader {
+	File file;
+
+	int read(FileReader this, uint8 bytes[]) {
+		return File.read(this.file, bytes);
+	}
+
+	void close(FileReader this) {
+		File.close(this.file);
+	}
+}
+
+///@public
+struct FileWriter: ByteWriter {
+	///@public
+	File file;
+
+	void write(FileWriter this, uint8 bytes[]) {
+		int wrote = File.write(this.file, bytes);
+		assert(wrote == bytes.length);
+	}
+
+	void flush(FileWriter this) {
+		File.flush(this.file);
+	}
+
+	void close(FileWriter this) {
+		File.close(this.file);
+	}
+}
+
+///@public
+struct BufferedFileWriter: FileWriter {
+	uint8 buffer[1024];
+	int bufferSize = 0;
+
+	static void flushBuffer(BufferedFileWriter this) {
+		int wrote = File.write(this.file, this.buffer[... this.bufferSize]);
+		assert(wrote == this.bufferSize);
+		this.bufferSize = 0;
+	}
+
+	void write(BufferedFileWriter this, uint8 bytes[]) {
+		if (this.bufferSize + bytes.length > this.buffer.length) {
+			if (this.bufferSize > 0) {
+				this.flushBuffer();
+			}
+			if (bytes.length > this.buffer.length / 2) {
+				// writing more than buffer half size, make the write
+				FileWriter.write(this, bytes);
+				return;
+			}
+		}
+		// accumulate into buffer
+		pointer buffer = this.buffer.inc(this.bufferSize);
+		pointer.copy(buffer, bytes, bytes.length);
+		this.bufferSize += bytes.length;
+	}
+
+	void flush(BufferedFileWriter this) {
+		this.flushBuffer();
+		FileWriter.flush(this);
+	}
+
+	void close(BufferedFileWriter this) {
+		this.flushBuffer();
+		FileWriter.close(this);
+	}
+}
+
+///@public
+FileReader FileReader(char path[]) {
+	return {
+		file: File.open(path);
+	};
+}
+
+///@public
+FileWriter FileWriter(char path[], bool append) {
+	return {
+		file: append ? File.append(path) : File.create(path);
+	};
+}
+
+///@public
+BufferedFileWriter BufferedFileWriter(char path[], bool append) {
+	return {
+		buffer: null;
+		file: append ? File.append(path) : File.create(path);
+	};
+}

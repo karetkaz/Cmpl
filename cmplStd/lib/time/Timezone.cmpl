@@ -1,0 +1,46 @@
+// todo: unfinished implementation
+struct Timezone {
+	char name![];		// "UTC", "America/New_York", "Europe/Brussels"
+	Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&);
+
+	static Duration offset(Timezone zone!, Timestamp timestamp) {
+		bool isDaylightSaving;
+		return zone.offset(zone, timestamp, &isDaylightSaving);
+	}
+
+	static Timezone utc() {
+		static Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&) {
+			isDaylightSaving = false;
+			return { value: 0 };
+		}
+		return {
+			offset: offset;
+			name: "UTC";
+		};
+	}
+
+	static Timezone lookup(char name[]) {
+		abort("todo");
+		return {
+			offset: null;
+			name: name;
+		};
+	}
+
+	static Timezone local() {
+		warn("using fake timezone");	// fixme: fake timezone, needs to be read or lookup from the system
+		//static void System.timeInfo(char timezoneName[*], int64 timeMillis, int64 zoneOffset&, int daylight&) {}
+		Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&) {
+			isDaylightSaving = false;
+			return Duration(3, Timeunit.Hours);
+		}
+		return {
+			offset: offset;
+			name: "GMT+3";
+		};
+	}
+}
+
+// Timezone Timezone() {return Timezone.local();}
+
+// Timezone Timezone(char name[]) { return Timezone.lookup(name);}

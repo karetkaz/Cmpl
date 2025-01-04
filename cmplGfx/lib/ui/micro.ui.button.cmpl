@@ -1,0 +1,15 @@
+///@public
+struct Button: View {
+	///@public
+	char text[];
+
+	bool onMeasure(Button this, Rect rect&) {
+		Style style& = this.style;
+		style.measure(&rect, this.text);
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(Button this, Image offs, Rect rect) {
+		View.onDraw(this, offs, rect, null, this.text);
+	}
+}

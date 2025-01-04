@@ -1,0 +1,264 @@
+///@public
+struct Panel: Layout {
+	///@public
+	bool visible = false;
+
+	///@public
+	static bool visible(Panel this, bool value) {
+		if (this.visible == value) {
+			return false;
+		}
+
+		this.visible = value;
+		this.invalidate();
+		return true;
+	}
+
+	bool onMeasure(Panel this, Rect rect&) {
+		if (!this.visible) {
+			// view is hidden
+			rect.setSize(0, 0);
+			return false;
+		}
+		return Layout.onMeasure(this, &rect);
+	}
+}
+
+// todo this should be a TabPage and/or Accordion
+// tab/expand item should be a custom 2 state button
+// use a flag to enable multi selection for both TabPage or Accordion
+// in case of TabPage the `select button` should be in the tab list
+// in case of Accordion the `expand button` should be in the same list with the pages
+struct TabPage: Layout {
+	Layout tabs? = null;
+	Layout active? = null;
+	argb background = argb(0);
+
+	void onCreate(TabPage this&, View parent) {
+		Layout.onCreate(this, parent);
+		this.active = this.items[1].view;
+		Style style&  = this.style;
+		this.background = mix_rgb8(128, argb(style.backgroundColor), argb(style.hoveredColor));
+	}
+
+	static bool onMeasurePage(Layout layout, Rect rect&) {
+		TabPage parent = layout.data.as(TabPage);
+		if (parent != null && parent.active != layout) {
+			// view is hidden
+			rect.setSize(0, 0);
+			return false;
+		}
+		return Layout.onMeasure(layout, &rect);
+	}
+
+	static void onDrawPage(Layout panel, Image offs, Rect rect) {
+		TabPage page = panel.data.as(TabPage);
+		offs.fillRect(rect, page.background.v);
+		Layout.onDraw(panel, offs, rect);
+	}
+
+	static void onDrawBar(Layout tabs, Image offs, Rect rect) {
+		TabPage page = tabs.data.as(TabPage);
+		offs.fillRect(rect, page.background.v);
+		Layout.onDraw(tabs, offs, rect);
+	}
+
+	static void onDrawTab(Button tab, Image offs, Rect rect) {
+		TabPage page = tab.parent.parent.as(TabPage);
+		Style style& = tab.style;
+		if (page.active == tab.data.as(Layout)) {
+			offs.fillRect(rect, style.focusedColor);
+			style.align(rect, &rect, tab.text);
+			offs.drawText(rect, style.font, tab.text, style.textColor);
+			return;
+		}
+		Button.onDraw(tab, offs, rect);
+	}
+
+	static void onDrawSeparator(View this, Image offs, Rect rect) {}
+
+	static bool onClickTab(Button button) {
+		if (Layout page = button.data.as(Layout)) {
+			if (TabPage tabs& = page.data.as(Layout)) {
+				if (tabs.active == page) {
+					return false;
+				}
+				tabs.active = page;
+				tabs.invalidate();
+				page.focus();
+			}
+		}
+		return true;
+	}
+
+	static TabPage addItems(TabPage this&, char text[], int32 align, View views...) {
+		inline padding = 1;
+		Layout page = {
+			data: this;
+			// fixme: orientation;
+			onDraw: onDrawPage;
+			onMeasure: onMeasurePage;
+		};
+		Button tab = {
+			text: text;
+			data: page;
+			focusable: false;
+			onDraw: onDrawTab;
+			onClick: onClickTab;
+		};
+
+		if (this.tabs == null) {
+			Layout tabs = {
+				paddingTop: padding;
+				paddingLeft: padding;
+				paddingRight: padding;
+				paddingBottom: padding;
+				data: this;
+				onDraw: onDrawBar;
+				orientation: -this.orientation;
+			};
+
+			this.tabs = tabs;
+			Layout.addItems(this, Style.center, tabs);
+		}
+
+		Layout tabs& = pointer(this.tabs);
+		if (tabs.itemCount > 0) {
+			// todo: replace separator with rowSpacing and colSpacing
+			if (tabs.separator == null) {
+				View separator = {
+					width: padding;
+					height: padding;
+					enabled: false;
+					focusable: false;
+					onDraw: onDrawSeparator;
+				};
+				tabs.separator = separator;
+			}
+			tabs.addItems(0, tabs.separator);
+		}
+
+		tabs.addItems(0, tab);
+		page.addItems(align, ...views);
+		Layout.addItems(this, Style.fill, page);
+		return this;
+	}
+}
+
+///@public
+struct Select: Layout {
+	///@public
+	char text[];
+	char states[][2]; // fixme: initialize: = {"<", "^"};
+
+	Button selected = null;
+	Switch header = null;
+	Panel panel = null;
+
+	///@public
+	static variant selectedData(Select this) {
+		if (this.selected == null) {
+			return null;
+		}
+		return this.selected.data;
+	}
+
+	static bool expand(Select this, bool value) {
+		// focus the selected option
+		if (value && this.selected != null) {
+			this.selected.focus();
+		} else {
+			this.header.focus();
+		}
+
+		this.header.onUpdate(int32(value));
+		this.panel.visible(value);
+		this.invalidate();
+		return true;
+	}
+
+	static bool onItemClick(Select this&, Button view) {
+		this.selected = view;
+		this.expand(false);
+		this.states[0] = view.text;
+		return true;
+	}
+
+	///@public
+	static Select setSelectedIndex(Select this&, int32 index) {
+		if (index < 0 || index > this.panel.itemCount) {
+			error("invalid index selected", index);
+			return this;
+		}
+		Button button = this.panel.items[index].view.as(Button);
+		if (button == null) {
+			return this;
+		}
+
+		this.selected = button;
+		this.states[0] = button.text;
+		return this;
+	}
+
+	///@public
+	static Select addItems(Select this&, int32 align, View views...) {
+		struct Header: Switch {
+			Select select;
+			bool onReset(Header this) {
+				return false;
+			}
+			bool onClick(Header this) {
+				if (!Switch.onClick(this)) {
+					return false;
+				}
+				this.select.expand(this.selected != 0);
+				return true;
+			}
+		}
+		if (this.itemCount == 0) {
+			Header header = {
+				text: this.text;
+				states: this.states;
+				clickToFocus: false;
+				select: this;
+			};
+			Panel panel = {};
+
+			this.states[0] = "<";
+			this.states[1] = "^";
+			this.header = header;
+			this.panel = panel;
+
+			int type = this.orientation;
+			panel.orientation = type;
+			this.orientation = Int32.sign(type);
+
+			Layout.addItems(this, align, header, panel);
+		}
+
+		Layout.addItems(this.panel, align, ...views);
+		return this;
+	}
+
+	///@public
+	static Select addItem(Select this, char text[], variant data) {
+		struct SelectItem: Button {
+			Select select;
+			bool onClick(SelectItem this) {
+				return this.select.onItemClick(this);
+			}
+		}
+		SelectItem item = {
+			select: this;
+			text: text;
+			data: data;
+		};
+		Select.addItems(this, Style.fill, item);
+		return this;
+	}
+
+	///@public
+	static Select addItem(Select this, char text[]) {
+		return addItem(this, text, text);
+	}
+}

@@ -1,0 +1,81 @@
+/// Checks whether the given `rectangle` is empty or not.
+bool empty(Rect rectangle!) {
+// fixme: inline empty(Rect roi&) = roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
+	return rectangle.x0 >= rectangle.x1 || rectangle.y0 >= rectangle.y1;
+}
+
+/// Checks whether the given `rectangle` contains the point (`x`, `y`).
+bool contains(Rect rect!, int32 x, int32 y) {
+	return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
+}
+
+/// Computes the width of the given `rectangle`.
+inline width(Rect rectangle!) = rectangle.x1 - rectangle.x0;
+/// Sets the width of the given `rectangle`.
+void width(Rect rectangle&, int32 width) {
+	rectangle.x1 = rectangle.x0 + width;
+}
+
+/// Computes the height of the given `rectangle`.
+inline height(Rect rectangle!) = rectangle.y1 - rectangle.y0;
+/// Sets the height of the given `rectangle`.
+void height(Rect rectangle&, int32 height) {
+	rectangle.y1 = rectangle.y0 + height;
+}
+
+/// Sets the width and height of the given `rectangle`.
+void setSize(Rect rectangle&, int32 width, int32 height) {
+	rectangle.x1 = rectangle.x0 + width;
+	rectangle.y1 = rectangle.y0 + height;
+}
+
+/// Sets the x position of the given `rectangle`.
+void positionX(Rect rectangle&, int32 x) {
+	rectangle.x1 = x + rectangle.x1 - rectangle.x0;
+	rectangle.x0 = x;
+}
+/// Sets the y position of the given `rectangle`.
+void positionY(Rect rectangle&, int32 y) {
+	rectangle.y1 = y + rectangle.y1 - rectangle.y0;
+	rectangle.y0 = y;
+}
+
+/// Sets the x and y position of the given `rectangle`.
+void position(Rect rectangle&, int32 x, int32 y) {
+	rectangle.positionX(x);
+	rectangle.positionY(y);
+}
+
+///@public
+void adjust(Rect rect&, int32 dx0, int32 dy0, int32 dx1, int32 dy1) {
+	rect.x0 += dx0;
+	rect.y0 += dy0;
+	rect.x1 += dx1;
+	rect.y1 += dy1;
+}
+
+///@public
+void padded(Rect rect&, int32 padding) {
+	rect.x0 -= padding;
+	rect.y0 -= padding;
+	rect.x1 += padding;
+	rect.y1 += padding;
+}
+
+/// Moves the given `rectangle` by `dx` and `dy`.
+inline translate(Rect rectangle&, int32 dx, int32 dy) = rectangle.adjust(dx, dy, dx, dy);
+/// Moves the given `rectangle` horizontally by `dx`.
+void translateX(Rect rectangle&, int32 dx) {
+	rectangle.x0 += dx;
+	rectangle.x1 += dx;
+}
+/// Moves the given `rectangle` vertically by `dy`.
+void translateY(Rect rectangle&, int32 dy) {
+	rectangle.y0 += dy;
+	rectangle.y1 += dy;
+}
+
+/// Create a rectangle using left, top, right and bottom values
+Rect Rect(int32 x0, int32 y0, int32 x1, int32 y1) {
+	return { x0: x0, y0: y0, x1: x1, y1: y1 };
+}

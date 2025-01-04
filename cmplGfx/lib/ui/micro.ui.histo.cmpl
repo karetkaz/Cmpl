@@ -1,0 +1,166 @@
+///@public
+struct Histogram: View {
+	/// display lines instead of bars
+	bool lines = false;
+
+	///@public
+	bool color = false;
+
+	///@public
+	argb data[256];
+
+	/// update the histogram computed from the given image
+	static void update(Histogram this&, Image image) {
+		uint32 data[*] = pointer(this.data);
+		image.calcRgbHist(null, &data);
+		this.color = false;
+	}
+
+	/// update the histogram value at the given lookup table index
+	bool onUpdate(Histogram this&, int32 idx, argb value) {
+		if (this.data[idx].v == value.v) {
+			return this.isDirty();
+		}
+
+		// using custom luminosity value
+		this.data[idx] = value;
+		return true;
+	}
+
+	bool onReset(Histogram this&) {
+		bool result = false;
+		for (int32 i = 0; i < 256; i += 1) {
+			result |= Histogram.onUpdate(this, i, argb(i, i, i, i));
+		}
+		return result;
+	}
+
+	void onCreate(Histogram this&, View parent) {
+		View.onCreate(this, parent);
+		Histogram.onReset(this);
+	}
+
+	bool onTouchEvent(Histogram this, Rect rect!, TouchEvent event!) {
+		if (event.release || !event.button) {
+			return View.onTouchEvent(this, rect, event);
+		}
+
+		int32 px = Int32.max(0, rect.width() - 256) / 2;
+		int32 x0 = event.x - rect.x0 - px;
+		int32 x1 = x0 - event.dx;
+		int32 y0 = event.y - rect.y0;
+		int32 y1 = y0 - event.dy;
+
+		if (x0 > x1) {
+			int32 x = x0;
+			x0 = x1;
+			x1 = x;
+			int32 y = y0;
+			y0 = y1;
+			y1 = y;
+		}
+		int32 y = y0 << 16;
+		int32 dy = y1 - y0;
+		if (x1 != x0) {
+			dy = (dy << 16) / (x1 - x0);
+		}
+		if (x0 < 0) {
+			y -= x0 * dy;
+			x0 = 0;
+		}
+		if (x1 > 256) {
+			x1 = 256;
+		}
+		int32 h = rect.height();
+		for (int32 x = x0; x < x1; x += 1) {
+			int32 val = 255 * (h - (y >> 16)) / h;
+			this.onUpdate(this, x, argb(val, val, val, val));
+			y += dy;
+		}
+		return true;
+	}
+
+	bool onMeasure(Histogram this, Rect rect&) {
+		if (this.width < 0) {
+			rect.width(256);
+		}
+		if (this.height < 0) {
+			rect.height(128);
+		}
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(Histogram this, Image offs, Rect rect) {
+		enum {
+			colB: 0x4371c6;
+			colG: 0x72d874;
+			colR: 0xfc6165;
+			colL: 0xdadada;
+		}
+		static argb cols[8] = {
+			/*0b000*/ argb(0),
+			/*0b001*/ argb(colB),
+			/*0b010*/ argb(colG),
+			/*0b011*/ mix_rgb8(127, argb(colB), argb(colG)),
+			/*0b100*/ argb(colR),
+			/*0b101*/ mix_rgb8(127, argb(colR), argb(colB)),
+			/*0b110*/ mix_rgb8(127, argb(colR), argb(colG)),
+			/*0b111*/ argb(colL)
+		};
+		int32 px = (rect.width() - 256) / 2;
+		int32 h = rect.height();
+		if (this.lines) {
+			int32 y = rect.y1;
+			int32 pb = bch(this.data[0]) * h / 256;
+			int32 pg = gch(this.data[0]) * h / 256;
+			int32 pr = rch(this.data[0]) * h / 256;
+			int32 pl = ach(this.data[0]) * h / 256;
+
+			for (int i = 1; i < this.data.length; i += 1) {
+				int32 x = rect.x0 + i + px;
+				argb data = this.data[i];
+				int32 bv = bch(data) * h / 256;
+				int32 gv = gch(data) * h / 256;
+				int32 rv = rch(data) * h / 256;
+				int32 lv = ach(data) * h / 256;
+
+				if (this.color) {
+					offs.fillRect(x, y - pl, x + 1, y - lv + int32(pl == lv), data.v);
+				} else {
+					offs.fillRect(x, y - pb, x + 1, y - bv + int32(pb == bv), colB);
+					offs.fillRect(x, y - pg, x + 1, y - gv + int32(pg == gv), colG);
+					offs.fillRect(x, y - pr, x + 1, y - rv + int32(pr == rv), colR);
+					offs.fillRect(x, y - pl, x + 1, y - lv + int32(pl == lv), colL);
+				}
+
+				pb = bv;
+				pg = gv;
+				pr = rv;
+				pl = lv;
+			}
+		}
+		else if (this.color) {
+			for (int i = 0; i < this.data.length; i += 1) {
+				argb data = this.data[i];
+				int32 x = rect.x0 + i + px;
+				int32 y1 = rect.y1;
+				int32 y0 = y1 - ach(data) * h / 256;
+				offs.fillRect(x, y0 - int32(y1 == y0), x + 1, y1, uint32(data));
+			}
+		}
+		else {
+			for (int i = 0; i < this.data.length; i += 1) {
+				int32 x = rect.x0 + i + px;
+				argb data = this.data[i];
+				int32 bv = bch(data) * h / 256;
+				int32 gv = gch(data) * h / 256;
+				int32 rv = rch(data) * h / 256;
+				int32 lv = ach(data) * h / 256;
+				for (int32 y = 0; y < h; y += 1) {
+					int idx = (int(y < rv) << 2) | (int(y < gv) << 1) | int(y < bv);
+					offs.set(x, h - y + rect.y0 - 1, cols[idx]);
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,21 @@
+// platform test
+static if (System.Platform.WebAssembly != 0) {
+int WebAssembly = System.Platform.WebAssembly;
+debug("WebAssembly platform", WebAssembly);
+}
+static if (System.Platform.Windows != 0) {
+int Windows = System.Platform.Windows;
+debug("Windows platform", Windows);
+}
+static if (System.Platform.MacOS != 0) {
+int MacOs = System.Platform.MacOS;
+debug("MacOs platform", MacOs);
+}
+static if (System.Platform.Linux != 0) {
+int Linux = System.Platform.Linux;
+debug("Linux platform", Linux);
+}
+static if (System.Platform.Unix != 0) {
+int Unix = System.Platform.Unix;
+debug("Unix platform", Unix);
+}

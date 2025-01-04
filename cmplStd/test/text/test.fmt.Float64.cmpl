@@ -1,0 +1,64 @@
+// test floating point number formatting
+NumberFormat format = {
+//	positiveSymbol: '+'; // force sign
+	precision: 15;
+	trailingZeros: true;
+};
+
+int printFlags(NumberFormat format!) {
+	int32 result = 0;
+	if (format.width > 0) {
+		result |= float64.print.flagZero;
+	}
+	if (format.positiveSymbol != 0) {
+		result |= float64.print.flagPlus;
+	}
+	return result;
+}
+
+char expect[512] = {...};
+char buff[expect.length] = {...};
+int print_flags = format.printFlags();
+
+for (float64 i = 0; i < 40; i += .001) {
+	float64 value = float64.exp(i);
+	float64.print(expect, value, print_flags, format.width, format.precision);
+	format.format(buff, 0, value);
+
+	if (!equals(expect, buff)) {
+		struct NotEquals {
+			char expectedFull[128];
+			char expected[*];
+			char returned[*];
+			float64 value;
+		}
+		NotEquals err = {
+			expectedFull: {0};
+			expected: expect;
+			returned: buff;
+			value: value;
+		};
+
+		float64.print(err.expectedFull, value, print_flags, format.width, err.expectedFull.length);
+		error("not same", i, err);
+	}
+}
+
+// testing the number formatter
+float64 value = 0;
+for (int i = 0; i < 22; i += 1) {
+	float64.print(expect, value, 0, 0, 100);
+	value.format(buff, 0, "%.100f");
+	if (!equals(expect, buff)) {
+		NotEquals.debug("not equals", NotEquals(expect, buff, null));
+	}
+	value += .1;
+}
+
+static if (false) {/*
+https://www.jessesquires.com/blog/2022/02/01/decimal-vs-double/
+https://www.nist.gov/pml/special-publication-330/sp-330-section-5#5.4.4
+https://localizely.com/blog/number-localization/#decimal-formatting
+
+// (12345678912345678.9).toLocaleString('en-IN', {maximumFractionDigits: 60, minimumFractionDigits: 60})
+*/}

@@ -1,0 +1,40 @@
+static if (int == int32) {
+/// Explicit cast of base types
+inline int(bool value) = int32(value);
+/// Explicit cast of base types
+inline int(int8 value) = int32(value);
+/// Explicit cast of base types
+inline int(int16 value) = int32(value);
+/// Explicit cast of base types
+inline int(int32 value) = int32(value);
+/// Explicit cast of base types
+inline int(int64 value) = int32(value);
+/// Explicit cast of base types
+inline int(uint8 value) = int32(value);
+/// Explicit cast of base types
+inline int(uint16 value) = int32(value);
+/// Explicit cast of base types
+inline int(uint32 value) = int32(value);
+/// Explicit cast of base types
+inline int(uint64 value) = int32(value);
+/// Explicit cast of base types
+inline int(float32 value) = int32(value);
+/// Explicit cast of base types
+inline int(float64 value) = int32(value);
+
+/// Returns the pointer incremented with the given value
+inline inc(pointer ptr, int val) = pointer(inline(pointer(ptr), int32(val), i32.add));
+
+/// Load pointer indirection
+inline ldi(pointer ptr) = pointer(inline(pointer(ptr), ldi32));
+/// Store pointer indirect
+inline sti(pointer ptr, pointer value) = void(inline(pointer(value), pointer(ptr), sti32));
+}
+static if (int == int64) {
+/// Returns the pointer incremented with the given value
+inline inc(pointer ptr, int val) = pointer(inline(pointer(ptr), int64(val), i64.add));
+/// Load pointer indirection
+inline ldi(pointer ptr) = pointer(inline(pointer(ptr), ldi64));
+/// Store pointer indirect
+inline sti(pointer ptr, pointer value) = void(inline(pointer(value), pointer(ptr), sti64));
+}

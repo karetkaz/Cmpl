@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.3)
-project(Cmpl)
+cmake_minimum_required(VERSION 4.0)
+project(CmplOld)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -7,27 +7,36 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bin>)
 
 set(CC_HEADER_FILES
-	src/cmpl.h
-	src/cmplVm.h
-	src/cmplCc.h
-	src/cmplDbg.h
-	src/utils.h
+	include/cmpl.h
+	src/code.h
+	src/core.h
+	src/tree.h
+	src/type.h
+	src/debug.h
+	src/lexer.h
 	src/parser.h
 	src/printer.h
-	src/internal.h
+	src/utils.h
 )
 
 set(CC_SOURCE_FILES
-	src/cgen.c
-	src/code.c
-	src/core.c
-	src/lexer.c
-	src/parser.c
-	src/platform.c
-	src/printer.c
 	src/tree.c
 	src/type.c
-	src/utils.c
+	src/typeCheck.c
+	src/lexer.c
+	src/parser.c
+
+	src/code.c
+	src/codeGen.c
+	src/codeEmit.c
+	src/codeExec.c
+	src/codeFold.c
+
+	src/compiler.c
+	src/debuger.c
+	src/printer.c
+	src/util.c
+
 	cmplStd/src/lstd.c
 )
 
@@ -51,32 +60,35 @@ set(GX_SOURCE_FILES
 	cmplGfx/src/gx_cmpl.c
 )
 
-add_executable(cmpl ${CC_SOURCE_FILES} src/main.c)
-
-add_library(File SHARED cmplFile/src/file.c)
-target_include_directories(File PUBLIC ./src/)
-
 if (WIN32)
-	add_library(Gfx SHARED ${GX_SOURCE_FILES} cmplGfx/src/os_win32/gx_gui.w32.c src/os_win32/time.c)
+	set(CC_SOURCE_FILES ${CC_SOURCE_FILES} src/os_win32/path.c src/os_win32/time.c src/os_win32/plugin.c)
+	set(GX_SOURCE_FILES ${GX_SOURCE_FILES} cmplGfx/src/os_win32/gx_gui.w32.c src/os_win32/time.c)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D NO_LIBPNG -D NO_LIBJPEG")
 else ()
+	set(CC_SOURCE_FILES ${CC_SOURCE_FILES} src/os_linux/path.c src/os_linux/time.c src/os_linux/plugin.c)
+	set(GX_SOURCE_FILES ${GX_SOURCE_FILES} cmplGfx/src/os_etc/gx_gui.sdl.c src/os_linux/time.c)
 	if (APPLE)
-		include_directories(/usr/local/include)
-		link_directories(/usr/local/lib)
-	else ()
-		add_library(OpenGL SHARED cmplGL/src/openGL.c)
-		target_include_directories(OpenGL PUBLIC ./src/)
-		target_link_libraries(OpenGL GL GLU glut)
+		include_directories(/opt/homebrew/include)
+		link_directories(/opt/homebrew/lib)
 	endif ()
-#	add_library(Gfx SHARED ${GX_SOURCE_FILES} cmplGfx/src/os_linux/gx_gui.x11.c src/os_linux/time.c)
-#	target_link_libraries(Gfx m dl png jpeg X11)
-	add_library(Gfx SHARED ${GX_SOURCE_FILES} cmplGfx/src/gx_gui.sdl.c src/os_linux/time.c)
-	target_link_libraries(Gfx m dl png jpeg SDL2)
-	target_link_libraries(cmpl m dl)
 endif ()
-target_include_directories(Gfx PUBLIC ./src/ ./libs/stb)
 
-# a simple "how to use vm" demo code.
-#add_executable(cmplVmEmit ${CC_SOURCE_FILES} src/test/vmMulf32.c)
-#target_include_directories(cmplVmEmit PUBLIC ./src/)
-#target_link_libraries(cmplVmEmit m dl)
+link_libraries(m)
+include_directories(./include)
+
+add_executable(Cmpl ${CC_SOURCE_FILES} src/main.c)
+
+add_library(Gfx SHARED ${GX_SOURCE_FILES})
+target_include_directories(Gfx PUBLIC ./src/ ./extras/libs/stb)
+
+add_library(File SHARED cmplFile/src/file.c)
+
+if (NOT WIN32)
+	target_link_libraries(Cmpl dl)
+	target_link_libraries(Gfx dl png jpeg SDL2)
+endif ()
+
+# some simple "how to use vm" demos.
+add_executable(testVmEmit ${CC_SOURCE_FILES} src/test/vmMulf32.c)
+add_executable(testCcLexer ${CC_SOURCE_FILES} src/test/ccLexer.c)
+

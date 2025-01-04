@@ -1,0 +1,54 @@
+/// Create an image with the given with, height and depth
+inline Image(int width, int height, int depth) = Image.create(width, height, depth);
+
+/// Create an image by opening an image file
+Image Image(char fileName[], int depth) {
+	static if (struct(Image.openPng) != null) {
+		if (fileName.endsWith(".png", ignCaseCmp)) {
+			return Image.openPng(fileName, depth);
+		}
+	}
+	static if (struct(Image.openJpg) != null) {
+		if (fileName.endsWith(".jpeg", ignCaseCmp)) {
+			return Image.openJpg(fileName, depth);
+		}
+		if (fileName.endsWith(".jpg", ignCaseCmp)) {
+			return Image.openJpg(fileName, depth);
+		}
+	}
+	static if (struct(Image.openBmp) != null) {
+		if (fileName.endsWith(".bmp", ignCaseCmp)) {
+			return Image.openBmp(fileName, depth);
+		}
+	}
+	return Image.openImg(fileName, depth);
+}
+
+/// Create an image by opening an image file
+inline Image(char fileName[]) = Image(fileName, 32);
+
+/// Clip the rectangle against the given image boundaries
+bool clip(Image image, Rect roi&) {
+	if (roi.x0 < 0) {
+		roi.x0 = 0;
+	}
+
+	if (roi.y0 < 0) {
+		roi.y0 = 0;
+	}
+
+	int width = image.width();
+	if (roi.x1 > width) {
+		roi.x1 = width;
+	}
+
+	int height = image.height();
+	if (roi.y1 > height) {
+		roi.y1 = height;
+	}
+
+	return !roi.empty();
+}
+
+/// Set the the color of a pixel at the given position
+inline set(Image image, int32 x, int32 y, argb color) = Image.set(image, x, y, uint32(color));

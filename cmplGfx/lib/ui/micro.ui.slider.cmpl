@@ -1,0 +1,216 @@
+///@public
+struct Slider: View {
+	///@public
+	char text[];
+
+	///@public
+	float64 value = 0;
+	float64 _value = 0;
+	///@public
+	float64 minimum = 0;
+	///@public
+	float64 maximum = 1;
+	///@public
+	float64 stepSize = 0;
+	///@public
+	float64 shiftFactor = 1. / 20; // holding the shift key slide twenty times slower
+	float64 resetValue = 0;
+
+	/// clicking on a non focused view will not update the value, it will just focus it.
+	bool clickToFocus = true;
+
+	///@public
+	bool onUpdate(Slider this, float64 value) {
+		if (value > this.maximum) {
+			value = this.maximum;
+		}
+		if (value < this.minimum) {
+			value = this.minimum;
+		}
+		this._value = value;
+		if (this.stepSize != 0) {
+			value = Float64.round(value / this.stepSize) * this.stepSize;
+		}
+		if (this.value == value) {
+			return this.isDirty();
+		}
+		this.value = value;
+		return true;
+	}
+
+	bool onReset(Slider this) {
+		return this.onUpdate(this, this.resetValue);
+	}
+
+	bool onClick(Slider this) {
+		return this.onUpdate(this, this.resetValue);
+	}
+
+	void onCreate(Slider this&, View parent) {
+		View.onCreate(this, parent);
+		// clamp to initial value and force update with a reset
+		Slider.onUpdate(this, this.value);
+		this.resetValue = this.value;
+		this.onReset(this);
+	}
+
+	State onKeyEvent(Slider this, KeyEvent event!) {
+		if (event.key >= '0' && event.key <= '9') {
+			// set percent
+			if (this.minimum == this.maximum) {
+				return State.ignored;
+			}
+			if (!event.release) {
+				return State.pressed;
+			}
+			float64 p = (event.key - '0') * (this.maximum - this.minimum) / 10;
+			this.onUpdate(this, this.minimum + p);
+			return State.consumed;
+		}
+
+		// +/- =>
+		if (event.key == '+' || event.key == '=') {
+			// todo: event.key == Window.KEY_CODE_RIGHT, UP, PAGE_UP, ???
+			if (event.release) {
+				return State.consumed;
+			}
+
+			float64 delta = this.maximum - this.minimum;
+			if (event.isCtrl) {
+				delta = 1;
+			} else {
+				if (Float64.isFinite(delta)) {
+					delta *= this.shiftFactor;
+				} else {
+					delta = 1 / this.shiftFactor;
+				}
+			}
+
+			if (event.isShift && this.shiftFactor < 1) {
+				delta *= this.shiftFactor;
+			}
+			if (delta < this.stepSize) {
+				delta = this.stepSize;
+			}
+
+			if (!this.onUpdate(this, this._value + delta)) {
+				return State.pressed;
+			}
+			return State.consumed;
+		}
+		if (event.key == '-' || event.key == '_') {
+			// todo: event.key == Window.KEY_CODE_LEFT, DOWN, PAGE_DOWN
+			if (event.release) {
+				return State.consumed;
+			}
+
+			float64 delta = this.maximum - this.minimum;
+			if (event.isCtrl) {
+				delta = 1;
+			} else {
+				if (Float64.isFinite(delta)) {
+					delta *= this.shiftFactor;
+				} else {
+					delta = 1 / this.shiftFactor;
+				}
+			}
+
+			if (event.isShift && this.shiftFactor < 1) {
+				delta *= this.shiftFactor;
+			}
+			if (delta < this.stepSize) {
+				delta = this.stepSize;
+			}
+
+			if (!this.onUpdate(this, this._value - delta)) {
+				return State.pressed;
+			}
+			return State.consumed;
+		}
+		return View.onKeyEvent(this, event);
+	}
+
+	bool onTouchEvent(Slider this, Rect rect!, TouchEvent event!) {
+		if (event.button == 0) {
+			return false;
+		}
+		if (event.release && (event.clicks < 0 || event.clicks > 1)) {
+			return this.onReset(this);
+		}
+
+		if (event.clicks < 1) {
+			float64 delta = event.dx * (this.maximum - this.minimum) / rect.width();
+			if (!Float64.isFinite(delta)) {
+				delta = event.dx / this.shiftFactor;
+			} else if (event.isShift) {
+				delta *= this.shiftFactor;
+			}
+			return this.onUpdate(this, this._value + delta);
+		}
+		if (event.release) {
+			if (this.focusable && this.clickToFocus) {
+				if (!this.isFocused()) {
+					return true;
+				}
+			}
+			if (Float64.isFinite(this.minimum) && Float64.isFinite(this.maximum)) {
+				float64 value = event.x - rect.x0;
+				value *= float64(this.maximum - this.minimum) / rect.width();
+				return this.onUpdate(this, this.minimum + value);
+			}
+			return true;
+		}
+		return View.onTouchEvent(this, rect, event);
+	}
+
+	bool onMeasure(Slider this, Rect rect&) {
+		char value[64] = {...};
+		Style style! = this.style;
+		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
+			style.format.format(value, 0, int64(this.value));
+		} else {
+			style.format.format(value, 0, this.value);
+		}
+		Rect valueRect = {};
+		style.measure(&valueRect, value);
+		style.measure(&rect, this.text);
+		rect.width(rect.width() + valueRect.width());
+		return View.onMeasure(this, &rect);
+	}
+
+	///@public
+	void onDrawSlider(Slider this, Image offs, Rect rect) {
+		if (!Float64.isFinite(this.maximum) || !Float64.isFinite(this.minimum)) {
+			// no slider for infinite or undefined bounds
+			return;
+		}
+		if (this.maximum == this.minimum) {
+			return;
+		}
+		Style style& = this.style;
+		int32 y1 = rect.y1;
+		int32 y0 = y1 - style.padding / 4;
+		int32 x0 = rect.x0;
+		int32 x1 = rect.x1;
+		int32 x = x0 + (this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
+		if (x > x0) {
+			offs.fillRect(x0, y0, x, y1, style.valueColor);
+		}
+		if (x < x1) {
+			offs.fillRect(x, y0, x1, y1, style.focusedColor);
+		}
+	}
+
+	void onDraw(Slider this, Image offs, Rect rect) {
+		char value[64] = {...};
+		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
+			this.style.format.format(value, 0, int64(this.value));
+		} else {
+			this.style.format.format(value, 0, this.value);
+		}
+		if (this.onDrawSlider != null) {
+			this.onDrawSlider(this, offs, rect);
+		}
+		View.onDraw(this, offs, rect, this.text, value);
+	}
+}

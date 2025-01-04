@@ -1,0 +1,102 @@
+// debugging related functions
+
+/// report message at `verbose` logging level
+inline verbose(char message[*], variant details...) = raise(raise.verbose, raise.noTrace, message, ...details);
+
+/// report message at `debug` logging level
+inline debug(char message[*], variant details...) = raise(raise.debug, raise.noTrace, message, ...details);
+
+/// report message with stacktrace at `debug` logging level
+inline trace(char message[*], variant details...) = raise(raise.debug, raise.defTrace, message, ...details);
+
+/// report message at `info` logging level
+inline info(char message[*], variant details...) = raise(raise.info, raise.noTrace, message, ...details);
+
+/// report message at `warn` logging level
+inline warn(char message[*], variant details...) = raise(raise.warn, raise.noTrace, message, ...details);
+
+/// report message with stacktrace at `error` logging level
+inline error(char message[*], variant details...) = raise(raise.error, raise.defTrace, message, ...details);
+
+/// report message with stacktrace at `abort` logging level and abort execution
+inline abort(char message[*], variant details...) = raise(raise.abort, raise.defTrace, message, ...details);
+/// report message with stacktrace at `abort` logging level and abort execution
+inline abort() = raise(raise.abort, raise.defTrace, "execution aborted!");
+
+/// report message and abort the execution if the assertion condition fails (is false)
+inline assert(bool condition, char message[*], variant details...) = void(condition ? void(0) : raise(raise.abort, raise.defTrace, message, ...details));
+/// report message and abort the execution if the assertion condition fails (is false)
+inline assert(bool condition, variant details...) = void(condition ? void(0) : raise(raise.abort, raise.defTrace, "assertion failed!", ...details));
+
+/// small timer to measure elapsed time
+struct DebugTimer {
+	int64 start;
+	int64 last;
+
+	/// create a new timer and start it
+	static DebugTimer start() {
+		int64 now = System.millis();
+		return {
+			start: now;
+			last: now;
+		};
+	}
+
+	static int64 end(DebugTimer timer!) {
+		int64 now = System.millis();
+		return now - timer.start;
+	}
+	static int64 lap(DebugTimer timer&) {
+		int64 now = System.millis();
+		int64 last = timer.last;
+		timer.last = now;
+		return now - last;
+	}
+
+	inline print(char message[*], int64 time!) = debug(message, time);
+
+	/// log time spent since start
+	inline end(DebugTimer timer&, char message[*]) = print(message, end(timer));
+
+	/// log time spent since last lap
+	inline lap(DebugTimer timer&, char message[*]) = print(message, lap(&timer));
+}
+
+/// Record used for debugging purposes, containing expected, returned and an array of extra values
+struct NotEquals {
+	/// Value of the expected result
+	variant expected;
+
+	/// Value of the actual result
+	variant returned;
+
+	/// Extra argument to identify what happened
+	variant details![];
+
+	/// abort execution displaying the expected and returned values
+	inline debug(char message[*], NotEquals detail!) = raise(raise.debug, raise.noTrace, message, detail);
+
+	/// abort execution displaying the expected and returned values
+	inline error(char message[*], NotEquals detail!) = raise(raise.error, raise.noTrace, message, detail);
+
+	/// abort execution displaying the expected and returned values
+	inline abort(char message[*], NotEquals detail!) = raise(raise.abort, raise.noTrace, message, detail);
+}
+
+/// Create a not equals record for inspection from expected and returned
+NotEquals NotEquals(variant expected, variant returned, variant details[]) {
+	return {
+		expected: expected;
+		returned: returned;
+		details: details;
+	};
+}
+
+/// abort execution if the returned value is not equal to the expected value
+inline assertEq(int64 expected, int64 returned, char message[*], variant details...) = expected == returned ? void(0) : NotEquals.abort(message, NotEquals(expected, returned, details));
+
+/// abort execution if the returned value is not equal to the expected value
+inline assertEq(int64 expected, int64 returned) = assertEq(expected, returned, "assertion failed");
+
+/// abort execution if the returned value is not equal to the expected value
+inline assertEq(bool expected, bool returned, char message[*], variant details...) = expected == returned ? void(0) : NotEquals.abort(message, NotEquals(expected, returned, details));

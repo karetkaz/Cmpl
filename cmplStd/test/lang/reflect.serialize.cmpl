@@ -1,0 +1,43 @@
+void serialize(variant value) {
+	pointer p = variant.data(value);
+	typename t = variant.type(value);
+	debug("data", t, p, value);
+	if (t == typename) {
+		for (typename it& = typename.fields(p); it != null; it = it.next()) {
+			debug("fields and methods", it);
+		}
+	} else {
+		for (typename it& = typename.fields(t); it != null; it = it.next()) {
+			pointer var = p.inc(it.offset);
+			if (it.isIndirect()) {
+				variant f = inline(pointer(it.base()), pointer(var.ldi()));
+				debug("fields and methods", it, f);
+			} else {
+				variant f = inline(pointer(it.base()), pointer(var));
+				debug("fields and methods", it, f);
+			}
+		}
+	}
+}
+
+struct User {
+	int id;
+	char firstName[*];
+	char lastName[*];
+	char pets[*][];
+}
+
+char pets[*][] = {
+	"Rocco";
+	"Milo";
+};
+User user = {
+	id: 19810228;
+	firstName: "John";
+	lastName: "Doe";
+	pets: pets;
+};
+
+serialize(user);
+serialize(System.Platform);
+serialize(Float64.ln);

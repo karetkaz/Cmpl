@@ -1,0 +1,136 @@
+// test the functions from Math
+
+float64 testMathFloor_pos_3_0 = Float64.floor(3.0);
+float64 testMathFloor_pos_3_2 = Float64.floor(3.2);
+float64 testMathFloor_pos_3_5 = Float64.floor(3.5);
+float64 testMathFloor_pos_3_7 = Float64.floor(3.7);
+float64 testMathFloor_pos_3_9 = Float64.floor(3.9);
+float64 testMathFloor_neg_3_0 = Float64.floor(-3.0);
+float64 testMathFloor_neg_3_2 = Float64.floor(-3.2);
+float64 testMathFloor_neg_3_5 = Float64.floor(-3.5);
+float64 testMathFloor_neg_3_7 = Float64.floor(-3.7);
+float64 testMathFloor_neg_3_9 = Float64.floor(-3.9);
+
+float64 testMathRound_pos_3_0 = Float64.round(3.0);
+float64 testMathRound_pos_3_2 = Float64.round(3.2);
+float64 testMathRound_pos_3_5 = Float64.round(3.5);
+float64 testMathRound_pos_3_7 = Float64.round(3.7);
+float64 testMathRound_pos_3_9 = Float64.round(3.9);
+float64 testMathRound_neg_3_0 = Float64.round(-3.0);
+float64 testMathRound_neg_3_2 = Float64.round(-3.2);
+float64 testMathRound_neg_3_5 = Float64.round(-3.5);
+float64 testMathRound_neg_3_7 = Float64.round(-3.7);
+float64 testMathRound_neg_3_9 = Float64.round(-3.9);
+
+float64 testMathCeil_pos_3_0 = Float64.ceil(3.0);
+float64 testMathCeil_pos_3_2 = Float64.ceil(3.2);
+float64 testMathCeil_pos_3_5 = Float64.ceil(3.5);
+float64 testMathCeil_pos_3_7 = Float64.ceil(3.7);
+float64 testMathCeil_pos_3_9 = Float64.ceil(3.9);
+float64 testMathCeil_neg_3_0 = Float64.ceil(-3.0);
+float64 testMathCeil_neg_3_2 = Float64.ceil(-3.2);
+float64 testMathCeil_neg_3_5 = Float64.ceil(-3.5);
+float64 testMathCeil_neg_3_7 = Float64.ceil(-3.7);
+float64 testMathCeil_neg_3_9 = Float64.ceil(-3.9);
+
+float64 testMathSign_1F = Float64.sign(0.2F);
+float64 testMathSign_2F = Float64.sign(0.0F);
+float64 testMathSign_3F = Float64.sign(-.9F);
+float64 testMathSign_1f = Float32.sign(0.2f);
+float64 testMathSign_2f = Float32.sign(0.0f);
+float64 testMathSign_3f = Float32.sign(-.9f);
+
+float64 testMathAbs_1F = Float64.abs(0.2F);
+float64 testMathAbs_2F = Float64.abs(0.0F);
+float64 testMathAbs_3F = Float64.abs(-.9F);
+float64 testMathAbs_1f = Float32.abs(0.2f);
+float64 testMathAbs_2f = Float32.abs(0.0f);
+float64 testMathAbs_3f = Float32.abs(-.9f);
+
+float64 testMathMin_1f = Float32.min(1f, 2f);
+float64 testMathMax_2f = Float32.max(1f, 2f);
+float64 testMathMin_1F = Float64.min(1F, 2F);
+float64 testMathMax_2F = Float64.max(1F, 2F);
+
+float64 testMathClamp_1f = Float32.clamp(10f, 0f, 1f);
+float64 testMathClamp_1F = Float64.clamp(10F, 0F, 1F);
+
+float64 testMathMix_1f = Float32.mix(0f, 2f, .5f);
+float64 testMathMix_1F = Float64.mix(0F, 2F, .5F);
+
+float64 testMathSmooth_1f = Float32.smoothstep(0f, 1f, 1f);
+float64 testMathSmooth_1F = Float64.smoothstep(0F, 1F, 1F);
+
+float64 testMathMin_nan = Float64.min();
+float64 testMathMin_1 = Float64.min(6, 2, 5, 8, 2, 1, 9, 2, 6);
+float64 testMathMax_nan = Float64.max();
+float64 testMathMax_9 = Float64.max(6, 2, 5, 8, 2, 1, 9, 2, 6);
+
+float64 testMathSum_0 = Float64.sum();
+float64 testMathSum_1 = Float64.sum(1);
+float64 testMathSum_3 = Float64.sum(1, 2);
+float64 testMathSum_55 = Float64.sum(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+float64 testMathEval_x = 10;
+float64 testMathEval_0 = Float64.eval(testMathEval_x);
+float64 testMathEval_1 = Float64.eval(testMathEval_x, 1.);
+float64 testMathEval_2 = Float64.eval(testMathEval_x, 1., 1.);
+float64 testMathEval_3 = Float64.eval(testMathEval_x, 1., 1., 1.);
+float64 testMathEval_4 = Float64.eval(testMathEval_x, 1., 1., 1., 1.);
+float64 testMathEval_5 = Float64.eval(testMathEval_x, 1., 1., 1., 1., 1.);
+float64 testMathEval_6 = Float64.eval(testMathEval_x, 1., 1., 1., 1., 1., 1.);
+
+float64 testMathSin_f64 = Float64.sin(Float64.pi / 2);
+float64 testMathCos_f64 = Float64.cos(Float64.pi / 2);
+float64 testMathTan_f64 = Float64.tan(Float64.pi / 4);
+float64 testMathSinh_f64 = Float64.sinh(Float64.pi / 2);
+float64 testMathCosh_f64 = Float64.cosh(Float64.pi / 2);
+//float64 testMathTanh_f64 = Float64.tanh(Float64.pi / 4);
+float64 testMathAsin_f64 = Float64.asin(.2);
+float64 testMathAcos_f64 = Float64.acos(.2);
+//float64 testMathAtan_f64 = Float64.atan(.3);
+
+float64 testMathAbsMod_f64_0a = Float64.absMod(10F, 10F);
+float64 testMathAbsMod_f64_0b = Float64.absMod(0F, 10F);
+float64 testMathAbsMod_f64_0c = Float64.absMod(-10F, 10F);
+
+float64 testMathAbsMod_f64_9a = Float64.absMod(19F, 10F);
+float64 testMathAbsMod_f64_9b = Float64.absMod(9F, 10F);
+float64 testMathAbsMod_f64_9c = Float64.absMod(-1F, 10F);
+float64 testMathAbsMod_f64_9d = Float64.absMod(-11F, 10F);
+
+float64 testMathAbsMod_f64_8a = Float64.absMod(18F, 10F);
+float64 testMathAbsMod_f64_8b = Float64.absMod(8F, 10F);
+float64 testMathAbsMod_f64_8c = Float64.absMod(-2F, 10F);
+float64 testMathAbsMod_f64_8d = Float64.absMod(-12F, 10F);
+
+float32 testMathAbsMod_f32_0a = Float32.absMod(10f, 10f);
+float32 testMathAbsMod_f32_0b = Float32.absMod(0f, 10f);
+float32 testMathAbsMod_f32_0c = Float32.absMod(-10f, 10f);
+
+float32 testMathAbsMod_f32_9a = Float32.absMod(19f, 10f);
+float32 testMathAbsMod_f32_9b = Float32.absMod(9f, 10f);
+float32 testMathAbsMod_f32_9c = Float32.absMod(-1f, 10f);
+float32 testMathAbsMod_f32_9d = Float32.absMod(-11f, 10f);
+
+float32 testMathAbsMod_f32_8a = Float32.absMod(18f, 10f);
+float32 testMathAbsMod_f32_8b = Float32.absMod(8f, 10f);
+float32 testMathAbsMod_f32_8c = Float32.absMod(-2f, 10f);
+float32 testMathAbsMod_f32_8d = Float32.absMod(-12f, 10f);
+
+inline debug(char message[*], float64 value!) = raise(raise.debug, raise.noTrace, message, value);
+RunningStat stats = {};
+stats.push(3.12, 4.78, 5.223, 18.7, 20.52);
+debug("min", stats.min());
+debug("max", stats.max());
+debug("count", stats.count());
+debug("sum", stats.sum());
+debug("mean", stats.mean());
+debug("deviation", stats.stddev());
+debug("variance", stats.variance());
+
+//float64 testMathLog_f64 = Float64.log(Float64.e * Float64.e * Float64.e);
+//float64 testMathExp_f64 = Float64.exp(1F);
+//float64 testMathPow_f64 = Float64.pow(Float64.pi * Float64.pi, .5F);
+//float64 testMathSqrt_f64 = Float64.sqrt(Float64.pi * Float64.pi);
+//float64 testMathAtan_f64 = Float64.atan2(Float64.pi, 1F);

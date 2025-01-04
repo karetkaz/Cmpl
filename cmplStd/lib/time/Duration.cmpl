@@ -1,0 +1,97 @@
+/**
+ * Timespan is just a duration
+ * for example: 33 seconds
+ */
+struct Duration {
+	int64 value = 0;
+	// fixme: inline precision = Timeunit.Millis;
+	static Timeunit precision! = Timeunit.Millis;
+
+	/// Returns the value of the `duration` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
+	static int64 value(Duration duration, Timeunit precision) {
+		return convert(duration.value, Duration.precision, precision);
+	}
+
+	/// Return duration from the passed milliseconds
+	static Duration millis(int64 duration) {
+		return { value: convert(duration, Timeunit.Millis, Duration.precision); };
+	}
+
+	/// Return milliseconds from the passed duration
+	static int64 millis(Duration duration) {
+		return convert(duration.value, Duration.precision, Timeunit.Millis);
+	}
+
+	/// Return duration from the passed seconds
+	static Duration seconds(int64 duration) {
+		return { value: convert(duration, Timeunit.Seconds, Duration.precision); };
+	}
+
+	/// Return seconds from the passed duration
+	static int64 seconds(Duration duration) {
+		return convert(duration.value, Duration.precision, Timeunit.Seconds);
+	}
+
+	/// Return duration from the passed minutes
+	static Duration minutes(int64 duration) {
+		return { value: convert(duration, Timeunit.Minutes, Duration.precision); };
+	}
+
+	/// Return minutes from the passed duration
+	static int64 minutes(Duration duration) {
+		return convert(duration.value, Duration.precision, Timeunit.Minutes);
+	}
+
+	/// Return duration from the passed hours
+	static Duration hours(int64 duration) {
+		return { value: convert(duration, Timeunit.Hours, Duration.precision); };
+	}
+
+	/// Return hours from the passed duration
+	static int64 hours(Duration duration) {
+		return convert(duration.value, Duration.precision, Timeunit.Hours);
+	}
+
+	/// Return duration from the passed days
+	static Duration days(int64 duration) {
+		return { value: convert(duration, Timeunit.Days, Duration.precision); };
+	}
+
+	/// Return days from the passed duration
+	static int64 days(Duration duration) {
+		return convert(duration.value, Duration.precision, Timeunit.Days);
+	}
+
+	/// Add two durations
+	static Duration add(Duration lhs, Duration rhs) {
+		return { value: lhs.value + rhs.value };
+	}
+}
+
+/// Construct a duration from the given `value` at the given `precision`
+Duration Duration(int64 value, Timeunit precision) {
+	return { value: convert(value, precision, Duration.precision) };
+}
+
+/* TODO: inline initialization, operator overloading
+inline Duration(int64 value, Timeunit precision) = {
+	value: convert(value, precision, Duration.precision);
+}
+
+inline +(Duration lhs, Duration rhs) = Duration {
+	value: lhs.value + rhs.value;
+}
+
+inline -(Duration lhs, Duration rhs) = Duration {
+	value: lhs.value - rhs.value;
+}
+
+struct Duration {
+	static Duration setField(Duration this, int64 value, Timeunit unit) { ... }
+	static Duration setValue(Duration this, int64 value, Timeunit unit) { ... }
+	static Duration floor(Duration this, Timeunit unit) { ... }
+	static Duration ceil(Duration this, Timeunit unit) { ... }
+	static Duration distribute(Duration this, Timeunit unit, uint64 duration) { ... }
+	static Duration distribute(Duration this, Timeunit unit, int start, int end) { ... }
+}
+*/

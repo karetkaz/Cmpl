@@ -3,10 +3,6 @@
 A [Variable](https://en.wikipedia.org/wiki/Variable_(computer_science)) is
 a symbolic name associated with a value, this value may be changed at runtime.
 
-### Constant variables
-
-Variables marked with the `const` attribute may be assigned only at initialization.
-
 ### Static variables
 
 Variables marked with the `static` attribute will point to the same global memory.
@@ -31,7 +27,7 @@ struct instance {
 	static int count = 0;
 
 	// instance variable
-	const int instanceNr;
+	int instanceNr;
 }
 
 // construct the next instance
@@ -39,6 +35,21 @@ inline instance() = {
 	instanceNr: instance.count += 1;
 };
 ```
+
+### References
+
+Variables marked with one of the following suffixes, will become references to variables:
+
+* `!`: immutable reference - the referenced value is read only
+* `?`: optional reference - the referenced value can be null
+* `&`: mutable reference - the referenced value is writeable
+* `&?`: mutable optional reference - [TODO]
+
+**Note**: for constant values static immutable references can be used:
+```cmpl
+static double constant! = 3.1415;
+```
+
 
 ### Initialization
 

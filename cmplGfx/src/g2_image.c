@@ -792,6 +792,7 @@ GxImage loadImg(GxImage dst, const char *src, int depth) {
 	}
 
 	if (pixels == NULL || blt == NULL) {
+        stbi_image_free(pixels);
 		return NULL;
 	}
 

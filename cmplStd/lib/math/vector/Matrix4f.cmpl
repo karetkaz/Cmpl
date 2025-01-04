@@ -1,0 +1,287 @@
+/// A 4x4 matrix
+struct mat4f: 0 {
+	/// Access elements as an array: m[1][0]
+	float32 m[4][4];
+
+	/// Access elements as a flatten array: data[4] => m[1][0]
+	float32 data[16];
+
+	/// Access elements as an array of vectors: v[1].x => m[1][0]
+	vec4f v[4];
+
+	struct {
+		/// The first row as a vector
+		vec4f x;
+		/// The second row as a vector
+		vec4f y;
+		/// The third row as a vector
+		vec4f z;
+		/// The fourth row as a vector
+		vec4f w;
+	}
+	struct {
+		/// The first element of the first row
+		float32 xx;
+		/// The second element of the first row
+		float32 xy;
+		/// The third element of the first row
+		float32 xz;
+		/// The fourth element of the first row
+		float32 xw;
+
+		/// The first element of the second row
+		float32 yx;
+		/// The second element of the second row
+		float32 yy;
+		/// The third element of the second row
+		float32 yz;
+		/// The fourth element of the second row
+		float32 yw;
+
+		/// The first element of the third row
+		float32 zx;
+		/// The second element of the third row
+		float32 zy;
+		/// The third element of the third row
+		float32 zz;
+		/// The fourth element of the third row
+		float32 zw;
+
+		/// The first element of the fourth row
+		float32 wx;
+		/// The second element of the fourth row
+		float32 wy;
+		/// The third element of the fourth row
+		float32 wz;
+		/// The fourth element of the fourth row
+		float32 ww;
+	}
+
+	/// Multiply with vector: dot product of the first 3 elements
+	//inline dp3(mat4f mat&, vec4f vec&) = vec4f(dp3(mat.x, vec), dp3(mat.y, vec), dp3(mat.z, vec), 1f);
+	static vec4f dp3(mat4f mat!, vec4f vec) {
+		return {
+			x: dp3(mat.x, vec);
+			y: dp3(mat.y, vec);
+			z: dp3(mat.z, vec);
+			w: 1;
+		};
+	}
+
+	/// Multiply with vector: homogeneous dot product
+	//inline dph(mat4f mat&, vec4f vec&) = vec4f(dph(mat.x, vec), dph(mat.y, vec), dph(mat.z, vec), dph(mat.w, vec));
+	static vec4f dph(mat4f mat!, vec4f vec) {
+		return {
+			x: dph(mat.x, vec);
+			y: dph(mat.y, vec);
+			z: dph(mat.z, vec);
+			w: dph(mat.w, vec);
+		};
+	}
+
+	/// Multiply with vector: full dot product
+	//inline dp4(mat4f mat&, vec4f vec&) = vec4f(dp4(mat.x, vec), dp4(mat.y, vec), dp4(mat.z, vec), dp4(mat.w, vec));
+	static vec4f dp4(mat4f mat!, vec4f vec) {
+		return {
+			x: dp4(mat.x, vec);
+			y: dp4(mat.y, vec);
+			z: dp4(mat.z, vec);
+			w: dp4(mat.w, vec);
+		};
+	}
+
+	/// Transform a 3d point by the given matrix: homogeneous dot product
+	static vec4f transform(mat4f mat!, float32 x, float32 y, float32 z) {
+		return mat.dph(vec4f(x, y, z, 1));
+	}
+
+	/// Transform a 2d point by the given matrix: homogeneous dot product
+	static vec4f transform(mat4f mat!, float32 x, float32 y) {
+		return mat.dph(vec4f(x, y, 0, 1));
+	}
+}
+
+/// Initialize all elements with the given values
+mat4f mat4f(float32 xx, float32 xy, float32 xz, float32 xw,
+			float32 yx, float32 yy, float32 yz, float32 yw,
+			float32 zx, float32 zy, float32 zz, float32 zw,
+			float32 wx, float32 wy, float32 wz, float32 ww) {
+	return {
+		xx: xx; xy: xy; xz: xz; xw: xw;
+		yx: yx; yy: yy; yz: yz; yw: yw;
+		zx: zx; zy: zy; zz: zz; zw: zw;
+		wx: wx; wy: wy; wz: wz; ww: ww;
+	};
+}
+
+/// Initialize matrix with row vectors
+mat4f mat4f(vec4f x!, vec4f y!, vec4f z!, vec4f w!) {
+	return { x: x, y: y, z: z, w: w };
+}
+
+/// Transpose the matrix
+static mat4f transpose(mat4f mat!) {
+	return {
+		xx: mat.xx; xy: mat.yx; xz: mat.zx; xw: mat.wx;
+		yx: mat.xy; yy: mat.yy; yz: mat.zy; yw: mat.wy;
+		zx: mat.xz; zy: mat.yz; zz: mat.zz; zw: mat.wz;
+		wx: mat.xw; wy: mat.yw; wz: mat.zw; ww: mat.ww;
+	};
+}
+
+/// Build the inverse of the matrix
+// adapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl
+static mat4f inverse(mat4f mat) {
+	float32 b00 = mat.xx * mat.yy - mat.xy * mat.yx;
+	float32 b01 = mat.xx * mat.yz - mat.xz * mat.yx;
+	float32 b02 = mat.xx * mat.yw - mat.xw * mat.yx;
+	float32 b03 = mat.xy * mat.yz - mat.xz * mat.yy;
+	float32 b04 = mat.xy * mat.yw - mat.xw * mat.yy;
+	float32 b05 = mat.xz * mat.yw - mat.xw * mat.yz;
+	float32 b06 = mat.zx * mat.wy - mat.zy * mat.wx;
+	float32 b07 = mat.zx * mat.wz - mat.zz * mat.wx;
+	float32 b08 = mat.zx * mat.ww - mat.zw * mat.wx;
+	float32 b09 = mat.zy * mat.wz - mat.zz * mat.wy;
+	float32 b10 = mat.zy * mat.ww - mat.zw * mat.wy;
+	float32 b11 = mat.zz * mat.ww - mat.zw * mat.wz;
+
+	float32 det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+
+	return {
+		xx: (mat.yy * b11 - mat.yz * b10 + mat.yw * b09) / det;
+		xy: (mat.xz * b10 - mat.xy * b11 - mat.xw * b09) / det;
+		xz: (mat.wy * b05 - mat.wz * b04 + mat.ww * b03) / det;
+		xw: (mat.zz * b04 - mat.zy * b05 - mat.zw * b03) / det;
+		yx: (mat.yz * b08 - mat.yx * b11 - mat.yw * b07) / det;
+		yy: (mat.xx * b11 - mat.xz * b08 + mat.xw * b07) / det;
+		yz: (mat.wz * b02 - mat.wx * b05 - mat.ww * b01) / det;
+		yw: (mat.zx * b05 - mat.zz * b02 + mat.zw * b01) / det;
+		zx: (mat.yx * b10 - mat.yy * b08 + mat.yw * b06) / det;
+		zy: (mat.xy * b08 - mat.xx * b10 - mat.xw * b06) / det;
+		zz: (mat.wx * b04 - mat.wy * b02 + mat.ww * b00) / det;
+		zw: (mat.zy * b02 - mat.zx * b04 - mat.zw * b00) / det;
+		wx: (mat.yy * b07 - mat.yx * b09 - mat.yz * b06) / det;
+		wy: (mat.xx * b09 - mat.xy * b07 + mat.xz * b06) / det;
+		wz: (mat.wy * b01 - mat.wx * b03 - mat.wz * b00) / det;
+		ww: (mat.zx * b03 - mat.zy * b01 + mat.zz * b00) / det;
+	};
+}
+
+
+/// Multiply two matrices (rows * cols)
+static mat4f mul(mat4f lhs!, mat4f rhs!) {
+	// multiply row vector with a matrix resulting a row vector
+	inline dp4(vec4f vec!, mat4f mat!) = mat.dp4(vec);
+
+	mat4f transposed = transpose(rhs);
+	return {
+		x: lhs.x.dp4(transposed);
+		y: lhs.y.dp4(transposed);
+		z: lhs.z.dp4(transposed);
+		w: lhs.w.dp4(transposed);
+	};
+}
+
+/// Build a rotation matrix
+// adapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-and-formulas
+static mat4f rotation(vec4f center!, vec4f direction!, float32 angle) {
+	float32 len = direction.length();
+	if (len < 1e-9) {
+		trace("invalid direction of rotation", direction);
+		return {
+			x: vec4f(0, 0, 0, 0);
+			y: vec4f(0, 0, 0, 0);
+			z: vec4f(0, 0, 0, 0);
+			w: vec4f(0, 0, 0, 0);
+		};
+	}
+	float32 x = direction.x / len;
+	float32 y = direction.y / len;
+	float32 z = direction.z / len;
+	float32 cx = center.x;
+	float32 cy = center.y;
+	float32 cz = center.z;
+	float32 xx = x * x;
+	float32 xy = x * y;
+	float32 xz = x * z;
+	float32 yy = y * y;
+	float32 yz = y * z;
+	float32 zz = z * z;
+
+	float32 s = Float32.sin(angle);
+	float32 c = Float32.cos(angle);
+	float32 k = 1 - c;
+
+	return {
+		xx: xx + (yy + zz) * c;
+		xy: xy * k - z * s;
+		xz: xz * k + y * s;
+		xw: (cx * (yy + zz) - x * (cy * y + cz * z)) * k + (cy * z - cz * y) * s;
+
+		yx: xy * k + z * s;
+		yy: yy + (xx + zz) * c;
+		yz: yz * k - x * s;
+		yw: (cy * (xx + zz) - y * (cx * x + cz * z)) * k + (cz * x - cx * z) * s;
+
+		zx: xz * k - y * s;
+		zy: yz * k + x * s;
+		zz: zz + (xx + yy) * c;
+		zw: (cz * (xx + yy) - z * (cx * x + cy * y)) * k + (cx * y - cy * x) * s;
+
+		w: vec4f(0, 0, 0, 1);
+	};
+}
+
+/// Build a rotation matrix
+static mat4f rotation(vec4f direction!, float32 angle) {
+	float32 xx = direction.x * direction.x;
+	float32 yy = direction.y * direction.y;
+	float32 zz = direction.z * direction.z;
+	float32 xy = direction.x * direction.y;
+	float32 xz = direction.x * direction.z;
+	float32 yz = direction.y * direction.z;
+	float32 s = Float32.sin(angle);
+	float32 c = Float32.cos(angle);
+	float32 k = 1 - c;
+	vec4f tmp = direction * s;
+
+	return {
+		xx: k * xx + c;
+		xy: k * xy - tmp.z;
+		xz: k * xz + tmp.y;
+		xw: 0;
+
+		yx: k * xy + tmp.z;
+		yy: k * yy + c;
+		yz: k * yz - tmp.x;
+		yw: 0;
+
+		zx: k * xz - tmp.y;
+		zy: k * yz + tmp.x;
+		zz: k * zz + c;
+		zw: 0;
+
+		w: vec4f(0, 0, 0, 1);
+	};
+}
+
+/// Build a translation matrix
+static mat4f translation(vec4f direction!, float32 amount) {
+	return {
+		xx: 1; xy: 0; xz: 0; xw: direction.x * amount;
+		yx: 0; yy: 1; yz: 0; yw: direction.y * amount;
+		zx: 0; zy: 0; zz: 1; zw: direction.z * amount;
+		wx: 0; wy: 0; wz: 0; ww: 1;
+	};
+}
+
+/// Build a scaling matrix
+static mat4f scale(vec4f direction!, float32 amount) {
+	inline rcp(float32 val) = (val < 0 ? -val : val) < 1e-30 ? 0 : 1 / val;
+	return {
+		xx: rcp(direction.x * amount); xy: 0; xz: 0; xw: 0;
+		yx: 0; yy: rcp(direction.y * amount); yz: 0; yw: 0;
+		zx: 0; zy: 0; zz: rcp(direction.z * amount); zw: 0;
+		wx: 0; wy: 0; wz: 0; ww: 1;
+	};
+}

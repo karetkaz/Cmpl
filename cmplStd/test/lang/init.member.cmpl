@@ -1,0 +1,80 @@
+/// test and documentation of member initializations
+struct RecordMemberTest {
+
+	struct Inner {
+		int member;
+		int memberInit = 2;
+	}
+
+	// if initializer is omitted, initialize with `default type initializer`.
+	int member;
+
+	// if initializer is omitted, initialize with `default field initializer`
+	int memberInit = 2;
+
+	// field must be initialized because there is no `default type initializer`.
+	Inner memberRec;
+
+	// if initializer is omitted, initialize with `default field initializer`.
+	// FIXME: Inner memberRecInit = {member: 4};
+
+	// if initializer is omitted, initialize with `default field initializer`.
+	// in this case a static variable should be created, then assigned to the member (same as for methods)
+	// FIXME: Inner memberRecRefInit! = {member: 6};
+
+	// global variable initialized with `default type initializer`
+	static int global;
+
+	// global variable initialized with initializer.
+	static int globalInit = 1;
+
+	// global constants must be initialized when declared, because they can not be changed.
+	static int globalConstant! = 2;
+
+	// must be initialized because there is no `default type initializer`.
+	static Inner globalRec = {};
+
+	// global variable initialized with initializer.
+	static Inner globalRecInit = {member: 4};
+
+	// global constants must be initialized when declared, because they can not be changed.
+	static Inner globalConstantRec! = {member: 6};
+}
+
+RecordMemberTest recordInitCustom = {
+	member: 10;
+	memberInit: 12;
+
+	memberRec: {
+		member: 14;
+	};
+
+	/* static fields can not be initialized
+	global: 29;
+	globalInit: 39;
+	globalConstant: 49;
+	// */
+};
+
+//* assign new values after initialization
+recordInitCustom.member = 74;
+recordInitCustom.memberInit = 75;
+// accessing static members using instance variable
+recordInitCustom.global = 76;
+recordInitCustom.globalInit = 79;
+// constant variables can not be assigned
+//RecordMemberTest.globalConstant = 81;	// ok: error
+recordInitCustom.globalConstant = 81;	// todo: error
+// */
+
+/// initializing with default member initializers: those declared in the struct
+//RecordMemberTest recordInitDefault = {};
+RecordMemberTest recordInitDefault = {memberRec: {}}; // todo: remove: automatically propagate the initializer to inner record values:
+
+/// initializing with zero initializer: make all the values 0
+// RecordMemberTest recordZeroInitialize = {0};
+RecordMemberTest recordInitZero = {...};
+pointer.fill(recordInitZero, 0, sizeof(RecordMemberTest));
+
+/// initializing with undefined initializer: do not initialize
+RecordMemberTest recordUninitialized = {...};

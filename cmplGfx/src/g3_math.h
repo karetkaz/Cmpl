@@ -397,13 +397,12 @@ static inline vector vecnrm(vector dst, vector src) {
 	return dst;
 }
 
-static inline struct vector vecldc(argb col) {
-	struct vector result;
-	result.r = col.r / 255.;
-	result.g = col.g / 255.;
-	result.b = col.b / 255.;
-	result.a = col.a / 255.;
-	return result;
+static inline vector vecldc(vector dst, argb col) {
+	dst->r = col.r / 255.;
+	dst->g = col.g / 255.;
+	dst->b = col.b / 255.;
+	dst->a = col.a / 255.;
+	return dst;
 }
 
 static inline struct vector vec(scalar x, scalar y, scalar z, scalar w) {
