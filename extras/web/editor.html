@@ -214,6 +214,7 @@
 		<ul>
 			<li onclick="completeAction('!zoom:');">Zoom</li>
 			<li onclick="completeAction('!theme:');">Theme</li>
+			<li onclick="customCommands.fullScreen();">Full screen</li>
 			<li id="wrap-output" onclick="setStyle(body, '~wrap-output');">Wrap output</li>
 			<div class="collapsed submenu">
 				<li onclick="setStyle(parentElement, '~collapsed')">Fold</li>
@@ -388,7 +389,9 @@ if (params.libGfx === undefined) {
 			dump = extra.dump;
 		}
 		worker.postMessage({
-			dump, execute: args || []
+			execute: args || [],
+			path: extra.path,
+			dump
 		});
 	}
 }
@@ -402,6 +405,7 @@ else {
 			'libFile.wasm',
 			'libGfx.wasm'
 		],
+		preRun: [() => {ENV.CMPL_HOME = "/"}],
 		importScripts: function (...urls) {
 			for (let url of urls) {
 				// fixme: url = escape(url);
@@ -460,7 +464,9 @@ else {
 
 		setTimeout(function() {
 			let result = {};
+			let currentPath = FS.currentPath;
 			try {
+				FS.chdir(data.path || Module.workspace);
 				result.exitCode = callMain(args || []);
 				if (result.exitCode === 0 && data.dump != null) {
 					if (data.dump.constructor === String) {
@@ -475,6 +481,7 @@ else {
 				result.exitCode = -1;
 				console.error(error);
 			} finally {
+				FS.chdir(currentPath);
 				process(result);
 				if (canvas.width === 0) {
 					setStyle(document.body, '-canvas');

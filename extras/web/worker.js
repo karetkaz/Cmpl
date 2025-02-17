@@ -2,6 +2,7 @@ var Module = {
 	process: function(args) {
 		postMessage(args)
 	},
+	preRun: [() => {ENV.CMPL_HOME = "/"}],
 	initialized: false,
 	dynamicLibraries: [
 		'libFile.wasm'
@@ -72,7 +73,9 @@ onmessage = function(event) {
 		Module.openProjectFile(data, function(result) {
 			// execute
 			if (data.execute !== undefined) {
+				let currentPath = FS.currentPath;
 				try {
+					FS.chdir(data.path || Module.workspace);
 					result.exitCode = callMain(data.execute);
 					if (result.exitCode === 0 && data.dump != null) {
 						if (data.dump.constructor === String) {
@@ -87,6 +90,8 @@ onmessage = function(event) {
 					result.error = '' + error;
 					result.exitCode = -1;
 					console.error(error);
+				} finally {
+					FS.chdir(currentPath);
 				}
 			}
 			postMessage(result);

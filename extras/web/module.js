@@ -100,7 +100,6 @@ Module.readFile = function(path) {
 };
 
 Module.onRuntimeInitialized = function() {
-	ENV.CMPL_HOME = '/';
 	FS.mkdirTree(Module.workspace);
 	FS.chdir(Module.workspace);
 	Module.initialized = true;
@@ -301,7 +300,6 @@ Module.wgetFiles = function(files) {
 				}
 				if (inProgress === 0) {
 					Module.printLog("Project file(s) download complete.");
-
 				}
 			}
 			request.send();

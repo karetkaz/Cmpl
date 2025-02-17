@@ -19,6 +19,10 @@ var customCommands = {
 		editor.refresh();
 	},
 
+	fullScreen: function () {
+		document.documentElement.requestFullscreen({ navigationUI: "show" });
+	},
+
 	close: function (value) {
 		if (value !== undefined && value !== '') {
 			return false;

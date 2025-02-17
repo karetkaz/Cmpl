@@ -323,6 +323,8 @@ span.expander {
 	white-space: nowrap;
 	text-align: right;
 	padding: 5px;
+	min-width: 7em;
+	max-width: 7em;
 	width: 7em;
 }
 
