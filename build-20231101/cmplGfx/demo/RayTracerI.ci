@@ -1,0 +1,337 @@
+// interactive raytracer adapted from Pixel Bender: raytracer.pbk
+// based only on spheres, no virtual methods
+struct Light {
+	const vec4f position;
+	const vec4f ambient;
+	const vec4f diffuse;
+	const vec4f specular;
+	// by default use constant light attenuation
+	const vec4f attenuation = vec4f(1, 0, 0, 0);
+}
+
+struct Sphere {
+	const vec4f position;   // x, y, z, radius
+	const vec4f color;      // r, g, b, TODO: alpha
+	const vec4f ambient;
+	const vec4f diffuse;
+	const vec4f specular;
+	const float shininess = 50;
+	const float reflection = 0;
+	const float checkBoard = 0;
+}
+
+Camera camera = {};
+
+Light lights[] = {
+	Light {
+		position: vec4f(0, 2, -4);
+		ambient: vec4f(.1);
+		diffuse: vec4f(1);
+		specular: vec4f(1);
+	};
+};
+
+Sphere things[5] = {
+	Sphere { // fake the floor with a huge sphere
+		position: vec4f(0.0, -1003, -8, 1000);
+		color: vec4f(.6, .6, .6);
+		checkBoard: 2000;
+		ambient: vec4f(.1);
+		diffuse: vec4f(.8);
+		specular: vec4f(.5);
+		reflection: .5;
+	};
+	Sphere { // put a shiny sphere in the middle
+		position: vec4f(0, 2, -10, 2);
+		color: vec4f(.8, .8, .8);
+		ambient: vec4f(.05);
+		diffuse: vec4f(.1);
+		specular: vec4f(1);
+		reflection: 1;
+	};
+};
+
+/// returns the distance of the closest intersection
+float intersect(const vec4f pos, const vec4f dir, int hitIndex&) {
+	float result = Math.inf;
+	for (int i = 0; i < things.length; i += 1) {
+		const Sphere thing& = things[i];
+		vec4f dst = sub(pos, thing.position);
+		float R = thing.position.w;
+		float B = dp3(dst, dir);
+		float C = dp3(dst, dst) - R * R;
+		float D = (B * B) - C;
+
+		if (D > 0) {
+			float d = -B - Math.sqrt(D);
+			if(d > 0 && d < result) {
+				hitIndex = i;
+				result = d;
+			}
+		}
+	}
+
+	return result;
+}
+
+/// returns how much light is reflected by the object
+vec4f shade(const Sphere thing&, vec4f pos, vec4f dir, vec4f rayDir) {
+	inline mad(vec4f a, float b, vec4f c, vec4f d) = add(a, mul(b, mul(c, d)));
+
+	vec4f result = thing.ambient;
+	for (int i = 0; i < lights.length; i += 1) {
+		const Light light& = lights[i];
+		vec4f dst = sub(light.position, pos);
+		vec4f l = normalize(dst);
+		float d = length(dst);
+		int hitIdx;
+
+		// exclude light if the ray intersects an object closer than the light
+		if (intersect(pos, l, &hitIdx) > d) {
+
+			float attn = 1 / light.attenuation.eval(d);
+			float diffuse = dp3(dir, l);
+
+			if (diffuse > 0) {
+				vec4f r = sub(l, mul(2 * diffuse, dir));
+				float specular = dp3(r, rayDir);
+
+				if (specular > 0) {
+					specular = Math.pow(specular, thing.shininess);
+					result = result.mad(attn * specular, thing.specular, light.specular);
+				}
+
+				result = result.mad(attn * diffuse, thing.diffuse, light.diffuse);
+			}
+
+			result = result.mad(attn, thing.ambient, light.ambient);
+		}
+	}
+	return result;
+}
+
+/// returns reflection vector
+inline reflect(vec4f v, vec4f n) = sub(v, mul(2 * dp3(v, n), n));
+
+mat4f mat = {};
+
+// returns the color of the ray-traced scene
+vec4f raytrace(vec4f xy) {
+	inline MAX_RAY_SHOTS = 10;
+
+	// calculate direction vector for this pixel
+	vec4f rayDir = normalize(mat.dph(vec4f(2 * xy.x - 1, -2 * xy.y + 1, -1, 0)));
+	vec4f rayPos = camera.position;
+	int hitIdx;
+
+	vec4f result = vec4f(0);
+	vec4f colorScale = vec4f(1);
+
+	for (int depth = 0; depth < MAX_RAY_SHOTS; depth += 1) {
+		float distance = intersect(rayPos, rayDir, &hitIdx);
+		if (distance >= Math.inf) {
+			// no intersection
+			return result;
+		}
+
+		Sphere thing& = things[hitIdx];
+		vec4f hitPos = add(rayPos, mul(rayDir, distance));
+		vec4f hitDir = normalize(sub(hitPos, thing.position));
+
+		// material color
+		vec4f color = thing.color;
+		if (thing.checkBoard != 0) {
+			bool zx = thing.checkBoard < 0;
+			// fake check board texture with spherical uv mapping
+			float u = thing.checkBoard * (1 + Math.atan2(zx ? hitDir.x : hitDir.y, hitDir.z) / Math.pi);
+			float v = thing.checkBoard * (1 - Math.acos(zx ? hitDir.y : hitDir.x) / Math.pi);
+			if ((Math.floor(u) + Math.floor(v)) % 2 == 0) {
+				color = mul(color, .5f);
+			}
+		}
+
+		// blend light with material color
+		vec4f light = thing.shade(hitPos, hitDir, rayDir);
+		result = result.add(mul(colorScale, mul(color, light)));
+
+		if (thing.reflection <= 0) {
+			// no reflection, stop ray tracing
+			return result;
+		}
+
+		// blend according to reflectivity
+		colorScale = mul(colorScale, mul(thing.reflection, color));
+
+		// update next ray position an direction
+		rayDir = normalize(reflect(rayDir, hitDir));
+		rayPos = hitPos;
+	}
+	return result;
+}
+
+inline resolution = 256;
+Image image = Image(resolution, resolution, 32);
+
+int onEvent(int action, int button, int x, int y) {
+	int64 time = System.millis();
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+
+	static int ox = 0;
+	static int oy = 0;
+	static int lookAt = 1;
+	static const float32 slow = 1 / 50f;
+	static const float32 fast = 5 / 50f;
+
+	if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
+		int dx = x - ox;
+		int dy = y - oy;
+
+		if (button == 1 || action == Window.FINGER_MOTION) {
+			// orbit around the second sphere
+			vec4f orbit = things[lookAt].position;
+			camera.rotate(orbit, camera.up, dx * slow);
+			camera.rotate(orbit, camera.right, dy * slow);
+		}
+		else if (button == 2) {
+			// rotate the camera
+			vec4f orbit = camera.position;
+			camera.rotate(orbit, camera.up, -dx * slow);
+			camera.rotate(orbit, camera.right, -dy * slow);
+		}
+		else if (button == 3) {
+			// move the camera back and forward
+			camera.move(camera.forward, dy * slow);
+		}
+		else if (button == 4) {
+			// pan the camera
+			camera.move(camera.right, -dx * slow);
+			camera.move(camera.up, dy * slow);
+		}
+		else {
+			// no need to process event
+			return Window.timeoutMax;
+		}
+		ox = x;
+		oy = y;
+	}
+	else if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
+		ox = x;
+		oy = y;
+		return Window.timeoutMax;
+	}
+	else if (action == Window.MOUSE_WHEEL) {
+		// move forward and back using the wheel/scroll
+		camera.move(camera.forward, y * fast);
+	}
+	else if (action == Window.KEY_PRESS) {
+		if (button == Window.KEY_CODE_ENTER) {
+			vec4f target = things[lookAt].position;
+			camera = Camera.lookAt(vec4f(target.x, target.y, target.z + target.w * 5, 1), target, vec4f(0, 1, 0));
+
+		}
+		else if (button == Window.KEY_CODE_TAB) {
+			if ((y & Window.KEY_MASK_SHIFT) != 0) {
+				lookAt -= 1;
+				if (lookAt < 1) {
+					lookAt = 1;
+				}
+			} else {
+				lookAt += 1;
+				if (lookAt >= things.length) {
+					lookAt = 1;
+				}
+			}
+
+			vec4f target = things[lookAt].position;
+			camera = Camera.lookAt(vec4f(target.x, target.y, target.z + target.w * 5, 1), target, vec4f(0, 1, 0));
+		}
+
+		else if (button == Window.KEY_CODE_UP) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.rotate(camera.position, camera.right, -(shift ? fast : slow));
+		}
+		else if (button == Window.KEY_CODE_DOWN) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.rotate(camera.position, camera.right, +(shift ? fast : slow));
+		}
+		else if (button == Window.KEY_CODE_LEFT) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.rotate(camera.position, camera.up, -(shift ? fast : slow));
+		}
+		else if (button == Window.KEY_CODE_RIGHT) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.rotate(camera.position, camera.up, +(shift ? fast : slow));
+		}
+
+		else if (button == 'w') {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.move(camera.forward, +(shift ? fast : slow));
+		}
+		else if (button == 'a') {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.move(camera.right, -(shift ? fast : slow));
+		}
+		else if (button == 's') {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.move(camera.forward, -(shift ? fast : slow));
+		}
+		else if (button == 'd') {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
+			camera.move(camera.right, +(shift ? fast : slow));
+		}
+
+		else if (button == ' ') {
+			// reconfigure up
+			camera = Camera.lookAt(camera.position, things[lookAt].position, vec4f(0, 1, 0));
+			// trace("camera", camera);
+		}
+
+		else {
+			return Window.timeoutMax;
+		}
+	}
+
+	else if (action == Window.WINDOW_INIT) {
+		// make a bunch of random spheres
+		for (int i = 2; i < things.length; i += 1) {
+			float fi = i * 11;
+			Sphere sphere = {
+				position: {
+					x: Math.sin(fi / 5) * 6;
+					y: Math.sin(fi / 4.1f) * 2.5f;
+					z: -18 - Math.sin(fi / 3.1f + 1.2f) * 10;
+					w: Math.pow(Math.sin(fi / 1.34f + 65.3f) * .5f + .5f, 3f) + .2;
+				};
+				color: {
+					x: Math.cos(fi / 2.1 + 1.3) * .5 + .5;
+					y: Math.cos(fi / 0.1 + 1.3) * .5 + .5;
+					z: Math.cos(fi / 5.1 + 6.3) * .5 + .5;
+				};
+				ambient: vec4f(.1);
+				diffuse: vec4f(.7);
+				specular: vec4f(1);
+				reflection: Math.pow(Math.sin(fi / 2.1f + 1.243f) * .5f + .5f, 5f);
+			};
+			things[i] = sphere;
+		}
+		camera = Camera.lookAt(vec4f(0, 0, 2), things[lookAt].position, vec4f(0, 1, 0));
+	}
+	else if (action == Window.EVENT_TIMEOUT);
+	else {
+		// no need to process event
+		return Window.timeoutMax;
+	}
+
+	// recalculate frame
+	mat = inverse(camera.matrix(45/2, 1, 1f, 10000f));
+	image.eval(null, 0, 0, raytrace);
+	time = System.millis() - time;
+	debug("raytrace millis", time);
+	return Window.timeoutMax;
+}
+
+Window.show(image, onEvent);
+image.destroy();

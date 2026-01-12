@@ -1,0 +1,87 @@
+/**
+ * Format decimal to text
+ * @param output write output to this buffer
+ * @param format format string
+ *  	%d format as decimal(%lg): => 3.141593
+ *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
+ *  	%e todo: format as exponential(%le): 3.141593e+00
+ *  	%x todo: format as hexadecimal(%la): 0x1.921fb54442d18p+1
+ *  	null defaults to: "%d"
+ * @param value date to format
+ */
+int format(char output[], const char format[], float64 value) {
+	if (pointer(format) == null) {
+		return format(output, "%d", value);
+	}
+
+	int pos = 0;
+	int fmt = 0;
+	for (char chr; chr = format[fmt]; fmt += 1) {
+		if (chr == '%') {
+			FormatFlags flags = FormatFlags.read(format, &fmt);
+			chr = format[fmt];
+
+			if (chr == '%') {
+				pos = append(output, pos, "%");
+			}
+			else if (chr == 'd') { // decimal: 3.1415
+				pos = append(output, pos, value, flags);
+			}
+			else if (chr == 'f') { // fixed: 3.141500
+				FormatFlags flags2 = {
+					sign: flags.sign;
+					width: flags.width;
+					precision: flags.precision;
+					padChr: flags.padChr;
+					trimDecimal: false;
+				};
+				pos = append(output, pos, value, flags2);
+			}
+			/* todo
+			else if (chr == 'e') { // exponential: 31415e-4
+				pos = append(output, pos, 16, value, flags);
+			}
+			else if (chr == 'x') { // hexadecimal: 0x3.243f6a8885a30p0
+				pos = append(output, pos, 16, value, flags);
+			}*/
+			else {
+				abort("invalid format character", chr);
+			}
+		}
+		else if (pos < output.length) {
+			output[pos] = chr;
+			pos += 1;
+		}
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+	output[pos] = 0;
+	return pos;
+}
+
+float64 value = 0;
+char buff[512] = {0};
+char expect[512] = {0};
+for (int i = 0; i < 22; i += 1) {
+	float64.print(expect, value, 0, 0, 100);
+	format(buff, "%.100f", value);
+	if (!equals(expect, buff)) {
+		char e[*] = expect;
+		char r[*] = buff;
+		variant extra[] = {value};
+		NotEquals err = {
+			expected: expect;
+			returned: buff;
+			extras: extra;
+		};
+		debug("not same", err);
+	}
+	value += .1;
+}
+
+/* References:
+https://www.jessesquires.com/blog/2022/02/01/decimal-vs-double/
+
+*/

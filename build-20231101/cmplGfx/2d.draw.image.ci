@@ -1,0 +1,91 @@
+/* image draw demo
+ * click mouse button 1 and drag mouse to draw the image
+ * click mouse button 2 to draw only a region from the original image
+ * click mouse button 3 to draw the image tiled
+ * click mouse button 1+2 to draw the image zoomed
+ * press space bar to toggle fade out animation
+ */
+Image offs = Image(1440, 900, 32);
+Image back = Image("asset/image/forest.jpg", 32);
+Image draw = Image("asset/image/david.png", 32);
+
+uint32 lut[256] = {};
+for (int idx = 0; idx < 256; idx += 1) {
+	int rgb = sat_s8(idx - 10);
+	lut[idx] = uint32(pack(idx, rgb, rgb, rgb));
+}
+
+int onEvent(int action, int button, int x, int y) {
+	static int64 millis = 0;
+	static const Rect roi = {
+		x0: 30;
+		y0: 30;
+		x1: 150;
+		y1: 150;
+	};
+	if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
+		if (button == 1 || action == Window.FINGER_MOTION) {
+			offs.copy(x, y, draw, null);
+		}
+		if (button == 2) {
+			offs.copy(x, y, draw, roi);
+		}
+		if (button == 3) {
+			Rect to = {
+				x0: 0;
+				y0: 0;
+				x1: x;
+				y1: y;
+			};
+			offs.resize(to, draw, null, 1);
+		}
+		if (button == 4) {
+			offs.tile(x, y, draw, null);
+		}
+		if (button == 6) {
+			offs.tile(x, y, draw, roi);
+		}
+	}
+	else if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
+		offs.resize(null, back, null, 1);
+		return onEvent(Window.MOUSE_MOTION, 1, x, y);
+	}
+	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	else if (action == Window.KEY_PRESS) {
+		if (button == ' ') {
+			// toggle animation
+			if (millis == 0) {
+				millis = System.millis();
+			} else {
+				millis = 0;
+			}
+		}
+		if (button == 's') {
+			trace("dumping screen");
+			offs.saveBmp("temp/dump.bmp", 0);
+		}
+	}
+	else if (action == Window.WINDOW_INIT) {
+		offs.resize(null, back, null, 1);
+	}
+
+	if (millis != 0) {
+		inline animateSpeed = 20;
+		int64 now = System.millis();
+		if (now - millis > animateSpeed) {
+			offs.colorMap(null, lut);
+			millis = now;
+		}
+		return animateSpeed;
+	}
+
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent);
+offs.destroy();
+back.destroy();
+draw.destroy();

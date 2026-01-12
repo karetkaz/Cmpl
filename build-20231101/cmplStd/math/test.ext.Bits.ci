@@ -1,0 +1,166 @@
+// test functions implemented in file: `Bits.ci`
+
+inline byte(uint64 value, int i) = uint8((value >> 8 * i) & 255);
+
+static void assertEq(int64 expected, int64 returned, const char func[*], variant extras...) {
+	if (returned == expected) {
+		return;
+	}
+	struct NotEquals {
+		const variant expected;
+		const variant returned;
+		const char function[*];
+		const variant extras[];
+	}
+	NotEquals details = {
+		expected: expected;
+		returned: returned;
+		function: func;
+		extras: extras;
+	};
+	raise(raise.abort, raise.defTrace, "assertion failed", details);
+}
+
+for (int i = 0; i < 65536; i += 1) {
+	byte bytes[8] = {};
+	uint64 x& = pointer(bytes);
+	x = i * 250;
+
+	// test swap bytes
+	for (int j = 0; j < bytes.length; j += 1) {
+		// FIXME: array element access does not zero extend
+		// assertEq(bytes[j], byte(swapBytes(x), 7 - j));
+
+		assertEq(byte(x, j), byte(Bits.swapBytes(x), 7 - j), "swapBytes", i, j);
+		if (j < 4) {
+			assertEq(byte(x, j), byte(Bits.swapBytes(uint32(x)), 3 - j), "swapBytes", i, j);
+			if (j < 2) {
+				assertEq(byte(x, j), byte(Bits.swapBytes(uint16(x)), 1 - j), "swapBytes", i, j);
+			}
+		}
+	}
+
+	if (i < 64) {
+		x = 1U << i;
+		assertEq(i, Bits.scanForward(x), "scanForward", i);
+		assertEq(i, Bits.scanForward(x), "scanForward", i);
+		assertEq(x, Bits.keepMsb(x), "keepMsb", i);
+		assertEq(x, Bits.keepLsb(x), "keepLsb", i);
+		assertEq(1, Bits.countOnes(x), "countBits", i, x);
+		assertEq(2, Bits.countOnes(x | Bits.swapBits(x)), "countBits", i, x);
+		assertEq(2, Bits.countOnes(x | Bits.swapBytes(x)), "countBits", i);
+
+		// test 32 bit functions
+		if (i < 32) {
+			assertEq(i, Bits.scanReverse(uint32(x)), "scanReverse", i);
+			assertEq(i, Bits.scanForward(uint32(x)), "scanForward", i);
+			assertEq(x, Bits.keepMsb(uint32(x)), "keepMsb", i);
+			assertEq(x, Bits.keepMsb(uint32(x | i)), "keepMsb", i);
+			assertEq(x, Bits.keepLsb(uint32(x)), "keepLsb", i);
+			assertEq(1, Bits.countOnes(uint32(x)), "countBits", i, x);
+			if (i < 16) {
+				assertEq(i, Bits.scanReverse(uint16(x)), "scanReverse", i);
+				assertEq(i, Bits.scanForward(uint16(x)), "scanForward", i);
+				assertEq(x, Bits.keepLsb(uint16(x)), "keepLsb", i);
+				if (i < 8) {
+					assertEq(i, Bits.scanReverse(uint8(x)), "scanReverse", i);
+					assertEq(i, Bits.scanForward(uint8(x)), "scanForward", i);
+					assertEq(x, Bits.keepLsb(uint8(x)), "keepLsb", i);
+				}
+			}
+			for (int j = 0; j < 32 - i; j += 1) {
+				x = ((1U << i) - 1) << j;
+				assertEq(i, Bits.countOnes(uint32(x)), "countBits", i, j, x);
+				if (i + j < 16) {
+					assertEq(2 * i, Bits.countOnes(uint32(x | Bits.swapBits(uint32(x)))), "countBits", i, j, x);
+					assertEq(2 * i, Bits.countOnes(uint32(x | Bits.swapBytes(uint32(x)))), "countBits", i, j, x);
+				}
+			}
+		}
+
+		for (int j = 0; j < 64 - i; j += 1) {
+			x = ((1U << i) - 1) << j;
+			assertEq(i, Bits.countOnes(x), "countBits", i, j, x);
+			if (i + j < 32) {
+				assertEq(2 * i, Bits.countOnes(x | Bits.swapBits(x)), "countBits", i, j, x);
+				assertEq(2 * i, Bits.countOnes(x | Bits.swapBytes(x)), "countBits", i, j, x);
+			}
+		}
+	}
+
+	inline min = 10;
+	inline max = 300;
+	// both clamps are undefined if min > max, same result as: min(max(value, min), max)
+	assert(Bits.clamp(i, min, max) == Math.clamp(i, min, max), "assertion failed", i);
+	assert(Bits.clamp(-i, min, max) == Math.clamp(-i, min, max), "assertion failed", i);
+	assert(Bits.clamp(i, -min, max) == Math.clamp(i, -min, max), "assertion failed", i);
+	assert(Bits.clamp(-i, -min, max) == Math.clamp(-i, -min, max), "assertion failed", i);
+	assert(Bits.clamp(i, min, -max) == Math.clamp(i, min, -max), "assertion failed", i);
+	assert(Bits.clamp(-i, min, -max) == Math.clamp(-i, min, -max), "assertion failed", i);
+	assert(Bits.clamp(i, -max, min) == Math.clamp(i, -max, min), "assertion failed", i);
+	assert(Bits.clamp(-i, -max, min) == Math.clamp(-i, -max, min), "assertion failed", i);
+	assert(Bits.clamp(i, -min, -max) == Math.clamp(i, -min, -max), "assertion failed", i);
+	assert(Bits.clamp(-i, -min, -max) == Math.clamp(-i, -min, -max), "assertion failed", i);
+	assert(Bits.clamp(i, -max, -min) == Math.clamp(i, -max, -min), "assertion failed", i);
+	assert(Bits.clamp(-i, -max, -min) == Math.clamp(-i, -max, -min), "assertion failed", i);
+}
+
+struct BitMinMax {
+	const int bitSize;
+	const int64 signedMin;
+	const int64 signedMax;
+	const uint64 unsignedMax;
+
+	static BitMinMax get(int bitSize) {
+		int64 mask = ~(int64(-1) << bitSize);
+		if (bitSize >= 64) {
+			bitSize = 64;
+			mask = -1U;
+		}
+
+		uint64 min = -1U << (bitSize - 1);
+		if (bitSize <= 0) {
+			bitSize = 0;
+			min = 0;
+		}
+
+		return {
+			bitSize: bitSize;
+			signedMin: min;
+			signedMax: (min - 1) & mask;
+			unsignedMax: mask;
+		};
+	}
+}
+
+for (int i = 1; i <= 64; i += 1) {
+	BitMinMax bitMinMax = BitMinMax.get(i);
+	debug("bits", bitMinMax);
+	assert(bitMinMax.signedMin < 0, "error", bitMinMax);
+	assert(bitMinMax.signedMax >= 0, "error", bitMinMax);
+	assert(bitMinMax.unsignedMax != bitMinMax.signedMax, "error", bitMinMax);
+}
+
+/* TODO: leftovers
+uint16 keepMsb(uint16 x)
+uint8 keepMsb(uint8 x)
+int countOnes(uint16 x)
+int countOnes(uint8 x)
+
+define Lo32(int64 a) = int32(a);					// Lo32 part
+define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
+define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
+define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
+define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
+define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
+
+// implement all native methods
+int32 zxt(int32 value, int32 offs, int32 count)
+int32 sxt(int32 value, int32 offs, int32 count)
+✓ int32 pop(int32 value)
+✓ int32 swap(int32 value)
+✓ int32 bsr(int32 value)
+✓ int32 bsf(int32 value)
+✓ int32 hib(int32 value)
+? int32 lob(int32 value)
+*/

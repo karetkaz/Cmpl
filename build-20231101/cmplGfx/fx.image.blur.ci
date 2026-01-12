@@ -1,0 +1,217 @@
+/* Blur, sharpen and blend images with alpha mask
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse to move the rectangle of the mask, use shift to resize it
+ * drag the mouse left or right in the window to adjust selected slider value
+ */
+
+Image surf = Image("asset/image/forest.jpg", 32);
+Image offs = Image(surf);
+Image blur = Image(surf);
+
+bool onTouchEvent(Button view, const Rect rect&, const TouchEvent event&);
+bool onResetClick(Button view);
+Histogram histogram = {
+	enabled: false;
+};
+
+Slider sldBlur = {
+	text: "Blur";
+	value: 20;
+	minimum: .3;
+	maximum: 20;
+};
+Slider sldSharpness = {
+	text: "Sharp";
+	value: 2;
+	minimum: 1;
+	maximum: 4;
+};
+
+Button btnLinear = {
+	text: "Linear";
+	onTouchEvent: onTouchEvent;
+};
+Button btnReflect = {
+	text: "Reflect";
+	onTouchEvent: onTouchEvent;
+};
+Button btnSquare = {
+	text: "Square";
+	onTouchEvent: onTouchEvent;
+};
+Button btnRadial = {
+	text: "Radial";
+	onTouchEvent: onTouchEvent;
+};
+
+Slider sldHardness = {
+	text: "Hardness";
+	minimum: -255;
+	maximum: 255;
+	stepSize: 1;
+	focusable: false;
+};
+Slider sldAlpha = {
+	text: "Alpha";
+	minimum: -255;
+	maximum: 255;
+	value: 255;
+	stepSize: 1;
+	focusable: false;
+};
+char scaleMove[*][] = {
+	"Move",
+	"Scale"
+};
+Switch chkMoveScale = {
+	states: scaleMove;
+	text: "Drag mode";
+	focusable: false;
+};
+Switch chkRect = {
+	text: "Show rect";
+	focusable: false;
+};
+Switch chkMask = {
+	text: "Show mask";
+	focusable: false;
+};
+Button btnReset = {
+	text: "Reset rect";
+	focusable: false;
+	onClick: onResetClick;
+};
+Panel panMask = {
+	visible: false;
+};
+
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+//inline blur(Image surf, int radius) = surf.blur(radius, 0.3 * (radius - 1) + 0.8);
+inline blur(Image surf, float64 sigma) = surf.blur(Math.max(1., (sigma - 0.8) / 0.3 + 1), sigma);
+
+Rect rect = {
+	x0: 0;
+	y0: 0;
+	x1: offs.width();
+	y1: offs.height();
+};
+float64 oldRadius = 0;
+
+void onProcess(FxWidget widget) {
+	debug.startTimer();
+
+	if (widget.showOriginal) {
+		offs.copy(0, 0, surf, null);
+		histogram.update(offs);
+		return;
+	}
+
+	if (!sldBlur.isPressed()) {
+		if (oldRadius != sldBlur.value) {
+			oldRadius = sldBlur.value;
+			blur.copy(0, 0, surf, null);
+			blur.blur(sldBlur.value);
+		}
+	}
+
+	// apply blur from cached image
+	offs.copy(0, 0, blur, null);
+
+	if (widget.hasFocused(btnLinear, btnReflect, btnRadial, btnSquare)) {
+		uint32 colors[512] = {};
+
+		if (chkMask.checked()) {
+			offs.fill(0xff0000);
+		}
+		if (btnReflect.isFocused()) {
+			alphaLut(colors, sldHardness.value, sldAlpha.value, true);
+			offs.gradient(&rect, gradient.MaskLinear, false, ...colors);
+		}
+		else if (btnLinear.isFocused()) {
+			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
+			offs.gradient(&rect, gradient.MaskLinear, false, ...colors);
+		}
+		else if (btnRadial.isFocused()) {
+			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
+			offs.gradient(&rect, gradient.MaskRadial, false, ...colors);
+		}
+		else if (btnSquare.isFocused()) {
+			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
+			offs.gradient(&rect, gradient.MaskSquare, false, ...colors);
+		}
+
+		offs.blendDstAlpha(0, 0, surf, null);
+		if (chkRect.checked()) {
+			int x0 = rect.x0;
+			int x1 = rect.x1;
+			int y0 = rect.y0;
+			int y1 = rect.y1;
+			offs.drawRect(x0, y0, x1, y1, 0x00ff00);
+			offs.drawLine(x0, y0, x1, y1, 0xff0000);
+		}
+		panMask.visible(true);
+	} else {
+		if (sldSharpness.isFocused()) {
+			offs.blendAlpha(0, 0, surf, null, 255 * sldSharpness.value);
+		}
+		panMask.visible(false);
+	}
+
+	histogram.update(offs);
+}
+bool onTouchEvent(Button view, const Rect r&, const TouchEvent event&) {
+	bool result = Button.onTouchEvent(view, r, event);
+	if (!event.button) {
+		return result;
+	}
+	if (view.isPressed()) {
+		return result;
+	}
+
+	// resize
+	if (event.isAlt || chkMoveScale.selected == 2) {
+		rect.adjust(0, 0, event.dx, event.dy);
+		return true;
+	}
+	// move
+	if (event.isShift == bool(chkMoveScale.selected)) {
+		rect.translate(event.dx, event.dy);
+		return true;
+	}
+
+	// resize while the center of the rect is pinned
+	rect.adjust(-event.dx, -event.dy, event.dx, event.dy);
+	return true;
+}
+bool onResetClick(Button view) {
+	rect.x0 = 0;
+	rect.y0 = 0;
+	rect.x1 = offs.width();
+	rect.y1 = offs.height();
+	return true;
+}
+
+Window.show(offs, FxWidget(onProcess,
+	histogram,
+	null, sldBlur, sldSharpness,
+	null, btnLinear, btnReflect, btnSquare, btnRadial,
+	panMask.addItems(Style.fill,
+		null, sldAlpha, sldHardness, chkMoveScale, chkMask, chkRect, btnReset
+	),
+	null, debug
+));
+blur.destroy();
+offs.destroy();
+surf.destroy();

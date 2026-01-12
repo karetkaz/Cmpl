@@ -1,0 +1,278 @@
+// test layout direction, alignment, and padding. todo: spacing
+// based on: https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
+
+bool syncOrientation(Slider this, float64 value);
+bool syncAlignment(Switch this, int value);
+bool syncPadding(Slider this, float64 value);
+
+inline itemSize = -50;
+inline minPadding = 0;
+inline maxPadding = 1000;
+
+Slider orientation = {
+	onUpdate: syncOrientation;
+	text: "orientation";
+	minimum: -4;
+	maximum: 10;
+	value: -1;
+	stepSize: 1;
+};
+
+Slider paddingTop = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.top";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+	stepSize: 1;
+};
+Slider paddingLeft = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.left";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+	stepSize: 1;
+};
+Slider paddingRight = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.right";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 256;
+	stepSize: 1;
+};
+Slider paddingBottom = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.bottom";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+	stepSize: 1;
+};
+
+Switch layoutAlignTop = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.top";
+	states: null;
+};
+Switch layoutAlignLeft = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.left";
+	states: null;
+};
+Switch layoutAlignRight = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.right";
+	states: null;
+};
+Switch layoutAlignBottom = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.bottom";
+	states: null;
+};
+
+Switch itemAlignTop = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.top";
+	states: null;
+	selected: 1;
+};
+Switch itemAlignLeft = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.left";
+	states: null;
+	selected: 1;
+};
+Switch itemAlignRight = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.right";
+	states: null;
+	selected: 1;
+};
+Switch itemAlignBottom = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.bottom";
+	states: null;
+	selected: 1;
+};
+
+Switch textAlignTop = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.top";
+	states: null;
+};
+Switch textAlignLeft = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.left";
+	states: null;
+	selected: 1;
+};
+Switch textAlignRight = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.right";
+	states: null;
+};
+Switch textAlignBottom = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.bottom";
+	states: null;
+};
+
+// container for rectangles
+Layout layout = {
+	enabled: false;
+	focusable: false;
+};
+
+Style style = {
+	align: Style.center;
+	format: { precision: 2 };
+};
+
+// container for controls
+Widget widget = {
+	width: 1440;
+	height: 900;
+	style: style;
+	orientation: 0;
+};
+
+// create some custom views with a background color and a text
+View Rectangle(int rgb, const char text[*]) {
+	struct Rectangle: Button {
+		const argb background;
+		void onDraw(Rectangle this, Image offs, Rect rect) {
+			offs.fillRect(rect, this.background.v);
+			Button.onDraw(this, offs, rect);
+		}
+	}
+	return Rectangle {
+		background: argb(rgb);
+		enabled: false;
+		text: text;
+		width: itemSize;
+		height: itemSize;
+	};
+}
+
+Window.show(widget
+	.focus(orientation)
+	// add the layout to background
+	.addItems(Style.center, layout.addItems(Style.center,
+		Rectangle(0x101010, "1"),
+		Rectangle(0x101040, "2"),
+		Rectangle(0x104010, "3"),
+		Rectangle(0x401010, "4"),
+		Rectangle(0x104040, "5"),
+		Rectangle(0x401040, "6"),
+		Rectangle(0x404010, "7"),
+		Rectangle(0x404040, "8")
+	))
+	.addItems(Style.right, Layout.Column(
+		orientation,
+
+		null,
+		paddingTop,
+		paddingLeft,
+		paddingRight,
+		paddingBottom,
+		null,
+		layoutAlignTop,
+		layoutAlignLeft,
+		layoutAlignRight,
+		layoutAlignBottom,
+		null,
+		itemAlignTop,
+		itemAlignLeft,
+		itemAlignRight,
+		itemAlignBottom,
+
+		null,
+		textAlignTop,
+		textAlignLeft,
+		textAlignRight,
+		textAlignBottom
+	))
+);
+
+bool syncOrientation(Slider this, float64 value) {
+	if (!Slider.onUpdate(this, value)) {
+		return false;
+	}
+	layout.orientation = this.value;
+	layout.invalidate();
+	return true;
+}
+bool syncPadding(Slider this, float64 value) {
+	if (!Slider.onUpdate(this, value)) {
+		return false;
+	}
+	layout.paddingTop = paddingTop.value;
+	layout.paddingLeft = paddingLeft.value;
+	layout.paddingRight = paddingRight.value;
+	layout.paddingBottom = paddingBottom.value;
+	layout.invalidate();
+	return true;
+}
+bool syncAlignment(Switch this, int value) {
+	if (!Switch.onUpdate(this, value)) {
+		return false;
+	}
+
+	int textAlign = Style.center;
+	if (textAlignTop.checked()) {
+		textAlign |= Style.top;
+	}
+	if (textAlignLeft.checked()) {
+		textAlign |= Style.left;
+	}
+	if (textAlignRight.checked()) {
+		textAlign |= Style.right;
+	}
+	if (textAlignBottom.checked()) {
+		textAlign |= Style.bottom;
+	}
+
+	// todo: hack to write constant value
+	int align& = pointer(style.align);
+	align = textAlign;
+
+	int itemAlign = Style.center;
+	if (itemAlignTop.checked()) {
+		itemAlign |= Style.top;
+	}
+	if (itemAlignLeft.checked()) {
+		itemAlign |= Style.left;
+	}
+	if (itemAlignRight.checked()) {
+		itemAlign |= Style.right;
+	}
+	if (itemAlignBottom.checked()) {
+		itemAlign |= Style.bottom;
+	}
+	for (int i = 0; i < layout.size(); i += 1) {
+		layout.setAlignment(i, itemAlign);
+	}
+
+	if (Widget w = layout.parent().as(Widget)) {
+		int layoutAlign = Style.center;
+		if (layoutAlignTop.checked()) {
+			layoutAlign |= Style.top;
+		}
+		if (layoutAlignLeft.checked()) {
+			layoutAlign |= Style.left;
+		}
+		if (layoutAlignRight.checked()) {
+			layoutAlign |= Style.right;
+		}
+		if (layoutAlignBottom.checked()) {
+			layoutAlign |= Style.bottom;
+		}
+		assert(layout == w.getView(0), "layout should be the first view");
+		w.setAlignment(0, layoutAlign);
+	}
+
+	layout.invalidate();
+	return true;
+}

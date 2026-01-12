@@ -1,0 +1,108 @@
+// Assign value variable to reference, pointer, variant and typename.
+
+static if (typename(integer) == null) {
+inline integer = int32;
+}
+
+static integer value = 42;
+integer valueRef& = value;
+pointer valuePtr = value;
+variant valueVar = value;
+
+integer fromRef = valueRef;
+integer fromPtr& = valuePtr;
+integer fromVar& = valueVar;	// FixMe: unBox(with runtime type-check) variant to reference conversions
+
+integer nullRef& = null;
+pointer nullPtr = null;
+variant nullVar = null;
+typename nullTyp = null;
+function nullFun = null;
+object nullObj = null;
+
+pointer typePtr = integer;
+variant typeVar = integer;
+typename typeTyp = integer;
+
+integer local = value;
+integer copyVal = local;
+integer copyRef& = valueRef;
+pointer copyPtr = valuePtr;
+variant copyVar = valueVar;
+typename copyTyp = typeTyp;
+
+// Assign type names to pointer
+pointer ptrVoid = void;
+pointer ptrBool = bool;
+pointer ptrChar = char;
+pointer ptrInt8 = int8;
+pointer ptrInt16 = int16;
+pointer ptrInt32 = int32;
+pointer ptrInt64 = int64;
+pointer ptrUint8 = uint8;
+pointer ptrUint16 = uint16;
+pointer ptrUint32 = uint32;
+pointer ptrUint64 = uint64;
+pointer ptrFloat32 = float32;
+pointer ptrFloat64 = float64;
+pointer ptrTypename = typename;
+pointer ptrFunction = function;
+pointer ptrPointer = pointer;
+pointer ptrVariant = variant;
+pointer ptrObject = object;
+
+// Assign type names to variant
+variant varVoid = void;
+variant varBool = bool;
+variant varChar = char;
+variant varInt8 = int8;
+variant varInt16 = int16;
+variant varInt32 = int32;
+variant varInt64 = int64;
+variant varUint8 = uint8;
+variant varUint16 = uint16;
+variant varUint32 = uint32;
+variant varUint64 = uint64;
+variant varFloat32 = float32;
+variant varFloat64 = float64;
+variant varTypename = typename;
+variant varFunction = function;
+variant varPointer = pointer;
+variant varVariant = variant;
+variant varObject = object;
+
+// Assign type names to typename
+typename typVoid = void;
+typename typBool = bool;
+typename typChar = char;
+typename typInt8 = int8;
+typename typInt16 = int16;
+typename typInt32 = int32;
+typename typInt64 = int64;
+typename typUint8 = uint8;
+typename typUint16 = uint16;
+typename typUint32 = uint32;
+typename typUint64 = uint64;
+typename typFloat32 = float32;
+typename typFloat64 = float64;
+typename typTypename = typename;
+typename typFunction = function;
+typename typPointer = pointer;
+typename typVariant = variant;
+typename typObject = object;
+
+// get the type of value
+pointer valueOfPtr = pointer(value);
+variant valueOfVar = variant(value);
+typename valueOfTyp = typename(value);
+
+typename typeOfValue = typename(value);
+// typename assignValue = value;  // FIXME: this should be not possible
+// typename assignVariant = valueVar;  // FIXME: this should extract the type?
+// typename typeOfVar = typename(valueVar);// FIXME: extract type from variant: integer, not variant
+
+// Assign pointer to variant: add pointer as type and copy the reference
+variant copyPtrFloat64 = ptrFloat64;
+
+// Assign variant to pointer: discards typename and copy reference
+pointer copyVarFloat64 = varFloat64;

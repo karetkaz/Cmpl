@@ -1,0 +1,56 @@
+//inline "todo/.ci";
+//* inline all the test files
+
+// integer should be defined as one of: int8, int16, int32, int64, uint8, uint16, uint32, uint64, char
+inline integer = int64;
+
+
+// Aliasing
+inline "lang/emit.ci";
+inline "lang/inlineMacros.ci";
+inline "lang/overload.inline.ci";
+
+// native calls
+inline "lang/memory.ci";
+inline "lang/tryExec.ci";
+inline "lang/pointer.ci";
+
+
+// Variables
+inline "lang/init.reference.ci";
+inline "lang/init.variable.ci";
+
+// Functions
+inline "lang/function.ci";
+inline "lang/reflect.ci";
+//inline "lang/todo.funIterator.ci";
+
+// Records & Arrays
+inline "lang/init.member.ci";
+inline "lang/init.method.ci";
+// FIXME: inline "lang/init.array.ci"?;
+
+inline "lang/recUnion.ci";
+inline "lang/recPacking.ci";
+
+// Enumerations
+//inline "todo/enum.ci";
+
+
+// Operators
+inline "lang/useOperator.ci";
+
+
+// statements
+inline "lang/stmt.if.ci";
+inline "lang/stmt.for.ci";
+
+
+// implemented functions
+inline "math/test.Bits.ci";
+//inline "math/test.Fixed.ci"; // todo: implement
+inline "math/test.Math.ci";
+inline "math/test.Complex.ci";
+//inline "math/test.Polynomial.ci"; // fixme: requires file access
+
+// */

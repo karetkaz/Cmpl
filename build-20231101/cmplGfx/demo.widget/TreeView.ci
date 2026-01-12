@@ -1,0 +1,130 @@
+// Tree view demo.
+
+struct TreeView: Layout {}
+
+TreeView TreeView(const char text[], View items...) {
+	static bool onUpdate(Switch this, int selected) {
+		if (!Switch.onUpdate(this, selected)) {
+			return false;
+		}
+		this.invalidate();
+		return true;
+	}
+	static bool onMeasure(Layout this, Rect rect&) {
+		if (Switch switch = this.data.as(Switch)) {
+			if (switch.selected == 0) {
+				rect.x1 = rect.x0;
+				rect.y1 = rect.y0;
+				return false;
+			}
+		}
+		return Layout.onMeasure(this, &rect);
+	}
+	static const char states[*][] = {
+		"<",
+		"^"
+	};
+
+	TreeView result = {};
+
+	Switch root = {
+		text: text;
+		states: states;
+		onUpdate: onUpdate;
+		clickToFocus: false;
+	};
+	result.addItems(Style.verticalTop, root);
+
+	if (items.length > 0) {
+		Layout children = {
+			onMeasure: onMeasure;
+			paddingLeft: 20;
+			data: root;
+		};
+		children.addItems(Style.verticalTop, ...items);
+		result.addItems(Style.verticalTop, children);
+	}
+	return result;
+}
+
+View TextView(const char text[]) {
+	static bool click(Button this) {
+		trace("click", this.text);
+	}
+	return Button {
+		text: text;
+		onClick: click;
+	};
+}
+
+Slider Slider(const char text[*], int min, int max, int val) {
+	return {
+		text: text;
+		value: val;
+		minimum: min;
+		maximum: max;
+	};
+}
+
+Style style = {
+	format: { precision: 2 };
+	align: Style.topLeft;
+};
+
+Window.show(Widget(300, 500, style).addItems(Style.verticalTop,
+	TreeView("Cmpl",
+		Slider("progress", 0, 100, 37),
+
+		TreeView("Introduction",
+			TextView("Features")
+		),
+
+		TreeView("Lexical structure",
+			TextView("Comments"),
+			TextView("Identifiers"),
+			TextView("Keywords"),
+			TreeView("Literals",
+				TextView("Number"),
+				TextView("String"),
+				TextView("Object"),
+				TextView("Array")
+			),
+			TextView("Operators")
+		),
+
+		TreeView("Expressions",
+			TextView("Primary expression"),
+			TextView("Unary expressions"),
+			TextView("Binary expressions"),
+			TextView("Ternary expression"),
+			TextView("Operator precedence table")
+		),
+
+		TreeView("Statements",
+			TextView("Block statement"),
+			TextView("If statement"),
+			TextView("For statement"),
+			TextView("Break statement"),
+			TextView("Continue statement"),
+			TextView("Return statement"),
+			TextView("Declaration statement"),
+			TextView("Expression statement")
+		),
+
+		TreeView("Declarations",
+			TextView("Variables"),
+			TextView("Arrays"),
+			TextView("Functions"),
+			TextView("Enumerations"),
+			TextView("Records"),
+			TextView("Aliasing"),
+			TextView("Operator overloading")
+		),
+
+		TreeView("Type system",
+			TextView("Builtin types"),
+			TextView("Builtin aliases"),
+			TextView("Builtin functions")
+		)
+	)
+));
