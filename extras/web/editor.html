@@ -112,7 +112,7 @@
 				<button class="right" onclick="execute(title); event.stopPropagation();" title="-asm/A/d/p/n/s">All</button>
 			</li>
 			<li onclick="execute(title, {dump: '/dump.json'});" title="-profile/t/p/G/M -api/A/d/p -asm/n/s -ast -doc -use">Profile & full dump
-				<button class="right" onclick="execute(title, {dump: '/dump.ci'}); event.stopPropagation();" title="-profile/t/p/G/M -api/A/d/p -asm/n/s -ast -doc -use">T</button>
+				<button class="right" onclick="execute(title, {dump: '/dump.cmpl'}); event.stopPropagation();" title="-profile/t/p/G/M -api/A/d/p -asm/n/s -ast -doc -use">T</button>
 			</li>
 			<hr>
 			<li onclick="execute();">Command Line Reference</li>
@@ -377,6 +377,8 @@ function centerCanvas(zoom) {
 	canvasMove.style.height = Math.max(canvas.height, canvas.parentElement.clientHeight);
 }
 
+let version = '/Cmpl/' + (params.version || 'build') + '/wasm/';
+
 function importScripts(...urls) {
 	for (let url of urls) {
 		let scriptElement = document.createElement('script');
@@ -388,7 +390,7 @@ function importScripts(...urls) {
 // libGfx for canvas based execution
 if (params.libGfx === undefined) {
 	var worker = new Worker('worker.js');
-	worker.postMessage({version: '/Cmpl/' + (params.version || 'build') + '/wasm/'});
+	worker.postMessage({version});
 	worker.onmessage = function (event) {
 		//console.log('worker: ', event.data);
 		process(event.data);
@@ -414,7 +416,7 @@ else {
 	var Module = {
 		process: process,
 		initialized: false,
-		locatePath: '/Cmpl/' + (params.version || 'build') + '/wasm/',
+		locatePath: version,
 		canvas: document.getElementById('canvas'),
 		dynamicLibraries: [
 			'libFile.wasm',
@@ -499,7 +501,7 @@ else {
 	importScripts('module.js');
 }
 if (params.workspace == null && params.project == null && params.content == null && params.path == null) {
-	importScripts('/Cmpl/' + (params.version || 'build') + '/tests.js');
+	importScripts(version + '/../tests.js');
 }
 </script>
 </body>

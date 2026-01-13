@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 33
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 43
 
 int test(uint64 x) {
 	if (x == 0) {
@@ -22,34 +22,44 @@ int test(uint64 x) {
 warn: empty statement `;`
 test(x: uint64): int32: function {
 .instructions: (66 bytes)
+	if.then.else-opt.branching.cmpl:4: (16 bytes): if (x == (0))
 	dup.x64 sp(1)
 	load.z64
 	ceq.i64
 	jz +12
+	if.then.else-opt.branching.cmpl:5: (8 bytes): return .result := -1;
 	load.c32 -1
 	set.x32 sp(4)
 	ret
+	if.then.else-opt.branching.cmpl:8: (16 bytes): if (x == (0))
 	dup.x64 sp(1)
 	load.z64
 	ceq.i64
 	jnz +12
+	if.then.else-opt.branching.cmpl:9: (8 bytes): return .result := -2;
 	load.c32 -2
 	set.x32 sp(4)
 	ret
+	if.then.else-opt.branching.cmpl:12: (28 bytes): if (x == (0))
 	dup.x64 sp(1)
 	load.z64
 	ceq.i64
 	jz +16
+	if.then.else-opt.branching.cmpl:13: (8 bytes): return .result := -3;
 	load.c32 -3
 	set.x32 sp(4)
 	ret
 	jmp +12
+	if.then.else-opt.branching.cmpl:15: (8 bytes): return .result := -4;
 	load.c32 -4
 	set.x32 sp(4)
 	ret
+	if.then.else-opt.branching.cmpl:18: (6 bytes): return .result := x;
 	dup.x64 sp(1)
 	i64.2i32
 	set.x32 sp(4)
 	ret
 }
+
+---------- Globals:
 */

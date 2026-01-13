@@ -544,7 +544,7 @@ function hideOverlay() {
 function saveInput(saveAs) {
 	let path = params.getPath();
 	if (path == null || saveAs === true) {
-		path = prompt('Save file as:', path || 'untitled.ci');
+		path = prompt('Save file as:', path || 'untitled.cmpl');
 		if (path == null) {
 			return null;
 		}

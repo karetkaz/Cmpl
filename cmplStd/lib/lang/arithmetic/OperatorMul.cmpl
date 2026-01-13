@@ -1,0 +1,116 @@
+inline *(int32 a, int32 b) = int32(inline(int32(a), int32(b), i32.mul));
+inline *(int64 a, int64 b) = int64(inline(int64(a), int64(b), i64.mul));
+inline *(uint32 a, uint32 b) = uint32(inline(uint32(a), uint32(b), u32.mul));
+inline *(uint64 a, uint64 b) = uint64(inline(uint64(a), uint64(b), u64.mul));
+inline *(float32 a, float32 b) = float32(inline(float32(a), float32(b), f32.mul));
+inline *(float64 a, float64 b) = float64(inline(float64(a), float64(b), f64.mul));
+
+inline *(int8 a, int8 b) = +a * +b;
+inline *(int8 a, int16 b) = +a * +b;
+inline *(int8 a, int32 b) = +a * +b;
+inline *(int8 a, int64 b) = int64(a) * b;
+inline *(int8 a, uint8 b) = +a * +b;
+inline *(int8 a, uint16 b) = +a * +b;
+inline *(int8 a, uint32 b) = uint32(a) * b;
+inline *(int8 a, uint64 b) = uint64(a) * b;
+inline *(int8 a, float32 b) = float32(a) * b;
+inline *(int8 a, float64 b) = float64(a) * b;
+
+inline *(int16 a, int8 b) = +a * +b;
+inline *(int16 a, int16 b) = +a * +b;
+inline *(int16 a, int32 b) = +a * +b;
+inline *(int16 a, int64 b) = int64(a) * b;
+inline *(int16 a, uint8 b) = +a * +b;
+inline *(int16 a, uint16 b) = +a * +b;
+inline *(int16 a, uint32 b) = uint32(a) * b;
+inline *(int16 a, uint64 b) = uint64(a) * b;
+inline *(int16 a, float32 b) = float32(a) * b;
+inline *(int16 a, float64 b) = float64(a) * b;
+
+inline *(int32 a, int8 b) = +a * +b;
+inline *(int32 a, int16 b) = +a * +b;
+//inline *(int32 a, int32 b) = a * b;
+inline *(int32 a, int64 b) = int64(a) * b;
+inline *(int32 a, uint8 b) = +a * +b;
+inline *(int32 a, uint16 b) = +a * +b;
+inline *(int32 a, uint32 b) = uint32(a) * b;
+inline *(int32 a, uint64 b) = uint64(a) * b;
+inline *(int32 a, float32 b) = float32(a) * b;
+inline *(int32 a, float64 b) = float64(a) * b;
+
+inline *(int64 a, int8 b) = a * int64(b);
+inline *(int64 a, int16 b) = a * int64(b);
+inline *(int64 a, int32 b) = a * int64(b);
+//inline *(int64 a, int64 b) = a * b;
+inline *(int64 a, uint8 b) = a * int64(b);
+inline *(int64 a, uint16 b) = a * int64(b);
+inline *(int64 a, uint32 b) = a * int64(b);
+inline *(int64 a, uint64 b) = uint64(a) * b;
+inline *(int64 a, float32 b) = float32(a) * b;
+inline *(int64 a, float64 b) = float64(a) * b;
+
+inline *(uint8 a, int8 b) = +a * +b;
+inline *(uint8 a, int16 b) = +a * +b;
+inline *(uint8 a, int32 b) = +a * +b;
+inline *(uint8 a, int64 b) = int64(a) * b;
+inline *(uint8 a, uint8 b) = +a * +b;
+inline *(uint8 a, uint16 b) = +a * +b;
+inline *(uint8 a, uint32 b) = uint32(a) * b;
+inline *(uint8 a, uint64 b) = uint64(a) * b;
+inline *(uint8 a, float32 b) = float32(a) * b;
+inline *(uint8 a, float64 b) = float64(a) * b;
+
+inline *(uint16 a, int8 b) = +a * +b;
+inline *(uint16 a, int16 b) = +a * +b;
+inline *(uint16 a, int32 b) = +a * +b;
+inline *(uint16 a, int64 b) = int64(a) * b;
+inline *(uint16 a, uint8 b) = +a * +b;
+inline *(uint16 a, uint16 b) = +a * +b;
+inline *(uint16 a, uint32 b) = uint32(a) * b;
+inline *(uint16 a, uint64 b) = uint64(a) * b;
+inline *(uint16 a, float32 b) = float32(a) * b;
+inline *(uint16 a, float64 b) = float64(a) * b;
+
+inline *(uint32 a, int8 b) = a * uint32(b);
+inline *(uint32 a, int16 b) = a * uint32(b);
+inline *(uint32 a, int32 b) = a * uint32(b);
+inline *(uint32 a, int64 b) = int64(a) * +b;
+inline *(uint32 a, uint8 b) = a * uint32(b);
+inline *(uint32 a, uint16 b) = a * uint32(b);
+//inline *(uint32 a, uint32 b) = a * b;
+inline *(uint32 a, uint64 b) = uint64(a) * b;
+inline *(uint32 a, float32 b) = float32(a) * b;
+inline *(uint32 a, float64 b) = float64(a) * b;
+
+inline *(uint64 a, int8 b) = a * uint64(b);
+inline *(uint64 a, int16 b) = a * uint64(b);
+inline *(uint64 a, int32 b) = a * uint64(b);
+inline *(uint64 a, int64 b) = a * uint64(b);
+inline *(uint64 a, uint8 b) = a * uint64(b);
+inline *(uint64 a, uint16 b) = a * uint64(b);
+inline *(uint64 a, uint32 b) = a * uint64(b);
+//inline *(uint64 a, uint64 b) = a * b;
+inline *(uint64 a, float32 b) = float32(a) * b;
+inline *(uint64 a, float64 b) = float64(a) * b;
+
+inline *(float32 a, int8 b) = a * float32(b);
+inline *(float32 a, int16 b) = a * float32(b);
+inline *(float32 a, int32 b) = a * float32(b);
+inline *(float32 a, int64 b) = a * float32(b);
+inline *(float32 a, uint8 b) = a * float32(b);
+inline *(float32 a, uint16 b) = a * float32(b);
+inline *(float32 a, uint32 b) = a * float32(b);
+inline *(float32 a, uint64 b) = a * float32(b);
+//inline *(float32 a, float32 b) = a * b;
+inline *(float32 a, float64 b) = float64(a) * b;
+
+inline *(float64 a, int8 b) = a * float64(b);
+inline *(float64 a, int16 b) = a * float64(b);
+inline *(float64 a, int32 b) = a * float64(b);
+inline *(float64 a, int64 b) = a * float64(b);
+inline *(float64 a, uint8 b) = a * float64(b);
+inline *(float64 a, uint16 b) = a * float64(b);
+inline *(float64 a, uint32 b) = a * float64(b);
+inline *(float64 a, uint64 b) = a * float64(b);
+inline *(float64 a, float32 b) = a * float64(b);
+//inline *(float64 a, float64 b) = a * b;

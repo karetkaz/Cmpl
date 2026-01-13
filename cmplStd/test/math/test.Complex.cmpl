@@ -1,24 +1,36 @@
 // test complex numbers
-
 inline Neg(Complex a) = Complex(-a.re, -a.im);
 inline Add(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
 inline Sub(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
 inline Mul(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+inline assertEqual(Complex a, Complex b) = assert(a.re == b.re && a.im == b.im, "Complex numbers are not equal", a, b);
 
-Complex valA = {re: 9, im: 2};
-Complex valB = {re: 2, im: 3};
+Complex a = {re: 9, im: 2};
+Complex b = {re: 2, im: 3};
 
-Complex Neg = Neg(valA);
-Complex neg = Complex.neg(valA);
+Complex neg = Neg(a);
+assertEqual(neg, Complex.neg(a));
+assertEqual(neg, a.neg());
+assertEqual(neg, -a);
 
-Complex Add = Add(valA, valB);
-Complex add = Complex.add(valA, valB);
+Complex add = Add(a, b);
+assertEqual(add, Complex.add(a, b));
+assertEqual(add, a.add(b));
+assertEqual(add, a + b);
 
-Complex Sub = Sub(valA, valB);
-Complex sub = Complex.sub(valA, valB);
+Complex sub = Sub(a, b);
+assertEqual(sub, Complex.sub(a, b));
+assertEqual(sub, a.sub(b));
+assertEqual(sub, a - b);
 
-Complex Mul = Mul(valA, valB);
-Complex mul = Complex.mul(valA, valB);
+Complex mul = Mul(a, b);
+assertEqual(mul, Complex.mul(a, b));
+assertEqual(mul, a.mul(b));
+assertEqual(mul, a * b);
+
+Complex div = Complex.div(a, b);
+assertEqual(div, a.div(b));
+assertEqual(div, a / b);
 
 /* References:
 https://metacpan.org/pod/Math::Complex

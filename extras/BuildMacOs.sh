@@ -5,7 +5,7 @@ echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
 export BIN="$CMPL_HOME/.build/macos"
-BIN_EMC=.build/wasm
+#BIN_EMC=.build/wasm
 
 #make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.dylib libGfx.dylib BINDIR="$BIN"
@@ -55,14 +55,14 @@ TEST_FILES="$CMPL_HOME/cmplFile/test/*.cmpl"
 
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/**/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/tmp/test/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/tmp/test/**/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplStd/test/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplStd/test/**/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/extra/**/*.cmpl)"
 
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/**/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/tmp/test/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/tmp/test/**/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplGfx/test/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplGfx/test/**/*.cmpl)"
 
 DUMP_FILE=$BIN-tests.exec.cmpl
 $BIN/cmpl -log/d "$DUMP_FILE"

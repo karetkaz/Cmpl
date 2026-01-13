@@ -1443,7 +1443,7 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 		if (type != NULL) {
 			// update the result variable, make it inline
 			params->type = type;
-			params->size = type->size;
+			params->size = refSize(type);
 			params->init = type->init;
 			params->kind = (params->kind & ~MASK_cast) | refCast(type);
 		}
@@ -1556,7 +1556,7 @@ static astn declare_record(ccContext ctx, ccKind attr, const char* doc) {
 					// alignment must be a small number: 0 ... 32
 					error(ctx->rt, tok->file, tok->line, ERR_INVALID_BASE_OR_PACK, tok, "must be a small number");
 				}
-				else if ((tmp.cInt & tmp.cInt - 1) != 0) {
+				else if ((tmp.cInt & (tmp.cInt - 1)) != 0) {
 					// alignment must be a power of 2: 0, 1, 2, 4, 8, ...
 					error(ctx->rt, tok->file, tok->line, ERR_INVALID_BASE_OR_PACK, tok, "must be a power of 2");
 				}

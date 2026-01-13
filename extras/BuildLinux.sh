@@ -4,10 +4,15 @@ export "CMPL_HOME=$(realpath "$(dirname "$(readlink -f "$0")")"/..)"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
-export BIN="$CMPL_HOME/.build/linux"
-#BIN_WCC=$BIN.wcc
-#BIN_EMC=build/wasm
+CMPL_BIN="$(realpath ~)/bin/Cmpl"
+#CMPL_BIN="$CMPL_HOME/.build"
 
+#CMPL_API="$CMPL_BIN/Cmpl.api"
+#CMPL_DOC="$CMPL_BIN/Cmpl.md"
+#BIN_EMC="$CMPL_BIN/wasm"
+#BIN_WCC="$CMPL_BIN/wcc"
+
+export BIN="$CMPL_BIN/linux"
 #make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.so libGfx.so BINDIR="$BIN"
 
@@ -35,12 +40,14 @@ if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 	wcl386 -q -fe=$BIN_WCC/cmpl "$obj_files"
 fi
 
-echo>extras/Cmpl.md
-DOC_FILES="$CMPL_HOME/extras/docs/*.md"
-printf '%s\n' $DOC_FILES | while read file; do
-	cat>>extras/Cmpl.md "$file"
-	echo>>extras/Cmpl.md
-done
+if [ -n "$CMPL_DOC" ]; then
+	echo>"$CMPL_DOC"
+	DOC_FILES="$CMPL_HOME/extras/docs/*.md"
+	printf '%s\n' $DOC_FILES | while read file; do
+		cat>>"$CMPL_DOC" "$file"
+		echo>>"$CMPL_DOC"
+	done
+fi
 
 # test the virtual machine
 [ -f $BIN_WCC/cmpl ] && $BIN_WCC/cmpl>"$BIN_WCC-vm.dump.md" --test-vm
@@ -50,7 +57,7 @@ if ! $BIN/cmpl>"$BIN-vm.dump.md" --test-vm; then
 fi
 
 ## dump api for scite including all libraries
-if ! $BIN/cmpl -dump.scite extras/Cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; then
+if [ -n "$CMPL_API" ] && ! $BIN/cmpl -dump.scite "$CMPL_API" "$BIN/libFile.so" "$BIN/libGfx.so"; then
 	echo "failed to dump compiler api"
 	exit 1
 fi
@@ -77,14 +84,14 @@ TEST_FILES="$CMPL_HOME/cmplFile/test/*.cmpl"
 
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/**/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/tmp/test/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/tmp/test/**/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplStd/test/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplStd/test/**/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/extra/**/*.cmpl)"
 
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/**/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/tmp/test/*.cmpl)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/tmp/test/**/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplGfx/test/*.cmpl)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplGfx/test/**/*.cmpl)"
 
 DUMP_FILE=$BIN-tests.exec.cmpl
 $BIN/cmpl -log/d "$DUMP_FILE"

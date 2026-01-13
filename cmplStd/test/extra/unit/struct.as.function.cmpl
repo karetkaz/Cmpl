@@ -1,0 +1,97 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 73
+
+int32 test(uint8 x) {
+	typename v = struct();
+	struct(x) y = 3;
+	uint32 z = 80;
+
+	assert(v == void);
+	assert(struct() == void);
+	assert(struct(0) == int32);
+	assert(struct(0.) == float64);
+	assert(struct(x) == uint8);
+	assert(struct(+x) == int32);
+	assert(struct(+y) == int32);
+	assert(struct(+z) == uint32);
+	assert(struct(x + y) == int32);
+	assert(struct(x + z) == uint32);
+	return x * y;
+}
+
+int32 t = test(9);
+
+/* - expected output:
+test(x: uint8): int32: function {
+.instructions: (170 bytes)
+	struct.as.function.cmpl:4: (5 bytes): mutable v: typename := struct(void)
+	load.ref <?> ;void
+	struct.as.function.cmpl:5: (5 bytes): mutable y: uint8 := 3
+	load.c32 3
+	struct.as.function.cmpl:6: (5 bytes): mutable z: uint32 := 80
+	load.c32 80
+	struct.as.function.cmpl:8: (56 bytes): assert(v == void);
+	load.z32
+	load.sp(+4)
+	dup.x32 sp(4)
+	load.ref <?> ;void
+	ceq.i32
+	jz +8
+	jmp +35
+	load.ref <?> ;"struct.as.function.cmpl"
+	load.c32 8
+	load.c32 -2
+	load.c32 128
+	load.ref <?> ;"assertion failed!"
+	dup.x64 sp(5)
+	nfc(2) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
+	inc.sp(-8)
+	struct.as.function.cmpl:9: (9 bytes): assert(struct(void) == void);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:10: (9 bytes): assert(struct(0) == int32);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:11: (9 bytes): assert(struct(0.000000) == float64);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:12: (9 bytes): assert(struct(x) == uint8);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:13: (9 bytes): assert(struct(+(x)) == int32);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:14: (9 bytes): assert(struct(+(y)) == int32);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:15: (9 bytes): assert(struct(+z) == uint32);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:16: (9 bytes): assert(struct((x) + (y)) == int32);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:17: (9 bytes): assert(struct((x) + z) == uint32);
+	load.z32
+	load.sp(+4)
+	inc.sp(-8)
+	struct.as.function.cmpl:18: (18 bytes): return .result := (x) * (y);
+	load.sp(+16)
+	load.iu8
+	load.sp(+8)
+	load.iu8
+	mul.i32
+	set.x32 sp(6)
+	inc.sp(-12)
+	ret
+}
+
+---------- Globals:
+struct.as.function.cmpl:21: t: int32(27)
+*/

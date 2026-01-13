@@ -160,7 +160,6 @@ static const struct {
 	char *name;
 	ccToken type;
 } keywords[] = {
-	// Warning: keep keywords sorted by name, binary search is used to match keywords
 	{"break",    STMT_brk},
 	{"continue", STMT_con},
 	{"else",     ELSE_kwd},

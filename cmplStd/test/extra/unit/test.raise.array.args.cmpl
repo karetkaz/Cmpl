@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh -asm/0 -run/g 11
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 11
 
 char str3[10] = {'t', 'e', 's', 't', '3', ''};
 char str2[*] = str3;

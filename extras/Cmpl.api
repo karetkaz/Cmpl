@@ -841,6 +841,19 @@ Complex(value: float64): Complex # Create a Complex number from the given `value
 Complex(real: float64, imaginary: float64): Complex # Create a Complex number from the given `real` and `imaginary` values
 toCartesian(x: Complex): Complex # Convert the from polar(r,θ) to cartesian(x,y) coordinates
 toPolar(x: Complex): Complex # Convert the from cartesian(x,y) to polar(r,θ) coordinates
+operator-(a: Complex): Complex # operator-
+operator+(a: Complex, b: Complex): Complex # operator+
+operator+(a: Complex, b: float64): Complex # operator+
+operator+(a: float64, b: Complex): Complex # operator+
+operator-(a: Complex, b: Complex): Complex # operator-
+operator-(a: Complex, b: float64): Complex # operator-
+operator-(a: float64, b: Complex): Complex # operator-
+operator*(a: Complex, b: Complex): Complex # operator*
+operator*(a: Complex, b: float64): Complex # operator*
+operator*(a: float64, b: Complex): Complex # operator*
+operator/(a: Complex, b: Complex): Complex # operator/
+operator/(a: Complex, b: float64): Complex # operator/
+operator/(a: float64, b: Complex): Complex # operator/
 vec2d # A 2d vector (2x float64)
 vec2d.<?>
 vec2d.<?>.x # X component of the vector
@@ -1300,6 +1313,10 @@ Polynomial.derivative(this: Polynomial): Polynomial # Compute the derivative of 
 Polynomial.integral(this: Polynomial, c: float64): Polynomial # Compute the integral of the polynomial
 Polynomial(copy: Polynomial): Polynomial # Create a new polynomial by copying the given one.
 Polynomial(values: float64[]): Polynomial # Create a new polynomial with the given values, coefficients are reversed(lowest index === highest degree)
+operator-(a: Polynomial): Polynomial # operator-
+operator+(a: Polynomial, b: Polynomial): Polynomial # operator+
+operator-(a: Polynomial, b: Polynomial): Polynomial # operator-
+operator*(a: Polynomial, b: Polynomial): Polynomial # operator*
 File # @builtin
 File.open(path: char[]): File # @builtin
 File.create(path: char[]): File # @builtin

@@ -1,0 +1,82 @@
+// todo: this feature requires compile time code execution, enum value computations and static if conditions will fail
+// unary plus promotion operators
+inline +(int8 a) = int32(a);
+inline +(int16 a) = int32(a);
+inline +(int32 a) = int32(a);
+inline +(int64 a) = int64(a);
+inline +(uint8 a) = int32(a);
+inline +(uint16 a) = int32(a);
+inline +(uint32 a) = uint32(a);
+inline +(uint64 a) = uint64(a);
+inline +(float32 a) = float32(a);
+inline +(float64 a) = float64(a);
+
+// arithmetic (-, +, -, *, /, %)
+inline -(int32 a) = int32(inline(int32(a), i32.neg));
+inline -(int64 a) = int64(inline(int64(a), i64.neg));
+inline -(uint32 a) = uint32(inline(uint32(a), i32.neg));
+inline -(uint64 a) = uint64(inline(uint64(a), i64.neg));
+inline -(float32 a) = float32(inline(float32(a), f32.neg));
+inline -(float64 a) = float64(inline(float64(a), f64.neg));
+inline -(int8 a) = -+a;
+inline -(int16 a) = -+a;
+inline -(uint8 a) = -+a;
+inline -(uint16 a) = -+a;
+inline "./arithmetic/OperatorAdd.cmpl";
+inline "./arithmetic/OperatorSub.cmpl";
+inline "./arithmetic/OperatorMul.cmpl";
+inline "./arithmetic/OperatorDiv.cmpl";
+inline "./arithmetic/OperatorRem.cmpl";
+
+// bitwise (~, &, |, ^, <<, >>)
+inline ~(int32 a) = int32(inline(int32(a), u32.cmt));
+inline ~(int64 a) = int64(inline(int64(a), u64.cmt));
+inline ~(uint32 a) = uint32(inline(uint32(a), u32.cmt));
+inline ~(uint64 a) = uint64(inline(uint64(a), u64.cmt));
+inline ~(int8 a) = ~+a;
+inline ~(int16 a) = ~+a;
+inline ~(uint8 a) = ~+a;
+inline ~(uint16 a) = ~+a;
+inline "./bitwise/OperatorAnd.cmpl";
+inline "./bitwise/OperatorOr.cmpl";
+inline "./bitwise/OperatorXor.cmpl";
+inline "./bitwise/OperatorShl.cmpl";
+inline "./bitwise/OperatorShr.cmpl";
+
+// logical (!, ==, !=) and relational (<, <=, >, >=)
+inline !(bool a) = bool(inline(bool(a), not));
+inline !(int8 a) = !bool(a);
+inline !(int16 a) = !bool(a);
+inline !(int32 a) = !bool(a);
+inline !(int64 a) = !bool(a);
+inline !(uint8 a) = !bool(a);
+inline !(uint16 a) = !bool(a);
+inline !(uint32 a) = !bool(a);
+inline !(uint64 a) = !bool(a);
+inline !(float32 a) = !bool(a);
+inline !(float64 a) = !bool(a);
+inline "./logical/OperatorCeq.cmpl";
+inline "./logical/OperatorCne.cmpl";
+inline "./logical/OperatorClt.cmpl";
+inline "./logical/OperatorCle.cmpl";
+inline "./logical/OperatorCgt.cmpl";
+inline "./logical/OperatorCge.cmpl";
+
+
+
+
+/* TODO: inline "Bool.cmpl"; // extra operators for boolean values
+inline &(bool lhs, bool rhs) = bool(inline(bool(lhs), bool(rhs), and.u32));
+inline |(bool lhs, bool rhs) = bool(inline(bool(lhs), bool(rhs), or.u32));
+inline ^(bool lhs, bool rhs) = bool(inline(bool(lhs), bool(rhs), xor.u32));
+inline <=>(bool lhs, bool rhs) = int32(inline(bool(lhs), bool(rhs), sub.i32));
+... */
+
+/* TODO: inline "Pointer.cmpl"; // extra operators for pointer values
+//inline +(pointer ptr, int val) = inc(ptr, val);
+//inline -(pointer ptr, int val) = inc(ptr, -val);
+... */
+
+/* TODO: inline "Char.cmpl"; // extra operators for character values
+struct Char { ... }
+... */

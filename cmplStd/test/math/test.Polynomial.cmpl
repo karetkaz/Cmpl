@@ -11,11 +11,15 @@ Polynomial a = Polynomial(1, 0, 3, 1);
 Polynomial b = Polynomial(1, 2, 0);
 out.write("a: ").writeln(a);
 out.write("b: ").writeln(b);
-out.write("-a: ").writeln(Polynomial.neg(a));        // fixme: a.neg()
-out.write("-b: ").writeln(Polynomial.neg(b));        // fixme: b.neg()
-out.write("a + b: ").writeln(Polynomial.add(a, b));  // fixme: a.add(b)
-out.write("a - b: ").writeln(Polynomial.sub(a, b));  // fixme: a.sub(b)
-out.write("a * b: ").writeln(Polynomial.mul(a, b));  // fixme: a.mul(b)
+out.write("-a: ").writeln(Polynomial.neg(a));
+out.write("-a: ").writeln(a.neg());
+out.write("-a: ").writeln(-a);
+out.write("-b: ").writeln(-b);
+out.write("a + b: ").writeln(Polynomial.add(a, b));
+out.write("a + b: ").writeln(a.add(b));
+out.write("a + b: ").writeln(a + b);
+out.write("a - b: ").writeln(a - b);
+out.write("a * b: ").writeln(a * b);
 out.write("a(2): ").write(a.evaluate(2), out.format).writeln();
 out.write("a': ").writeln(a.derivative());
 out.write("int(a): ").writeln(a.integral(10));
@@ -25,7 +29,7 @@ for (int i = 0; i < 10; i += 1) {
 //	a.set(i, a.get(i));  // long form: Polynomial.set(a, i, Polynomial.get(a, i));
 }
 
-/* TODO: implement enums, operator overloading
+/* TODO: implement enums, extra operator overloading
 	enum: Polynomial {
 		zero: {
 			elements: { c_zero };
@@ -35,11 +39,6 @@ for (int i = 0; i < 10; i += 1) {
 
 inline [](Polynomial &this, int index) = Polynomial.get(this, index);
 inline ()(Polynomial &this, scalar x) = Polynomial.evaluate(this, x);
-
-inline -(Polynomial a!) = Polynomial.neg(a);
-inline +(Polynomial a!, Polynomial b!) = Polynomial.add(a, b);
-inline -(Polynomial a!, Polynomial b!) = Polynomial.sub(a, b);
-inline *(Polynomial a!, Polynomial b!) = Polynomial.mul(a, b);
 */
 
 /* References:

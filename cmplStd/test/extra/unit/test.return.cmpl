@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 6
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 10
 
 int test() {
 	int x = 9;
@@ -8,8 +8,12 @@ int test() {
 /* - expected output:
 test(): int32: function {
 .instructions: (8 bytes)
+	test.return.cmpl:4: (5 bytes): mutable x: int32 := 9
 	load.c32 9
+	test.return.cmpl:5: (3 bytes): return .result := x;
 	set.x32 sp(2)
 	ret
 }
+
+---------- Globals:
 */

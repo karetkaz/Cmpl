@@ -158,29 +158,23 @@ inline toPolar(Complex x) = Complex(x.abs(), x.arg());
 enum: Complex {
 	zero: { re: 0 };	// 0 + 0i
 	unit: { re: 1 };	// 1 + 0i
-}
+}*/
 
 
-// TODO: implement operator overloading, then:
-inline -(Complex a) = Complex(-a.re, -a.im);
+inline -(Complex a) = a.neg();
 
-inline +(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
-inline +(Complex a, float64 b) = Complex(a.re + b, a.im);
-/// Add a complex number `b` to a real number `a`
-inline +(float64 a, Complex b) = Complex(a + b.re, b.im);
+inline +(Complex a, Complex b) = a.add(b);
+inline +(Complex a, float64 b) = a.add(b);
+inline +(float64 a, Complex b) = Complex(a).add(b);
 
-inline -(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
-inline -(Complex a, float64 b) = Complex(a.re - b, a.im);
-/// Subtract the complex number `b` from the real number `a`
-inline -(float64 a, Complex b) = Complex(a - b.re, b.im);
+inline -(Complex a, Complex b) = a.sub(b);
+inline -(Complex a, float64 b) = a.sub(b);
+inline -(float64 a, Complex b) = Complex(a).sub(b);
 
-inline *(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
-inline *(Complex a, float64 b) = Complex(a.re * b, a.im * b);
-/// Multiply a complex number `b` with a real number `a`
-inline *(float64 a, Complex b) = Complex(a * b.re, a * b.im);
+inline *(Complex a, Complex b) = a.mul(b);
+inline *(Complex a, float64 b) = a.mul(b);
+inline *(float64 a, Complex b) = Complex(a).mul(b);
 
-inline /(Complex a, Complex b) = div(a, b);
-inline /(Complex a, float64 b) = div(a, Complex(b));
-/// Divide the real number `a` by the complex number `b`
+inline /(Complex a, Complex b) = a.div(b);
+inline /(Complex a, float64 b) = a.div(b);
 inline /(float64 a, Complex b) = Complex(a).div(b);
-*/

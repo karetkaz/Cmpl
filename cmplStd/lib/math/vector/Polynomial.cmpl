@@ -182,3 +182,8 @@ Polynomial Polynomial(scalar values...) {
 	}
 	return result;
 }
+
+inline -(Polynomial a!) = Polynomial.neg(a);
+inline +(Polynomial a!, Polynomial b!) = Polynomial.add(a, b);
+inline -(Polynomial a!, Polynomial b!) = Polynomial.sub(a, b);
+inline *(Polynomial a!, Polynomial b!) = Polynomial.mul(a, b);

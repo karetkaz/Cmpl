@@ -45,11 +45,11 @@ inline uint32(float32 value) = inline(float32(value), cvt.f32_u32);
 inline uint32(float64 value) = inline(float64(value), cvt.f64_u32);
 
 /// Explicit cast of base types
-inline uint64(int32 value) = inline(int32(value), i32.i64); // safe to use i32 to i64
+inline uint64(int32 value) = inline(int32(value), i32.i64);
 /// Explicit cast of base types
 inline uint64(int64 value) = inline(value);
 /// Explicit cast of base types
-inline uint64(uint32 value) = inline(uint32(0), uint32(value)); // todo: inline(value, cvt.u32_u64);
+inline uint64(uint32 value) = inline(uint32(value), u32.i64);
 /// Explicit cast of base types
 inline uint64(float32 value) = inline(float32(value), cvt.f32_u64);
 /// Explicit cast of base types

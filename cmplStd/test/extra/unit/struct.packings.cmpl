@@ -1,0 +1,66 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 27
+
+struct PackedUnion: 0 {int32 value;}
+struct PackedStruct1: 1 {int32 value;}
+struct PackedStruct2: 2 {int32 value;}
+struct PackedStruct3: 3 {int32 value;}
+struct PackedStruct4: 4 {int32 value;}
+struct PackedStruct5: 5 {int32 value;}
+struct PackedStruct6: 6 {int32 value;}
+struct PackedStruct7: 7 {int32 value;}
+struct PackedStruct8: 8 {int32 value;}
+struct PackedStruct9: 9 {int32 value;}
+struct PackedStruct10: 10 {int32 value;}
+struct PackedStruct11: 11 {int32 value;}
+struct PackedStruct12: 12 {int32 value;}
+struct PackedStruct13: 13 {int32 value;}
+struct PackedStruct14: 14 {int32 value;}
+struct PackedStruct15: 15 {int32 value;}
+struct PackedStruct16: 16 {int32 value;}
+struct PackedStruct17: 17 {int32 value;}
+struct PackedStruct18: 18 {int32 value;}
+struct PackedStruct19: 19 {int32 value;}
+struct PackedStruct20: 20 {int32 value;}
+struct PackedStruct21: 21 {int32 value;}
+struct PackedStruct22: 22 {int32 value;}
+struct PackedStruct23: 23 {int32 value;}
+struct PackedStruct24: 24 {int32 value;}
+struct PackedStruct25: 25 {int32 value;}
+struct PackedStruct26: 26 {int32 value;}
+struct PackedStruct27: 27 {int32 value;}
+struct PackedStruct28: 28 {int32 value;}
+struct PackedStruct29: 29 {int32 value;}
+struct PackedStruct30: 30 {int32 value;}
+struct PackedStruct31: 31 {int32 value;}
+struct PackedStruct32: 32 {int32 value;}
+struct PackedStruct33: 33 {int32 value;}
+
+/* - expected output:
+struct.packings.cmpl:6: error: invalid struct base type or allignment, got `3`
+struct.packings.cmpl:8: error: invalid struct base type or allignment, got `5`
+struct.packings.cmpl:9: error: invalid struct base type or allignment, got `6`
+struct.packings.cmpl:10: error: invalid struct base type or allignment, got `7`
+struct.packings.cmpl:12: error: invalid struct base type or allignment, got `9`
+struct.packings.cmpl:13: error: invalid struct base type or allignment, got `10`
+struct.packings.cmpl:14: error: invalid struct base type or allignment, got `11`
+struct.packings.cmpl:15: error: invalid struct base type or allignment, got `12`
+struct.packings.cmpl:16: error: invalid struct base type or allignment, got `13`
+struct.packings.cmpl:17: error: invalid struct base type or allignment, got `14`
+struct.packings.cmpl:18: error: invalid struct base type or allignment, got `15`
+struct.packings.cmpl:20: error: invalid struct base type or allignment, got `17`
+struct.packings.cmpl:21: error: invalid struct base type or allignment, got `18`
+struct.packings.cmpl:22: error: invalid struct base type or allignment, got `19`
+struct.packings.cmpl:23: error: invalid struct base type or allignment, got `20`
+struct.packings.cmpl:24: error: invalid struct base type or allignment, got `21`
+struct.packings.cmpl:25: error: invalid struct base type or allignment, got `22`
+struct.packings.cmpl:26: error: invalid struct base type or allignment, got `23`
+struct.packings.cmpl:27: error: invalid struct base type or allignment, got `24`
+struct.packings.cmpl:28: error: invalid struct base type or allignment, got `25`
+struct.packings.cmpl:29: error: invalid struct base type or allignment, got `26`
+struct.packings.cmpl:30: error: invalid struct base type or allignment, got `27`
+struct.packings.cmpl:31: error: invalid struct base type or allignment, got `28`
+struct.packings.cmpl:32: error: invalid struct base type or allignment, got `29`
+struct.packings.cmpl:33: error: invalid struct base type or allignment, got `30`
+struct.packings.cmpl:34: error: invalid struct base type or allignment, got `31`
+struct.packings.cmpl:36: error: invalid struct base type or allignment, got `33`
+*/

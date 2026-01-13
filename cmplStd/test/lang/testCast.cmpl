@@ -16,16 +16,16 @@ struct Numbers {
 	float32 f32;
 	float64 f64;
 }
-void testInt8(int8 x) { inline "./TestCast.cmpl"; }
-void testInt16(int16 x) { inline "./TestCast.cmpl"; }
-void testInt32(int32 x) { inline "./TestCast.cmpl"; }
-void testInt64(int64 x) { inline "./TestCast.cmpl"; }
-void testUint8(uint8 x) { inline "./TestCast.cmpl"; }
-void testUint16(uint16 x) { inline "./TestCast.cmpl"; }
-void testUint32(uint32 x) { inline "./TestCast.cmpl"; }
-void testUint64(uint64 x) { inline "./TestCast.cmpl"; }
-void testFloat32(float32 x) { inline "./TestCast.cmpl"; }
-void testFloat64(float64 x) { inline "./TestCast.cmpl"; }
+void testInt8(int8 x) { inline "./testCast.cmpl"; }
+void testInt16(int16 x) { inline "./testCast.cmpl"; }
+void testInt32(int32 x) { inline "./testCast.cmpl"; }
+void testInt64(int64 x) { inline "./testCast.cmpl"; }
+void testUint8(uint8 x) { inline "./testCast.cmpl"; }
+void testUint16(uint16 x) { inline "./testCast.cmpl"; }
+void testUint32(uint32 x) { inline "./testCast.cmpl"; }
+void testUint64(uint64 x) { inline "./testCast.cmpl"; }
+void testFloat32(float32 x) { inline "./testCast.cmpl"; }
+void testFloat64(float64 x) { inline "./testCast.cmpl"; }
 
 void testAll(int32 x) {
 	testInt8(int8(x));

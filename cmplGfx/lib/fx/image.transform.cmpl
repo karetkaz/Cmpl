@@ -64,7 +64,7 @@ void resize(Image image, Rect rect?, Image src, Rect roi?, int32 interpolate) {
 
 /// Create an image by copying another one using a custom width and height
 Image Image(Image image, int width, int height, int align, float64 maxScale) {
-	// todo: merge with align from micro.ui.ci
+	// todo: merge with align from micro.ui.cmpl
 	enum: int {
 		center: 0;
 		left: 1;

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 38
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 44
 
 void test(int a, int b, int c) {
 	void debug(char message[*]) {
@@ -20,6 +20,7 @@ test(42, 42, 42);
 /* - expected output:
 test(a: int32, b: int32, c: int32): void: function {
 .instructions: (103 bytes)
+	if.then.else-opt.all-any.cmpl:10: (51 bytes): if (a == 42 && b == 42 && c == 42)
 	dup.x32 sp(3)
 	load.c32 42
 	ceq.i32
@@ -32,10 +33,12 @@ test(a: int32, b: int32, c: int32): void: function {
 	load.c32 42
 	ceq.i32
 	jz +19
+	if.then.else-opt.all-any.cmpl:11: (15 bytes): debug("All Pass");
 	load.ref <?> ;"All Pass"
 	load.ref <?> ;test.debug(message: char[*]): void
 	call
 	inc.sp(-4)
+	if.then.else-opt.all-any.cmpl:13: (51 bytes): if (a == 42 || b == 42 || c == 42)
 	dup.x32 sp(3)
 	load.c32 42
 	ceq.i32
@@ -48,6 +51,7 @@ test(a: int32, b: int32, c: int32): void: function {
 	load.c32 42
 	ceq.i32
 	jz +19
+	if.then.else-opt.all-any.cmpl:14: (15 bytes): debug("Any Pass");
 	load.ref <?> ;"Any Pass"
 	load.ref <?> ;test.debug(message: char[*]): void
 	call
@@ -56,4 +60,6 @@ test(a: int32, b: int32, c: int32): void: function {
 }
 if.then.else-opt.all-any.cmpl:6: info: All Pass
 if.then.else-opt.all-any.cmpl:6: info: Any Pass
+
+---------- Globals:
 */
