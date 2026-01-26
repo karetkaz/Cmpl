@@ -68,7 +68,7 @@ Syntax is similar to c / js influenced by:
 
 ## Identifiers
 
-Identifiers are named references of types, variables and functions.
+Identifiers are named references of types, variables, and functions.
 
 **[Syntax](Cmpl.g4)**
 
@@ -78,12 +78,11 @@ Identifier: Letter (Letter | Number)*;
 
 ## Keywords
 
-Keywords are reserved words, which can not be used as identifiers.
+Keywords are reserved words, which cannot be used as identifiers.
 
 * break
 * continue
 * else
-* emit
 * enum
 * for
 * if
@@ -100,15 +99,14 @@ Keywords are reserved words, which can not be used as identifiers.
 
 ```antlrv4
 Literal
-    : '0'[bB][0-1]+
-    | '0'[oO]?[0-7]+
-    | '0'[xX][0-9a-fA-F]+
-    | Decimal Suffix?
-    | Decimal Exponent Suffix?
-    | '.' Number+ Exponent? Suffix?
-    | Decimal '.' Number* Exponent? Suffix?
-    | '\'' .*? '\''
-    | '"' .*? '"'
+    : '0'[bB][0-1]+ [dDuU]?
+    | '0'[oO][0-7]+ [dDuU]?
+    | '0'[xX][0-9a-fA-F]+ [dDuU]?
+    | [0-9]+ [dDuUfF]?
+    | '.' [0-9]+ ([eE] [+-]? [0-9]+)? [fF]?
+    | [0-9]+ ('.' [0-9]*)? ([eE] [+-]? [0-9]+)? [fF]?
+    | ['] .*? [']
+    | ["] .*? ["]
     ;
 ```
 
@@ -117,30 +115,21 @@ Literal
 Integers can be represented in decimal, binary, octal, or hexadecimal format,
 while floating point literals can be specified only in decimal format.
 
-#### Decimal prefix
+#### Number prefix
 
 The following prefixes may be used to specify the radix of an integer:
-
 * binary: `0b` or `0B`
-
 * octal: `0` or `0o` or `0O`
-
 * hexadecimal: `0x` or `0X`
 
-#### Decimal suffix
+#### Number suffixes
 
-The following suffixes are available to override the type of a decimal value:
-
+The following suffixes are available to override the type of the value:
 * `d`: results a int32 constant, ex: `inline i32Value = 3d;`
-
 * `D`: results a int64 constant, ex: `inline i64Value = 3D;`
-
 * `u`: results a uint32 constant, ex: `inline u32Value = 3u;`
-
 * `U`: results a uint64 constant, ex: `inline u64Value = 3U;`
-
 * `f`: results a float32 constant, ex: `inline f32Value = 3f;`
-
 * `F`: results a float64 constant, ex: `inline f64Value = 3F;`
 
 ### Character and string literals
@@ -152,43 +141,29 @@ The following suffixes are available to override the type of a decimal value:
 Escape sequences are used to define certain special characters within string literals.
 
 The following escape sequences are available:
-
 * `\'`: single quote
-
 * `\"`: double quote
-
 * `\?`: question mark
-
 * `\\`: backslash
-
 * `\a`: audible bell
-
 * `\b`: backspace
-
 * `\f`: form feed - new page
-
 * `\n`: line feed - new line
-
 * `\r`: carriage return
-
 * `\t`: horizontal tab
-
 * `\v`: vertical tab
-
 * `\nnn`: arbitrary octal value, maximum of 3 characters.
-
 * `\xnn`: arbitrary hexadecimal value, always 2 characters.
-
 * `\<new line>`: wraps on next line.
 
-- Octal escape sequences have a limit of three octal digits,
-but terminate at the first character that is not a valid octal digit if encountered sooner.
+- Octal escape sequences have a limit of three octal digits but terminate 
+at the first character that is not a valid octal digit if encountered sooner.
 
-- Hexadecimal escape sequences parses always the next two characters.
+- Hexadecimal escape sequences parse always the next two characters.
 
 #### Multi line Strings
 
-A string literal is multi line if it starts with a backslash followed by a newline.
+A string literal is multi-line if it starts with a backslash followed by a newline.
 
 **Example**
 
@@ -212,21 +187,13 @@ string html = "\
 [TODO: documentation]
 
 * !, ~, -, +, &
-
 * (), [], .
-
 * +, -, \*, /, %
-
 * &, |, ^, <<, >>
-
 * ==, !=
-
 * <, <=, >, >=
-
 * ||, &&, ?:
-
 * =, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=, >>>=
-
 * ,
 
 # Expressions
@@ -234,25 +201,17 @@ string html = "\
 Expressions are responsible for computing values.
 
 **[Syntax](Cmpl.g4)**
-
 ```antlrv4
 expression
     : Literal                                                                                        # LiteralExpression
     | Identifier                                                                                  # IdentifierExpression
-    | '(' expressionList? ')'                                                                  # ParenthesizedExpression
-    | expression '(' expressionList? ')'                                                        # FunctionCallExpression
-    | '[' expressionList? ']'                                                                  # ParenthesizedExpression
-    | expression '[' expressionList? ']'                                                         # ArrayAccessExpression
-    | expression '[' expression '..' expression ']'                                               # ArraySliceExpression
+    | '(' argumentList? ')'                                                                    # ParenthesizedExpression
+    | expression '(' argumentList? ')'                                                          # FunctionCallExpression
+    | expression '[' argumentList? ']'                                                           # ArrayAccessExpression
+    | expression '[' expression? '...' expression ']'                                             # ArraySliceExpression
     | expression '.' Identifier                                                                 # MemberAccessExpression
     | unary expression                                                                                 # UnaryExpression
-    | expression arithmetic expression                                                            # ArithmeticExpression
-    | expression bitwise expression                                                                  # BitwiseExpression
-    | expression relational expression                                                            # RelationalExpression
-    | expression equality expression                                                                # EqualityExpression
-    | expression ('='| '*=' | '/=' | '%=' | '+=' | '-=' ) expression                              # AssignmentExpression
-    | expression ('&=' | '|=' | '^=' | '<<=' | '>>=') expression                                  # AssignmentExpression
-    | expression ('&&' | '||') expression                                                            # LogicalExpression
+    | expression (binary | logical) expression                                                        # BinaryExpression
     | expression '?' expression ':' expression                                                   # ConditionalExpression
     ;
 ```
@@ -262,20 +221,17 @@ expression
 
 ## Unary expressions
 
-Unary expressions are composed from an unary operator and one operand.
+Unary expressions are composed of a unary operator and one operand.
 
-- `!`: logical not. Results true or false.
-
-- `~`: complement. Valid for integer types.
-
+- `+`: unary plus. Returns the operand promoted to its default type.
 - `-`: unary minus. Change the sign of a number.
-
-- `+`: unary plus. ???
+- `~`: complement. Valid for integer types.
+- `!`: logical not. Results true or false.
+- `&`: adress of. Returns the address of the operand.
 
 **[Syntax](Cmpl.g4)**
-
 ```
-unary: ('&' | '+' | '-' | '~' | '!');
+unary: '&' | '+' | '-' | '~' | '!');
 ```
 
 ## Binary expressions
@@ -285,29 +241,23 @@ Binary expressions are composed from a binary operator and two operands.
 ### Arithmetic expression
 
 Are used to return new values computed from the two operands.
-
 - `+, -` Additive operators
-
 - `*, /, %` Multiplicative operators
 
 **[Syntax](Cmpl.g4)**
-
 ```
-arithmetic: ('*' | '/' | '%' | '+' | '-');
+arithmetic: '*' | '/' | '%' | '+' | '-';
 ```
 
 ### Bitwise expression
 
 May be used on integer types only.
-
 - `&, |, ^` Bitwise operators
-
 - `<<, >>` Bit shift operators
 
 **[Syntax](Cmpl.g4)**
-
 ```
-bitwise: ('&' | '|' | '^' | '<<' | '>>');
+bitwise: '&' | '|' | '^' | '<<' | '>>';
 ```
 
 ### Relational expressions
@@ -316,9 +266,8 @@ Are used to compare two operands, if one is les or greater than the other.
 The result is a boolean value(true or false).
 
 **[Syntax](Cmpl.g4)**
-
 ```
-relational: ('<' | '<=' | '>' | '>=');
+relational: '<' | '<=' | '>' | '>=';
 ```
 
 ### Equality expressions
@@ -327,34 +276,30 @@ Are used to check if the left and right operands are equal or not.
 The result is a boolean value(true or false).
 
 **[Syntax](Cmpl.g4)**
-
 ```
-equality: ('==' | '!=');
+equality: '==' | '!=';
 ```
 
 ### Assignment expressions
 
-This operator assigns the value on the right to the operand on the lef side.
+This operator assigns the value on the right to the operand on the left side.
 
 **Example**
-
 ```
 a = 5;
 a += 3 + b;
 ```
 
-Composed operators are expanded, this means that `a += 3 + b` is converted to `a = a + (3 + b)`.
+Composed operators are expanded; this means that `a += 3 + b` is converted to `a = a + (3 + b)`.
 
 ### Logical expressions
 
-[TODO: implementation]
-
+Logical operators evaluate their operands from left to right and return a boolean value.
+The evaluation stops when the result is known.
 - `||`: logical or operator returns true if **any** of its operands is true.
-
 - `&&`: logical and operator returns true if **all** of its operands are true.
 
 **Example**
-
 ```
 bool variable = a() || b() || c() || d();
 ```
@@ -364,7 +309,6 @@ The evaluation stops when the first expression is evaluated to true.
 
 
 **Example**
-
 ```
 bool variable = a() && b() && c() && d();
 ```
@@ -383,15 +327,12 @@ The `?:` (conditional) operator is the only ternary operator with 3 operands:
 - false operand: evaluated and returned only if the first operand evaluates to false.
 
 **Example**
-
 ```
 int variable = a() ? b() : c();
 ```
 
 First `a()` is evaluated, and if its value is:
-
 - true: `b()` is evaluated and returned
-
 - false: `c()` is evaluated and returned
 
 ## Operator precedence table
@@ -449,24 +390,23 @@ Statements are the basic blocks of a program.
 ```antlrv4
 statement
     : ';'                                                                                               # EmptyStatement
-    | 'inline' Literal ';'                                                                            # IncludeStatement
-    | qualifiers? '{' statementList '}'                                                              # CompoundStatement
-    | qualifiers? 'if' '(' for_init ')' statement ('else' statement)?                                      # IfStatement
-    | qualifiers? 'for' '(' for_init? ';' expression? ';' expression? ')' statement                       # ForStatement
-    | 'for' '(' variable ':' expression ')' statement                                                 # ForEachStatement
+    | 'inline' Literal '?'? ';'                                                                       # IncludeStatement
+    | 'static'? '{' statement* '}'                                                                   # CompoundStatement
+    | 'static'? 'if' '(' declExpr ')' statement ('else' statement)?                                        # IfStatement
+    | 'static'? 'for' '(' declExpr? ';' expression? ';' expression? ')' statement                         # ForStatement
     | 'return' initializer? ';'                                                                        # ReturnStatement
     | 'break' ';'                                                                                       # BreakStatement
     | 'continue' ';'                                                                                 # ContinueStatement
-    | expression ';'                                                                               # ExpressionStatement
-    | declaration                                                                                 # DeclarationStatement
+    | 'static'? declaration                                                                       # DeclarationStatement
+    | 'static'? expression ';'                                                                     # ExpressionStatement
     ;
 ```
 
 ## Block statement
-Block statement groups zero ore more statement as a single statement.
+Block statement groups zero or more statements as a single statement.
 
 ## If statement
-The if statement is a selection statement, that can be used to execute a section of code, only if a condition is met.
+The if statement is a selection statement that can be used to execute a section of code only if a condition is met.
 
 The main purpose of the if statement is to handle exceptional cases in the control flow.
 
@@ -481,31 +421,31 @@ inline double = float64;
 }
 ```
 
-- if the condition evaluates to true:
+- if the condition evaluates to `true`:
   - the declarations contained by the block will be exposed to the outer scope.
 
-- if the condition evaluates to false:
+- if the condition evaluates to `false`:
   - declarations contained by the block will be exposed only to the inner scope.
   - statements inside the scope will be type-checked.
-  - compilation error will be reported as warnings.
+  - compilation errors will be reported as warnings.
   - inlined files will be not processed.
   - code generation will be skipped.
 
 ## For statement
-The for statement is a repetition statement, that can be used to execute a section of code in a loop, while a condition is met.
+The for statement is a repetition statement that can be used to execute a section of code in a loop, while a condition is met.
 
 The syntax of the for statement is similar to c like language for statement syntax.
 
 ### For-each statement
-The for-each statement enumerates the elements of an iterable.
+The for-each statement iterates over the elements of an iterable type.
 
-To use the foreach like form of the for statement, two functions are required to be defined:
+To use the for-each like form of the for statement, two functions are required to be defined:
 * `iterator`: this function prepares the iterator from a type.
 	* the argument for this function is the object you want to iterate.
-	* it should return an iterable type(this will be the first argument of the next function).
+	* it should return an iterable type (this will be the first argument of the next function).
 * `next`: this function advances to the next iterable element, it may be defined also in the iterator.
-	* the first argument is the object returned by the iterator function. This has to be passed by reference.
-	* the second argument is optional, in case we want to iterate with a value, and not the iterator object. This argument must be passed by reference or as inout.
+	* the first argument is the object returned by the iterator function. This has to be passed by mutable reference.
+	* the second argument is optional, in case we want to iterate with a value, and not the iterator object. This argument must be passed by mutable reference or as inout.
 	* it must return a boolean value: true if there was a next element, false otherwise.
 
 **Example**
@@ -538,7 +478,7 @@ RangeIterator iterator(Range r) {
 		current: r.min;
 		end: r.max;
 	};
-};
+}
 
 // now we can iterate over the range with an int value
 for (int i : Range(10, 20)) {
@@ -597,43 +537,38 @@ Only some expressions can be used to form a statement:
 - assignment: `a = 2;`
 - invocation: `foo();`
 
-Expression statements such as `a * 4;` are considered invalid.
+Expression statements such as `a * 4;` are considered erroneous.
 
 # Declarations
 
 Declaration adds new variables, functions or types to the program.
 
 **[Syntax](Cmpl.g4)**
-
 ```antlrv4
 declaration
-    : qualifiers? 'enum' identifier? (':' typename)? '{' propertyList '}'                              # EnumDeclaration
-    | qualifiers? 'struct' identifier? (':' (Literal | typename))? '{' declarationList '}'             # TypeDeclaration
-    | qualifiers? 'inline' identifier ('(' parameterList? ')')? '=' initializer ';'                   # PropertyOperator
-    | qualifiers? 'inline' '('')' ('(' parameterList? ')')? '=' initializer ';'                        # InvokerOperator
-    | qualifiers? 'inline' '['']' ('(' parameterList? ')')? '=' initializer ';'                        # IndexerOperator
-    | qualifiers? 'inline' unary ('(' parameterList? ')')? '=' initializer ';'                           # UnaryOperator
-    | qualifiers? 'inline' arithmetic ('(' parameterList? ')')? '=' initializer ';'                 # ArithmeticOperator
-    | qualifiers? 'inline' bitwise ('(' parameterList? ')')? '=' initializer ';'                       # BitwiseOperator
-    | qualifiers? 'inline' relational ('(' parameterList? ')')? '=' initializer ';'                 # RelationalOperator
-    | qualifiers? 'inline' equality ('(' parameterList? ')')? '=' initializer ';'                     # EqualityOperator
-    | qualifiers? (variable | function) ( '=' initializer)? ';'                                    # VariableDeclaration
-    | qualifiers? function '{' statementList '}'                                                # FunctionImplementation
+    : 'enum' Identifier? (':' typename)? '{' propertyList '}'                                          # EnumDeclaration
+    | 'struct' Identifier? ('(' parameterList? ')')? (':' expression)? '{' statement* '}'              # TypeDeclaration
+    | 'inline' Identifier? ('(' parameterList? ')')? '=' initializer ';'                              # AliasDeclaration
+    | (variable | function) ( '=' initializer)? ';'                                                # VariableDeclaration
+    | function '{' statement* '}'                                                                  # FunctionDeclaration
+    | 'inline' unary ('(' parameterList? ')')? '=' initializer ';'                               # UnaryOperatorOverload
+    | 'inline' binary ('(' parameterList? ')')? '=' initializer ';'                             # BinaryOperatorOverload
+    | 'inline' '('')' ('(' parameterList? ')')? '=' initializer ';'                            # InvokerOperatorOverload
+    | 'inline' '['']' ('(' parameterList? ')')? '=' initializer ';'                            # IndexerOperatorOverload
     ;
 ```
 
 ## Variables
 
 A [Variable](https://en.wikipedia.org/wiki/Variable_(computer_science)) is
-a symbolic name associated with a value, this value may be changed at runtime.
+a symbolic name associated with a value and may be changed at runtime.
 
 ### Static variables
 
 Variables marked with the `static` attribute will point to the same global memory.
-Initialization of all static variables are executed when the main function is executed.
+Initialization of all static variables is executed when the main function is executed.
 
 **Example**: call count
-
 ```cmpl
 int countCalls() {
 	// global count variable
@@ -644,7 +579,6 @@ int countCalls() {
 ```
 
 **Example**: instance count
-
 ```
 struct instance {
 	// global count variable
@@ -662,12 +596,11 @@ inline instance() = {
 
 ### References
 
-Variables marked with one of the following suffixes, will become references to variables:
+Variables marked with one of the following suffixes will become references to variables:
 
-* `!`: immutable reference - the referenced value is read only
-* `?`: optional reference - the referenced value can be null
-* `&`: mutable reference - the referenced value is writeable
-* `&?`: mutable optional reference - [TODO]
+* `?`: optional reference: the reference can be null or point to a valid value
+* `&`: mutable reference: the value is writeable through the reference
+* `!`: const reference: the value is read-only through the reference
 
 **Note**: for constant values static immutable references can be used:
 ```cmpl
@@ -680,7 +613,6 @@ static double constant! = 3.1415;
 [TODO]
 
 **Example**: initializer function
-
 ```
 // call the initializer function
 Complex x = Complex(1, 2);
@@ -688,34 +620,12 @@ Complex x = Complex(1, 2);
 ```
 
 **Example**: literal initialization
-
 ```
 // literal initialization
 Complex x = {re: 1, im: 2};
 
 // literal initialization with type
 Model x = Sphere {x:0, y:0, z:0, radius: 20};
-```
-
-**Example**: array initialization
-
-```
-// initialize all elements with the value 4
-int a[100] = {*: 4};
-
-// initialize the first 3 elements with the given values
-// the rest will be initalized with 64
-int a[100] = {1, 2, 3, *: 64};
-
-// initialize all elements with null, then override some of them
-string xmlEscape[255] = {
-	*: null;
-	'"': "&quot;";
-	'\'': "&apos;";
-	'<': "&lt;";
-	'>': "&gt;";
-	'&': "&amp;";
-};
 ```
 
 #### Default type initializer
@@ -725,18 +635,22 @@ and some must be initialized when a new instance is created (pointer, variant, t
 All enumerated types should have no default initializer, so they must be explicitly initialized.
 
 **Example**
-
 ```
-int a;       // ok, a is initialized with default type initializer.
+int a;       // ok, a is initialized with default type initializer: `0`
 typename b;  // error: variable `b` must be initialized.
 ```
 
 #### Default field initializer
 
-All constant fields of a record must be initialized when creating an instance.
+All fields of a record must be initialized when creating an instance, if they don't have a default field initializer.
 
 **Example**
 ```
+struct Complex {
+	int re;         // no default field initializer, must be initialized explicitly
+	int im = 0;     // default field initializer: will be initialized with `0` if not specified
+};
+
 Complex x;                     // error: variable `x` must be initialized.
 Complex x = {};                // error: all fields of `x` must be initialized.
 Complex x = {re: 2};           // ok, `im` initialized with default field initializer.
@@ -749,46 +663,92 @@ The array type is a collection of zero or more elements of the same type.
 
 ### Fixed-size arrays
 The fixed size array will allocate the space required for all the elements
+- Are passed to functions by reference.
+- The compiler knows the type of elements and also the length.
 
 **Example**
-```
+```cmpl
 int a[2] = {42, 97};
 ```
 
-- Are passed to functions by reference.
-- Type of elements and length is known by the compiler.
+#### Fixed-size array initialization
+
+- [x] value initialization:
+  ```cmpl
+  int x[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  ```
+- [x] undefined initialization can be used when the array will be populated later:
+  ```cmpl
+  int x[10] = {...};
+  ```
+- [ ] zero initialization can be used to initialize all the elements with zero:
+  ```cmpl
+  int x[10] = {0};
+  ```
+- [ ] initialize all elements with the same value:
+  ```cmpl
+  int x[10] = {...: 4};
+  ```
+- [ ] initialize the first n elements then the rest with the same value:
+  ```cmpl
+  int x[10] = {1, 2, 3, ...: 64};
+  ```
+- [ ] initialization with method:
+  ```cmpl
+  int x[10] = {...(int i) { return i * 2; } };
+  ```
+- [ ] initialize the first n elements then the rest with the method:
+  ```cmpl
+  int x[10] = {1, 2, 3, ...(int i) { return i * 2; } };
+  ```
+- [ ] initialize all elements then override some of them:
+  ```cmpl
+  string xmlEscape[255] = {
+  ...: null;
+  '"': "&quot;";
+  '\'': "&apos;";
+  '<': "&lt;";
+  '>': "&gt;";
+  '&': "&amp;";
+  };
+  ```
 
 ### Dynamic-size arrays
 Slices are a pair of a pointer to the first element and an integer containing the length of the slice.
+- Are initialized, assigned and passed to functions by reference followed by the length.
+- The compiler knows the type of elements and the length is known at runtime.
 
 **Example**
-```
+```cmpl
 int a[] = {42, 97, 13};
 ```
 
-- Are initialized, assigned and passed to functions by reference followed by the length.
-- Type of elements is known by the compiler.
-- The length is known at runtime.
+#### Dynamic-size array initialization
+if the initializer does not contain the rest initializer, the length is inferred from the initializer.
+then a fixed size array can be created and assigned to the slice.
+the previous example is the same as:
+
+```cmpl
+int a[3] = {42, 97, 13};
+int a[] = a;
+```
 
 ### Unknown-size arrays
 Pointers are arrays without length. This type is helpful to pass data to native functions.
 Use `pointer` for the special `void *` type from c, when the type of elements is unknown.
+- Are initialized, assigned and passed to functions by reference.
+- The compiler knows the type of elements, the developer the length of the array.
 
 **Example**
-```
+```cmpl
 int a[*];
 ```
-
-- Are initialized, assigned and passed to functions by reference.
-- Type of elements is known by the compiler.
-- The length may be known by the developer.
 
 ### Associative arrays
 [TODO: implementation]
 
 **Example**
-
-```
+```cmpl
 double constants[string] = {
 	pi: Math.pi;
 	"e": Math.e;
@@ -796,6 +756,7 @@ double constants[string] = {
 
 assert(constants["pi"] == Math.pi);
 assert(constants["e"] == Math.e);
+assert(constants.pi == Math.pi);
 assert(constants.e == Math.e);
 ```
 
@@ -1032,7 +993,7 @@ struct TextReader: Closeable {
 
 	// static method
 	static int read(TextReader this) {
-		char chars[1];
+		char chars[1] = {...};
 		result = this.read(chars);
 		if (result > 0) {
 			result = chars[0];
@@ -1099,7 +1060,7 @@ In the example:
 
 Records which are declared `static` will have all members static (sort of a namespaces).
 These types of records will have no size, and can not be instantiated.
-The best example of its usage is `static struct Math {...}`
+The best example of its usage is `static struct Easing {...}`
 
 ### Packed records
 

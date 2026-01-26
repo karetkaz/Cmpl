@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ ! -d "$BIN" ] && [ -f "$CMPL_HOME/.build/cmake-build-release/Cmpl" ]; then
+if [ ! -d "$BIN" ] && [ -f "$CMPL_HOME/.build/cmake-build-release/cmpl" ]; then
 	BIN="$CMPL_HOME/.build/cmake-build-release"
 	echo "using cmpl from folder: $BIN"
 fi
-if [ ! -d "$BIN" ] && [ -f "$CMPL_HOME/.build/cmake-build-debug/Cmpl" ]; then
+if [ ! -d "$BIN" ] && [ -f "$CMPL_HOME/.build/cmake-build-debug/cmpl" ]; then
 	BIN="$CMPL_HOME/.build/cmake-build-debug"
 	echo "using cmpl from folder: $BIN"
 fi
@@ -13,7 +13,7 @@ if [ ! -d "$BIN" ]; then
 	exit 1
 fi
 
-CMPL_FLAGS="-X-offsets-steps"
+CMPL_FLAGS="-X-offsets-steps-warn"
 
 #this prints all arguments
 if [ $# -gt 2 ]; then

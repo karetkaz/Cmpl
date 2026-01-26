@@ -900,6 +900,31 @@ int isMutableVar(astn ast) {
 	return isMutableAst(ast, 0);
 }
 
+int isOptionalVar(astn ast) {
+	if (ast == NULL) {
+		return 0;
+	}
+
+	switch (ast->kind) {
+		default:
+			break;
+
+		case OPER_idx:
+			return isOptionalVar(ast->op.lhso);
+
+		case OPER_dot:
+			return isOptionalVar(ast->op.rhso);
+
+		case TOKEN_var:
+			if (ast->id.link == NULL) {
+				break;
+			}
+			return isOptional(ast->id.link);
+	}
+
+	return 0;
+}
+
 astn argNode(ccContext ctx, astn lhs, astn rhs) {
 	if (lhs == NULL) {
 		return rhs;

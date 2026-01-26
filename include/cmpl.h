@@ -44,7 +44,7 @@ typedef struct nfcContextRec *nfcContext;       // Native call context
 typedef struct userContextRec *userContext;     // Custom user context
 
 /**
- * specify the extension file to be compiled with this plugin.
+ * Specify the extension file to be compiled with this plugin.
  *
  * @see cmplFile module
  */
@@ -53,17 +53,17 @@ extern const char cmplUnit[];
 /**
  * The main entry point of the module plugin.
  *
- * @param ctx runtime context.
- * @param cc compiler context.
+ * @param ctx Runtime context.
+ * @param cc Compiler context.
  * @param cc The compiler context to which libraries and extensions are added.
  * @return An integer indicating success (0) or failure (non-zero) to initialize the contexts.
  */
 extern int cmplInit(rtContext ctx, ccContext cc);
 
 /**
- * method called when the plugin is disposed (on app exit).
+ * Method called when the plugin is disposed (on app exit).
  *
- * @param ctx runtime context.
+ * @param ctx Runtime context.
  */
 extern void cmplClose(rtContext ctx);
 
@@ -119,11 +119,12 @@ typedef enum {
 	//ATTR_ctv = 0x0080,        // Contravariant - can assign to supertypes: string s = (object) o;
 	//ATTR_biv = 0x00c0,        // Bivariant - can assign to anything in the hierarchy tree
 
-	ATTR_stat  = 0x0100,        // static attribute (not dynamic, usually computed at compile time)
 
 	// variables should be pure by default (value, constant, immutable) should not change after initialization, no side effect for function
 	ATTR_mut   = 0x0200,        // `mutable` (variable): int var = 0; var += 2;
 	ATTR_opt   = 0x0400,        // `optional` (pass by reference): int nullable? = null;
+
+	ATTR_stat  = 0x0800,        // static attribute (not dynamic, usually computed at compile time)
 
 	MASK_cast  = 0x000f,
 	MASK_kind  = 0x0030,
@@ -403,9 +404,9 @@ static inline int isFixedSizeArray(symn sym) {
 /**
  * Get the pointer to an internal offset inside the vm.
  *
- * @param ctx runtime context.
- * @param offset global offset inside the vm.
- * @return pointer to the memory.
+ * @param ctx Runtime context.
+ * @param offset Global offset inside the vm.
+ * @return Pointer to the memory.
  */
 static inline void *vmPointer(rtContext ctx, size_t offset) {
 	if (offset == 0 || offset >= ctx->_size) {
@@ -417,7 +418,7 @@ static inline void *vmPointer(rtContext ctx, size_t offset) {
 /**
  * Get the internal offset inside the vm of a reference.
  *
- * @param ctx runtime context.
+ * @param ctx Runtime context.
  * @param ptr Memory location.
  * @return The internal offset.
  * @note Aborts if ptr is not null and outside the vm memory.
@@ -436,7 +437,7 @@ static inline size_t vmOffset(rtContext ctx, const void *ptr) {
 /**
  * Get the value of a native function argument.
  *
- * @param ctx execution context.
+ * @param ctx Execution context.
  * @param offset Relative offset of argument.
  * @return Pointer where the result is located.
  * @note Getting an argument must be used with padded offset.
@@ -458,7 +459,7 @@ static inline void *argHnd(nfcContext ctx, size_t offs) { return *(void **) getA
 /**
  * Set the return value of a wrapped native call.
  *
- * @param ctx execution context.
+ * @param ctx Execution context.
  * @param result Pointer containing the result value.
  * @return Pointer where the result is located or copied.
  * @note Setting the return value may overwrite some arguments.
@@ -482,24 +483,6 @@ static inline void retF64(nfcContext ctx, float64_t val) { setRet(ctx, float64_t
 static inline void retRef(nfcContext ctx, size_t val) { setRet(ctx, vmOffs, val); }
 static inline void retHnd(nfcContext ctx, void *val) { setRet(ctx, char *, val); }
 #undef setRet
-
-static inline int cmplVersion() {
-	int month = (__DATE__[0] == 'J' && __DATE__[1] == 'a' && __DATE__[2] == 'n') ? 1 :
-				(__DATE__[0] == 'F' && __DATE__[1] == 'e' && __DATE__[2] == 'b') ? 2 :
-				(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r') ? 3 :
-				(__DATE__[0] == 'A' && __DATE__[1] == 'p' && __DATE__[2] == 'r') ? 4 :
-				(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y') ? 5 :
-				(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n') ? 6 :
-				(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l') ? 7 :
-				(__DATE__[0] == 'A' && __DATE__[1] == 'u' && __DATE__[2] == 'g') ? 8 :
-				(__DATE__[0] == 'S' && __DATE__[1] == 'e' && __DATE__[2] == 'p') ? 9 :
-				(__DATE__[0] == 'O' && __DATE__[1] == 'c' && __DATE__[2] == 't') ? 10 :
-				(__DATE__[0] == 'N' && __DATE__[1] == 'o' && __DATE__[2] == 'v') ? 11 :
-				(__DATE__[0] == 'D' && __DATE__[1] == 'e' && __DATE__[2] == 'c') ? 12 : 0;
-	int day = (__DATE__[4] == ' ' ? 0 : __DATE__[4] - '0') * 10 + (__DATE__[5] - '0');
-	int year = (__DATE__[7] - '0') * 1000 + (__DATE__[8] - '0') * 100 + (__DATE__[9] - '0') * 10 + (__DATE__[10] - '0');
-	return (year * 100 + month) * 100 + day;
-}
 
 #ifdef __cplusplus
 }

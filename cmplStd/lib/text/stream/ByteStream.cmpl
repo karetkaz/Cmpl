@@ -20,7 +20,7 @@ struct ByteReader: Closeable {
 	 * the method must return the number of bytes read from the stream into the `bytes` array
 	 * in case there is an error -1 should be returned
 	 */
-	int read(ByteReader this, uint8 bytes[]);
+	int read(ByteReader this, uint8 bytes&[]);
 
 	/// Read a single byte from the stream, a negative number is returned in case of error
 	static int read(ByteReader this) {
@@ -100,8 +100,7 @@ struct CopyReader: ByteReader {
 	ByteReader source;
 	ByteWriter clone;
 
-	// override
-	int read(CopyReader this, uint8 bytes[]) {
+	int read^(CopyReader this, uint8 bytes[]) {
 		int result = this.source.read(bytes);
 		if (result > 0) {
 			this.clone.write(bytes[...result]);
@@ -109,8 +108,7 @@ struct CopyReader: ByteReader {
 		return result;
 	}
 
-	// override
-	void close(CopyReader this) {
+	void close^(CopyReader this) {
 		Closeable.closeSafe(this.source);
 		Closeable.closeSafe(this.clone);
 	}

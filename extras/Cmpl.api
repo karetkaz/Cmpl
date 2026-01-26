@@ -8,7 +8,7 @@ typename.name(type: typename): .cstr # @builtin
 typename.refSize(type: typename): int32 # @builtin
 typename.field(type: typename, name: char[*]): typename # @builtin
 typename.fields(type: typename): typename # @builtin
-typename.lookup(type: typename): typename # @builtin
+typename.lookup(variable: variant): typename # @builtin
 typename.isIndirect(type: typename): bool # @builtin
 typename.isOptional(type: typename): bool # @builtin
 typename.isMutable(type: typename): bool # @builtin
@@ -1232,8 +1232,8 @@ TextWriter.Writeable.write(this: Writeable, writer: TextWriter): void
 TextWriter.writer # @public
 TextWriter.format # default formatter
 TextWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
-TextWriter.flush(this: TextWriter): void
-TextWriter.flush(this: TextWriter): void
+TextWriter.flush(this: TextWriter): void # flush the buffered data
+TextWriter.flush(this: TextWriter): void # flush the buffered data
 TextWriter.close(this: TextWriter): void # Release the resources hold by this object.
 TextWriter.write(this: TextWriter, value: char[]): TextWriter # Write an array of raw characters to the stream (no encoding)
 TextWriter.write(this: TextWriter, value: char): TextWriter # Write a single raw character to the stream (no encoding)
@@ -1716,6 +1716,7 @@ View.height # fixed or minimum height of the view
 View.enabled # the view accepts any user input(event) or not
 View.focusable # the view can be active(focused) or not
 View.parent
+View.defaultStyle # the default style used for widgets
 View.style # style to be used for measuring and drawing views
 View.data # user attached data
 View.parent(this: View): View # Returns the parent of the view
@@ -1780,7 +1781,6 @@ Layout.Row(items: View[]): Layout # Create a Row-layout containing the given `it
 Layout.Column(items: View[]): Layout # Create a Column-layout containing the given `items` arranged horizontally in a single column
 Layout.Stack(items: View[]): Layout # Create a Stack-layout containing the given `items` stacked on top of each other
 Widget # Widget is a special kind of layout, which can clip the content of its elements.\na widget may clip its children and apply scrolling to them, even show a scrollbar.
-Widget.defaultStyle # the default style used for widgets
 Widget.measure
 Widget.redraw
 Widget.focus

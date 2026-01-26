@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 43
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 42
 
 int test(uint64 x) {
 	if (x == 0) {
@@ -19,7 +19,6 @@ int test(uint64 x) {
 }
 
 /* - expected output:
-warn: empty statement `;`
 test(x: uint64): int32: function {
 .instructions: (66 bytes)
 	if.then.else-opt.branching.cmpl:4: (16 bytes): if (x == (0))

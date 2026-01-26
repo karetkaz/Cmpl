@@ -14,6 +14,8 @@ statement
     | 'continue' ';'                                                                                 # ContinueStatement
     | 'static'? declaration                                                                       # DeclarationStatement
     | 'static'? expression ';'                                                                     # ExpressionStatement
+//  | 'static'? 'if' '(' declExpr ')' 'else' statement                                                     # IfStatement
+//  | 'static' 'if' '(' declExpr ')' '{' Identifier '}'                                                    # IfStatement
     ;
 
 declaration
@@ -39,21 +41,22 @@ expression
     | unary expression                                                                                 # UnaryExpression
     | expression (binary | logical) expression                                                        # BinaryExpression
     | expression '?' expression ':' expression                                                   # ConditionalExpression
+//  | ('struct' | 'inline') '(' argumentList? ')'                                                     # TypeOfExpression
     ;
 
 typename: 'struct' '(' expression ')' | expression;
 variable: typename Identifier ('&' | '?' | '!' | '&?')? ('[' ('*' | expression)? ']')*;
 function: typename Identifier '(' parameterList? ')';
 property: (Literal | Identifier ':')? initializer;
-initializer: typename? '{' propertyList '}'| expression;
+initializer: typename? '{' ('...' | propertyList) '}' | expression;
 
 parameterList: 'static'? (variable | function) (',' parameterList)? '...'?;
-argumentList: ('&' | '...')? expression (',' argumentList)?;
-propertyList: (declaration | property ';')* | (property (',' property)* ','?)?;              // todo: remove declaration
+argumentList: ('...')? expression (',' argumentList)?;
+propertyList: ('static'? declaration | property ';')* | (property (',' property)* ','?)?;    // todo: remove declaration
 declExpr: expression | (variable '=' initializer);
 
 binary: arithmetic | bitwise | relational | equality | assignment;
-unary: '+' | '-' | '~' | '!';
+unary: '+' | '-' | '~' | '!' | '&';
 arithmetic: '*' | '/' | '%' | '+' | '-';
 bitwise: '&' | '|' | '^' | '<<' | '>>';
 relational: '<' | '<=' | '>' | '>=';
@@ -61,22 +64,21 @@ equality: '==' | '!=';
 logical: '&&' | '||';
 assignment: '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '|=' | '^=' | '<<=' | '>>=';
 
-Identifier: Letter (Letter | [0-9])*;
+Identifier: [_A-Za-z] [_A-Za-z0-9]*;
 
 Literal
-    : '0'[bB][0-1]+                                                                                            // binary
-    | '0'[oO][0-7]+                                                                                             // octal
-    | '0'[xX][0-9a-fA-F]+                                                                                 // hexadecimal
-    | '.' [0-9]+ Exponent?                                                                     // floating point literal
-    | Number ('.' [0-9]*)? Exponent?                                                           // floating point literal
-    | '\'' .*? '\''                                                                                 // character literal
-    | '"' .*? '"'                                                                                      // string literal
+    : '0'[bB][0-1]+ [dDuU]?                                                                                    // binary
+    | '0'[oO][0-7]+ [dDuU]?                                                                                     // octal
+    | '0'[xX][0-9a-fA-F]+ [dDuU]?                                                                         // hexadecimal
+    | [0-9]+ [dDuUfF]?                                                                                        // integer
+    | '.' [0-9]+ ([eE] [+-]? [0-9]+)? [fF]?                                                                     // float
+    | [0-9]+ ('.' [0-9]*)? ([eE] [+-]? [0-9]+)? [fF]?                                                           // float
+    | ['] .*? [']                                                                                   // character literal
+    | ["] .*? ["]                                                                                      // string literal
     ;
-
-fragment Letter: [_A-Za-z];
-fragment Number: [0] | ([1-9] [0-9]*);
-fragment Exponent: [eE] [+-]? [0-9]+;
 
 Whitespace: [ \t\n\r]+ -> skip;
 LineComment: '//' ~[\r\n]* -> skip;
 BlockComment: '/*' .*? '*/' -> skip;
+
+//HashBang: '#!' ~[\r\n]* -> skip;

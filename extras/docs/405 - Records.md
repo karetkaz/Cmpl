@@ -56,7 +56,7 @@ struct TextReader: Closeable {
 
 	// static method
 	static int read(TextReader this) {
-		char chars[1];
+		char chars[1] = {...};
 		result = this.read(chars);
 		if (result > 0) {
 			result = chars[0];
@@ -123,7 +123,7 @@ In the example:
 
 Records which are declared `static` will have all members static (sort of a namespaces).
 These types of records will have no size, and can not be instantiated.
-The best example of its usage is `static struct Math {...}`
+The best example of its usage is `static struct Easing {...}`
 
 ### Packed records
 

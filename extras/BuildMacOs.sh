@@ -4,9 +4,12 @@ export "CMPL_HOME=$(realpath "$(dirname "$(readlink -f "$0")")"/..)"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
-export BIN="$CMPL_HOME/.build/macos"
-#BIN_EMC=.build/wasm
+CMPL_API="$CMPL_HOME/extras/Cmpl.api"
+CMPL_DOC="$CMPL_HOME/extras/Cmpl.md"
+CMPL_BIN="$CMPL_HOME/.build"
+#BIN_EMC="$CMPL_BIN/wasm"
 
+export BIN="$CMPL_BIN/macos"
 #make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.dylib libGfx.dylib BINDIR="$BIN"
 
@@ -15,12 +18,14 @@ if [ -n "$BIN_EMC" ]; then
 	$CMPL_HOME/extras/web/testsGen.sh>"$BIN_EMC/tests.js"
 fi
 
-echo>extras/Cmpl.md
-DOC_FILES="$CMPL_HOME/extras/docs/*.md"
-printf '%s\n' $DOC_FILES | while read file; do
-	cat>>extras/Cmpl.md "$file"
-	echo>>extras/Cmpl.md
-done
+if [ -n "$CMPL_DOC" ]; then
+	echo>"$CMPL_DOC"
+	DOC_FILES="$CMPL_HOME/extras/docs/*.md"
+	printf '%s\n' $DOC_FILES | while read file; do
+		cat>>"$CMPL_DOC" "$file"
+		echo>>"$CMPL_DOC"
+	done
+fi
 
 # test the virtual machine
 if ! $BIN/cmpl>"$BIN-vm.dump.md" --test-vm; then
@@ -29,7 +34,7 @@ if ! $BIN/cmpl>"$BIN-vm.dump.md" --test-vm; then
 fi
 
 ## dump api for scite including all libraries
-if ! $BIN/cmpl -dump.scite extras/Cmpl.api "$BIN/libFile.dylib" "$BIN/libGfx.dylib"; then
+if [ -n "$CMPL_API" ] && ! $BIN/cmpl -dump.scite "$CMPL_API" "$BIN/libFile.dylib" "$BIN/libGfx.dylib"; then
 	echo "failed to dump compiler api"
 	exit 1
 fi
@@ -46,10 +51,23 @@ $BIN/cmpl -X-offsets -api/A/d/p -doc -log/d "$BIN.test.api.cmpl" "$BIN/libFile.d
 $BIN/cmpl -X-offsets -asm/A/d/p/n/s -log/d "$BIN.test.asm.cmpl" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "cmplStd/test/test.cmpl"
 $BIN/cmpl -profile/t/P/G/M $TEST_FLAGS -dump.json "$BIN.test.json" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "cmplStd/test/test.cmpl"
 
-read -rsn1 -p "Compilation finished, press enter to run tests" && echo
-if [ -n "$REPLY" ]; then
-	exit 0
-fi
+TEST_FLAGS=-X-stdin+steps-offsets+native
+read -rsn1 -p "press R or enter to run tests, C to compile only, any other key to skip testing: "
+case "$REPLY" in
+	"R" | "r" | "")
+		TEST_FLAGS="$TEST_FLAGS -run"
+		echo "run tests"
+		;;
+
+	"C" | "c")
+		echo "compile tests"
+		;;
+
+	*)
+		echo "skip tests"
+		exit 0
+		;;
+esac
 
 TEST_FILES="$CMPL_HOME/cmplFile/test/*.cmpl"
 
@@ -78,7 +96,7 @@ do
 			echo "****** test failed ❌: $file"
 		fi
 		continue
-	elif ! $BIN/cmpl -X-stdin+steps-offsets+native -run -log/a/d "$DUMP_FILE" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "$file"; then
+	elif ! $BIN/cmpl $TEST_FLAGS -log/a/d "$DUMP_FILE" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "$file"; then
 		echo "****** test failed ❌: $file"
 #	else
 #		echo "**** test finished ✅: $file"

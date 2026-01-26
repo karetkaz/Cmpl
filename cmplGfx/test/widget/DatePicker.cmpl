@@ -12,14 +12,14 @@ struct IntButton: View {
 		return true;
 	}
 
-	bool onMeasure(IntButton this, Rect rect&) {
-		Style style& = this.style;
+	bool onMeasure^(IntButton this, Rect rect&) {
+		Style style! = this.style;
 		style.measure(&rect, this.text);
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(IntButton this, Image offs, Rect rect) {
-		Style style& = this.style;
+	void onDraw^(IntButton this, Image offs, Rect rect) {
+		Style style! = this.style;
 		style.align(rect, &rect, this.text);
 		offs.drawText(rect, style.font, this.text, style.textColor);
 	}
@@ -28,8 +28,8 @@ struct IntButton: View {
 struct DayButton: IntButton {
 	Timestamp timestamp = Timestamp(0, Timeunit.Millis);
 
-	void onDraw(IntButton this, Image offs, Rect rect) {
-		Style style& = this.style;
+	void onDraw^(IntButton this, Image offs, Rect rect) {
+		Style style! = this.style;
 		style.align(rect, &rect, this.text);
 		int32 color = this.enabled ? style.textColor : style.focusedColor;
 		offs.drawText(rect, style.font, this.text, color);
@@ -123,7 +123,7 @@ struct DatePicker: Layout {
 		return btn.data.as(DatePicker).update(btn.timestamp);
 	}
 
-	void onCreate(DatePicker this&, View parent) {
+	void onCreate^(DatePicker this&, View parent) {
 		static bool setToday(Button btn) {
 			DatePicker this = btn.data.as(DatePicker);
 			return this.onReset(this);
@@ -288,12 +288,12 @@ struct DatePicker: Layout {
 		this.update(initValue);
 	}
 
-	bool onClick(DatePicker this) {
+	bool onClick^(DatePicker this) {
 		trace("click");
 		return true;
 	}
 
-	bool onReset(DatePicker this) {
+	bool onReset^(DatePicker this&) {
 		this.timestamp = Timestamp(-1, Timestamp.precision);
 		return this.update(Timestamp.now());
 	}

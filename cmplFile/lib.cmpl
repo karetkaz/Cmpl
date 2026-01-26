@@ -60,6 +60,6 @@ int write(File file, int value) {
 	return file.write(buff);
 }
 
-static if (struct(Closeable) == object) {
+static if (struct(Closeable) == typename) {
 inline "./lib/FileStream.cmpl";
 }

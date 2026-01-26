@@ -455,7 +455,7 @@ symn lookup(ccContext ctx, symn sym, astn ref, astn arguments, ccKind filter, in
 				if (!canAssign(ctx, parameter, argument, 0)) {
 					break;
 				}
-				if (!canAssign(ctx, parameter, argument, 1)) {
+				if (!canAssign(ctx, parameter, argument, CAST_ptr)) {
 					hasCast += 1;
 				}
 

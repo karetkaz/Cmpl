@@ -5,15 +5,14 @@ Statements are the basic blocks of a program.
 ```antlrv4
 statement
     : ';'                                                                                               # EmptyStatement
-    | 'inline' Literal ';'                                                                            # IncludeStatement
-    | qualifiers? '{' statementList '}'                                                              # CompoundStatement
-    | qualifiers? 'if' '(' for_init ')' statement ('else' statement)?                                      # IfStatement
-    | qualifiers? 'for' '(' for_init? ';' expression? ';' expression? ')' statement                       # ForStatement
-    | 'for' '(' variable ':' expression ')' statement                                                 # ForEachStatement
+    | 'inline' Literal '?'? ';'                                                                       # IncludeStatement
+    | 'static'? '{' statement* '}'                                                                   # CompoundStatement
+    | 'static'? 'if' '(' declExpr ')' statement ('else' statement)?                                        # IfStatement
+    | 'static'? 'for' '(' declExpr? ';' expression? ';' expression? ')' statement                         # ForStatement
     | 'return' initializer? ';'                                                                        # ReturnStatement
     | 'break' ';'                                                                                       # BreakStatement
     | 'continue' ';'                                                                                 # ContinueStatement
-    | expression ';'                                                                               # ExpressionStatement
-    | declaration                                                                                 # DeclarationStatement
+    | 'static'? declaration                                                                       # DeclarationStatement
+    | 'static'? expression ';'                                                                     # ExpressionStatement
     ;
 ```

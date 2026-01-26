@@ -251,10 +251,15 @@ struct View: object {
 	bool focusable = true;
 
 	// parent view
-	View parent = null;
+	View parent&? = null;
+
+	/// the default style used for widgets
+	static Style defaultStyle! = {
+		align: Style.left;
+	};
 
 	/// style to be used for measuring and drawing views
-	Style style! = null;
+	Style style! = defaultStyle;
 
 	/// user attached data
 	variant data = null;
@@ -265,7 +270,7 @@ struct View: object {
 	}
 
 	/// Callback function executed when the view is clicked
-	bool onClick(View this&) {
+	bool onClick(View this) {
 		return true;
 	}
 
@@ -275,11 +280,10 @@ struct View: object {
 	}
 
 	/// Callback function executed when the view is created
-	void onCreate(View this&, View parent) {
+	void onCreate(View this, View parent) {
 		assert(this.parent == null || this.parent == parent, "can not add the same view to different layouts");
 		this.parent = parent;
-		if (this.style == null) {
-			assert(parent.style != null, "can not create view with a parent without a style");
+		if (this.style != pointer(parent.style) && this.style == pointer(defaultStyle)) {
 			typename field = object.type(this).field("style"); // todo: do not use reflection
 			pointer(this).inc(field.offset).sti(parent.style); // to initialize this variable
 		}
@@ -414,11 +418,11 @@ static void invalidate(View view, bool layout);
 struct Layout: View {
 	struct Item {
 		Rect rect;
-		View view;
+		View view&;
 		int32 align;
 	}
 
-	View separator = null;
+	View separator&? = null;
 
 	Item items[*] = null;
 	int itemCount = 0;
@@ -539,7 +543,7 @@ struct Layout: View {
 		assert(capacity >= this.itemCount);
 		if (capacity == this.itemCapacity) {
 			// no need to change
-			return;
+			return this;
 		}
 
 		Item items[*] = this.items;
@@ -557,7 +561,7 @@ struct Layout: View {
 			if (this.separator != null) {
 				return this.separator;
 			}
-			View separator = {
+			View separator& = {
 				enabled: false;
 				focusable: false;
 				onDraw: onDraw;
@@ -615,12 +619,12 @@ struct Layout: View {
 		return this;
 	}
 
-	bool onClick(Layout this) {
+	bool onClick^(Layout this) {
 		error("onClick");
 		return false;
 	}
 
-	bool onReset(Layout this) {
+	bool onReset^(Layout this&) {
 		bool result = false;
 		for (int i = 0; i < this.itemCount; i += 1) {
 			View view = this.items[i].view;
@@ -631,7 +635,7 @@ struct Layout: View {
 		return result;
 	}
 
-	void onCreate(Layout this&, View parent) {
+	void onCreate^(Layout this&, View parent) {
 		assert(this.parent == null, "can not add the same layout multiple times");
 		View.onCreate(this, parent);
 		for (int i = 0; i < this.itemCount; i += 1) {
@@ -640,7 +644,7 @@ struct Layout: View {
 		}
 	}
 
-	void onDestroy(Layout this) {
+	void onDestroy^(Layout this) {
 		// destroy views and free up allocations
 		for (int i = 0; i < this.itemCount; i += 1) {
 			View view = this.items[i].view;
@@ -650,7 +654,7 @@ struct Layout: View {
 		pointer.alloc(this.items, 0);
 	}
 
-	State onKeyEvent(Layout this, KeyEvent event!) {
+	State onKeyEvent^(Layout this, KeyEvent event!) {
 		if (!this.enabled) {
 			// disabled layout does not consume events
 			return State.ignored;
@@ -683,7 +687,7 @@ struct Layout: View {
 		return state;
 	}
 
-	bool onTouchEvent(Layout this, Rect rect!, TouchEvent event!) {
+	bool onTouchEvent^(Layout this, Rect rect!, TouchEvent event!) {
 		static int32 findView(Layout this, int32 x, int32 y) {
 			for (int i = 0; i < this.itemCount; i += 1) {
 				Item item& = this.items[i];
@@ -789,7 +793,7 @@ struct Layout: View {
 		return result;
 	}
 
-	bool onMeasure(Layout this, Rect measured&) {
+	bool onMeasure^(Layout this, Rect measured&) {
 		int32 dir = this.orientation;
 		int32 N = Int32.abs(dir);
 		int32 n = 0;
@@ -1069,7 +1073,7 @@ struct Layout: View {
 		this.addPadding(&measured, 1);
 	}
 
-	void onDraw(Layout this, Image offs, Rect parent) {
+	void onDraw^(Layout this, Image offs, Rect parent) {
 		for (int i = 0; i < this.itemCount; i += 1) {
 			Item item! = this.items[i];
 			Rect rect! = item.rect;
@@ -1125,14 +1129,9 @@ struct Layout: View {
  * a widget may clip its children and apply scrolling to them, even show a scrollbar.
  */
 struct Widget: Layout {
-	/// the default style used for widgets
-	static Style defaultStyle! = {
-		align: Style.left;
-	};
-
 	bool measure = true;	// force layout
 	bool redraw = true;		// force redraw
-	View focus? = null;
+	View focus&? = null;
 
 	int32 scrollX = 0;
 	int32 scrollY = 0;
@@ -1230,7 +1229,7 @@ struct Widget: Layout {
 		return this;
 	}
 
-	void onCreate(Widget this&, View parent) {
+	void onCreate^(Widget this&, View parent) {
 		Layout.onCreate(this, parent);
 		this.measure = true;
 
@@ -1243,21 +1242,21 @@ struct Widget: Layout {
 
 	// TODO: make layout part of the measure step: to calculate the correct width and height,
 	//       elements inside the layout must be placed to their position
-	bool onMeasure(Widget this, Rect measured&) {
+	bool onMeasure^(Widget this, Rect measured&) {
 		Layout.onMeasure(this, &measured);
 		this.onLayout(this, &measured);
 		return true;
 	}
 
-	void onDraw(Widget this, Image offs, Rect rect) {
+	void onDraw^(Widget this, Image offs, Rect rect) {
 		offs.fillRect(rect, this.style.backgroundColor);
 		Layout.onDraw(this, offs, rect);
 	}
 }
 
 /// Return the root widget of the given `view`
-Widget getWidget(View view) {
-	for (View v& = view; v != null; v = v.parent) {
+Widget getWidget(View view&) {
+	for (View v&? = view; v != null; v = v.parent) {
 		if (Widget w = v.as(Widget)) {
 			return w;
 		}

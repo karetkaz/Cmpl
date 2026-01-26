@@ -29,7 +29,7 @@ struct Plane: Thing {
 	vec4f n;
 	float32 d;
 
-	float32 intersect(Plane this!, vec4f pos, vec4f dir) {
+	float32 intersect^(Plane this!, vec4f pos, vec4f dir) {
 		float32 den = dp3(this.n, dir);
 		inline eps = 1e-14f;
 
@@ -46,7 +46,7 @@ struct Plane: Thing {
 		return distance;
 	}
 
-	vec4f normal(Plane this!, vec4f pos) {
+	vec4f normal^(Plane this!, vec4f pos) {
 		return this.n;
 	}
 
@@ -68,7 +68,7 @@ struct Sphere: Thing {
 	vec4f position;
 	float32 radius;
 
-	float32 intersect(Sphere this!, vec4f pos, vec4f dir) {
+	float32 intersect^(Sphere this!, vec4f pos, vec4f dir) {
 		vec4f dst = pos - this.position;
 		float32 R = this.radius;
 		float32 B = dp3(dst, dir);
@@ -84,7 +84,7 @@ struct Sphere: Thing {
 		return -B - Float32.sqrt(D);
 	}
 
-	vec4f normal(Sphere this!, vec4f pos) {
+	vec4f normal^(Sphere this!, vec4f pos) {
 		return normalize(pos - this.position);
 	}
 
@@ -103,11 +103,11 @@ struct Sphere: Thing {
 struct SkyDome: Sphere {
 	Image image;
 
-	float32 intersect(SkyDome this!, vec4f pos, vec4f dir) {
+	float32 intersect^(SkyDome this!, vec4f pos, vec4f dir) {
 		return Float32.abs(Sphere.intersect(this, pos, dir));
 	}
 
-	vec4f texture(SkyDome this!, vec4f pos) {
+	vec4f texture^(SkyDome this!, vec4f pos) {
 		vec4f n = normal(this, pos);
 		float32 u = (1 + Float32.atan2(n.x, n.z) / Float32.pi) / 2;
 		float32 v = Float32.acos(n.y) / Float32.pi;

@@ -25,8 +25,7 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 		Image image2;
 	}
 
-	static int onEvent(pointer extraData, int action, int button, int ex, int ey) {
-		Data data& = extraData;
+	static int onEvent(Data data?, int action, int button, int ex, int ey) {
 		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 			// exit when releasing escape key
 			return Window.quit();
@@ -94,7 +93,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 		float32 fpsTime = 0;	// frame per sec shot time
 	}
 
-	static int onEvent(pointer extraData, int action, int button, int ex, int ey) {
+	static int onEvent(Data data?, int action, int button, int ex, int ey) {
 		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 			// exit when releasing escape key
 			return Window.quit();
@@ -103,7 +102,6 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 			return Window.quit();
 		}
 
-		Data data& = extraData;
 		if (action == Window.KEY_RELEASE) {
 			if (button == ' ') {
 				if (data.animate || data.downScale > 0) {
@@ -217,8 +215,7 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 		return next | (x & ~mask);
 	}
 
-	static int onEvent(pointer extraData, int action, int button, int ex, int ey) {
-		Data data& = extraData;
+	static int onEvent(Data data?, int action, int button, int ex, int ey) {
 		static int ox = 0;
 		static int oy = 0;
 		static float32 slow! = 1 / 100f;

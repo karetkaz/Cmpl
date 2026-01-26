@@ -2,11 +2,11 @@
 struct FileReader: ByteReader {
 	File file;
 
-	int read(FileReader this, uint8 bytes[]) {
+	int read^(FileReader this, uint8 bytes[]) {
 		return File.read(this.file, bytes);
 	}
 
-	void close(FileReader this) {
+	void close^(FileReader this) {
 		File.close(this.file);
 	}
 }
@@ -16,16 +16,16 @@ struct FileWriter: ByteWriter {
 	///@public
 	File file;
 
-	void write(FileWriter this, uint8 bytes[]) {
+	void write^(FileWriter this, uint8 bytes[]) {
 		int wrote = File.write(this.file, bytes);
 		assert(wrote == bytes.length);
 	}
 
-	void flush(FileWriter this) {
+	void flush^(FileWriter this) {
 		File.flush(this.file);
 	}
 
-	void close(FileWriter this) {
+	void close^(FileWriter this) {
 		File.close(this.file);
 	}
 }
@@ -41,7 +41,7 @@ struct BufferedFileWriter: FileWriter {
 		this.bufferSize = 0;
 	}
 
-	void write(BufferedFileWriter this, uint8 bytes[]) {
+	void write^(BufferedFileWriter this, uint8 bytes[]) {
 		if (this.bufferSize + bytes.length > this.buffer.length) {
 			if (this.bufferSize > 0) {
 				this.flushBuffer();
@@ -58,12 +58,12 @@ struct BufferedFileWriter: FileWriter {
 		this.bufferSize += bytes.length;
 	}
 
-	void flush(BufferedFileWriter this) {
+	void flush^(BufferedFileWriter this) {
 		this.flushBuffer();
 		FileWriter.flush(this);
 	}
 
-	void close(BufferedFileWriter this) {
+	void close^(BufferedFileWriter this) {
 		this.flushBuffer();
 		FileWriter.close(this);
 	}

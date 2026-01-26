@@ -1,18 +1,18 @@
 ## For statement
-The for statement is a repetition statement, that can be used to execute a section of code in a loop, while a condition is met.
+The for statement is a repetition statement that can be used to execute a section of code in a loop, while a condition is met.
 
 The syntax of the for statement is similar to c like language for statement syntax.
 
 ### For-each statement
-The for-each statement enumerates the elements of an iterable.
+The for-each statement iterates over the elements of an iterable type.
 
-To use the foreach like form of the for statement, two functions are required to be defined:
+To use the for-each like form of the for statement, two functions are required to be defined:
 * `iterator`: this function prepares the iterator from a type.
 	* the argument for this function is the object you want to iterate.
-	* it should return an iterable type(this will be the first argument of the next function).
+	* it should return an iterable type (this will be the first argument of the next function).
 * `next`: this function advances to the next iterable element, it may be defined also in the iterator.
-	* the first argument is the object returned by the iterator function. This has to be passed by reference.
-	* the second argument is optional, in case we want to iterate with a value, and not the iterator object. This argument must be passed by reference or as inout.
+	* the first argument is the object returned by the iterator function. This has to be passed by mutable reference.
+	* the second argument is optional, in case we want to iterate with a value, and not the iterator object. This argument must be passed by mutable reference or as inout.
 	* it must return a boolean value: true if there was a next element, false otherwise.
 
 **Example**
@@ -45,7 +45,7 @@ RangeIterator iterator(Range r) {
 		current: r.min;
 		end: r.max;
 	};
-};
+}
 
 // now we can iterate over the range with an int value
 for (int i : Range(10, 20)) {

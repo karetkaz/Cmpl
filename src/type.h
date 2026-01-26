@@ -11,7 +11,7 @@
 /**
  * Begin a namespace (static struct) or scope.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param name Name of the namespace.
  * @return Defined symbol, null on error (error is logged).
  */
@@ -19,15 +19,15 @@ symn ccBegin(ccContext ctx, const char *name);
 /**
  * Extend a namespace (static struct) with static members.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param sym Namespace to be extended.
- * @return type if it can be extended.
+ * @return Type if it can be extended.
  */
 symn ccExtend(ccContext ctx, symn sym);
 /**
  * Close the namespace returned by ccBegin or ccExtend.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param sym Namespace to be closed.
  * @note Makes all declared variables static.
 */
@@ -36,7 +36,7 @@ symn ccEnd(ccContext ctx, symn sym);
 /**
  * Define an integer constant.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param name Name of the constant.
  * @param value Value of the constant.
  * @return Defined symbol, null on error.
@@ -45,7 +45,7 @@ symn ccDefInt(ccContext ctx, const char *name, int64_t value);
 /**
  * Define a floating point constant.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param name Name of the constant.
  * @param value Value of the constant.
  * @return Defined symbol, null on error.
@@ -54,7 +54,7 @@ symn ccDefFlt(ccContext ctx, const char *name, double value);
 /**
  * Define a string constant.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param name Name of the constant.
  * @param value Value of the constant.
  * @return Defined symbol, null on error.
@@ -64,7 +64,7 @@ symn ccDefStr(ccContext ctx, const char *name, const char *value);
 /**
  * Define a variable or reference.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param name Name of the variable.
  * @param type Type of the variable.
  * @return Defined symbol, null on error.
@@ -74,7 +74,7 @@ symn ccDefVar(ccContext ctx, const char *name, symn type);
 /**
  * Define a new type.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param name Name of the type.
  * @param size Size of the type.
  * @param refType Value or Reference type.
@@ -86,7 +86,7 @@ symn ccAddType(ccContext ctx, const char *name, unsigned size, int refType);
 /**
  * Define a native function.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param call The native c function wrapper.
  * @param proto Prototype of the function.
  * @return Defined symbol, null on error.
@@ -107,8 +107,7 @@ symn ccAddCall(ccContext ctx, vmError call(nfcContext), const char *proto);
 /**
  * Compile the given file or text as a unit.
  *
- * @param ctx compiler context.
- * @param init function installing types and native functions.
+ * @param ctx Compiler context.
  * @param file File name of input.
  * @param line First line of input.
  * @param text If not null, this will be compiled instead of the file.
@@ -119,19 +118,19 @@ astn ccAddUnit(ccContext ctx, const char *file, int line, char *text);
 /**
  * Generate bytecode from the compiled syntax tree.
  *
- * @param ctx compiler context.
- * @param debug generate debug info
+ * @param ctx Compiler context.
+ * @param debug Generate debug info.
  * @return error code/count, 0 on success.
  */
 int ccGenCode(ccContext ctx, int debug);
 
 /**
- * Lookup a symbol by name.
+ * Look up a symbol by name.
  *
- * @param ctx compiler context.
- * @param scope search in the members of this symbol.
- * @param name name of the symbol to be found.
- * @return the first found symbol.
+ * @param ctx Compiler context.
+ * @param scope Search in the members of this symbol.
+ * @param name Name of the symbol to be found.
+ * @return The first found symbol.
  */
 symn ccLookup(ccContext ctx, symn scope, char *name);
 
@@ -167,11 +166,11 @@ static inline size_t refSize(symn sym) {
 }
 
 /**
- * check if the given filter excludes the given symbol or not
- * isFiltered(staticVariable, KIND_var | ATTR_stat) == 0
- * isFiltered(localVariable, KIND_var | ATTR_stat) != 0
- * @param sym the symbol to be checked
- * @param filter the filter to be applied
+ * Check if the given filter excludes the given symbol or not
+ *  isFiltered(staticVariable, KIND_var | ATTR_stat) == 0
+ *  isFiltered(localVariable, KIND_var | ATTR_stat) != 0
+ * @param sym The symbol to be checked
+ * @param filter The filter to be applied
  * @return 0 if is not excluded
  */
 static inline int isFiltered(symn sym, ccKind filter) {
@@ -198,38 +197,38 @@ symn newSymn(ccContext ctx, ccKind kind);
 /// Enter a new scope.
 void enter(ccContext ctx, astn node, symn owner);
 
-/// Leave current scope.
+/// Leave the current scope.
 symn leave(ccContext ctx, ccKind mode, size_t align, size_t baseSize, size_t *size, symn result);
 
 /// Install a new symbol in the current scope (typename, variable, function or alias).
 symn install(ccContext ctx, const char *name, ccKind kind, size_t size, symn type, astn init);
 
-/// Lookup an identifier.
+/// Look up an identifier.
 symn lookup(ccContext ctx, symn sym, astn ast, astn args, ccKind filter, int raise);
 
 /**
  * Check if a value can be assigned to a symbol.
  *
- * @param ctx compiler context.
- * @param variable variable to be assigned to.
- * @param value value to be assigned.
+ * @param ctx Compiler context.
+ * @param variable Variable to be assigned to.
+ * @param value Value to be assigned.
  * @param strict Strict mode: casts are not enabled.
- * @return cast of the assignment if it can be done.
+ * @return Cast of the assignment if it can be done.
  */
 ccKind canAssign(ccContext ctx, symn variable, astn value, int strict);
 
 /**
  * Type Check an expression.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
  * @param loc Override scope.
  * @param ast Tree to check.
- * @param raise raise the error or keep silent when type checking
+ * @param raise Flag indicating whether to raise an error or bee silent.
  * @return Type of expression.
  */
 symn typeCheck(ccContext ctx, symn loc, astn ast, int raise);
 
-/// change the type of a tree node (replace or add implicit cast).
+/// Change the type of the tree node (replace or add implicit cast).
 astn castTo(ccContext ctx, astn ast, symn type);
 
 /**

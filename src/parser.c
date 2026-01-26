@@ -90,8 +90,8 @@ astn tagNode(ccContext ctx, const char *name) {
 
 /**
  * Inline the content of a file relative to the path of the file inlines it.
- * @param ctx compiler context.
- * @param tag ast node containing which file to inline
+ * @param ctx Compiler context.
+ * @param tag The ast node containing which file to inline.
  */
 static int ccInline(ccContext ctx, astn tag) {
 	if (tag->type != ctx->type_str) {
@@ -178,97 +178,97 @@ static symn declare(ccContext ctx, ccKind kind, astn tag, symn type, symn params
 	}
 	symn def = install(ctx, tag->id.name, kind, size, type, NULL);
 
-	if (def != NULL) {
-		tag->id.link = def;
-		tag->type = type;
+	if (def == NULL) {
+		return NULL;
+	}
 
-		def->unit = ctx->unit;
-		def->file = tag->file;
-		def->line = tag->line;
-		def->params = params;
-		def->use = tag;
-		def->tag = tag;
-		def->doc = doc;
+	tag->id.link = def;
+	tag->type = type;
 
-		addUsage(def, tag);
+	def->unit = ctx->unit;
+	def->file = tag->file;
+	def->line = tag->line;
+	def->params = params;
+	def->use = tag;
+	def->tag = tag;
+	def->doc = doc;
 
-		for (symn ptr = def->next; ptr; ptr = ptr->next) {
-			if (ptr->name == NULL) {
-				continue;
-			}
+	addUsage(def, tag);
 
-			// generated variable
-			if (ptr->name[0] == '.') {
-				continue;
-			}
+	for (symn ptr = def->next; ptr; ptr = ptr->next) {
+		if (ptr->name == NULL) {
+			continue;
+		}
 
-			if (def->tag == ptr->tag && def->params == ptr->params) {
-				// same definition, static virtual method
-				continue;
-			}
+		// generated variable
+		if (ptr->name[0] == '.') {
+			continue;
+		}
 
-			if (strcmp(def->name, ptr->name) != 0) {
-				continue;
-			}
+		if (def->tag == ptr->tag && def->params == ptr->params) {
+			// same definition, static virtual method
+			continue;
+		}
 
-			if ((params == NULL || ptr->params == NULL) && params != ptr->params) {
-				// allow function and variable name to be the same
-				continue;
-			}
+		if (strcmp(def->name, ptr->name) != 0) {
+			continue;
+		}
 
-			if (params != NULL && ptr->params != NULL && !canAssign(ctx, ptr, tag, 0)) {
-				// allow function overriding
-				continue;
-			}
+		if ((params == NULL || ptr->params == NULL) && params != ptr->params) {
+			// allow function and variable name to be the same
+			continue;
+		}
 
-			// test if override is possible
-			if (ptr->owner != NULL && def->owner != NULL && isObjectType(def->owner)) {
-				if (isFunction(def) && !isStatic(def) && isVariable(ptr) && isInvokable(ptr)) {
-					debug(ctx->rt, def->file, def->line, WARN_FUNCTION_OVERRIDE, ptr);
-					if (doc == NULL && ptr->doc != NULL) {
-						def->doc = ptr->doc;
-					}
-					def->override = ptr;
-					break;
+		if (params != NULL && ptr->params != NULL && !canAssign(ctx, ptr, tag, 0)) {
+			// allow function overriding
+			continue;
+		}
+
+		// test if override is possible
+		if (ptr->owner != NULL && def->owner != NULL && isObjectType(def->owner)) {
+			if (isFunction(def) && !isStatic(def) && !isStatic(ptr) && isVariable(ptr) && isInvokable(ptr)) {
+				debug(ctx->rt, def->file, def->line, WARN_FUNCTION_OVERRIDE, ptr);
+				if (doc == NULL && ptr->doc != NULL) {
+					def->doc = ptr->doc;
 				}
-			}
-
-			if (kind == (ATTR_stat|KIND_typ|CAST_vid)) {
-				debug(ctx->rt, def->file, def->line, WARN_EXTENDING_NAMESPACE, ptr);
-				def->fields = ptr->fields;
+				def->override = ptr;
 				break;
-			}
-
-			// test if overwrite is possible (forward function implementation)
-			if (ptr->init == NULL && ptr->owner == def->owner && def->nest == ptr->nest) {
-				if (isFunction(def) && isVariable(ptr) && isInvokable(ptr)) {
-					debug(ctx->rt, def->file, def->line, WARN_FUNCTION_OVERLOAD, ptr);
-					ptr->init = lnkNode(ctx, def);
-					break;
-				}
-			}
-
-			if (ptr->owner == def->owner && ptr->nest >= def->nest && strcmp(def->name, unknown_tag) != 0) {
-				error(ctx->rt, def->file, def->line, ERR_DECLARATION_REDEFINED, def);
-				if (ptr->file && ptr->line) {
-					error(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
-				}
-				break;
-			}
-			else {
-				debug(ctx->rt, def->file, def->line, WARN_DECLARATION_REDEFINED, def);
-				if (ptr->file && ptr->line) {
-					debug(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
-				}
 			}
 		}
 
-		// if the tag is a typename it should return an instance of this type
-		if (params != NULL) {
-			symn tagTyp = tagType(ctx, tag);
-			if (tagTyp != NULL && params->type != tagTyp) {
-				error(ctx->rt, tag->file, tag->line, WARN_FUNCTION_TYPENAME, tag, params->type);
+		if (kind == (ATTR_stat | KIND_typ | CAST_vid)) {
+			debug(ctx->rt, def->file, def->line, WARN_EXTENDING_NAMESPACE, ptr);
+			def->fields = ptr->fields;
+			break;
+		}
+
+		// test if overwrite is possible (forward function implementation)
+		if (ptr->init == NULL && ptr->owner == def->owner && def->nest == ptr->nest) {
+			if (isFunction(def) && isVariable(ptr) && isInvokable(ptr)) {
+				debug(ctx->rt, def->file, def->line, WARN_FUNCTION_OVERWRITE, ptr);
+				ptr->init = lnkNode(ctx, def);
+				break;
 			}
+		}
+
+		if (ptr->owner == def->owner && ptr->nest >= def->nest && strcmp(def->name, unknown_tag) != 0) {
+			error(ctx->rt, def->file, def->line, ERR_DECLARATION_REDEFINED, def);
+			if (ptr->file && ptr->line) {
+				error(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
+			}
+		} else {
+			warn(ctx->rt, def->file, def->line, WARN_DECLARATION_REDEFINED, def);
+			if (ptr->file && ptr->line) {
+				warn(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
+			}
+		}
+	}
+
+	// if the tag is a typename it should return an instance of this type
+	if (params != NULL) {
+		symn tagTyp = tagType(ctx, tag);
+		if (tagTyp != NULL && params->type != tagTyp) {
+			error(ctx->rt, tag->file, tag->line, WARN_FUNCTION_TYPENAME, tag, params->type);
 		}
 	}
 
@@ -406,7 +406,7 @@ static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn
 				field = linkOf(key, 1);
 			}
 			if (field != NULL && !canAssign(ctx, field, value, 0)) {
-				error(ctx->rt, value->file, value->line, ERR_INVALID_INITIALIZER, init);
+				error(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
 			}
 			if (field != NULL && isStatic(field)) {
 				error(ctx->rt, init->file, init->line, ERR_INVALID_STATIC_FIELD_INIT, init);
@@ -601,36 +601,20 @@ static astn statement(ccContext ctx, const char *doc);
 static astn declaration(ccContext ctx, ccKind attr, astn *args, const char *doc);
 
 /** Parse qualifiers.
- * @brief scan for qualifiers: const static
- * @param ctx compiler context.
- * @return qualifiers.
+ * @param ctx Compiler context.
+ * @return Qualifiers.
  */
 static ccKind qualifier(ccContext ctx) {
-	ccKind result = (ccKind) 0;
-	astn ast;
-
-	while ((ast = peekToken(ctx, TOKEN_any))) {
-		switch (ast->kind) {
-			default:
-				return result;
-
-			// static
-			case STATIC_kwd:
-				skipToken(ctx, STATIC_kwd, 1);
-				if (result & ATTR_stat) {
-					error(ctx->rt, ast->file, ast->line, ERR_UNEXPECTED_QUAL, ast);
-				}
-				result |= ATTR_stat;
-				break;
-		}
+	if (skipToken(ctx, STATIC_kwd, 0)) {
+		return ATTR_stat;
 	}
-	return result;
+	return 0;
 }
 
 /**
- * @brief Parse expression.
- * @param ctx compiler context.
- * @return root of expression tree
+ * Parse expression.
+ * @param ctx Compiler context.
+ * @return root of the expression tree.
  */
 static astn expression(ccContext ctx, int comma) {
 	astn buff[maxTokenCount], *const base = buff + maxTokenCount;
@@ -908,10 +892,9 @@ static astn expression(ccContext ctx, int comma) {
 	return *stack;
 }
 
-/** Parse initializer value, object and array literals.
- * @brief parse the initializer of a declaration.
- * @param ctx compiler context.
- * @return the initializer expression.
+/** Parse initializer value, object, and array literals.
+ * @param ctx Compiler context.
+ * @return The initializer expression.
  */
 static astn initializer(ccContext ctx) {
 	astn ast = peekToken(ctx, STMT_beg) ? NULL : expression(ctx, 1);
@@ -1016,18 +999,21 @@ static astn initializer(ccContext ctx) {
 	return ast;
 }
 
-/** Parse function parameter list.
- * @brief Parse the parameters of a function declaration.
- * @param ctx compiler context.
- * @param returns the return type of the function
- * @param function tag node of the function for position information
- * @return expression tree.
+/** Parse the parameters of a function declaration.
+ * @param ctx Compiler context.
+ * @param returns The return type of the function.
+ * @param function Tag node of the function for position information.
+ * @return Expression tree.
  */
 static astn parameters(ccContext ctx, symn returns, astn function) {
 	astn tok = NULL;
 
 	if (returns != NULL) {
 		symn res = install(ctx, ".result", KIND_var | ATTR_mut | refCast(returns), 0, returns, returns->init);
+		if (res == NULL) {
+			return NULL;
+		}
+
 		tok = lnkNode(ctx, res);
 		if (function != NULL) {
 			res->unit = ctx->unit;
@@ -1100,11 +1086,11 @@ static astn parameters(ccContext ctx, symn returns, astn function) {
 }
 
 /** Parse variable or function declaration.
- * @brief parse the declaration of a variable or function.
- * @param ctx compiler context.
- * @param attr extra attributes, like `static`
- * @param args out parameter for function arguments.
- * @return parsed syntax tree.
+ * @param ctx Compiler context.
+ * @param attr Extra attributes, like `static`.
+ * @param args Out parameter for function arguments.
+ * @param doc Documentation string.
+ * @return Parsed syntax tree.
  */
 static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc) {
 	// read typename
@@ -1128,49 +1114,23 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 	astn tag = nextToken(ctx, TOKEN_var, 1);
 	if (tag == NULL) {
 		tag = tagNode(ctx, ".variable");
+		tag->file = tok->file;
+		tag->line = tok->line;
 	}
 
-	if (isOptional(type)) {
-		attr |= ATTR_opt;
-	}
+	int indirect = skipToken(ctx, OPER_not, 0); // immutable reference: int a!;
+	int mutable = skipToken(ctx, OPER_and, 0); // mutable reference: int a&;
+	int optional = skipToken(ctx, OPER_sel, 0); // optional reference: int a?;
+	int override = skipToken(ctx, OPER_xor, 0); // function override: int a^(int b);
 
-	ccKind cast = CAST_any;
-	if (skipToken(ctx, OPER_and, 0)) {
-		// mutable reference: int a&;
-		if (!isIndirect(type) && !peekToken(ctx, LEFT_sqr) && !peekToken(ctx, OPER_dot)) {
-			// copyable arguments become references
-			cast = CAST_ptr;
-		}
-		attr |= ATTR_mut;
-	}
-	else if (skipToken(ctx, OPER_not, 0)) {
-		// immutable reference: int a!;
-		// if variable is static, it will be just a constant: static int a! = 6;
-		if ((attr & ATTR_stat) == 0 && !isIndirect(type) && !peekToken(ctx, LEFT_sqr) && !peekToken(ctx, OPER_dot)) {
-			// copyable arguments become references, except static variables, they will be constants
-			cast = CAST_ptr;
-		}
-		attr &= ~ATTR_mut;
-	}
-	else if (skipToken(ctx, OPER_sel, 0)) {
-		// optional reference: int a?;
-		if (!isIndirect(type) && !peekToken(ctx, LEFT_sqr) && !peekToken(ctx, OPER_dot)) {
-			// copyable arguments become references
-			cast = CAST_ptr;
-		}
-		attr |= ATTR_opt;
-	}
-	else {
-		if (!isIndirect(type) && !peekToken(ctx, LEFT_sqr) && !peekToken(ctx, OPER_dot)) {
-			// copyable arguments are mutable
-			attr |= ATTR_mut;
-		}
+	if ((indirect && mutable) || (indirect && optional)) {
+		error(ctx->rt, tag->file, tag->line, ERR_INDIRECTION_MIXING, tag);
 	}
 
 	// parse function parameters
-	symn def = NULL, params = NULL;
+	symn params = NULL;
 	if (skipToken(ctx, LEFT_par, 0)) {			// int a(...)
-		enter(ctx, tag, def);
+		enter(ctx, tag, NULL);
 		astn argRoot = parameters(ctx, type, tag);
 		skipToken(ctx, RIGHT_par, 1);
 
@@ -1181,14 +1141,28 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 			*args = argRoot;
 		}
 
+		if (mutable || indirect) {
+			// methods can only be optional, and only for implicit casts: int int?(byte x) { ... }
+			todo(ctx->rt, tag->file, tag->line, "invalid mixing of reference types declaring function: %t", tag);
+		}
+
 		// parse function body
 		if (peekToken(ctx, STMT_beg)) {
 			int isMember = (attr & ATTR_stat) == 0;
-			def = declare(ctx, KIND_fun | attr | cast, tag, type, params, doc);
+			symn def = declare(ctx, KIND_fun | attr, tag, type, params, doc);
+			if (override && def->override == NULL) {
+				error(ctx->rt, tag->file, tag->line, ERR_INVALID_OVERRIDE, def);
+			}
+			if (!override && def->override != NULL) {
+				warn(ctx->rt, tag->file, tag->line, WARN_METHOD_OVERRIDE, def->override);
+			}
 			if (isMember && def->override == NULL && ctx->owner && isTypename(ctx->owner) && !isStatic(ctx->owner)) {
 				debug(ctx->rt, def->file, def->line, "Creating virtual method for: %T", def);
-				symn override = declare(ctx, KIND_var | CAST_ptr, tag, type, params, doc);
-				override->init = lnkNode(ctx, def);
+				symn impl = declare(ctx, KIND_fun | attr, tag, type, params, doc);
+				def->init = lnkNode(ctx, impl);
+				def->kind = KIND_var | CAST_ptr;
+				def->size = vm_ref_size;
+				def = impl;
 			}
 
 			// enable parameter lookup
@@ -1210,24 +1184,18 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 			return tag;
 		}
 
-		if (cast != CAST_any) {	// error: int a&(int x) {...}
-			error(ctx->rt, tag->file, tag->line, ERR_INVALID_TYPE, tag);
-		}
-
 		// unimplemented functions are immutable function references
-		attr &= ~ATTR_mut;
-		cast = CAST_ptr;
+		indirect = 1;
+		mutable = 0;
+	}
+
+	if (override) {
+		error(ctx->rt, tag->file, tag->line, ERR_VARIABLE_OVERRIDE, tag);
 	}
 
 	// parse array dimensions
-	int arrDepth = 0;
+	ccKind cast = refCast(type);
 	while (skipToken(ctx, LEFT_sqr, 0)) {		// int a[...][][]...
-
-		arrDepth += 1;
-		if (cast != CAST_any && arrDepth == 1) {	// error: int a&[100]
-			error(ctx->rt, tag->file, tag->line, ERR_INVALID_TYPE, tag);
-		}
-
 		symn arr = newSymn(ctx, KIND_typ);
 		if (peekToken(ctx, RIGHT_sqr) != NULL) {
 			// dynamic-size array: `int a[]`
@@ -1272,14 +1240,45 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 		type = arr;
 	}
 
-	if (cast == CAST_any) {
-		cast = refCast(type);
-		if (cast == CAST_any) {
-			cast = CAST_val;
+	if (isArrayType(type)) {
+		if (optional) {
+			// optional arrays not supported: are the elements optional, or the array is optional?
+			todo(ctx->rt, tag->file, tag->line, "invalid mixing of reference types declaring function: %t", tag);
+		}
+		attr |= ATTR_opt;
+	}
+
+	int copyable = !isIndirect(type) && !isArrayType(type);
+	if (indirect || optional || mutable) {
+		// immutable reference: int a!;
+		attr &= ATTR_stat | ~MASK_attr;
+
+		if (optional) {
+			// optional reference: int a?;
+			attr |= ATTR_opt;
+		}
+
+		if (mutable) {
+			// mutable reference: int a&;
+			attr |= ATTR_mut;
+		}
+
+		if (copyable && (attr & ATTR_stat) == 0) {
+			// if reference is static, it will be just a constant: static int a! = 6;
+			cast = CAST_ptr;
+		}
+	} else {
+		if (isOptional(type)) {
+			attr |= ATTR_opt;
+		}
+
+		if (copyable || isMutable(type)) {
+			// make copyable arguments mutable
+			attr |= ATTR_mut;
 		}
 	}
 
-	def = declare(ctx, (attr & MASK_attr) | KIND_var | cast, tag, type, params, doc);
+	symn def = declare(ctx, (attr & MASK_attr) | KIND_var | cast, tag, type, params, doc);
 	if (skipToken(ctx, ASGN_set, 0)) {
 		astn init = initializer(ctx);
 		if (init == NULL || init == ctx->init_und) {
@@ -1295,8 +1294,12 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 			}
 		}
 		else if (init->type != ctx->emit_opc) {
-			if (!canAssign(ctx, def, init, 0)) {
-				error(ctx->rt, tag->file, tag->line, ERR_INVALID_INITIALIZER, init);
+			if (!canAssign(ctx, def, init, ATTR_mut | ATTR_opt)) {
+				if (!canAssign(ctx, def, init, 0)) {
+					error(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
+				} else {
+					warn(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
+				}
 			}
 		}
 		def->init = init;
@@ -1305,10 +1308,11 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 	return tag;
 }
 
-/** Parse alias declaration.
- * @brief parse the declaration of an alias/inline expression.
- * @param ctx compiler context.
- * @return root of declaration.
+/** Parse the declaration of an alias/inline expression.
+ * @param ctx Compiler context.
+ * @param attr Extra attributes, like `static`.
+ * @param doc Documentation string.
+ * @return Root of declaration.
  */
 static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 	symn type = NULL;
@@ -1487,11 +1491,11 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 	return tag;
 }
 
-/** Parse record declaration.
- * @brief parse the declaration of a structure.
- * @param ctx compiler context.
- * @param attr attributes: static or const.
- * @return root of declaration.
+/** Parse the declaration of a record (struct).
+ * @param ctx Compiler context.
+ * @param attr Extra attributes, like `static`.
+ * @param doc Documentation string.
+ * @return Root of declaration.
  */
 static astn declare_record(ccContext ctx, ccKind attr, const char* doc) {
 	if (!skipToken(ctx, RECORD_kwd, 1)) {
@@ -1601,13 +1605,12 @@ static astn declare_record(ccContext ctx, ccKind attr, const char* doc) {
 	return tag;
 }
 
-/** Parse enum declaration.
- * @brief parse the declaration of an enumeration.
- * @param ctx compiler context.
+/** Parse the declaration of an enumeration.
+ * @param ctx Compiler context.
+ * @param doc Documentation string.
  * @return root of declaration.
  */
 static astn declare_enum(ccContext ctx, const char* doc) {
-
 	if (!skipToken(ctx, ENUM_kwd, 1)) {
 		dbgTraceAst(peekToken(ctx, 0));
 		return NULL;
@@ -1698,11 +1701,10 @@ static astn declare_enum(ccContext ctx, const char* doc) {
 	return tag;
 }
 
-/** Parse if statement.
- * @brief parse: `if (condition) statement [else statement]`.
- * @param ctx compiler context.
- * @param attr the qualifier of the statement (ie. static if)
- * @return the parsed syntax tree.
+/** Parse if statement: `if (test) statement [else statement]`.
+ * @param ctx Compiler context.
+ * @param attr Extra attributes, like `static`.
+ * @return The parsed syntax tree.
  */
 static astn statement_if(ccContext ctx, ccKind attr) {
 	astn ast = nextToken(ctx, STMT_if, 1);
@@ -1789,10 +1791,9 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 	return ast;
 }
 
-/** Parse for statement.
- * @brief parse: `for (init; test; step) statement`.
- * @param ctx compiler context.
- * @return the parsed syntax tree.
+/** Parse for statement: `for (init; test; step) statement`.
+ * @param ctx Compiler context.
+ * @return The parsed syntax tree.
  */
 static astn statement_for(ccContext ctx) {
 	astn ast = nextToken(ctx, STMT_for, 1);
@@ -1852,9 +1853,8 @@ static astn statement_for(ccContext ctx) {
 }
 
 /** Parse all the statements in the current scope.
- * @brief parse statements.
- * @param ctx compiler context.
- * @return the parsed statements chained by ->next, NULL if no statements parsed.
+ * @param ctx Compiler context.
+ * @return The parsed statements chained by ->next, NULL if no statements parsed.
  */
 static astn statement_list(ccContext ctx) {
 	astn ast, head = NULL, tail = NULL;
@@ -1889,7 +1889,8 @@ static astn statement_list(ccContext ctx) {
 /**
  * Parse statement.
  *
- * @param ctx compiler context.
+ * @param ctx Compiler context.
+ * @param doc Documentation string.
  * @return parsed syntax tree.
  */
 static astn statement(ccContext ctx, const char *doc) {
@@ -2022,24 +2023,47 @@ static astn statement(ccContext ctx, const char *doc) {
 			break;
 
 		case STMT_ret:   // return expression;
-			if (!skipToken(ctx, STMT_end, 0)) {
-				astn result = initializer(ctx);
+			if (skipToken(ctx, STMT_end, 0)) {
+				// return;
 				symn function = ctx->owner;
-
-				if (result && function && isFunction(function)) {
-					dieif(strcmp(function->params->name, ".result") != 0, ERR_INTERNAL_ERROR);
-					if (result->kind == STMT_beg) {
-						result = expandInitializer(ctx, function->params, result);
-						result->type = ctx->type_vid;
-					}
-					ast->ret.value = opNode(ctx, result->type, ASGN_set, lnkNode(ctx, function->params), result);
-				} else {
-					// returning from a non-function, or returning a statement?
+				if (function == NULL || !isFunction(function)) {
+					// returning from a non-function
 					error(ctx->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
+					break;
 				}
-				skipToken(ctx, STMT_end, 1);
+				symn result = function->params;
+				if (result == NULL || result->type != ctx->type_vid) {
+					// returning from a non-void function without an expression
+					error(ctx->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
+					break;
+				}
+				ast->ret.func = ctx->owner;
+				ast->type = ctx->type_vid;
+				check = ast->ret.value;
+				break;
 			}
-			ast->ret.func = ctx->owner;
+
+			astn result = initializer(ctx);
+			symn function = ctx->owner;
+			skipToken(ctx, STMT_end, 1);
+
+			if (result == NULL || function == NULL || !isFunction(function)) {
+				// returning from a non-function, or returning a statement?
+				error(ctx->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
+				break;
+			}
+
+			dieif(strcmp(function->params->name, ".result") != 0, ERR_INTERNAL_ERROR);
+
+			if (result->kind == STMT_beg) {
+				result = expandInitializer(ctx, function->params, result);
+				result->type = ctx->type_vid;
+			}
+
+			ast->ret.func = function;
+			ast->ret.value = opNode(ctx, result->type, ASGN_set, lnkNode(ctx, function->params), result);
+			ast->ret.value->file = result->file;
+			ast->ret.value->line = result->line;
 			ast->type = ctx->type_vid;
 			check = ast->ret.value;
 			break;
@@ -2214,7 +2238,7 @@ symn ccAddCall(ccContext ctx, vmError call(nfcContext), const char *proto) {
 	}
 
 	astn args = NULL;
-	astn init = declaration(ctx, KIND_def | ATTR_mut, &args, type_doc_builtin);
+	astn init = declaration(ctx, KIND_def, &args, type_doc_builtin);
 
 	rtContext rt = ctx->rt;
 	if (ccParse(ctx, NULL, 0, NULL) != 0) {

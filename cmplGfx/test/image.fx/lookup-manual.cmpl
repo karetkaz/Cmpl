@@ -13,8 +13,8 @@
 Image back = Image("../asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
-bool onButtonClick(Button this);
-bool onCurveUpdate(Histogram this, int32 idx, argb value);
+bool onButtonClick(Button this&);
+bool onCurveUpdate(Histogram this&, int32 idx, argb value);
 
 Histogram histogram = {
 	enabled: false;
@@ -92,7 +92,7 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	histogram.update(offs);
 	return Window.timeoutMax;
 }
-bool onCurveUpdate(Histogram this, int32 idx, argb value) {
+bool onCurveUpdate(Histogram this&, int32 idx, argb value) {
 	Widget ui = this.getWidget();
 	argb data& = this.data[idx];
 	if (btnLuminosity.isFocused()) {
@@ -119,7 +119,7 @@ bool onCurveUpdate(Histogram this, int32 idx, argb value) {
 	}
 	return false;
 }
-bool onButtonClick(Button this) {
+bool onButtonClick(Button this&) {
 	if (this == btnDump) {
 		static if (struct(File) != null) {
 			char str[32] = {...};

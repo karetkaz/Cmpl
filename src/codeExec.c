@@ -30,7 +30,7 @@ typedef struct vmProcessor {
 	 *    it points to debug data for tracing and profiling (struct traceRec)
 	 *    the trace pointer must be greater than the base pointer
 	 * stack pointer
-	 *     is initialized with base pointer + stack size, and is decremented on push.
+	 *     is initialized with the base pointer plus the stack size and is decremented on push.
 	 *     it points to local variables, arguments.
 	 *     the stack pointer must be greater than the trace pointer
 	 */
@@ -54,9 +54,9 @@ static inline int f64Bool(double value) {
 	return (value != 0) && !isnan(value);
 }
 
-/** manage function call stack traces
- * @param ctx runtime context
- * @param sp tack pointer (for tracing arguments
+/** Manage function call stack traces
+ * @param ctx Runtime context
+ * @param sp Stack pointer (for tracing arguments)
  * @param caller the address of the caller, NULL on start and end.
  * @param callee the called function address, -1 on leave.
  */
@@ -189,7 +189,7 @@ vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller
  *
  * @param ctx Runtime context.
  * @param pu Cell to execute on.
- * @param fun Executing function.
+ * @param fun The function to execute.
  * @param extra Extra data for native calls.
  * @return Error code of execution, noError on success.
  */
@@ -391,7 +391,7 @@ vmError invoke(nfcContext ctx, symn fun, void *res, void *args, const void *extr
 
 	return result;
 }
-vmError execute(rtContext ctx, void *extra) {
+vmError execute(rtContext ctx, const void *extra) {
 	// TODO: cells should be in runtime read only memory?
 	vmProcessor pu;
 

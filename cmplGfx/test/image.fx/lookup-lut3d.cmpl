@@ -19,7 +19,7 @@ struct ColorLut: Blender {
 	argb data[256 * 256 * 256];
 	inline at(int x, int y, int z) = x + 256 * (y + 256 * z);
 
-	argb blend(ColorLut this!, argb base, argb with) {
+	argb blend^(ColorLut this!, argb base, argb with) {
 		return this.data[ColorLut.at(with.r, with.g, with.b)];
 	}
 

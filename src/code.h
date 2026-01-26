@@ -15,7 +15,7 @@ struct opcodeRec {
 };
 extern const struct opcodeRec opcode_tbl[256];
 
-typedef enum vmConfig {
+typedef enum {
 	// limit the count of printed elements(stacktrace, array elements)
 	maxLogItems = 25,
 
@@ -23,7 +23,7 @@ typedef enum vmConfig {
 	vm_mem_align = sizeof(void*),	// memory alignment: sizeof(void*), // value used to pad pointers
 	vm_ref_size = sizeof(vmOffs),	// size of reference: 32 or 64 bit
 	px_size = 4,	// size in bytes of the exit instruction halt()
-	vm_regs = 255	// maximum registers for dup, set, pop, ...
+	vm_regs = 255,	// maximum registers for dup, set, pop, ...
 } vmConfig;
 
 /// Opcodes
@@ -108,7 +108,7 @@ typedef struct libc {
 typedef struct jumpToFix {
 	astn node;		// syntax tree node for error message
 	ccToken kind;	// break or continue
-	size_t offs;	//  offset ot the jump
+	size_t offs;	// offset of the jump
 } *jumpToFix;
 
 /**
@@ -116,20 +116,20 @@ typedef struct jumpToFix {
  *
  * @param mem (optional) use pre allocated memory.
  * @param size the size of memory in bytes to be used.
- * @return runtime context.
+ * @return Runtime context.
  */
 rtContext rtInit(void *mem, size_t size);
 
 /**
  * Close runtime context releasing resources.
  *
- * @param ctx runtime context.
- * @return error count, 0 on success.
+ * @param ctx Runtime context.
+ * @return Error count, 0 on success.
  */
 int rtClose(rtContext ctx);
 
 /**
- * Initialize virtual machine to be able to emit instructions.
+ * Initialize the virtual machine to be able to emit instructions.
  *
  * @param ctx Runtime context.
  * @param onHalt function to be executed when execution and external function invocation terminates.
@@ -144,7 +144,7 @@ size_t vmInit(rtContext ctx, vmError onHalt(nfcContext));
  * @param extra Extra data for native calls.
  * @return Error code of execution or noError on success.
  */
-vmError execute(rtContext ctx, void *extra);
+vmError execute(rtContext ctx, const void *extra);
 
 /**
  * Invoke a function inside the vm.
@@ -155,7 +155,6 @@ vmError execute(rtContext ctx, void *extra);
  * @param args (optional) Arguments for the function.
  * @param extra (optional) Extra data for each native call executed from here.
  * @return Error code of execution or noError on success.
- * @usage see @rtFindSym example.
  * @note Invocation to `execute` must precede this call.
  */
 vmError invoke(nfcContext ctx, symn fun, void *ret, void *args, const void *extra);
@@ -222,34 +221,35 @@ void closeLibs(rtContext ctx);
 size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg);
 
 /**
- * Advance to the next instruction at the given offset.
+ * Advance the program counter to the next instruction.
  *
  * @param ctx Runtime context.
- * @param pc Offset of the current opcode to be incremented.
- * @param ss Size of the stack.
- * @return NULL or the current instruction pointer.
+ * @param pc Offset of the current program counter. This value is updated to point to the next instruction.
+ * @param ss Optional pointer to the current stack size, which is updated based on the instruction's stack behavior.
+ * @return the current instruction pointer, or NULL on error.
  */
 void* nextOpc(rtContext ctx, size_t *pc, ssize_t *ss);
 
 /**
- * Test for an instruction at the given offset.
+ * Checks if the opcode at the given offset matches the provided opcode.
  *
  * @param ctx Runtime context.
- * @param offs Offset of the opcode.
- * @param opc Operation code to check.
- * @param arg (optional) Copy the argument of the opcode.
- * @return non zero if at the given location the opc was found.
+ * @param offs The offset in the vm to check for the opcode.
+ * @param opc The opcode to validate against the instruction at the given offset.
+ * @param arg Optional pointer to copy the argument of the instruction if it matches the given opcode.
+ * @return Returns 1 (true) if the opcode at the memory offset matches the given opcode, 0 (false) otherwise.
  */
 int testOcp(rtContext ctx, size_t offs, vmOpcode opc, vmValue *arg);
 
 /**
- * Fix a jump instruction, and the stack size.
+ * Fixes the jump instruction at a specified source location, updating its
+ * relative position to point to a given destination location. It also protects
+ * jumps, adjusts the max jump offset, and updates stack information if necessary.
  *
  * @param ctx Runtime context.
- * @param src Location of the instruction.
- * @param dst Absolute position to jump.
- * @param stc Fix also stack size.
- * @return
+ * @param src The source address of the jump instruction to be fixed. If 0, only stack size and max jump are updated.
+ * @param dst The destination address where the jump instruction should point to.
+ * @param stc The stack size indicator. If set to -1, no stack update occurs.
  */
 void fixJump(rtContext ctx, size_t src, size_t dst, ssize_t stc);
 
@@ -261,7 +261,7 @@ void fixJump(rtContext ctx, size_t src, size_t dst, ssize_t stc);
  */
 int vmSelfTest(void cb(const char *error, const struct opcodeRec *info));
 
-/// Emit an instruction without argument(s).
+/// Emits a virtual machine opcode without additional arguments.
 static inline size_t emit(rtContext ctx, vmOpcode opc) {
 	vmValue arg = {0};
 	return emitOpc(ctx, opc, arg);
@@ -296,22 +296,26 @@ static inline size_t emitRef(rtContext ctx, size_t value) {
 }
 
 /**
- * Rollback the last emitted instruction
+ * Rewinds the program counter (pc) in the virtual machine to the previous instruction
+ * and adjusts the stack size accordingly. If the rollback is not possible based on
+ * current conditions, it returns NULL.
  *
  * @param ctx Runtime context.
- * @return NULL or the current instruction pointer
+ * @return the pointer of the previous instruction, or NULL if the rollback cannot be performed.
  */
 void *rollbackPc(rtContext ctx);
 
 /**
- * Optimize an assignment by removing extra copy of the value if it is on the top of the stack.
- * replace `dup x`, `set y` with a single `mov x, y` instruction
- * replace `dup 0`, `set x` with a single `set x` instruction
+ * Optimizes assignment operations in a specified range of offsets within the given runtime context.
+ * This method looks for opportunities to replace sequences of instructions with more efficient
+ * assignment or move instructions:
+ * *	replace `dup x`, `set y` with a single `mov x, y` instruction
+ * *	replace `dup 0`, `set x` with a single `set x` instruction
  *
  * @param ctx Runtime context.
- * @param start Begin of the byte code.
- * @param end End of the byte code.
- * @return non zero if the code was optimized.
+ * @param start The starting index within the context for the range of instructions.
+ * @param end The ending index within the context for the range of instructions.
+ * @return Returns 1 if the optimization was successfully applied, or 0 otherwise.
  */
 int foldAssignment(rtContext ctx, size_t start, size_t end);
 

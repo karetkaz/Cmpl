@@ -141,7 +141,7 @@ Widget widget = {
 View Rectangle(uint32 rgb, char text[]) {
 	struct Rectangle: Button {
 		argb background;
-		void onDraw(Rectangle this, Image offs, Rect rect) {
+		void onDraw^(Rectangle this, Image offs, Rect rect) {
 			offs.fillRect(rect, this.background.v);
 			Button.onDraw(this, offs, rect);
 		}

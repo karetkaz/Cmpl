@@ -17,7 +17,7 @@ struct ColorPicker: View {
 		return true;
 	}
 
-	bool onTouchEvent(ColorPicker this, Rect rect!, TouchEvent event!) {
+	bool onTouchEvent^(ColorPicker this, Rect rect!, TouchEvent event!) {
 		if (event.release || !event.button) {
 			return View.onTouchEvent(this, rect, event);
 		}
@@ -27,7 +27,7 @@ struct ColorPicker: View {
 		return this.onUpdate(this, this.value());
 	}
 
-	bool onMeasure(Histogram this, Rect rect&) {
+	bool onMeasure^(Histogram this, Rect rect&) {
 		if (this.height == 0) {
 			rect.height(128);
 		} else {
@@ -36,7 +36,7 @@ struct ColorPicker: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(ColorPicker this, Image offs, Rect rect) {
+	void onDraw^(ColorPicker this, Image offs, Rect rect) {
 		int32 width = rect.width();
 		int32 height = rect.height();
 		for (int32 y = rect.y0; y < rect.y1; y += 1) {

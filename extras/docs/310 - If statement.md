@@ -1,5 +1,5 @@
 ## If statement
-The if statement is a selection statement, that can be used to execute a section of code, only if a condition is met.
+The if statement is a selection statement that can be used to execute a section of code only if a condition is met.
 
 The main purpose of the if statement is to handle exceptional cases in the control flow.
 
@@ -14,12 +14,12 @@ inline double = float64;
 }
 ```
 
-- if the condition evaluates to true:
+- if the condition evaluates to `true`:
   - the declarations contained by the block will be exposed to the outer scope.
 
-- if the condition evaluates to false:
+- if the condition evaluates to `false`:
   - declarations contained by the block will be exposed only to the inner scope.
   - statements inside the scope will be type-checked.
-  - compilation error will be reported as warnings.
+  - compilation errors will be reported as warnings.
   - inlined files will be not processed.
   - code generation will be skipped.

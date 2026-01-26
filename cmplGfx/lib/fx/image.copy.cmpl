@@ -1,6 +1,7 @@
 /// copy the `src` image to the destination with an optional blend method
 void copy(Image image, int32 x0, int32 y0, Image src, Rect roi?, pointer extra, argb blend(pointer extra, argb base, argb with)) {
 	static if (preferNativeCalls && struct(Image.copy) != null) {
+		// blend method uses uint32 instead of argb, so convert the method to a pointer to make compiler happy
 		return Image.copy(image, x0, y0, src, roi, extra, pointer(blend));
 	}
 
@@ -80,7 +81,7 @@ void copy(Image image, Rect roi!, argb col) {
 	static if (preferNativeCalls && struct(Image.blend.color) != null) {
 		return image.blend(roi.x0, roi.y0, image, roi, col, Image.blend.color);
 	}
-	argb blender(argb color!, argb base, argb with) {
+	argb blender(argb color?, argb base, argb with) {
 		int alpha = ach(color);
 		return {
 			b: mix_s8(alpha, bch(color), bch(base));
@@ -106,7 +107,7 @@ void blendAlpha(Image image, int32 x, int32 y, Image src, Rect roi?, int32 alpha
 		return Image.copy(image, x, y, src, roi, alpha, Image.copy.alpha);
 	}
 
-	static argb blender(int32 alpha!, argb base, argb with) {
+	static argb blender(int32 alpha?, argb base, argb with) {
 		return {
 			b: sat_s8(mix_s8(alpha, bch(base), bch(with)));
 			g: sat_s8(mix_s8(alpha, gch(base), gch(with)));
@@ -123,7 +124,7 @@ void blendDstAlpha(Image image, int32 x, int32 y, Image src, Rect roi?) {
 		return Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
 	}
 
-	argb blender(pointer null, argb base, argb with) {
+	argb blender(pointer _, argb base, argb with) {
 		int alpha = ach(base);
 		return {
 			b: mix_s8(alpha, bch(base), bch(with));

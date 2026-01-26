@@ -49,11 +49,11 @@ struct DebugView: View {
 		}
 	}
 
-	bool onClick(DebugView this&) {
+	bool onClick^(DebugView this&) {
 		return this.onReset(this);
 	}
 
-	bool onReset(DebugView this&) {
+	bool onReset^(DebugView this&) {
 		if (this.measures > 0) {
 			this.measures = 0;
 		}
@@ -68,17 +68,17 @@ struct DebugView: View {
 		return true;
 	}
 
-	void onCreate(DebugView this&, View parent) {
+	void onCreate^(DebugView this&, View parent) {
 		View.onCreate(this, parent);
 		DebugView.onReset(&this);
 	}
 
-	bool onMeasure(DebugView this, Rect rect&) {
+	bool onMeasure^(DebugView this, Rect rect&) {
 		if (this.measures >= 0) {
 			this.measures += 1;
 		}
 		this.update();
-		Style style& = this.style;
+		Style style! = this.style;
 		style.measure(&rect, this.text);
 		if (rect.width() < this.durations.length) {
 			rect.width(this.durations.length);
@@ -86,7 +86,7 @@ struct DebugView: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(DebugView this, Image offs, Rect rect) {
+	void onDraw^(DebugView this, Image offs, Rect rect) {
 		DebugView mutable& = pointer(this);
 		int64 duration = 0;
 		if (mutable.started > 0) {
@@ -103,7 +103,7 @@ struct DebugView: View {
 			}
 		}
 
-		Style style& = mutable.style;
+		Style style! = mutable.style;
 		int32 y0 = rect.y1;
 		float64 ys = duration == 0 ? 0 : rect.height() / float64(duration);
 		float64 xs = rect.width() / float64(mutable.durations.length);

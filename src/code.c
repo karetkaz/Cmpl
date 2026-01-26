@@ -29,8 +29,8 @@ static void rtRaise(nfcContext ctx, int level, const char *msg, ...) {
  * Allocate free and resize memory inside the vm heap.
  *
  * @param ctx Execution context.
- * @param ptr resize this memory chunk or allocate new if null.
- * @param size new size of the allocation or free by resizing the chunk to 0 bytes.
+ * @param ptr Resize this memory chunk or allocate a new one if is null.
+ * @param size New size of the allocation, use 0 to free the chunk.
  * @return Pointer to the allocated memory inside the vm heap.
  * cases:
  * 		size >  0 && ptr != null: re-alloc
@@ -41,7 +41,7 @@ static void rtRaise(nfcContext ctx, int level, const char *msg, ...) {
  *
  * how it works:
  * Using one linked list containing both used and unused memory chunks.
- * The idea is when allocating a block of memory, we always must traverse the list of chunks.
+ * The idea is, when allocating a block of memory, we always must traverse the list of free chunks.
  * When freeing a block not. Because of this, if a block is used, `prev` points to the previous block.
  * When deallocating, the previous and/or the next can be merged with the current if it is free (`prev` is set to `null`).
  *
@@ -224,8 +224,8 @@ static void *rtAlloc(nfcContext ctx, void *ptr, size_t size) {
 /**
  * get an iterator to the native call methods.
  *
- * @param ctx the native call context.
- * @return iterator for argument list.
+ * @param ctx Execution context.
+ * @return The argument list iterator.
  */
 static struct nfcArgs nfcArgList(nfcContext ctx) {
 	struct nfcArgs result = {0};
@@ -239,7 +239,7 @@ static struct nfcArgs nfcArgList(nfcContext ctx) {
  * Read the value at the given param converting offsets to pointers.
  * Advance to the next argument.
  *
- * @param args the arguments iterator.
+ * @param args The argument list iterator.
  * @return the iterator, or NULL for ending, or if an error occurred.
  * @note offsets inside structs will be not converted to pointers.
  */
@@ -321,6 +321,7 @@ rtContext rtInit(void *mem, size_t size) {
 	if (rt == NULL) {
 		return NULL;
 	}
+
 	memset(rt, 0, sizeof(struct rtContextRec));
 
 	*(void**)&rt->api.ccExtend = ccExtend;
@@ -347,6 +348,7 @@ rtContext rtInit(void *mem, size_t size) {
 
 	// default values
 	rt->logLevel = 5;
+
 	rt->foldCasts = 1;
 	rt->foldConst = 1;
 	rt->foldInstr = 1;

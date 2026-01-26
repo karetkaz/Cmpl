@@ -1,2 +1,2 @@
 ## Block statement
-Block statement groups zero ore more statement as a single statement.
+Block statement groups zero or more statements as a single statement.

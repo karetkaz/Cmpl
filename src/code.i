@@ -16,7 +16,7 @@ OPCODE_DEF(opc_jnz,  0x05, 4, 1, 0, "jnz")          // if (popi32() != 0) {IP +=
 OPCODE_DEF(opc_jz,   0x06, 4, 1, 0, "jz")           // if (popi32() == 0) {IP += arg.rel;}
 OPCODE_DEF(opc_x07,  0x07, 0, 0, 0, NULL)           // task
 OPCODE_DEF(opc_x08,  0x08, 0, 0, 0, NULL)           // sync
-OPCODE_DEF(opc_not,  0x09, 1, 1, 1, "not")          // sp(0).u32 = !sp(0).u32;
+OPCODE_DEF(opc_not,  0x09, 1, 1, 1, "not.u32")      // sp(0).u32 = !sp(0).u32;
 OPCODE_DEF(opc_inc,  0x0a, 4, 1, 1, "inc.i32")      // push32(popi32(n) + arg.rel);
 OPCODE_DEF(opc_mad,  0x0b, 4, 2, 1, "mad.u32")      // sp(1).u32 += sp(0).u32 * arg.rel; pop1;
 OPCODE_DEF(opc__0c,  0x0c, 0, 0, 0, NULL)           // -
@@ -79,9 +79,9 @@ OPCODE_DEF(u32_i64,  0x3e, 1, 1, 2, "u32.2i64")     // push(i64(pop.u32))
 OPCODE_DEF(u32_bit,  0x3f, 2, 1, 1, "u32.")         // extended: and, shl, shr, sar
 
 //~ u64 ========================================================================
-OPCODE_DEF(u64_cmt,  0x40, 1, 2, 2, "cmt.b64")      // complement
-OPCODE_DEF(u64_and,  0x41, 1, 4, 2, "and.b64")      // sp(2).u64 &= sp(0).u64; pop2;
-OPCODE_DEF(u64_ior,  0x42, 1, 4, 2, "or.b64")       // sp(2).u64 |= sp(0).u64; pop2;
+OPCODE_DEF(u64_cmt,  0x40, 1, 2, 2, "cmt.u64")      // complement
+OPCODE_DEF(u64_and,  0x41, 1, 4, 2, "and.u64")      // sp(2).u64 &= sp(0).u64; pop2;
+OPCODE_DEF(u64_ior,  0x42, 1, 4, 2, "or.u64")       // sp(2).u64 |= sp(0).u64; pop2;
 OPCODE_DEF(u64_mul,  0x43, 1, 4, 2, "mul.u64")      // sp(2).u64 *= sp(0).u64; pop2;
 OPCODE_DEF(u64_div,  0x44, 1, 4, 2, "div.u64")      // sp(2).u64 /= sp(0).u64; pop2;
 OPCODE_DEF(u64_rem,  0x45, 1, 4, 2, "rem.u64")      // sp(2).u64 %= sp(0).u64; pop2;
@@ -89,10 +89,10 @@ OPCODE_DEF(u64___6,  0x46, 0, 0, 0, NULL)           //
 OPCODE_DEF(u64___7,  0x47, 0, 0, 0, NULL)           //
 OPCODE_DEF(u64_clt,  0x48, 1, 4, 1, "clt.u64")      // sp(3).u32 = sp(2).u64 < sp(0).u64; pop3;
 OPCODE_DEF(u64_cgt,  0x49, 1, 4, 1, "cgt.u64")      // sp(3).u32 = sp(2).u64 > sp(0).u64; pop3;
-OPCODE_DEF(u64_shl,  0x4a, 1, 3, 2, "shl.b64")      // sp(1).u64 <<= sp(0).u32; pop1;
-OPCODE_DEF(u64_shr,  0x4b, 1, 3, 2, "shr.b64")      // sp(1).u64 >>= sp(0).u32; pop1;
-OPCODE_DEF(u64_sar,  0x4c, 1, 3, 2, "sar.b64")      // sp(1).u64 >>>= sp(0).u32; pop1;
-OPCODE_DEF(u64_xor,  0x4d, 1, 4, 2, "xor.b64")      // sp(2).u64 ^= sp(0).u64; pop2;
+OPCODE_DEF(u64_shl,  0x4a, 1, 3, 2, "shl.u64")      // sp(1).u64 <<= sp(0).u32; pop1;
+OPCODE_DEF(u64_shr,  0x4b, 1, 3, 2, "shr.u64")      // sp(1).u64 >>= sp(0).u32; pop1;
+OPCODE_DEF(u64_sar,  0x4c, 1, 3, 2, "sar.u64")      // sp(1).u64 >>>= sp(0).u32; pop1;
+OPCODE_DEF(u64_xor,  0x4d, 1, 4, 2, "xor.u64")      // sp(2).u64 ^= sp(0).u64; pop2;
 OPCODE_DEF(u64___e,  0x4e, 0, 0, 0, NULL)           //
 OPCODE_DEF(u64___f,  0x4f, 0, 0, 0, NULL)           // TODO: extended: and, shl, shr, sar
 

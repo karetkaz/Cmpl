@@ -67,7 +67,7 @@ dbgContext dbgInit(rtContext ctx, vmError (*debug)(dbgContext ctx, vmError, size
 
 /**
  * Debugger function that prints runtime errors with stacktrace when available
- * @param ctx Debugger context
+ * @param ctx Debug context
  * @param err Error why the function was invoked
  * @param ss Stack size
  * @param sp stack pointer(top of stack)
@@ -79,7 +79,7 @@ vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller
 
 /**
  * Check if the current stacktrace contains tryExec, if an error can terminate the execution of the vm.
- * @param ctx debug context
+ * @param ctx Runtime context
  * @return true or false
  */
 int isChecked(rtContext ctx);
@@ -94,7 +94,7 @@ char* vmErrorMessage(vmError error);
 
 /**
  * Request debug information of function
- * @param ctx runtime context
+ * @param ctx Runtime context
  * @param offset the memory offset to lookup
  * @return the debug information for the given position
  */

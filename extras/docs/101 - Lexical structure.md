@@ -7,7 +7,7 @@
 
 ## Identifiers
 
-Identifiers are named references of types, variables and functions.
+Identifiers are named references of types, variables, and functions.
 
 **[Syntax](Cmpl.g4)**
 
@@ -17,12 +17,11 @@ Identifier: Letter (Letter | Number)*;
 
 ## Keywords
 
-Keywords are reserved words, which can not be used as identifiers.
+Keywords are reserved words, which cannot be used as identifiers.
 
 * break
 * continue
 * else
-* emit
 * enum
 * for
 * if
@@ -39,15 +38,14 @@ Keywords are reserved words, which can not be used as identifiers.
 
 ```antlrv4
 Literal
-    : '0'[bB][0-1]+
-    | '0'[oO]?[0-7]+
-    | '0'[xX][0-9a-fA-F]+
-    | Decimal Suffix?
-    | Decimal Exponent Suffix?
-    | '.' Number+ Exponent? Suffix?
-    | Decimal '.' Number* Exponent? Suffix?
-    | '\'' .*? '\''
-    | '"' .*? '"'
+    : '0'[bB][0-1]+ [dDuU]?
+    | '0'[oO][0-7]+ [dDuU]?
+    | '0'[xX][0-9a-fA-F]+ [dDuU]?
+    | [0-9]+ [dDuUfF]?
+    | '.' [0-9]+ ([eE] [+-]? [0-9]+)? [fF]?
+    | [0-9]+ ('.' [0-9]*)? ([eE] [+-]? [0-9]+)? [fF]?
+    | ['] .*? [']
+    | ["] .*? ["]
     ;
 ```
 
@@ -56,30 +54,21 @@ Literal
 Integers can be represented in decimal, binary, octal, or hexadecimal format,
 while floating point literals can be specified only in decimal format.
 
-#### Decimal prefix
+#### Number prefix
 
 The following prefixes may be used to specify the radix of an integer:
-
 * binary: `0b` or `0B`
-
 * octal: `0` or `0o` or `0O`
-
 * hexadecimal: `0x` or `0X`
 
-#### Decimal suffix
+#### Number suffixes
 
-The following suffixes are available to override the type of a decimal value:
-
+The following suffixes are available to override the type of the value:
 * `d`: results a int32 constant, ex: `inline i32Value = 3d;`
-
 * `D`: results a int64 constant, ex: `inline i64Value = 3D;`
-
 * `u`: results a uint32 constant, ex: `inline u32Value = 3u;`
-
 * `U`: results a uint64 constant, ex: `inline u64Value = 3U;`
-
 * `f`: results a float32 constant, ex: `inline f32Value = 3f;`
-
 * `F`: results a float64 constant, ex: `inline f64Value = 3F;`
 
 ### Character and string literals
@@ -91,43 +80,29 @@ The following suffixes are available to override the type of a decimal value:
 Escape sequences are used to define certain special characters within string literals.
 
 The following escape sequences are available:
-
 * `\'`: single quote
-
 * `\"`: double quote
-
 * `\?`: question mark
-
 * `\\`: backslash
-
 * `\a`: audible bell
-
 * `\b`: backspace
-
 * `\f`: form feed - new page
-
 * `\n`: line feed - new line
-
 * `\r`: carriage return
-
 * `\t`: horizontal tab
-
 * `\v`: vertical tab
-
 * `\nnn`: arbitrary octal value, maximum of 3 characters.
-
 * `\xnn`: arbitrary hexadecimal value, always 2 characters.
-
 * `\<new line>`: wraps on next line.
 
-- Octal escape sequences have a limit of three octal digits,
-but terminate at the first character that is not a valid octal digit if encountered sooner.
+- Octal escape sequences have a limit of three octal digits but terminate 
+at the first character that is not a valid octal digit if encountered sooner.
 
-- Hexadecimal escape sequences parses always the next two characters.
+- Hexadecimal escape sequences parse always the next two characters.
 
 #### Multi line Strings
 
-A string literal is multi line if it starts with a backslash followed by a newline.
+A string literal is multi-line if it starts with a backslash followed by a newline.
 
 **Example**
 
@@ -151,19 +126,11 @@ string html = "\
 [TODO: documentation]
 
 * !, ~, -, +, &
-
 * (), [], .
-
 * +, -, \*, /, %
-
 * &, |, ^, <<, >>
-
 * ==, !=
-
 * <, <=, >, >=
-
 * ||, &&, ?:
-
 * =, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=, >>>=
-
 * ,

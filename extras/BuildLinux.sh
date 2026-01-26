@@ -18,6 +18,7 @@ make -j 12 cmpl libFile.so libGfx.so BINDIR="$BIN"
 
 if [ -n "$BIN_EMC" ]; then
 	make -j 12 cmpl.js libFile.wasm libGfx.wasm BINDIR="$BIN_EMC"
+	$CMPL_HOME/extras/web/testsGen.sh>"$BIN_EMC/tests.js"
 fi
 
 # build and run test on 32 bit platform

@@ -27,7 +27,7 @@ struct Histogram: View {
 		return true;
 	}
 
-	bool onReset(Histogram this&) {
+	bool onReset^(Histogram this&) {
 		bool result = false;
 		for (int32 i = 0; i < 256; i += 1) {
 			result |= Histogram.onUpdate(this, i, argb(i, i, i, i));
@@ -35,12 +35,12 @@ struct Histogram: View {
 		return result;
 	}
 
-	void onCreate(Histogram this&, View parent) {
+	void onCreate^(Histogram this&, View parent) {
 		View.onCreate(this, parent);
 		Histogram.onReset(this);
 	}
 
-	bool onTouchEvent(Histogram this, Rect rect!, TouchEvent event!) {
+	bool onTouchEvent^(Histogram this, Rect rect!, TouchEvent event!) {
 		if (event.release || !event.button) {
 			return View.onTouchEvent(this, rect, event);
 		}
@@ -80,7 +80,7 @@ struct Histogram: View {
 		return true;
 	}
 
-	bool onMeasure(Histogram this, Rect rect&) {
+	bool onMeasure^(Histogram this, Rect rect&) {
 		if (this.width < 0) {
 			rect.width(256);
 		}
@@ -90,7 +90,7 @@ struct Histogram: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(Histogram this, Image offs, Rect rect) {
+	void onDraw^(Histogram this, Image offs, Rect rect) {
 		enum {
 			colB: 0x4371c6;
 			colG: 0x72d874;

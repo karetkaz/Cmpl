@@ -368,6 +368,9 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 			variable->offs = stkOffset(rt, 0);
 		}
 		if (varInit != NULL) {
+			if (!canAssign(ctx, variable, varInit, ATTR_mut | ATTR_opt)) {
+				warn(ctx->rt, varInit->file, varInit->line, ERR_INVALID_INITIALIZER, varInit);
+			}
 			if (!(varCast = genAst(ctx, varInit, varCast))) {
 				dbgTraceAst(varInit);
 				return CAST_any;
@@ -383,6 +386,9 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 	else if (!isInline(variable)) {
 		// global variable or function argument
 		if (varInit != NULL) {
+			if (!canAssign(ctx, variable, varInit, ATTR_mut | ATTR_opt)) {
+				warn(ctx->rt, varInit->file, varInit->line, ERR_INVALID_INITIALIZER, varInit);
+			}
 			if (varCast != genAst(ctx, varInit, varCast)) {
 				dbgTraceAst(varInit);
 				return CAST_any;
@@ -2131,8 +2137,8 @@ static ccKind genAst(ccContext ctx, astn ast, ccKind get) {
 			size_t size = refSize(ast->op.lhso->type);
 			dieif(size == 0, ERR_INTERNAL_ERROR);
 
+			symn var = linkOf(ast->op.lhso, 0);
 			if (ast->kind == INIT_set) {
-				symn var = linkOf(ast->op.lhso, 0);
 				// initialize variables by reference as reference
 				if (var != NULL && isIndirect(var)) {
 					size = vm_ref_size;
@@ -2140,6 +2146,14 @@ static ccKind genAst(ccContext ctx, astn ast, ccKind get) {
 				}
 			}
 
+			if (var != NULL && isVariable(var) && !isStatic(var)) {
+				if (!canAssign(ctx, var, ast->op.rhso, ATTR_mut | ATTR_opt)) {
+					warn(ctx->rt, ast->file, ast->line, ERR_INVALID_INITIALIZER, ast);
+				}
+				else if (ast->kind != INIT_set && !isMutable(var)) {
+					warn(ctx->rt, ast->file, ast->line, ERR_INVALID_CONST_ASSIGN, ast);
+				}
+			}
 			if (!genAst(ctx, ast->op.rhso, cast)) {
 				dbgTraceAst(ast);
 				return CAST_any;

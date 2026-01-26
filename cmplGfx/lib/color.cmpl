@@ -154,7 +154,7 @@ void alphaLut(int32 lut&[], int32 hardness, int32 alpha, bool reflect) {
 	}
 	if (reflect) {
 		int32 end = lut.length - 1;
-		int32 mid = lut.length / 2;
+		mid = lut.length / 2;
 		for (int i = end; i >= mid; i -= 1) {
 			lut[i] = lut[end];
 			end -= 2;

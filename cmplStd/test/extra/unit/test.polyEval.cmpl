@@ -52,21 +52,21 @@ testFxp(x: int64, a0: int32, a1: int32, a2: int32, a3: int32): float32: function
 	dup.x64 sp(7)
 	mul.i64
 	load.c32 28
-	sar.b64
+	sar.u64
 	dup.x32 sp(4)
 	i32.2i64
 	add.i64
 	dup.x64 sp(7)
 	mul.i64
 	load.c32 28
-	sar.b64
+	sar.u64
 	dup.x32 sp(5)
 	i32.2i64
 	add.i64
 	dup.x64 sp(7)
 	mul.i64
 	load.c32 28
-	sar.b64
+	sar.u64
 	dup.x32 sp(6)
 	i32.2i64
 	add.i64

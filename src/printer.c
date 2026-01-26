@@ -548,9 +548,20 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 	}
 
 	if (ctx != NULL) {
-		if (ctx->cc && ctx->cc->inStaticIfFalse && level < raiseWarn) {
-			// convert errors to warnings inside static if (false) { ... }
-			level = raiseVerbose;
+		if (ctx->cc && ctx->cc->inStaticIfFalse) {
+			// lower the log level inside unreachable blocks: static if (false) { ... }
+			switch (level) {
+				case raiseError:
+					level = raiseDebug;
+					break;
+
+				case raiseWarn:
+					level = raiseVerbose;
+					break;
+
+				default:
+					break;
+			}
 		}
 		if (level > (int) ctx->logLevel) {
 			// no need to show the log on the current level

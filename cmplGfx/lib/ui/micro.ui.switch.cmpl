@@ -39,11 +39,11 @@ struct Switch: View {
 		return true;
 	}
 
-	bool onReset(Switch this) {
+	bool onReset^(Switch this&) {
 		return this.onUpdate(this, this.resetValue);
 	}
 
-	bool onClick(Switch this) {
+	bool onClick^(Switch this&) {
 		if (this.focusable && this.clickToFocus) {
 			if (!this.isFocused()) {
 				return true;
@@ -61,7 +61,7 @@ struct Switch: View {
 		return this.onUpdate(this, value);
 	}
 
-	void onCreate(Switch this&, View parent) {
+	void onCreate^(Switch this&, View parent) {
 		View.onCreate(this, parent);
 		// clamp to initial value and force update with a reset
 		Switch.onUpdate(this, this.selected);
@@ -69,7 +69,7 @@ struct Switch: View {
 		this.onReset(this);
 	}
 
-	State onKeyEvent(Switch this, KeyEvent event!) {
+	State onKeyEvent^(Switch this, KeyEvent event!) {
 		if (!this.enabled || event.release) {
 			return View.onKeyEvent(this, event);
 		}
@@ -84,7 +84,7 @@ struct Switch: View {
 		return View.onKeyEvent(this, event);
 	}
 
-	bool onTouchEvent(Switch this, Rect rect!, TouchEvent event!) {
+	bool onTouchEvent^(Switch this, Rect rect!, TouchEvent event!) {
 		if (!this.enabled || !event.release) {
 			return View.onTouchEvent(this, rect, event);
 		}
@@ -95,9 +95,9 @@ struct Switch: View {
 		return View.onTouchEvent(this, rect, event);
 	}
 
-	bool onMeasure(Switch this, Rect rect&) {
+	bool onMeasure^(Switch this, Rect rect&) {
 		int32 maxWidth = 0;
-		Style style& = this.style;
+		Style style! = this.style;
 		for (int i = 0; i < this.states.length; i += 1) {
 			Rect measured = {};
 			style.measure(&measured, this.states[i]);
@@ -114,9 +114,7 @@ struct Switch: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(Switch this, Image offs, Rect rect) {
-		char value[] = null;
-		Style style& = this.style;
+	void onDraw^(Switch this, Image offs, Rect rect) {
 		if (this.states.length == 0) {
 			Rect onOffRect = {
 				x0: rect.x0;
@@ -127,6 +125,7 @@ struct Switch: View {
 			Style.align(rect, &onOffRect, Style.right);
 			rect.x1 = onOffRect.x0;
 
+			Style style! = this.style;
 			onOffRect.padded(-style.padding);
 			uint32 color = style.focusedColor;
 			if (this.selected != 0) {
@@ -145,9 +144,10 @@ struct Switch: View {
 
 			onOffRect.padded(-style.padding / 3);
 			offs.fillOval(onOffRect, style.textColor);
+			View.onDraw(this, offs, rect, this.text, null);
 		} else {
-			value = this.states[this.selected];
+			char value[] = this.states[this.selected];
+			View.onDraw(this, offs, rect, this.text, value);
 		}
-		View.onDraw(this, offs, rect, this.text, value);
 	}
 }

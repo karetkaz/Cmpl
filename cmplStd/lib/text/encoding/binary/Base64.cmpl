@@ -38,7 +38,7 @@ struct Base64Encoder: ByteWriter {
 		this.bufferSize = 0;
 	}
 
-	void write(Base64Encoder this, uint8 data[]) {
+	void write^(Base64Encoder this, uint8 data[]) {
 		assert(buffer.length > 3);
 
 		ByteWriter writer = this.writer;
@@ -121,12 +121,12 @@ struct Base64Encoder: ByteWriter {
 		}
 	}
 
-	void flush(Base64Encoder this) {
+	void flush^(Base64Encoder this) {
 		this.flushBuffer();
 		this.writer.flush();
 	}
 
-	void close(Base64Encoder this) {
+	void close^(Base64Encoder this) {
 		this.flushBuffer();
 	}
 }
@@ -159,7 +159,7 @@ struct Base64Decoder: ByteReader {
 	int bitsDecoded = 0;
 	int charDecoded = 0;
 
-	int read(Base64Decoder this, uint8 data&[]) {
+	int read^(Base64Decoder this, uint8 data&[]) {
 		inline isWhite(char c) = c == ' ' || c == '\t' || c == '\n' || c == '\r';
 
 		uint8 in[1] = {...};
@@ -187,7 +187,7 @@ struct Base64Decoder: ByteReader {
 		return data.length;
 	}
 
-	void close(Base64Decoder this) {
+	void close^(Base64Decoder this) {
 		assert(this.bitsDecoded == 0, "unprocessed bits remaining.", this.bitsDecoded);
 	}
 }

@@ -1,7 +1,7 @@
 /// Utf-8 decoder
 struct Utf8Reader: TextReader {
 	// convert utf-8 bytes to unicode codepoints
-	int decode(Utf8Reader this, unicode chars&[]) {
+	int decode^(Utf8Reader this, unicode chars&[]) {
 		uint8 buff[1] = {...};
 		uint8 ext[3] = {...};
 		ByteReader reader = this.reader;
@@ -50,7 +50,7 @@ struct Utf8Reader: TextReader {
 // adapted from: https://github.com/devatrun/sutfcpplib/blob/main/include/sutfcpplib/utf_codepoint.h#L287
 struct Utf8Writer: TextWriter {
 	// convert unicode codepoints to utf-8 bytes
-	void encode(Utf8Writer this, unicode chars[]) {
+	void encode^(Utf8Writer this, unicode chars[]) {
 		ByteWriter writer = this.writer;
 		for (int i = 0; i < chars.length; i += 1) {
 			unicode cp = chars[i];

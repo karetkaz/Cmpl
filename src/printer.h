@@ -73,7 +73,7 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent);
  *
  * @param out Output stream.
  * @param esc Escape translation (format string will be not escaped).
- * @param ctx optional runtime context.
+ * @param ctx Optional runtime context.
  * @param ptr Instruction pointer.
  * @param mode How to print.
  */
@@ -94,7 +94,7 @@ void printOpc(FILE *out, const char **esc, int opc, int64_t args);
  *
  * @param out Output stream.
  * @param esc Escape output.
- * @param ctx runtime context.
+ * @param ctx Runtime context.
  * @param sym Offset is relative to this symbol (can be null).
  * @param offs Offset to be printed.
  * @param mode Flags to modify the output format.
@@ -106,7 +106,7 @@ void printOfs(FILE *out, const char **esc, rtContext ctx, symn sym, size_t offs,
  *
  * @param out Output stream.
  * @param esc Escape output.
- * @param ctx runtime context.
+ * @param ctx Runtime context.
  * @param var Variable to be printed.
  * @param ref Base offset of variable.
  * @param mode Flags to modify the output format.
@@ -210,6 +210,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 
 #define fatal(__FMT, ...) dieif("fatal", __FMT, ##__VA_ARGS__)
 #define error(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
+#define todo(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #define warn(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseWarn, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #define debug(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseDebug, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #define info(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raisePrint, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
@@ -347,8 +348,12 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define WARN_USING_DEF_FIELD_INITIALIZER "using default field initializer: %T := %t"
 #define WARN_DECLARATION_REDEFINED "variable `%T` hides previous declaration"
 #define WARN_FUNCTION_TYPENAME "function name `%.t` is a type, but returns `%T`"
+#define WARN_FUNCTION_OVERWRITE "Overwriting forward function: %T"
 #define WARN_FUNCTION_OVERRIDE "Overriding virtual function: %T"
-#define WARN_FUNCTION_OVERLOAD "Overwriting forward function: %T"
+#define WARN_METHOD_OVERRIDE "Overwriting virtual method: %T"
+#define ERR_INVALID_OVERRIDE "No method to to override: %T"
+#define ERR_VARIABLE_OVERRIDE "Can not override variable: %t"
+#define ERR_INDIRECTION_MIXING "Mixing incompatible indirections: %t"
 #define WARN_EXTENDING_NAMESPACE "Extending static namespace: %T"
 #define WARN_INLINE_FILE "inline file: `%s`"
 #define INFO_PREVIOUS_DEFINITION "previously defined here as `%T`"

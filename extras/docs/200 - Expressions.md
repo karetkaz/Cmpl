@@ -3,25 +3,17 @@
 Expressions are responsible for computing values.
 
 **[Syntax](Cmpl.g4)**
-
 ```antlrv4
 expression
     : Literal                                                                                        # LiteralExpression
     | Identifier                                                                                  # IdentifierExpression
-    | '(' expressionList? ')'                                                                  # ParenthesizedExpression
-    | expression '(' expressionList? ')'                                                        # FunctionCallExpression
-    | '[' expressionList? ']'                                                                  # ParenthesizedExpression
-    | expression '[' expressionList? ']'                                                         # ArrayAccessExpression
-    | expression '[' expression '..' expression ']'                                               # ArraySliceExpression
+    | '(' argumentList? ')'                                                                    # ParenthesizedExpression
+    | expression '(' argumentList? ')'                                                          # FunctionCallExpression
+    | expression '[' argumentList? ']'                                                           # ArrayAccessExpression
+    | expression '[' expression? '...' expression ']'                                             # ArraySliceExpression
     | expression '.' Identifier                                                                 # MemberAccessExpression
     | unary expression                                                                                 # UnaryExpression
-    | expression arithmetic expression                                                            # ArithmeticExpression
-    | expression bitwise expression                                                                  # BitwiseExpression
-    | expression relational expression                                                            # RelationalExpression
-    | expression equality expression                                                                # EqualityExpression
-    | expression ('='| '*=' | '/=' | '%=' | '+=' | '-=' ) expression                              # AssignmentExpression
-    | expression ('&=' | '|=' | '^=' | '<<=' | '>>=') expression                                  # AssignmentExpression
-    | expression ('&&' | '||') expression                                                            # LogicalExpression
+    | expression (binary | logical) expression                                                        # BinaryExpression
     | expression '?' expression ':' expression                                                   # ConditionalExpression
     ;
 ```
@@ -31,20 +23,17 @@ expression
 
 ## Unary expressions
 
-Unary expressions are composed from an unary operator and one operand.
+Unary expressions are composed of a unary operator and one operand.
 
-- `!`: logical not. Results true or false.
-
-- `~`: complement. Valid for integer types.
-
+- `+`: unary plus. Returns the operand promoted to its default type.
 - `-`: unary minus. Change the sign of a number.
-
-- `+`: unary plus. ???
+- `~`: complement. Valid for integer types.
+- `!`: logical not. Results true or false.
+- `&`: adress of. Returns the address of the operand.
 
 **[Syntax](Cmpl.g4)**
-
 ```
-unary: ('&' | '+' | '-' | '~' | '!');
+unary: '&' | '+' | '-' | '~' | '!');
 ```
 
 ## Binary expressions
@@ -54,29 +43,23 @@ Binary expressions are composed from a binary operator and two operands.
 ### Arithmetic expression
 
 Are used to return new values computed from the two operands.
-
 - `+, -` Additive operators
-
 - `*, /, %` Multiplicative operators
 
 **[Syntax](Cmpl.g4)**
-
 ```
-arithmetic: ('*' | '/' | '%' | '+' | '-');
+arithmetic: '*' | '/' | '%' | '+' | '-';
 ```
 
 ### Bitwise expression
 
 May be used on integer types only.
-
 - `&, |, ^` Bitwise operators
-
 - `<<, >>` Bit shift operators
 
 **[Syntax](Cmpl.g4)**
-
 ```
-bitwise: ('&' | '|' | '^' | '<<' | '>>');
+bitwise: '&' | '|' | '^' | '<<' | '>>';
 ```
 
 ### Relational expressions
@@ -85,9 +68,8 @@ Are used to compare two operands, if one is les or greater than the other.
 The result is a boolean value(true or false).
 
 **[Syntax](Cmpl.g4)**
-
 ```
-relational: ('<' | '<=' | '>' | '>=');
+relational: '<' | '<=' | '>' | '>=';
 ```
 
 ### Equality expressions
@@ -96,34 +78,30 @@ Are used to check if the left and right operands are equal or not.
 The result is a boolean value(true or false).
 
 **[Syntax](Cmpl.g4)**
-
 ```
-equality: ('==' | '!=');
+equality: '==' | '!=';
 ```
 
 ### Assignment expressions
 
-This operator assigns the value on the right to the operand on the lef side.
+This operator assigns the value on the right to the operand on the left side.
 
 **Example**
-
 ```
 a = 5;
 a += 3 + b;
 ```
 
-Composed operators are expanded, this means that `a += 3 + b` is converted to `a = a + (3 + b)`.
+Composed operators are expanded; this means that `a += 3 + b` is converted to `a = a + (3 + b)`.
 
 ### Logical expressions
 
-[TODO: implementation]
-
+Logical operators evaluate their operands from left to right and return a boolean value.
+The evaluation stops when the result is known.
 - `||`: logical or operator returns true if **any** of its operands is true.
-
 - `&&`: logical and operator returns true if **all** of its operands are true.
 
 **Example**
-
 ```
 bool variable = a() || b() || c() || d();
 ```
@@ -133,7 +111,6 @@ The evaluation stops when the first expression is evaluated to true.
 
 
 **Example**
-
 ```
 bool variable = a() && b() && c() && d();
 ```
@@ -152,15 +129,12 @@ The `?:` (conditional) operator is the only ternary operator with 3 operands:
 - false operand: evaluated and returned only if the first operand evaluates to false.
 
 **Example**
-
 ```
 int variable = a() ? b() : c();
 ```
 
 First `a()` is evaluated, and if its value is:
-
 - true: `b()` is evaluated and returned
-
 - false: `c()` is evaluated and returned
 
 ## Operator precedence table

@@ -14,7 +14,7 @@ struct Panel: Layout {
 		return true;
 	}
 
-	bool onMeasure(Panel this, Rect rect&) {
+	bool onMeasure^(Panel this, Rect rect&) {
 		if (!this.visible) {
 			// view is hidden
 			rect.setSize(0, 0);
@@ -30,14 +30,14 @@ struct Panel: Layout {
 // in case of TabPage the `select button` should be in the tab list
 // in case of Accordion the `expand button` should be in the same list with the pages
 struct TabPage: Layout {
-	Layout tabs? = null;
-	Layout active? = null;
+	Layout tabs&? = null;
+	Layout active&? = null;
 	argb background = argb(0);
 
-	void onCreate(TabPage this&, View parent) {
+	void onCreate^(TabPage this&, View parent) {
 		Layout.onCreate(this, parent);
 		this.active = this.items[1].view;
-		Style style&  = this.style;
+		Style style! = this.style;
 		this.background = mix_rgb8(128, argb(style.backgroundColor), argb(style.hoveredColor));
 	}
 
@@ -65,7 +65,7 @@ struct TabPage: Layout {
 
 	static void onDrawTab(Button tab, Image offs, Rect rect) {
 		TabPage page = tab.parent.parent.as(TabPage);
-		Style style& = tab.style;
+		Style style! = tab.style;
 		if (page.active == tab.data.as(Layout)) {
 			offs.fillRect(rect, style.focusedColor);
 			style.align(rect, &rect, tab.text);
@@ -151,9 +151,9 @@ struct Select: Layout {
 	char text[];
 	char states[][2]; // fixme: initialize: = {"<", "^"};
 
-	Button selected = null;
-	Switch header = null;
-	Panel panel = null;
+	Button selected&? = null;
+	Switch header&? = null;
+	Panel panel&? = null;
 
 	///@public
 	static variant selectedData(Select this) {
@@ -204,10 +204,10 @@ struct Select: Layout {
 	static Select addItems(Select this&, int32 align, View views...) {
 		struct Header: Switch {
 			Select select;
-			bool onReset(Header this) {
+			bool onReset^(Header this&) {
 				return false;
 			}
-			bool onClick(Header this) {
+			bool onClick^(Header this) {
 				if (!Switch.onClick(this)) {
 					return false;
 				}
@@ -244,7 +244,7 @@ struct Select: Layout {
 	static Select addItem(Select this, char text[], variant data) {
 		struct SelectItem: Button {
 			Select select;
-			bool onClick(SelectItem this) {
+			bool onClick^(SelectItem this) {
 				return this.select.onItemClick(this);
 			}
 		}

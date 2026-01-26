@@ -1,15 +1,14 @@
 ## Variables
 
 A [Variable](https://en.wikipedia.org/wiki/Variable_(computer_science)) is
-a symbolic name associated with a value, this value may be changed at runtime.
+a symbolic name associated with a value and may be changed at runtime.
 
 ### Static variables
 
 Variables marked with the `static` attribute will point to the same global memory.
-Initialization of all static variables are executed when the main function is executed.
+Initialization of all static variables is executed when the main function is executed.
 
 **Example**: call count
-
 ```cmpl
 int countCalls() {
 	// global count variable
@@ -20,7 +19,6 @@ int countCalls() {
 ```
 
 **Example**: instance count
-
 ```
 struct instance {
 	// global count variable
@@ -38,12 +36,11 @@ inline instance() = {
 
 ### References
 
-Variables marked with one of the following suffixes, will become references to variables:
+Variables marked with one of the following suffixes will become references to variables:
 
-* `!`: immutable reference - the referenced value is read only
-* `?`: optional reference - the referenced value can be null
-* `&`: mutable reference - the referenced value is writeable
-* `&?`: mutable optional reference - [TODO]
+* `?`: optional reference: the reference can be null or point to a valid value
+* `&`: mutable reference: the value is writeable through the reference
+* `!`: const reference: the value is read-only through the reference
 
 **Note**: for constant values static immutable references can be used:
 ```cmpl
@@ -56,7 +53,6 @@ static double constant! = 3.1415;
 [TODO]
 
 **Example**: initializer function
-
 ```
 // call the initializer function
 Complex x = Complex(1, 2);
@@ -64,34 +60,12 @@ Complex x = Complex(1, 2);
 ```
 
 **Example**: literal initialization
-
 ```
 // literal initialization
 Complex x = {re: 1, im: 2};
 
 // literal initialization with type
 Model x = Sphere {x:0, y:0, z:0, radius: 20};
-```
-
-**Example**: array initialization
-
-```
-// initialize all elements with the value 4
-int a[100] = {*: 4};
-
-// initialize the first 3 elements with the given values
-// the rest will be initalized with 64
-int a[100] = {1, 2, 3, *: 64};
-
-// initialize all elements with null, then override some of them
-string xmlEscape[255] = {
-	*: null;
-	'"': "&quot;";
-	'\'': "&apos;";
-	'<': "&lt;";
-	'>': "&gt;";
-	'&': "&amp;";
-};
 ```
 
 #### Default type initializer
@@ -101,18 +75,22 @@ and some must be initialized when a new instance is created (pointer, variant, t
 All enumerated types should have no default initializer, so they must be explicitly initialized.
 
 **Example**
-
 ```
-int a;       // ok, a is initialized with default type initializer.
+int a;       // ok, a is initialized with default type initializer: `0`
 typename b;  // error: variable `b` must be initialized.
 ```
 
 #### Default field initializer
 
-All constant fields of a record must be initialized when creating an instance.
+All fields of a record must be initialized when creating an instance, if they don't have a default field initializer.
 
 **Example**
 ```
+struct Complex {
+	int re;         // no default field initializer, must be initialized explicitly
+	int im = 0;     // default field initializer: will be initialized with `0` if not specified
+};
+
 Complex x;                     // error: variable `x` must be initialized.
 Complex x = {};                // error: all fields of `x` must be initialized.
 Complex x = {re: 2};           // ok, `im` initialized with default field initializer.

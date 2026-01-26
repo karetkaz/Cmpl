@@ -103,52 +103,61 @@ static symn promote(ccContext cc, symn lht, symn rht) {
 	return NULL;
 }
 
-// todo: remove this allowing non null references to be assigned null
-static inline int canAssignOptional(symn sym) {
-	return castOf(sym) != CAST_any;
-}
-ccKind canAssign(ccContext ctx, symn variable, astn value, int strict) {
+ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 	if (variable == NULL || value == NULL || value->type == NULL) {
 		dieif(!variable, ERR_INTERNAL_ERROR);
 		dieif(!value, ERR_INTERNAL_ERROR);
 		return CAST_any;
 	}
 
-	symn valueRef = linkOf(value, 1);
+	symn valueTyp = value->type;
+	symn valueRef = NULL;
+	switch (value->kind) {
+		default:
+			break;
+
+		case TOKEN_var:
+		case OPER_adr:
+		case OPER_dot:
+			valueRef = linkOf(value, 0);
+			break;
+	}
+
 	symn type = variable->type;
 	if (isTypename(variable)) {
 		// canAssign(ctx, int32, 0, strict)
 		type = variable;
 	}
 
-	// deny list
-	if (!isOptional(variable) && !canAssignOptional(variable)) {
-		if (valueRef != NULL && valueRef == ctx->null_ref) {
-			// info(ctx->rt, value->file, value->line, ERR_INVALID_VALUE_ASSIGN, variable, value);
+	if (mode & ATTR_mut) {
+		if (valueRef != NULL && isMutable(variable) && isIndirect(variable) && !isMutable(valueRef) && isVariable(valueRef)) {
+			// disable writing to an immutable var through a mutable reference: `int a& = immutable_int;`
 			return CAST_any;
 		}
-		if (valueRef != NULL && isOptional(valueRef)) {
+		if (valueRef == NULL && isMutable(variable) && isIndirect(variable) && !isObjectType(variable->type) && !isArrayType(variable->type) && valueTyp != ctx->type_ptr && valueTyp != variable->type) {
+			// the assigned value is not a variable: `int a& = 3 + 5;`
 			return CAST_any;
 		}
-		if (isOptional(value->type)) {
+		mode &= ~ATTR_mut;
+	}
+
+	if (mode & ATTR_opt) {
+		if (valueRef != NULL && !isOptional(variable) && isIndirect(variable) && isOptionalVar(value)) {
+			// cannot assign an optional value to a non-optional variable: `int a! = null;`
 			return CAST_any;
 		}
+		mode &= ~ATTR_opt;
 	}
 
 	dieif(type == NULL, ERR_INTERNAL_ERROR);
 
-	if (isIndirect(variable) && (value->type == ctx->type_ptr || value->type == ctx->type_var)) {
+	ccKind varCast = castOf(variable);
+	if (mode == 0 && type != variable && (varCast == CAST_ptr || varCast == CAST_obj)) {
+		mode = CAST_ptr;
+	}
+
+	if (isIndirect(variable) && (valueTyp == ctx->type_ptr || valueTyp == ctx->type_var)) {
 		// FIXME: pointers and variants can be assigned to any reference
-		return refCast(type);
-	}
-
-	if (valueRef != NULL && (type == ctx->type_ptr || type == ctx->type_var)) {
-		// assigning a variable to a pointer or variant
-		return refCast(type);
-	}
-
-	if (value->type == ctx->emit_opc && variable->size == value->type->size) {
-		// can assign with result of emit, only if is the same size
 		return refCast(type);
 	}
 
@@ -169,9 +178,21 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int strict) {
 
 		while (arg1 != NULL && arg2 != NULL) {
 			temp.type = arg2->type;
+			temp.file = value->file;
+			temp.line = value->line;
 			temp.id.link = arg2;
 
-			if (!canAssign(ctx, arg1, &temp, 1)) {
+			if (isIndirect(arg1) != isIndirect(arg2)) {
+				dbgInfo("%T ~ %T", arg1, arg2);
+				break;
+			}
+			// todo: isMutable, isOptional, isIndirect should be handled by canAssign
+			if (isOptional(arg1) && !isOptional(arg2)) {
+				// cannot assign an optional value to a non-optional variable: `int a! = null;`
+				dbgInfo("%T ~ %T", arg1, arg2);
+				break;
+			}
+			if (!canAssign(ctx, arg1, &temp, ATTR_mut | /*ATTR_opt |*/ CAST_ptr)) {
 				dbgInfo("%T ~ %T", arg1, arg2);
 				break;
 			}
@@ -186,54 +207,49 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int strict) {
 		}
 
 		// function is by ref
-		strict = 1;
-	}
-
-	if (strict && !isIndirect(variable) != !isIndirect(valueRef ? valueRef : type)) {
-		if (isIndirect(variable) && isMutable(variable)) {
-			return CAST_any;
-		}
-	}
-
-	ccKind varCast = castOf(variable);
-	if (!strict && type != variable) {
-		strict = varCast == CAST_ptr || varCast == CAST_obj;
+		mode = CAST_ptr;
 	}
 
 	// assigning a value to an object or base type
-	for (symn sym = value->type; sym != NULL; sym = sym->type) {
-		if (sym == type) {
-			return varCast;
-		}
-		// TODO: there should be a check if object is in the type hierarchy
-		if ((varCast != CAST_ptr && varCast != CAST_obj) || (castOf(sym) != CAST_ptr && castOf(sym) != CAST_obj)) {
-			// check base type only if it is a reference type
-			break;
-		}
-		if (isArrayType(sym)) {
-			break;
-		}
-		if (isFunction(sym)) {
-			break;
-		}
-		if (sym == ctx->type_rec) {
-			// typename is the last type in the chain
-			break;
+	if (castOf(type) == CAST_obj) {
+		for (symn sym = valueTyp; sym != NULL; sym = sym->type) {
+			if (sym == type) {
+				return varCast;
+			}
+			// TODO: there should be a check if object is in the type hierarchy
+			if ((varCast != CAST_ptr && varCast != CAST_obj) || (castOf(sym) != CAST_ptr && castOf(sym) != CAST_obj)) {
+				// check base type only if it is a reference type
+				break;
+			}
+			if (isArrayType(sym)) {
+				break;
+			}
+			if (isFunction(sym)) {
+				break;
+			}
+			if (sym == ctx->type_rec) {
+				// typename is the last type in the chain
+				break;
+			}
 		}
 	}
 
 	// Assign enum
 	if (castOf(type) == CAST_enm) {
-		if (valueRef == NULL) {
-			return CAST_any;
-		}
-		if (type == valueRef->type) {
+		if (valueRef != NULL) {
 			// Enum eVal = Enum.value;
 			// Enum eVar = eVal;
-			return varCast;
+			if (type != valueRef->type && type != valueRef->owner) {
+				return CAST_any;
+			}
+			// value type might be the base type of the enum.
+			if (type == valueRef->type) {
+				valueTyp = valueRef->type;
+			}
 		}
-		return CAST_any;
+		mode = CAST_enm;
 	}
+
 	// Assign array
 	if (castOf(type) == CAST_arr) {
 		if (valueRef == ctx->null_ref) {
@@ -241,40 +257,56 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int strict) {
 			return castOf(type);
 		}
 		struct astNode temp = {0};
-		symn vty = value->type;
-
 		temp.kind = TOKEN_var;
-		temp.type = vty ? vty->type : NULL;
+		temp.type = valueTyp->type;
 		temp.id.link = NULL;
 		temp.id.name = ".generated token";
 
 		//~ check if subtypes are assignable
-		if (canAssign(ctx, type->type, &temp, strict)) {
+		if (canAssign(ctx, type->type, &temp, mode)) {
 			// assign to dynamic array
 			if (type->init == NULL) {
 				return CAST_arr;
 			}
-			if (type->size == value->type->size) {
+			if (type->size == valueTyp->size) {
 				// TODO: return <?>
 				return KIND_var;
 			}
 		}
 
-		if (!strict) {
-			return canAssign(ctx, variable->type, value, strict);
+		if (mode == 0) {
+			return canAssign(ctx, variable->type, value, mode);
 		}
 	}
 
-	if (type == value->type) {
+	if (mode == 0 && valueTyp == ctx->emit_opc) {
+		// can assign with result of inline expression, only if is the same size (checked at code generation)
+		// vec4f x = inline(f32(0), f32(1), f32(2), f32(0));
 		return refCast(type);
 	}
 
-	if (!strict && (type = promote(ctx, type, value->type))) {
-		// TODO: remove promotion
+	if (mode == 0 && valueTyp == ctx->type_vid && value->kind == STMT_beg) {
+		// can assign with initializer: `Complex x = {re: 2, im: 0};`
 		return refCast(type);
 	}
 
-	dbgInfo("%?s:%?u: %T := %T(%t)", value->file, value->line, variable, value->type, value);
+	if (valueRef != NULL && (type == ctx->type_ptr || type == ctx->type_var)) {
+		// assigning a variable to a pointer or variant:
+		// pointer x = value
+		// variant x = value
+		return refCast(type);
+	}
+
+	if (type == valueTyp) {
+		return refCast(type);
+	}
+
+	if (mode == 0 && (type = promote(ctx, type, valueTyp)) != NULL) {
+		// TODO: remove promotion, check implicit casts: `inline float32?(int32 value) = ...`
+		return refCast(type);
+	}
+
+	dbgInfo("%?s:%?u: %T := %T(%t)", value->file, value->line, variable, valueTyp, value);
 	return CAST_any;
 }
 
@@ -334,22 +366,6 @@ static symn typeCheckRef(ccContext ctx, symn loc, astn ref, astn args, ccKind fi
 		return NULL;
 	}
 
-	symn type = sym->type;
-	if (args != NULL) {
-		if (isInvokable(sym)) {
-			// resulting type is the type of result parameter
-			type = sym->params->type;
-		}
-		if (isTypename(sym)) {
-			// resulting type is the type of the cast
-			type = sym;
-		}
-	}
-	else if (isInline(sym) && sym->init != NULL && !isInvokable(sym)) {
-		// resulting type is the type of the inline expression
-		type = sym->init->type;
-	}
-
 	if (args != NULL && isInvokable(sym)) {
 		astn arg = chainArgs(args);
 		if (args == ctx->void_tag) {
@@ -394,7 +410,27 @@ static symn typeCheckRef(ccContext ctx, symn loc, astn ref, astn args, ccKind fi
 	ref->id.link = sym;
 	ref->type = sym->type;
 	addUsage(sym, ref);
-	return type;
+
+	if (args != NULL) {
+		if (isInvokable(sym)) {
+			// resulting type is the type of result parameter
+			return sym->params->type;
+		}
+		if (isTypename(sym)) {
+			// resulting type is the type of the cast
+			return sym;
+		}
+	}
+	else if (isInline(sym) && sym->init != NULL && !isInvokable(sym)) {
+		// resulting type is the type of the inline expression
+		return sym->init->type;
+	}
+	if (castOf(sym) == CAST_obj && isTypename(sym)) {
+		// the type is a typename, not the next base in the inheritance chain
+		ref->type = ctx->type_rec;
+		return ctx->type_rec;
+	}
+	return sym->type;
 }
 
 symn typeCheck(ccContext ctx, symn loc, astn ast, int raise) {
@@ -892,14 +928,12 @@ symn typeCheck(ccContext ctx, symn loc, astn ast, int raise) {
 				return NULL;
 			}
 
-			if (!isMutableVar(ast->op.lhso) && ast->kind != INIT_set) {
-				error(ctx->rt, ast->file, ast->line, ERR_INVALID_CONST_ASSIGN, ast);
-			}
 			if (!canAssign(ctx, lType, ast->op.rhso, 0)) {
-				if (!canAssign(ctx, lType, ast->op.rhso, 0)) {
-					error(ctx->rt, ast->file, ast->line, ERR_INVALID_VALUE_ASSIGN, lType, ast);
-					return NULL;
-				}
+				error(ctx->rt, ast->file, ast->line, ERR_INVALID_VALUE_ASSIGN, lType, ast);
+				return NULL;
+			}
+			if (ast->kind != INIT_set && !isMutableVar(ast->op.lhso)) {
+				error(ctx->rt, ast->file, ast->line, ERR_INVALID_CONST_ASSIGN, ast);
 			}
 
 			ast->op.rhso = castTo(ctx, ast->op.rhso, lType);

@@ -7,155 +7,6 @@
 #include <unistd.h>
 #include <limits.h>
 
-enum {
-	OTHER = 0x00000000,
-
-	SPACE = 0x00000100,    // white spaces
-	UNDER = 0x00000200,    // underscore
-	PUNCT = 0x00000400,    // punctuation
-	CNTRL = 0x00000800,    // control characters
-
-	DIGIT = 0x00001000,    // digits: 0-9
-	LOWER = 0x00002000,    // lowercase letters: a-z
-	UPPER = 0x00004000,    // uppercase letters: A-Z
-	SCTRL = CNTRL | SPACE,   // whitespace or control chars
-	ALPHA = UPPER | LOWER,   // letters
-	ALNUM = DIGIT | ALPHA,   // letters and numbers
-	CWORD = UNDER | ALNUM,   // letters, numbers and underscore
-};
-
-static int const chr_map[256] = {
-	/* 000 nul */    CNTRL,
-	/* 001 soh */    CNTRL,
-	/* 002 stx */    CNTRL,
-	/* 003 etx */    CNTRL,
-	/* 004 eot */    CNTRL,
-	/* 005 enq */    CNTRL,
-	/* 006 ack */    CNTRL,
-	/* 007 bel */    CNTRL,
-	/* 010 bs  */    CNTRL,
-	/* 011 ht  */    SCTRL,    // horizontal tab
-	/* 012 nl  */    SCTRL,    // \n
-	/* 013 vt  */    SCTRL,    // vertical tab,
-	/* 014 ff  */    SCTRL,    // Form Feed,
-	/* 015 cr  */    SCTRL,    // \r
-	/* 016 so  */    CNTRL,
-	/* 017 si  */    CNTRL,
-	/* 020 dle */    CNTRL,
-	/* 021 dc1 */    CNTRL,
-	/* 022 dc2 */    CNTRL,
-	/* 023 dc3 */    CNTRL,
-	/* 024 dc4 */    CNTRL,
-	/* 025 nak */    CNTRL,
-	/* 026 syn */    CNTRL,
-	/* 027 etb */    CNTRL,
-	/* 030 can */    CNTRL,
-	/* 031 em  */    CNTRL,
-	/* 032 sub */    CNTRL,
-	/* 033 esc */    CNTRL,
-	/* 034 fs  */    CNTRL,
-	/* 035 gs  */    CNTRL,
-	/* 036 rs  */    CNTRL,
-	/* 037 us  */    CNTRL,
-	/* 040 sp  */    SPACE,    // space
-	/* 041 !   */    PUNCT,
-	/* 042 "   */    PUNCT,
-	/* 043 #   */    PUNCT,
-	/* 044 $   */    PUNCT,
-	/* 045 %   */    PUNCT,
-	/* 046 &   */    PUNCT,
-	/* 047 '   */    PUNCT,
-	/* 050 (   */    PUNCT,
-	/* 051 )   */    PUNCT,
-	/* 052 *   */    PUNCT,
-	/* 053 +   */    PUNCT,
-	/* 054 ,   */    PUNCT,
-	/* 055 -   */    PUNCT,
-	/* 056 .   */    PUNCT,
-	/* 057 /   */    PUNCT,
-	/* 060 0   */    DIGIT,
-	/* 061 1   */    DIGIT,
-	/* 062 2   */    DIGIT,
-	/* 063 3   */    DIGIT,
-	/* 064 4   */    DIGIT,
-	/* 065 5   */    DIGIT,
-	/* 066 6   */    DIGIT,
-	/* 067 7   */    DIGIT,
-	/* 070 8   */    DIGIT,
-	/* 071 9   */    DIGIT,
-	/* 072 :   */    PUNCT,
-	/* 073 ;   */    PUNCT,
-	/* 074 <   */    PUNCT,
-	/* 075 =   */    PUNCT,
-	/* 076 >   */    PUNCT,
-	/* 077 ?   */    PUNCT,
-	/* 100 @   */    PUNCT,
-	/* 101 A   */    UPPER,
-	/* 102 B   */    UPPER,
-	/* 103 C   */    UPPER,
-	/* 104 D   */    UPPER,
-	/* 105 E   */    UPPER,
-	/* 106 F   */    UPPER,
-	/* 107 G   */    UPPER,
-	/* 110 H   */    UPPER,
-	/* 111 I   */    UPPER,
-	/* 112 J   */    UPPER,
-	/* 113 K   */    UPPER,
-	/* 114 L   */    UPPER,
-	/* 115 M   */    UPPER,
-	/* 116 N   */    UPPER,
-	/* 117 O   */    UPPER,
-	/* 120 P   */    UPPER,
-	/* 121 Q   */    UPPER,
-	/* 122 R   */    UPPER,
-	/* 123 S   */    UPPER,
-	/* 124 T   */    UPPER,
-	/* 125 U   */    UPPER,
-	/* 126 V   */    UPPER,
-	/* 127 W   */    UPPER,
-	/* 130 X   */    UPPER,
-	/* 131 Y   */    UPPER,
-	/* 132 Z   */    UPPER,
-	/* 133 [   */    PUNCT,
-	/* 134 \   */    PUNCT,
-	/* 135 ]   */    PUNCT,
-	/* 136 ^   */    PUNCT,
-	/* 137 _   */    UNDER,
-	/* 140 `   */    PUNCT,
-	/* 141 a   */    LOWER,
-	/* 142 b   */    LOWER,
-	/* 143 c   */    LOWER,
-	/* 144 d   */    LOWER,
-	/* 145 e   */    LOWER,
-	/* 146 f   */    LOWER,
-	/* 147 g   */    LOWER,
-	/* 150 h   */    LOWER,
-	/* 151 i   */    LOWER,
-	/* 152 j   */    LOWER,
-	/* 153 k   */    LOWER,
-	/* 154 l   */    LOWER,
-	/* 155 m   */    LOWER,
-	/* 156 n   */    LOWER,
-	/* 157 o   */    LOWER,
-	/* 160 p   */    LOWER,
-	/* 161 q   */    LOWER,
-	/* 162 r   */    LOWER,
-	/* 163 s   */    LOWER,
-	/* 164 t   */    LOWER,
-	/* 165 u   */    LOWER,
-	/* 166 v   */    LOWER,
-	/* 167 w   */    LOWER,
-	/* 170 x   */    LOWER,
-	/* 171 y   */    LOWER,
-	/* 172 z   */    LOWER,
-	/* 173 {   */    PUNCT,
-	/* 174 |   */    PUNCT,
-	/* 175 }   */    PUNCT,
-	/* 176 ~   */    PUNCT,
-	/* 177    */    CNTRL,        // del
-	/* 200     */    OTHER,
-};
-
 static const struct {
 	char *name;
 	ccToken type;
@@ -189,10 +40,28 @@ typedef struct lexContext {
 	uint8_t buff[1024];     // memory file buffer
 } *lexContext;
 
+enum {
+	OTHER = 0x00,
+
+	SPACE = 0x01,    // white spaces
+	UNDER = 0x02,    // underscore
+	PUNCT = 0x04,    // punctuation
+	CNTRL = 0x08,    // control characters
+
+	DIGIT = 0x10,    // digits: 0-9
+	LOWER = 0x20,    // lowercase letters: a-z
+	UPPER = 0x40,    // uppercase letters: A-Z
+	SCTRL = CNTRL | SPACE,   // whitespace or control chars
+	ALPHA = UPPER | LOWER,   // letters
+	ALNUM = DIGIT | ALPHA,   // letters and numbers
+	CWORD = UNDER | ALNUM,   // letters, numbers and underscore
+};
+static int const chr_map[256];
+
 /**
  * Fill some characters from the file.
  *
- * @param ctx lexer context.
+ * @param ctx Lexer context.
  * @return number of characters in buffer.
  */
 static size_t fillBuf(lexContext ctx) {
@@ -215,8 +84,8 @@ static size_t fillBuf(lexContext ctx) {
 /**
  * Read the next character from input stream.
  *
- * @param ctx lexer context.
- * @return the next character or -1 on end, or error.
+ * @param ctx Lexer context.
+ * @return The next character or -1 on end, or error.
  */
 static int readChr(lexContext ctx) {
 	int chr = ctx->nextChr;
@@ -259,8 +128,8 @@ static int readChr(lexContext ctx) {
 /**
  * Peek the next character from input stream.
  *
- * @param ctx lexer context.
- * @return the next character or -1 on end, or error.
+ * @param ctx Lexer context.
+ * @return The next character or -1 on end, or error.
  */
 static int peekChr(lexContext ctx) {
 	int chr = ctx->nextChr;
@@ -276,9 +145,9 @@ static int peekChr(lexContext ctx) {
 /**
  * Skip the next character if it matches `chr`.
  *
- * @param ctx lexer context.
+ * @param ctx Lexer context.
  * @param chr filter: 0 matches everything.
- * @return the character skipped.
+ * @return The character skipped.
  */
 static int skipChr(lexContext ctx, int chr) {
 	if (chr == peekChr(ctx)) {
@@ -290,9 +159,9 @@ static int skipChr(lexContext ctx, int chr) {
 /**
  * Push back a character to be read next time.
  *
- * @param ctx lexer context.
- * @param chr the character to be pushed back.
- * @return the character pushed back, -1 on fail.
+ * @param ctx Lexer context.
+ * @param chr The character to be pushed back.
+ * @return The character pushed back, -1 on fail.
  */
 static int backChr(lexContext ctx, int chr) {
 	if (ctx->nextChr != -1) {
@@ -307,9 +176,9 @@ static int backChr(lexContext ctx, int chr) {
 /**
  * Read the next token from input stream.
  *
- * @param ctx lexer context.
+ * @param ctx Lexer context.
  * @param tok (out parameter) to be filled with data.
- * @return the kind of token, TOKEN_any (0) if error occurred.
+ * @return The kind of token, TOKEN_any (0) if error occurred.
  */
 static ccToken readTok(lexContext ctx, astn tok) {
 	const char *end = (char *) ctx->rt->_end;
@@ -1258,3 +1127,135 @@ int ccParse(ccContext ctx, const char *file, int line, char *content) {
 	ctx->tokNext = head;
 	return 0;
 }
+
+static int const chr_map[256] = {
+	/* 000 nul */    CNTRL, // Null character
+	/* 001 soh */    CNTRL, // Start of Heading
+	/* 002 stx */    CNTRL, // Start of Text
+	/* 003 etx */    CNTRL, // End of Text
+	/* 004 eot */    CNTRL, // End of Transmission
+	/* 005 enq */    CNTRL, // Enquiry
+	/* 006 ack */    CNTRL, // Acknowledge
+	/* 007 bel */    CNTRL, // Bell, Alert
+	/* 010 bs  */    CNTRL, // Backspace
+	/* 011 ht  */    SCTRL, // Horizontal Tab
+	/* 012 nl  */    SCTRL, // Line Feed
+	/* 013 vt  */    SCTRL, // Vertical Tabulation
+	/* 014 ff  */    SCTRL, // Form Feed
+	/* 015 cr  */    SCTRL, // Carriage Return
+	/* 016 so  */    CNTRL, // Shift Out
+	/* 017 si  */    CNTRL, // Shift In
+	/* 020 dle */    CNTRL, // Data Link Escape
+	/* 021 dc1 */    CNTRL, // Device Control One (XON)
+	/* 022 dc2 */    CNTRL, // Device Control Two
+	/* 023 dc3 */    CNTRL, // Device Control Three (XOFF)
+	/* 024 dc4 */    CNTRL, // Device Control Four
+	/* 025 nak */    CNTRL, // Negative Acknowledge
+	/* 026 syn */    CNTRL, // Synchronous Idle
+	/* 027 etb */    CNTRL, // End of Transmission Block
+	/* 030 can */    CNTRL, // Cancel
+	/* 031 em  */    CNTRL, // End of Medium
+	/* 032 sub */    CNTRL, // Substitute
+	/* 033 esc */    CNTRL, // Escape
+	/* 034 fs  */    CNTRL, // File Separator
+	/* 035 gs  */    CNTRL, // Group Separator
+	/* 036 rs  */    CNTRL, // Record Separator
+	/* 037 us  */    CNTRL, // Unit Separator
+	/* 040 sp  */    SPACE, // Space
+	/* 041 !   */    PUNCT,
+	/* 042 "   */    PUNCT,
+	/* 043 #   */    PUNCT,
+	/* 044 $   */    PUNCT,
+	/* 045 %   */    PUNCT,
+	/* 046 &   */    PUNCT,
+	/* 047 '   */    PUNCT,
+	/* 050 (   */    PUNCT,
+	/* 051 )   */    PUNCT,
+	/* 052 *   */    PUNCT,
+	/* 053 +   */    PUNCT,
+	/* 054 ,   */    PUNCT,
+	/* 055 -   */    PUNCT,
+	/* 056 .   */    PUNCT,
+	/* 057 /   */    PUNCT,
+	/* 060 0   */    DIGIT,
+	/* 061 1   */    DIGIT,
+	/* 062 2   */    DIGIT,
+	/* 063 3   */    DIGIT,
+	/* 064 4   */    DIGIT,
+	/* 065 5   */    DIGIT,
+	/* 066 6   */    DIGIT,
+	/* 067 7   */    DIGIT,
+	/* 070 8   */    DIGIT,
+	/* 071 9   */    DIGIT,
+	/* 072 :   */    PUNCT,
+	/* 073 ;   */    PUNCT,
+	/* 074 <   */    PUNCT,
+	/* 075 =   */    PUNCT,
+	/* 076 >   */    PUNCT,
+	/* 077 ?   */    PUNCT,
+	/* 100 @   */    PUNCT,
+	/* 101 A   */    UPPER,
+	/* 102 B   */    UPPER,
+	/* 103 C   */    UPPER,
+	/* 104 D   */    UPPER,
+	/* 105 E   */    UPPER,
+	/* 106 F   */    UPPER,
+	/* 107 G   */    UPPER,
+	/* 110 H   */    UPPER,
+	/* 111 I   */    UPPER,
+	/* 112 J   */    UPPER,
+	/* 113 K   */    UPPER,
+	/* 114 L   */    UPPER,
+	/* 115 M   */    UPPER,
+	/* 116 N   */    UPPER,
+	/* 117 O   */    UPPER,
+	/* 120 P   */    UPPER,
+	/* 121 Q   */    UPPER,
+	/* 122 R   */    UPPER,
+	/* 123 S   */    UPPER,
+	/* 124 T   */    UPPER,
+	/* 125 U   */    UPPER,
+	/* 126 V   */    UPPER,
+	/* 127 W   */    UPPER,
+	/* 130 X   */    UPPER,
+	/* 131 Y   */    UPPER,
+	/* 132 Z   */    UPPER,
+	/* 133 [   */    PUNCT,
+	/* 134 \   */    PUNCT,
+	/* 135 ]   */    PUNCT,
+	/* 136 ^   */    PUNCT,
+	/* 137 _   */    UNDER,
+	/* 140 `   */    PUNCT,
+	/* 141 a   */    LOWER,
+	/* 142 b   */    LOWER,
+	/* 143 c   */    LOWER,
+	/* 144 d   */    LOWER,
+	/* 145 e   */    LOWER,
+	/* 146 f   */    LOWER,
+	/* 147 g   */    LOWER,
+	/* 150 h   */    LOWER,
+	/* 151 i   */    LOWER,
+	/* 152 j   */    LOWER,
+	/* 153 k   */    LOWER,
+	/* 154 l   */    LOWER,
+	/* 155 m   */    LOWER,
+	/* 156 n   */    LOWER,
+	/* 157 o   */    LOWER,
+	/* 160 p   */    LOWER,
+	/* 161 q   */    LOWER,
+	/* 162 r   */    LOWER,
+	/* 163 s   */    LOWER,
+	/* 164 t   */    LOWER,
+	/* 165 u   */    LOWER,
+	/* 166 v   */    LOWER,
+	/* 167 w   */    LOWER,
+	/* 170 x   */    LOWER,
+	/* 171 y   */    LOWER,
+	/* 172 z   */    LOWER,
+	/* 173 {   */    PUNCT,
+	/* 174 |   */    PUNCT,
+	/* 175 }   */    PUNCT,
+	/* 176 ~   */    PUNCT,
+	/* 177  */    CNTRL, // Delete
+	/* 200     */    OTHER,
+};

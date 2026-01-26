@@ -95,7 +95,7 @@ float64 out(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
 	}
-	return 1. - ease(1 - ratio);
+	return 1 - ease(1 - ratio);
 }
 
 /// ease in and out, ex: Easing.elastic.inOut(t)

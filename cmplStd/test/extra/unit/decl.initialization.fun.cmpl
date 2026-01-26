@@ -1,0 +1,39 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 10
+
+int argByMut(int mut&) { return mut += 1; }
+int argByVal(int value) { return argByMut(&value); }
+int argByRef(int ref!) { return argByMut(&ref); } // todo: error
+int argByOpt(int opt?) { return argByMut(&opt); } // todo: error
+
+int test1(int value) = argByVal; // ok
+int test2(int value) = argByRef; // err: value vs ref
+int test3(int value) = argByOpt; // err: value vs ref
+int test4(int value) = argByMut; // err: value vs ref
+
+int test5(int value!) = argByVal; // err: value vs ref
+int test6(int value!) = argByRef; // ok
+int test7(int value!) = argByOpt; // ok: disable null as argument
+int test8(int value!) = argByMut; // ok: disable mutation of argument
+
+int test9(int value?) = argByVal; // err: value vs ref
+int test10(int value?) = argByRef; // err: do not allow null
+int test11(int value?) = argByOpt; // ok
+int test12(int value?) = argByMut; // err: do not allow null
+
+int test13(int value&) = argByVal; // err: value vs ref
+int test14(int value&) = argByRef; // err: do not allow mutation
+int test15(int value&) = argByOpt; // err: do not allow mutation
+int test16(int value&) = argByMut; // ok
+
+/* - expected output:
+decl.initialization.fun.cmpl:9: error: invalid initialization: `argByRef`
+decl.initialization.fun.cmpl:10: error: invalid initialization: `argByOpt`
+decl.initialization.fun.cmpl:11: error: invalid initialization: `argByMut`
+decl.initialization.fun.cmpl:13: error: invalid initialization: `argByVal`
+decl.initialization.fun.cmpl:18: error: invalid initialization: `argByVal`
+decl.initialization.fun.cmpl:19: error: invalid initialization: `argByRef`
+decl.initialization.fun.cmpl:21: error: invalid initialization: `argByMut`
+decl.initialization.fun.cmpl:23: error: invalid initialization: `argByVal`
+decl.initialization.fun.cmpl:24: error: invalid initialization: `argByRef`
+decl.initialization.fun.cmpl:25: error: invalid initialization: `argByOpt`
+*/

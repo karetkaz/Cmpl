@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
-project(CmplOld)
+project(Cmpl)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -76,7 +76,7 @@ endif ()
 link_libraries(m)
 include_directories(./include)
 
-add_executable(Cmpl ${CC_SOURCE_FILES} src/main.c)
+add_executable(cmpl ${CC_SOURCE_FILES} src/main.c)
 
 add_library(Gfx SHARED ${GX_SOURCE_FILES})
 target_include_directories(Gfx PUBLIC ./src/ ./extras/libs/stb)
@@ -84,7 +84,7 @@ target_include_directories(Gfx PUBLIC ./src/ ./extras/libs/stb)
 add_library(File SHARED cmplFile/src/file.c)
 
 if (NOT WIN32)
-	target_link_libraries(Cmpl dl)
+	target_link_libraries(cmpl dl)
 	target_link_libraries(Gfx dl png jpeg SDL2)
 endif ()
 

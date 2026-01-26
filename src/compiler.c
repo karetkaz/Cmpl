@@ -35,7 +35,7 @@ static const char *const type_ref_size = "int refSize(typename type)";
 static const char *const type_get_is_ind = "bool isIndirect(typename type)";
 static const char *const type_get_is_opt = "bool isOptional(typename type)";
 static const char *const type_get_is_mut = "bool isMutable(typename type)";
-static const char *const type_get_lookup = "typename lookup(typename type)";
+static const char *const type_get_lookup = "typename lookup(variant variable!)";
 static const char *const type_get_fields = "typename fields(typename type)";
 static const char *const type_get_field = "typename field(typename type, char name![*])";
 static const char *const type_get_next = "typename next(typename type)";
@@ -58,6 +58,13 @@ static vmError typenameReflect(nfcContext ctx) {
 		return noError;
 	}
 
+	if (ctx->proto == type_get_lookup) {
+		vmValue *variant = getArg(ctx, 0);
+		symn sym = rtLookup(ctx->rt, variant->ref, 0);
+		retRef(ctx, vmOffset(ctx->rt, sym));
+		return noError;
+	}
+
 	size_t symOffs = argRef(ctx, 0);
 	if (ctx->proto == type_get_fields) {
 		if (symOffs == 0) {
@@ -67,12 +74,6 @@ static vmError typenameReflect(nfcContext ctx) {
 			symn sym = rtLookup(ctx->rt, symOffs, 0);
 			retRef(ctx, vmOffset(ctx->rt, sym->fields));
 		}
-		return noError;
-	}
-
-	if (ctx->proto == type_get_lookup) {
-		symn sym = rtLookup(ctx->rt, symOffs, 0);
-		retRef(ctx, vmOffset(ctx->rt, sym));
 		return noError;
 	}
 
@@ -342,7 +343,7 @@ static void install_type(ccContext ctx, ccConfig config) {
 		type_ptr->doc = type_doc_builtin;
 	}
 	if (config & install_var) {
-		type_var = install(ctx, "variant", ATTR_stat | KIND_typ | CAST_var, 2 * vm_ref_size, type_rec, NULL);
+		type_var = install(ctx, "variant", ATTR_stat | ATTR_opt | KIND_typ | CAST_var, 2 * vm_ref_size, type_rec, NULL);
 		type_var->doc = type_doc_builtin;
 	}
 	if (config & install_obj) {
@@ -405,7 +406,7 @@ static void install_type(ccContext ctx, ccConfig config) {
 	}
 
 	if (type_ptr != NULL) {
-		ctx->null_ref = install(ctx, "null", ATTR_stat | ATTR_opt | KIND_def | CAST_ptr, 0, type_ptr, intNode(ctx, 0));
+		ctx->null_ref = install(ctx, "null", ATTR_stat | ATTR_mut | ATTR_opt | KIND_def | CAST_ptr, 0, type_ptr, intNode(ctx, 0));
 		ctx->null_ref->init->type = type_ptr;
 		type_ptr->doc = type_doc_builtin;
 		ctx->null_ref->doc = type_doc_builtin;

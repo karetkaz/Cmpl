@@ -10,7 +10,7 @@ struct FxWidget: Widget {
 	int32 radius = 0;
 
 	// forward the drag event to the focused view
-	bool onTouchEvent(FxWidget this, Rect rect!, TouchEvent event!) {
+	bool onTouchEvent^(FxWidget this, Rect rect!, TouchEvent event!) {
 		if (Widget.onTouchEvent(this, rect, event)) {
 			return true;
 		}
@@ -36,18 +36,21 @@ struct FxWidget: Widget {
 		return view.onTouchEvent(view, r, event);
 	}
 
-	State onKeyEvent(FxWidget this, KeyEvent event!) {
+	State onKeyEvent^(FxWidget this, KeyEvent event!) {
 		if (event.key == '[' || event.key == ']') {
 			bool changed = this.showOriginal != event.release;
 			this.showOriginal = !event.release && (event.repeat != 0 || !this.enabled);
 			// show hide on short press and release
 			if (event.repeat != 0 && event.release == this.enabled) {
 				// hide on long press, show on long release
-				return changed && event.repeat == 1;
+				if (changed && event.repeat == 1) {
+					return State.consumed;
+				}
+				return State.ignored;
 			}
 			if (event.repeat == 0 && !event.release) {
 				// show/hide when button is on released, not when pressed
-				return changed;
+				return changed ? State.consumed : State.ignored;
 			}
 
 			this.clearState(State.hovered);
@@ -56,7 +59,7 @@ struct FxWidget: Widget {
 				if (this.align == Style.topLeft) {
 					this.enabled = !this.enabled;
 					this.invalidate();
-					return true;
+					return State.consumed;
 				}
 				this.align = Style.topLeft;
 			}
@@ -64,19 +67,22 @@ struct FxWidget: Widget {
 				if (this.align == Style.topRight) {
 					this.enabled = !this.enabled;
 					this.invalidate();
-					return true;
+					return State.consumed;
 				}
 				this.align = Style.topRight;
 			}
 
 			this.enabled = true;
 			this.invalidate();
-			return true;
+			return State.consumed;
 		}
 
 		if (event.key == '\\') {
 			this.showOriginal = !event.release;
-			return event.repeat == 0 || event.release;
+			if (event.repeat == 0 || event.release) {
+				return State.consumed;
+			}
+			return State.ignored;
 		}
 
 		if (event.release) {
@@ -84,13 +90,13 @@ struct FxWidget: Widget {
 		}
 
 		if (event.key == Window.KEY_CODE_BACK && event.isShift) {
-			return this.onReset(this);
+			return this.onReset(this) ? State.consumed : State.ignored;
 		}
 
 		return Widget.onKeyEvent(this, event);
 	}
 
-	bool onMeasure(FxWidget this, Rect measured&) {
+	bool onMeasure^(FxWidget this, Rect measured&) {
 		int32 margin = this.margin;
 		int32 align = this.align;
 		Rect rect = {
@@ -108,9 +114,9 @@ struct FxWidget: Widget {
 		return true;
 	}
 
-	void onDraw(FxWidget this, Image offs, Rect rect) {
+	void onDraw^(FxWidget this, Image offs, Rect rect) {
 		offs = offs.slice(rect);
-		Style style& = this.style;
+		Style style! = this.style;
 		if (style.backgroundColor != -1) {
 			Rect r = { x0: 0, y0: 0, x1: offs.width(), y1: offs.height() };
 			offs.fillRRect(r, this.radius, style.backgroundColor);

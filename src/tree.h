@@ -136,11 +136,19 @@ int isTypeExpr(astn ast);
 int isMutableVar(astn ast);
 
 /**
+ * Check if a qualified variable expression is optional.
+ *
+ * @param ast Abstract syntax tree to be checked.
+ * @return true or false.
+ */
+int isOptionalVar(astn ast);
+
+/**
  * Construct arguments.
  *
- * @param ctx compiler context.
- * @param lhs arguments or first argument.
- * @param rhs next argument.
+ * @param ctx Compiler context.
+ * @param lhs Arguments or first argument.
+ * @param rhs Next argument.
  * @return if lhs is null return (rhs) else return (lhs, rhs).
  */
 astn argNode(ccContext ctx, astn lhs, astn rhs);
@@ -148,9 +156,9 @@ astn argNode(ccContext ctx, astn lhs, astn rhs);
 /**
  * Construct reference node.
  *
- * @param ctx compiler context.
- * @param name name of the node.
- * @return the new node.
+ * @param ctx Compiler context.
+ * @param name Name of the node.
+ * @return The new node.
  */
 astn tagNode(ccContext ctx, const char *name);
 
