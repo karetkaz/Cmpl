@@ -166,12 +166,11 @@ vmError invoke(nfcContext ctx, symn fun, void *ret, void *args, const void *extr
  * @param offset Offset of the variable.
  * @param filter filter lookup by static: yes|no, kind: var|typ|fun, cast: ....
  * @note Useful to invoke callbacks from native calls.
- * @usage:
-
+ * @usage
 	static symn onMouse = NULL;
 
 	static int setMouseCb(nfcContext ctx) {
-		size_t fun = argref(ctx, 0);
+		size_t fun = argRef(ctx, 0);
 
 		// un-register event callback
 		if (fun == 0) {

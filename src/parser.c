@@ -74,7 +74,7 @@ static inline symn tagType(ccContext ctx, astn tag) {
 astn tagNode(ccContext ctx, const char *name) {
 	astn ast = NULL;
 	if (ctx != NULL && name != NULL) {
-		ast = newNode(ctx, TOKEN_var);
+		ast = newAstn(ctx, TOKEN_var);
 		if (ast != NULL) {
 			size_t len = strlen(name);
 			ast->file = ctx->file;
@@ -283,43 +283,43 @@ static astn expandAssignment(ccContext ctx, astn root) {
 			break;
 
 		case ASGN_add:
-			tmp = newNode(ctx, OPER_add);
+			tmp = newAstn(ctx, OPER_add);
 			break;
 
 		case ASGN_sub:
-			tmp = newNode(ctx, OPER_sub);
+			tmp = newAstn(ctx, OPER_sub);
 			break;
 
 		case ASGN_mul:
-			tmp = newNode(ctx, OPER_mul);
+			tmp = newAstn(ctx, OPER_mul);
 			break;
 
 		case ASGN_div:
-			tmp = newNode(ctx, OPER_div);
+			tmp = newAstn(ctx, OPER_div);
 			break;
 
 		case ASGN_mod:
-			tmp = newNode(ctx, OPER_mod);
+			tmp = newAstn(ctx, OPER_mod);
 			break;
 
 		case ASGN_shl:
-			tmp = newNode(ctx, OPER_shl);
+			tmp = newAstn(ctx, OPER_shl);
 			break;
 
 		case ASGN_shr:
-			tmp = newNode(ctx, OPER_shr);
+			tmp = newAstn(ctx, OPER_shr);
 			break;
 
 		case ASGN_and:
-			tmp = newNode(ctx, OPER_and);
+			tmp = newAstn(ctx, OPER_and);
 			break;
 
 		case ASGN_ior:
-			tmp = newNode(ctx, OPER_ior);
+			tmp = newAstn(ctx, OPER_ior);
 			break;
 
 		case ASGN_xor:
-			tmp = newNode(ctx, OPER_xor);
+			tmp = newAstn(ctx, OPER_xor);
 			break;
 	}
 	if (tmp != NULL) {
@@ -336,7 +336,7 @@ static astn expandAssignment(ccContext ctx, astn root) {
 
 /// expand expression or declaration to statement
 static astn expand2Statement(ccContext ctx, astn node, int block) {
-	astn result = newNode(ctx, block ? STMT_beg : STMT_end);
+	astn result = newAstn(ctx, block ? STMT_beg : STMT_end);
 	if (result != NULL) {
 		result->type = ctx->type_vid;
 		result->file = node->file;
@@ -678,20 +678,18 @@ static astn expression(ccContext ctx, int comma) {
 				}
 				break;
 
-			case LEFT_par:			// '('
+			case OPER_fnc:			// '('
 				if (unary) {		// a * (3 - b)
 					*postfix++ = NULL;
 				}
-				ast->kind = OPER_fnc;
 				sym[++level] = '(';
 				unary = 1;
 				goto tok_operator;
 
-			case LEFT_sqr:			// '['
+			case OPER_idx:			// '['
 				if (unary) {		// x + [ptr]
 					*postfix++ = NULL;
 				}
-				ast->kind = OPER_idx;
 				sym[++level] = '[';
 				unary = 1;
 				goto tok_operator;
@@ -993,7 +991,7 @@ static astn initializer(ccContext ctx) {
 	}
 
 	skipToken(ctx, RIGHT_crl, 1);
-	ast = newNode(ctx, STMT_beg);
+	ast = newAstn(ctx, STMT_beg);
 	ast->stmt.stmt = head;
 	ast->type = type;
 	return ast;
@@ -1129,7 +1127,7 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 
 	// parse function parameters
 	symn params = NULL;
-	if (skipToken(ctx, LEFT_par, 0)) {			// int a(...)
+	if (skipToken(ctx, OPER_fnc, 0)) {			// int a(...)
 		enter(ctx, tag, NULL);
 		astn argRoot = parameters(ctx, type, tag);
 		skipToken(ctx, RIGHT_par, 1);
@@ -1171,10 +1169,10 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 			enter(ctx, tag, def);
 			def->init = statement(ctx, NULL);
 			if (def->init == NULL) {
-				def->init = newNode(ctx, STMT_beg);
+				def->init = newAstn(ctx, STMT_beg);
 				def->init->type = ctx->type_vid;
 			}
-			backToken(ctx, newNode(ctx, STMT_end));
+			backToken(ctx, newAstn(ctx, STMT_end));
 			leave(ctx, KIND_def, -1, 0, NULL, NULL);
 
 			// mark as static immutable and disable parameter lookup
@@ -1195,7 +1193,7 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 
 	// parse array dimensions
 	ccKind cast = refCast(type);
-	while (skipToken(ctx, LEFT_sqr, 0)) {		// int a[...][][]...
+	while (skipToken(ctx, OPER_idx, 0)) {		// int a[...][][]...
 		symn arr = newSymn(ctx, KIND_typ);
 		if (peekToken(ctx, RIGHT_sqr) != NULL) {
 			// dynamic-size array: `int a[]`
@@ -1368,7 +1366,7 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 
 	enter(ctx, tag, NULL);
 
-	if (skipToken(ctx, LEFT_par, 0)) {
+	if (skipToken(ctx, OPER_fnc, 0)) {
 		parameters(ctx, ctx->type_vid, tag);
 		skipToken(ctx, RIGHT_par, 1);
 	}
@@ -1713,7 +1711,7 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 		return NULL;
 	}
 
-	skipToken(ctx, LEFT_par, 1);
+	skipToken(ctx, OPER_fnc, 1);
 	astn test = expression(ctx, 0);
 	// static if statement true branch does not enter a new scope to expose declarations.
 	int staticIf = (attr & ATTR_stat) != 0;
@@ -1764,7 +1762,7 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 
 	if (peekToken(ctx, ELSE_kwd)) {
 		// hack: allow else without statement: if (condition) else {statements}
-		backToken(ctx, newNode(ctx, STMT_end));
+		backToken(ctx, newAstn(ctx, STMT_end));
 	}
 
 	ast->stmt.stmt = statement(ctx, NULL);
@@ -1803,7 +1801,7 @@ static astn statement_for(ccContext ctx) {
 	}
 
 	enter(ctx, ast, NULL);
-	skipToken(ctx, LEFT_par, 1);
+	skipToken(ctx, OPER_fnc, 1);
 
 	astn init = peekToken(ctx, STMT_end) ? NULL : expression(ctx, 0);
 	if (init != NULL) {
@@ -1860,9 +1858,9 @@ static astn statement_list(ccContext ctx) {
 	astn ast, head = NULL, tail = NULL;
 
 	const char *doc = NULL;
-	while ((ast = ctx->tokNext) != NULL) {
+	while ((ast = ctx->nextToken) != NULL) {
 		if (ast->kind == TOKEN_doc) {
-			ctx->tokNext = ctx->tokNext->next;
+			ctx->nextToken = ctx->nextToken->next;
 			doc = ast->id.name;
 			continue;
 		}
@@ -2070,7 +2068,7 @@ static astn statement(ccContext ctx, const char *doc) {
 
 		// type, enum and alias declaration
 		case INLINE_kwd: // alias
-			if (peekToken(ctx, LEFT_par)) {
+			if (peekToken(ctx, OPER_fnc)) {
 				goto expr;
 			}
 			backToken(ctx, ast);
@@ -2085,7 +2083,7 @@ static astn statement(ccContext ctx, const char *doc) {
 			break;
 
 		case RECORD_kwd: // struct
-			if (peekToken(ctx, LEFT_par)) {
+			if (peekToken(ctx, OPER_fnc)) {
 				ast = expression(ctx, 0);
 				if (ast == NULL) {
 					error(ctx->rt, file, line, ERR_INVALID_TYPE, ast);
@@ -2211,7 +2209,7 @@ astn ccAddUnit(ccContext ctx, const char *file, int line, char *text) {
 		}
 	} else {
 		// in case of an empty file return an empty statement
-		unit = newNode(ctx, STMT_beg);
+		unit = newAstn(ctx, STMT_beg);
 	}
 
 	if (ccParse(ctx, NULL, 0, NULL) != 0) {
@@ -2281,7 +2279,7 @@ symn ccAddCall(ccContext ctx, vmError call(nfcContext), const char *proto) {
 	lst->next = ctx->native;
 	ctx->native = lst;
 
-	init = newNode(ctx, TOKEN_opc);
+	init = newAstn(ctx, TOKEN_opc);
 	init->type = sym->type;
 	init->opc.code = opc_nfc;
 	init->opc.args = nfcPos;

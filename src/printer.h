@@ -249,32 +249,22 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define ERR_OPENING_FILE "can not open file: %s"
 #define ERR_UNIMPLEMENTED_FEATURE "Unimplemented feature"
 
-// Lexer errors
-#define ERR_EMPTY_CHAR_CONSTANT "empty character constant"
-#define ERR_INVALID_CHARACTER "invalid character: '%c'"
-#define ERR_INVALID_COMMENT "unterminated block comment"
+// Lexer errors -> moved to `lexer.c`
+// Parser errors; todo: move to `parser.c`
 #define ERR_INVALID_DOC_COMMENT "comment does not belong to a declaration"
-#define ERR_INVALID_ESC_SEQ "invalid escape sequence '\\%c'"
-#define ERR_INVALID_EXPONENT "no exponent in numeric constant"
-#define ERR_INVALID_HEX_SEQ "hex escape sequence invalid '%c'"
-#define ERR_INVALID_LITERAL "unclosed '%c' literal"
-#define ERR_INVALID_STATEMENT "unterminated block statement"
-#define ERR_INVALID_SUFFIX "invalid suffix in numeric constant '%s'"
-
-// Parser errors
 #define ERR_EXPECTED_BEFORE_TOK "expected `%s` before token `%?.t`"
 #define ERR_EXPR_TOO_COMPLEX "expression too complex"
 #define ERR_SYNTAX_ERR_BEFORE "syntax error before token `%?.t`"
 #define ERR_UNEXPECTED_ATTR "unexpected attribute `%?K`"
 #define ERR_UNEXPECTED_QUAL "unexpected qualifier `%.t` declared more than once"
 #define ERR_UNEXPECTED_TOKEN "unexpected token `%.t`"
-#define ERR_UNMATCHED_TOKEN "unexpected token `%?.t`, matching `%.k`"
 #define ERR_UNMATCHED_SEPARATOR "unexpected separator `%?.t`, matching `%.k`"
 #define ERR_DECLARATION_EXPECTED "declaration expected, got: `%t`"
 #define ERR_INITIALIZER_EXPECTED "initializer expected, got: `%t`"
 #define ERR_STATEMENT_EXPECTED "statement expected, got: `%t`"
+#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%t}"
 
-// Type checker errors
+// Type checker errors; todo: move to `typeCheck.c`
 #define ERR_DECLARATION_COMPLEX "declaration too complex: `%T`"
 #define ERR_DECLARATION_REDEFINED "redefinition of `%T`"
 #define ERR_UNDEFINED_DECLARATION "reference `%t` is not defined"
@@ -320,9 +310,9 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define ERR_EXEC_NATIVE_CALL "%s at .%06x in function: <%?.T%?+d> executing native call: %T"
 #define ERR_EXEC_FUNCTION "can not execute function: %T"
 
+// todo:
 #define WARN_EMPTY_STATEMENT "empty statement `%?.0t`"
-#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%t}"
-//TODO: #define WARN_LOCAL_MIGHT_ESCAPE "local variable `%t` can not be referenced outside of its scope"
+//TODO: #define WARN_LOCAL_MIGHT_ESCAPE "local variable `%t` cannot be referenced outside of its scope"
 #define WARN_PASS_ARG_NO_CAST "argument `%t` is passed to emit without cast as `%T`"
 #define WARN_PASS_ARG_BY_REF "argument `%t` is passed by reference to `%T`"
 #define WARN_NO_CODE_GENERATED "no code will be generated for statement: %t"
@@ -332,15 +322,8 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define WARN_USING_SIGNED_CAST "using signed cast for unsigned value: `%t`"
 #define WARN_STATIC_FIELD_ACCESS "accessing static member using instance variable `%T`/ %T"
 
-#define WARN_COMMENT_MULTI_LINE "multi-line comment: `%s`"
-#define WARN_COMMENT_NESTED "ignoring nested comment"
 #define WARN_NO_NEW_LINE_AT_END "expected <new line> before end of input"
 
-#define WARN_MULTI_CHAR_CONSTANT "multi character constant"
-#define WARN_CHR_CONST_OVERFLOW "character constant truncated"
-#define WARN_OCT_ESC_SEQ_OVERFLOW "octal escape sequence overflow"
-#define WARN_VALUE_OVERFLOW "value overflow"
-#define WARN_EXPONENT_OVERFLOW "exponent overflow"
 
 #define WARN_VARIABLE_TYPE_INCOMPLETE "emitted variable has incomplete type: %T"
 #define WARN_USING_BEST_OVERLOAD "using overload `%T` of %d declared symbols"

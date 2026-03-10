@@ -70,7 +70,7 @@ struct astNode {
 };
 
 /// Allocate a tree node.
-astn newNode(ccContext ctx, ccToken kind);
+astn newAstn(ccContext ctx, ccToken kind);
 
 /// Duplicate a tree node.
 astn dupNode(ccContext ctx, astn node);

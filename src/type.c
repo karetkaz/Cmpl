@@ -563,7 +563,7 @@ astn castTo(ccContext ctx, astn ast, symn type) {
 	}
 
 	debug(ctx->rt, ast->file, ast->line, WARN_ADDING_IMPLICIT_CAST, type, ast, ast->type);
-	astn value = newNode(ctx, OPER_fnc);
+	astn value = newAstn(ctx, OPER_fnc);
 	value->file = ast->file;
 	value->line = ast->line;
 	value->op.rhso = ast;

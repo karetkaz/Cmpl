@@ -11,27 +11,28 @@
  * and optionally raises an error if no matching token is found.
  *
  * @param ctx Compiler context.
- * @param match Read the token only if matches the given kind.
+ * @param match The token type to be matched.
  * @param raise Flag indicating whether to raise an error or bee silent.
- * @return next token, or null.
+ * @return The next token, NULL if the token does not match.
  */
 astn nextToken(ccContext ctx, ccToken match, int raise);
 
 /**
- * Push back a token, to be read next time.
+ * Pushes a token back to be read next time.
  *
  * @param ctx Compiler context.
  * @param token The token to be pushed back.
+ * @return The token that was pushed back.
  */
 astn backToken(ccContext ctx, astn token);
 
 /**
- * Read the next token and recycle it.
+ * Skips the current token and returns its kind.
  *
  * @param ctx Compiler context.
- * @param match Read the token only if matches the given kind.
+ * @param match The token type to be matched.
  * @param raise Flag indicating whether to raise an error or bee silent.
- * @return Kind of read token.
+ * @return The kind of the token that was skipped or TOKEN_any if no token was found.
  */
 ccToken skipToken(ccContext ctx, ccToken match, int raise);
 
@@ -39,7 +40,7 @@ ccToken skipToken(ccContext ctx, ccToken match, int raise);
  * Peek the next token.
  *
  * @param ctx Compiler context.
- * @param match Read the token only if matches the given kind.
+ * @param match Read next token only if matches the given kind.
  * @return Next token, or null.
  */
 static inline astn peekToken(ccContext ctx, ccToken match) {

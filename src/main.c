@@ -2382,12 +2382,6 @@ int main(int argc, char *argv[]) {
 	if (install & installLibs) {
 		// install standard library.
 		if (extra.steps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.steps, stdlib);}
-		char buffer[1024];
-		if (stdlib != NULL) {
-			snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
-		} else {
-			buffer[0] = 0;
-		}
 		if (!ccDefInt(cc, "preferNativeCalls", extra.preferNativeCalls)) {
 			error(rt, NULL, 0, "error registering `preferNativeCalls`");
 			return -1;
@@ -2396,9 +2390,13 @@ int main(int argc, char *argv[]) {
 			error(rt, NULL, 0, "error registering standard library");
 			return -1;
 		}
-		if (!ccAddUnit(cc, stdlib, 0, buffer)) {
-			error(rt, NULL, 0, "error registering standard library");
-			return -1;
+		if (stdlib != NULL) {
+			char buffer[65536];
+			snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
+			if (!ccAddUnit(cc, stdlib, 0, buffer)) {
+				error(rt, NULL, 0, "error registering standard library");
+				return -1;
+			}
 		}
 	}
 

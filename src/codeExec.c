@@ -198,7 +198,7 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 
 	vmError execError = noError;
 	const size_t ms = ctx->_size;			// memory size
-	const size_t ro = ctx->vm.ro;			// read only region
+	const size_t ro = ctx->vm.ro;			// read-only region
 	const memptr mp = (void*)ctx->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
@@ -217,7 +217,7 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 		const vmInstruction ipMax = (vmInstruction)(ctx->_mem + ctx->vm.px);
 
 		vmError (*debugger)(dbgContext, vmError, size_t, void*, size_t, size_t) = dbg->debug;
-		// invoked function(from external code) will return with a ret instruction, removing trace info
+		// invoked function(from external code) will return with a `ret` instruction, removing trace info
 		execError = vmTrace(ctx, pu->sp, 0, fun->offs);
 		if (execError != noError) {
 			debugger(dbg, execError, 0, pu->sp, vmOffset(ctx, pu->ip), 0);

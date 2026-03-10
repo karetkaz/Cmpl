@@ -20,6 +20,28 @@ const char *const type_fmt_typename = "<%T>";
 const char type_fmt_string_chr = '\"';
 const char type_fmt_character_chr = '\'';
 
+const char *const type_name_vid = "void";
+const char *const type_name_bol = "bool";
+const char *const type_name_chr = "char";
+const char *const type_name_i08 = "int8";
+const char *const type_name_i16 = "int16";
+const char *const type_name_i32 = "int32";
+const char *const type_name_i64 = "int64";
+const char *const type_name_u08 = "uint8";
+const char *const type_name_u16 = "uint16";
+const char *const type_name_u32 = "uint32";
+const char *const type_name_u64 = "uint64";
+const char *const type_name_f32 = "float32";
+const char *const type_name_f64 = "float64";
+const char *const type_name_typ = "typename";
+const char *const type_name_fun = "function";
+const char *const type_name_ptr = "pointer";
+const char *const type_name_var = "variant";
+const char *const type_name_obj = "object";
+const char *const type_name_str = ".cstr";
+
+const char *const var_name_str = "null";
+
 const char *const pluginLibImport = "cmplUnit";
 const char *const pluginLibInstall = "cmplInit";
 const char *const pluginLibDestroy = "cmplClose";
@@ -295,120 +317,80 @@ static vmError sysTryExec(nfcContext ctx) {
 	return noError;
 }
 
-/// Install instruction for the emit intrinsic
+/// Install the emit builtin function, and the public opcodes
 static inline symn ccDefOpCode(ccContext ctx, const char *name, symn type, vmOpcode code, size_t args) {
-	astn opc = newNode(ctx, TOKEN_opc);
-	if (opc != NULL) {
-		opc->type = type;
-		opc->opc.code = code;
-		opc->opc.args = args;
-		symn result = install(ctx, name, ATTR_stat | KIND_def, 0, type, opc);
-		if (result == NULL) {
-			return NULL;
-		}
-		result->doc = type_doc_builtin;
-		return result;
+	astn opc = newAstn(ctx, TOKEN_opc);
+	if (opc == NULL) {
+		return NULL;
 	}
-	return NULL;
+
+	opc->type = type;
+	opc->opc.code = code;
+	opc->opc.args = args;
+	symn result = install(ctx, name, ATTR_stat | KIND_def, 0, type, opc);
+	if (result == NULL) {
+		return NULL;
+	}
+	result->doc = type_doc_builtin;
+	return result;
 }
 
-/// Install type system.
+/// Install a record type
+static symn ccDefRecord(ccContext ctx, const char *name, const char *format, ccKind cast, size_t size, astn init) {
+	dieif(ctx->type_rec == NULL, ERR_INTERNAL_ERROR);
+	symn result = install(ctx, name, ATTR_stat | KIND_typ | cast, size, ctx->type_rec, init);
+	dieif(result == NULL, ERR_INTERNAL_ERROR);
+	result->doc = type_doc_builtin;
+	result->fmt = format;
+	return result;
+}
+
+/// Install basic types.
 static void install_type(ccContext ctx, ccConfig config) {
-	symn type_ptr = NULL, type_var = NULL, type_obj = NULL;
 	astn init_val = intNode(ctx, 0);
 
-	symn type_rec = install(ctx, "typename", ATTR_stat | KIND_typ | CAST_ptr, vm_ref_size, NULL, NULL);
+	symn type_rec = install(ctx, type_name_typ, ATTR_stat | KIND_typ | CAST_ptr, sizeof(struct symNode), NULL, NULL);
 	// update required variables to be able to install other types.
 	ctx->type_rec = type_rec->type = type_rec;   // TODO: !cycle: typename is instance of typename
-	type_rec->size = sizeof(struct symNode);    // expose the real size of the internal representation.
-	init_val->type = type_rec;	// HACK: the only type we have right now ...
+	type_rec->doc = type_doc_builtin; // public
+	type_rec->fmt = type_fmt_typename; // custom printer
 
-	symn type_vid = install(ctx, "void", ATTR_stat | KIND_typ | CAST_vid, 0, type_rec, NULL);
-	symn type_bol = install(ctx, "bool", ATTR_stat | KIND_typ | CAST_bit, 1, type_rec, init_val);
-	symn type_chr = install(ctx, "char", ATTR_stat | KIND_typ | CAST_i32, 1, type_rec, init_val);
-	symn type_i08 = install(ctx, "int8", ATTR_stat | KIND_typ | CAST_i32, 1, type_rec, init_val);
-	symn type_i16 = install(ctx, "int16", ATTR_stat | KIND_typ | CAST_i32, 2, type_rec, init_val);
-	symn type_i32 = install(ctx, "int32", ATTR_stat | KIND_typ | CAST_i32, 4, type_rec, init_val);
-	symn type_i64 = install(ctx, "int64", ATTR_stat | KIND_typ | CAST_i64, 8, type_rec, init_val);
-	symn type_u08 = install(ctx, "uint8", ATTR_stat | KIND_typ | CAST_u32, 1, type_rec, init_val);
-	symn type_u16 = install(ctx, "uint16", ATTR_stat | KIND_typ | CAST_u32, 2, type_rec, init_val);
-	symn type_u32 = install(ctx, "uint32", ATTR_stat | KIND_typ | CAST_u32, 4, type_rec, init_val);
-	symn type_u64 = install(ctx, "uint64", ATTR_stat | KIND_typ | CAST_u64, 8, type_rec, init_val);
-	symn type_f32 = install(ctx, "float32", ATTR_stat | KIND_typ | CAST_f32, 4, type_rec, init_val);
-	symn type_f64 = install(ctx, "float64", ATTR_stat | KIND_typ | CAST_f64, 8, type_rec, init_val);
-	init_val->type = type_i64;
+	init_val->type = type_rec;	// HACK: the only type we have right now ...
+	ctx->type_vid = ccDefRecord(ctx, type_name_vid, NULL, CAST_vid, 0, NULL);
+	ctx->type_bol = ccDefRecord(ctx, type_name_bol, type_fmt_signed32, CAST_bit, 1, init_val);
+	ctx->type_chr = ccDefRecord(ctx, type_name_chr, type_fmt_character, CAST_i32, 1, init_val);
+	ctx->type_i08 = ccDefRecord(ctx, type_name_i08, type_fmt_signed32, CAST_i32, 1, init_val);
+	ctx->type_i16 = ccDefRecord(ctx, type_name_i16, type_fmt_signed32, CAST_i32, 2, init_val);
+	ctx->type_i32 = ccDefRecord(ctx, type_name_i32, type_fmt_signed32, CAST_i32, 4, init_val);
+	ctx->type_i64 = ccDefRecord(ctx, type_name_i64, type_fmt_signed64, CAST_i64, 8, init_val);
+	ctx->type_u08 = ccDefRecord(ctx, type_name_u08, type_fmt_unsigned32, CAST_u32, 1, init_val);
+	ctx->type_u16 = ccDefRecord(ctx, type_name_u16, type_fmt_unsigned32, CAST_u32, 2, init_val);
+	ctx->type_u32 = ccDefRecord(ctx, type_name_u32, type_fmt_unsigned32, CAST_u32, 4, init_val);
+	ctx->type_u64 = ccDefRecord(ctx, type_name_u64, type_fmt_unsigned64, CAST_u64, 8, init_val);
+	ctx->type_f32 = ccDefRecord(ctx, type_name_f32, type_fmt_float32, CAST_f32, 4, init_val);
+	ctx->type_f64 = ccDefRecord(ctx, type_name_f64, type_fmt_float64, CAST_f64, 8, init_val);
+	init_val->type = ctx->type_i64;
 
 	if (config & install_ptr) {
-		type_ptr = install(ctx, "pointer", ATTR_stat | ATTR_opt | KIND_typ | CAST_ptr, 1 * vm_ref_size, type_rec, NULL);
-		type_ptr->doc = type_doc_builtin;
+		ctx->type_ptr = ccDefRecord(ctx, type_name_ptr, NULL, ATTR_opt | CAST_ptr, 1 * vm_ref_size, NULL);
 	}
 	if (config & install_var) {
-		type_var = install(ctx, "variant", ATTR_stat | ATTR_opt | KIND_typ | CAST_var, 2 * vm_ref_size, type_rec, NULL);
-		type_var->doc = type_doc_builtin;
+		ctx->type_var = ccDefRecord(ctx, type_name_var, NULL, ATTR_opt | CAST_var, 2 * vm_ref_size, NULL);
 	}
 	if (config & install_obj) {
-		type_obj = install(ctx, "object", ATTR_stat | KIND_typ | CAST_obj, 1 * vm_ref_size, type_rec, NULL);
-		type_obj->doc = type_doc_builtin;
+		ctx->type_obj = ccDefRecord(ctx, type_name_obj, NULL, CAST_obj, 1 * vm_ref_size, NULL);
 	}
-	symn type_fun = install(ctx, "function", ATTR_stat | KIND_typ | CAST_ptr, 1 * vm_ref_size, type_rec, NULL);
+	ctx->type_fun = ccDefRecord(ctx, type_name_fun, NULL, CAST_ptr, 1 * vm_ref_size, NULL);
 
-	type_vid->fmt = NULL;
-	type_vid->doc = type_doc_builtin;
-	type_bol->fmt = type_fmt_signed32;
-	type_bol->doc = type_doc_builtin;
-	type_chr->fmt = type_fmt_character;
-	type_chr->doc = type_doc_builtin;
-	type_i08->fmt = type_fmt_signed32;
-	type_i08->doc = type_doc_builtin;
-	type_i16->fmt = type_fmt_signed32;
-	type_i16->doc = type_doc_builtin;
-	type_i32->fmt = type_fmt_signed32;
-	type_i32->doc = type_doc_builtin;
-	type_i64->fmt = type_fmt_signed64;
-	type_i64->doc = type_doc_builtin;
-	type_u08->fmt = type_fmt_unsigned32;
-	type_u08->doc = type_doc_builtin;
-	type_u16->fmt = type_fmt_unsigned32;
-	type_u16->doc = type_doc_builtin;
-	type_u32->fmt = type_fmt_unsigned32;
-	type_u32->doc = type_doc_builtin;
-	type_u64->fmt = type_fmt_unsigned64;
-	type_u64->doc = type_doc_builtin;
-	type_f32->fmt = type_fmt_float32;
-	type_f32->doc = type_doc_builtin;
-	type_f64->fmt = type_fmt_float64;
-	type_f64->doc = type_doc_builtin;
-	type_rec->fmt = type_fmt_typename;
-	type_rec->doc = type_doc_builtin;
-	type_fun->doc = type_doc_builtin;
-
-	ctx->type_vid = type_vid;
-	ctx->type_bol = type_bol;
-	ctx->type_chr = type_chr;
-	ctx->type_i08 = type_i08;
-	ctx->type_i16 = type_i16;
-	ctx->type_i32 = type_i32;
-	ctx->type_i64 = type_i64;
-	ctx->type_u08 = type_u08;
-	ctx->type_u16 = type_u16;
-	ctx->type_u32 = type_u32;
-	ctx->type_u64 = type_u64;
-	ctx->type_f32 = type_f32;
-	ctx->type_f64 = type_f64;
-	ctx->type_ptr = type_ptr;
-	ctx->type_fun = type_fun;
-	ctx->type_var = type_var;
-	ctx->type_obj = type_obj;
 	if (vm_ref_size == 8) {
-		ctx->type_int = type_i64;
+		ctx->type_int = ctx->type_i64;
 	} else {
-		ctx->type_int = type_i32;
+		ctx->type_int = ctx->type_i32;
 	}
 
-	if (type_ptr != NULL) {
-		ctx->null_ref = install(ctx, "null", ATTR_stat | ATTR_mut | ATTR_opt | KIND_def | CAST_ptr, 0, type_ptr, intNode(ctx, 0));
-		ctx->null_ref->init->type = type_ptr;
-		type_ptr->doc = type_doc_builtin;
+	if (ctx->type_ptr != NULL) {
+		ctx->null_ref = install(ctx, var_name_str, ATTR_stat | ATTR_mut | ATTR_opt | KIND_def | CAST_ptr, 0, ctx->type_ptr, intNode(ctx, 0));
+		ctx->null_ref->init->type = ctx->type_ptr;
 		ctx->null_ref->doc = type_doc_builtin;
 	}
 
@@ -423,11 +405,9 @@ static void install_type(ccContext ctx, ccConfig config) {
 	// aliases
 	install(ctx, "int", ATTR_stat | KIND_def, 0, type_rec, lnkNode(ctx, ctx->type_int));
 
-	ctx->type_str = install(ctx, ".cstr", ATTR_stat | KIND_typ | CAST_arr, vm_ref_size, type_chr, NULL);
-	if (ctx->type_str != NULL) {
-		// arrays without length property are c-like pointers
-		ctx->type_str->fmt = type_fmt_string;
-	}
+	ctx->type_str = install(ctx, type_name_str, ATTR_stat | KIND_typ | CAST_arr, vm_ref_size, ctx->type_chr, NULL);
+	ctx->type_str->fmt = type_fmt_string;
+
 	if (ctx->type_vid != NULL) {
 		ctx->void_tag = lnkNode(ctx, ctx->type_vid);
 		if (ctx->void_tag == NULL) {
@@ -436,9 +416,9 @@ static void install_type(ccContext ctx, ccConfig config) {
 	}
 
 	// undefined initializer: {...}
-	ctx->init_und = newNode(ctx, STMT_beg);
+	ctx->init_und = newAstn(ctx, STMT_beg);
 	dieif(ctx->init_und == NULL, ERR_INTERNAL_ERROR);
-	ctx->init_und->type = type_vid;
+	ctx->init_und->type = ctx->type_vid;
 }
 
 /// Install emit intrinsic.
@@ -848,7 +828,7 @@ ccContext ccInit(rtContext ctx, ccConfig config, vmError onHalt(nfcContext)) {
 	install_emit(cc, config);
 	install_base(cc, config, onHalt);
 
-	cc->root = newNode(cc, STMT_beg);
+	cc->root = newAstn(cc, STMT_beg);
 	cc->root->type = cc->type_vid;
 
 	return cc;
@@ -862,11 +842,13 @@ symn rtLookup(rtContext ctx, size_t offset, ccKind filter) {
 		// local variable on stack ?
 		return NULL;
 	}
+
 	symn sym = ctx->main;
 	if (offset >= sym->offs && offset < sym->offs + sym->size) {
 		// is the main function ?
 		return sym;
 	}
+
 	ccKind filterStat = filter & ATTR_stat;
 	ccKind filterKind = filter & MASK_kind;
 	ccKind filterCast = filter & MASK_cast;
@@ -901,65 +883,4 @@ symn rtLookup(rtContext ctx, size_t offset, ccKind filter) {
 		}
 	}
 	return NULL;
-}
-
-const char *ccUniqueStr(ccContext ctx, const char *str, size_t len, unsigned hash) {
-	if (str == NULL) {
-		return NULL;
-	}
-
-	if (len == (size_t)-1) {
-		len = strlen(str) + 1;
-	}
-	else if (str[len - 1] != 0) {
-		fatal(ERR_INTERNAL_ERROR);
-		return NULL;
-	}
-
-	if (hash == (unsigned)-1) {
-		hash = rehash(str, len);
-	}
-
-	list prev = NULL;
-	hash %= lengthOf(ctx->stringTable);
-	list next = ctx->stringTable[hash];
-	while (next != NULL) {
-		int cmp = strncmp(next->data, str, len);
-		if (cmp == 0) {
-			return next->data;
-		}
-		if (cmp > 0) {
-			break;
-		}
-		prev = next;
-		next = next->next;
-	}
-
-	rtContext rt = ctx->rt;
-	if (rt->_beg >= rt->_end - (sizeof(struct list) + len)) {
-		fatal(ERR_MEMORY_OVERRUN);
-		return NULL;
-	}
-	if (str != (char *)rt->_beg) {
-		// copy data from constants ?
-		memcpy(rt->_beg, str, len + 1);
-		str = (char*)rt->_beg;
-	}
-
-	// allocate list node as temp data (end of memory)
-	rt->_end -= sizeof(struct list);
-	list node = (list)rt->_end;
-
-	rt->_beg += len;
-
-	if (!prev) {
-		ctx->stringTable[hash] = node;
-	}
-	else {
-		prev->next = node;
-	}
-
-	node->next = next;
-	node->data = str;
-	return str;
 }

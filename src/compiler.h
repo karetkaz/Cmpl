@@ -60,7 +60,7 @@ struct ccContextRec {
 
 	int32_t nest;                   // nest level: modified by (enter/leave)
 	unsigned inStaticIfFalse: 1;    // inside a static if false
-	unsigned genDocumentation: 1;   // generate documentation
+	unsigned genDocumentation: 1;    // generate documentation
 	unsigned genStaticGlobals: 1;   // generate global variables as static variables
 	unsigned errPrivateAccess: 1;   // raise error accessing private data
 	unsigned errUninitialized: 1;   // raise error for uninitialized variables
@@ -68,8 +68,8 @@ struct ccContextRec {
 
 	// Lexer
 	list stringTable[512];          // string table (hash)
-	astn tokPool;                   // list of recycled tokens
-	astn tokNext;                   // next token: look-ahead
+	astn tokenPool;                 // list of recycled tokens
+	astn nextToken;                 // next token: look-ahead
 
 	// Parser
 	symn symbolStack[64];           // symbol stack (hash)
@@ -115,35 +115,40 @@ struct ccContextRec {
 };
 
 /**
- * Initialize compiler context.
+ * Initializes and configures a compiler context within the runtime context.
  *
  * @param ctx Runtime context.
- * @param config specify what to install.
- * @param onHalt function to be executed when execution and external function invocation terminates.
- * @return compiler context.
- * @note installs: builtin types, builtin functions, emit intrinsic, ...
+ * @param config A configuration setting that specifies the components and options
+ *               to be installed. This includes the basic types, pointers, objects,
+ *               and other extensions which are builtin to the language.
+ * @param onHalt A callback function to handle errors or halting behavior.
+ * @return A pointer to the newly initialized compiler context, or NULL if there is an error.
  */
 ccContext ccInit(rtContext ctx, ccConfig config, vmError onHalt(nfcContext));
 
 /**
- * Open a stream (file or text) for compilation.
+ * Parses and tokenizes the input source file or content string.
  *
  * @param ctx Compiler context.
- * @param file file name of input.
- * @param line first line of input.
- * @param content if not null, this will be compiled instead of the file.
- * @return error code, 0 on success.
+ * @param file The name of the parsed file.
+ * @param line The starting line number for the parser.
+ * @param content The content string to parse. If NULL, the specified file is opened and parsed.
+ * @return Error code, 0 on success.
+ *
+ * @example dieif(!ccScan(cc, "test.cmpl", 1, NULL));
+ * @example dieif(!ccScan(cc, __FILE__, __LINE__, "float64 asinh(float64 x);"))`
  */
 int ccParse(ccContext ctx, const char *file, int line, char *content);
 
-
-/** Add string to string table.
- * @brief add string to string table.
- * @param ctx compiler context.
- * @param str the string to be mapped.
- * @param size the length of the string, -1 recalculates using strlen.
- * @param hash pre-calculated hashcode, -1 recalculates.
- * @return the mapped string in the string table.
+/**
+ * Adds a string to the context's string table and returns a pointer to it.
+ * In case the string is already added to the table, it is returned without any modification.
+ *
+ * @param ctx Compiler context.
+ * @param str The string to be added to the string table. Must be null-terminated if `size` is not specified.
+ * @param size The length of the string, or (size_t)-1 to recompute it with the `strlen` function.
+ * @param hash The hash value for the string, or (unsigned)-1 to recompute it.
+ * @return A pointer to the unique string in the string table, or NULL in case of an error.
  */
 const char *ccUniqueStr(ccContext ctx, const char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
 

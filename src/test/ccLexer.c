@@ -26,7 +26,7 @@ int main() {
 		return rtClose(rt);
 	}
 
-	for (astn ast = cc->tokNext; ast != NULL; ast = ast->next) {
+	for (astn ast = cc->nextToken; ast != NULL; ast = ast->next) {
 		printFmt(stdout, NULL, "%?s:%?u:token: `%.t`\n", ast->file, ast->line, ast);
 	}
 

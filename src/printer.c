@@ -935,43 +935,32 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 
 			printFmt(out, esc, "%s", "{");
 			for (astn list = ast->stmt.stmt; list; list = list->next) {
-				int indent2 = indent + 1;
-				int exprStatement = 0;
 				printFmt(out, esc, "%s", "\n");
-				if (list->kind < STMT_beg || list->kind > STMT_end) {
-					switch (list->kind) {
-						default:
-							// not valid expression statement
-							exprStatement = -1;
-							indent2 = exprLevel;
-							printFmt(out, esc, "%I", indent + 1);
-							break;
-
-						case OPER_fnc:
-						case INIT_set:
-						case ASGN_set:
-							// valid expression statement
-							exprStatement = 1;
-							indent2 = exprLevel;
-							printFmt(out, esc, "%I", indent + 1);
-							break;
-
-						case TOKEN_var:
-							if (list->id.link && list->id.link->tag == list) {
-								// valid declaration statement
-								exprStatement = 1;
-							}
-							break;
-					}
+				if (list->kind >= STMT_beg && list->kind <= STMT_end) {
+					printAst(out, esc, list, mode, indent + 1);
+					continue;
 				}
-				printAst(out, esc, list, mode, indent2);
-				if (exprStatement != 0) {
-					if (exprStatement < 0) {
-						printFmt(out, esc, "; /* `%k` is not a valid statement */", list->kind);
-					}
-					else {
-						printFmt(out, esc, "%s", ";");
-					}
+
+				switch (list->kind) {
+					default:
+						// not valid expression statement
+						printFmt(out, esc, "%I%+t; /* `%k` is not a valid statement */", indent + 1, list, list->kind);
+						break;
+
+					case OPER_fnc:
+					case INIT_set:
+					case ASGN_set:
+						// valid expression statement
+						printFmt(out, esc, "%I%+t;", indent + 1, list);
+						break;
+
+					case TOKEN_var:
+						printAst(out, esc, list, mode, indent + 1);
+						if (list->id.link && list->id.link->tag == list) {
+							// valid declaration statement
+							printFmt(out, esc, ";");
+						}
+						break;
 				}
 			}
 			printFmt(out, esc, "\n%I%s", indent, "}");
@@ -1197,7 +1186,7 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 			int precedence = token_tbl[kind].type & 0x0f;
 			int putParen = indent > precedence;
 
-			if ((mode & prAstType) && ast->type) {
+			if ((mode & prAstType) && ast->type != NULL) {
 				printSym(out, esc, ast->type, prSymQual, 0);
 				putParen = 1;
 			}
@@ -1276,12 +1265,10 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 			if (mode != prName && ast->id.link != NULL) {
 				if (ast->id.link->tag == ast) {
 					printSym(out, esc, ast->id.link, mode & ~prSymQual, -indent);
-				}
-				else {
+				} else {
 					printSym(out, esc, ast->id.link, prName, 0);
 				}
-			}
-			else {
+			} else {
 				printFmt(out, esc, "%s", ast->id.name);
 			}
 			break;

@@ -81,9 +81,7 @@ TOKEN_DEF(STATIC_kwd, 0x00, 0, NULL, "static")
 TOKEN_DEF(RECORD_kwd, 0x00, 0, NULL, "struct")
 
 //~ Other tokens ===============================================================
-TOKEN_DEF(LEFT_par,  0x00, 0, NULL, "(")                  // Left parenthesis
 TOKEN_DEF(RIGHT_par, 0x00, 0, NULL, ")")                  // Right parenthesis
-TOKEN_DEF(LEFT_sqr,  0x00, 0, NULL, "[")                  // Left square bracket
 TOKEN_DEF(RIGHT_sqr, 0x00, 0, NULL, "]")                  // Right square bracket
 TOKEN_DEF(RIGHT_crl, 0x00, 0, NULL, "}")                  // Right curly bracket
 

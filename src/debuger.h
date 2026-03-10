@@ -93,7 +93,7 @@ int isChecked(rtContext ctx);
 char* vmErrorMessage(vmError error);
 
 /**
- * Request debug information of function
+ * Request debug information of a function.
  * @param ctx Runtime context
  * @param offset the memory offset to lookup
  * @return the debug information for the given position

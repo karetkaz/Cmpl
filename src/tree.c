@@ -9,8 +9,8 @@ const struct tokenRec token_tbl[256] = {
 };
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ create and recycle node
-astn newNode(ccContext ctx, ccToken kind) {
-	astn result = ctx->tokPool;
+astn newAstn(ccContext ctx, ccToken kind) {
+	astn result = ctx->tokenPool;
 	rtContext rt = ctx->rt;
 
 	dieif(rt->vm.nfc, "Can not create symbols while generating bytecode");
@@ -25,7 +25,7 @@ astn newNode(ccContext ctx, ccToken kind) {
 		result = (astn) rt->_end;
 	}
 	else {
-		ctx->tokPool = result->next;
+		ctx->tokenPool = result->next;
 	}
 
 	memset(result, 0, sizeof(struct astNode));
@@ -34,7 +34,7 @@ astn newNode(ccContext ctx, ccToken kind) {
 }
 
 astn dupNode(ccContext ctx, astn node) {
-	astn result = newNode(ctx, node->kind);
+	astn result = newAstn(ctx, node->kind);
 	*result = *node;
 	return result;
 }
@@ -44,8 +44,8 @@ void recycle(ccContext ctx, astn node) {
 	if (node == NULL) {
 		return;
 	}
-	node->next = ctx->tokPool;
-	ctx->tokPool = node;
+	node->next = ctx->tokenPool;
+	ctx->tokenPool = node;
 }
 
 static void recycleTree(ccContext ctx, astn ast) {
@@ -55,7 +55,7 @@ static void recycleTree(ccContext ctx, astn ast) {
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ make a constant valued node
 astn intNode(ccContext ctx, int64_t value) {
-	astn ast = newNode(ctx, TOKEN_val);
+	astn ast = newAstn(ctx, TOKEN_val);
 	if (ast != NULL) {
 		ast->type = ctx->type_i64;
 		ast->cInt = value;
@@ -64,7 +64,7 @@ astn intNode(ccContext ctx, int64_t value) {
 }
 
 astn fltNode(ccContext ctx, float64_t value) {
-	astn ast = newNode(ctx, TOKEN_val);
+	astn ast = newAstn(ctx, TOKEN_val);
 	if (ast != NULL) {
 		ast->type = ctx->type_f64;
 		ast->cFlt = value;
@@ -73,7 +73,7 @@ astn fltNode(ccContext ctx, float64_t value) {
 }
 
 astn strNode(ccContext ctx, const char *value) {
-	astn ast = newNode(ctx, TOKEN_val);
+	astn ast = newAstn(ctx, TOKEN_val);
 	if (ast != NULL) {
 		ast->type = ctx->type_str;
 		ast->id.name = value;
@@ -83,7 +83,7 @@ astn strNode(ccContext ctx, const char *value) {
 }
 
 astn lnkNode(ccContext ctx, symn ref) {
-	astn result = newNode(ctx, TOKEN_var);
+	astn result = newAstn(ctx, TOKEN_var);
 	if (result != NULL) {
 		result->type = isTypename(ref) ? ref : ref->type;
 		result->id.name = ref->name;
@@ -94,7 +94,7 @@ astn lnkNode(ccContext ctx, symn ref) {
 }
 
 astn opNode(ccContext ctx, symn type, ccToken kind, astn lhs, astn rhs) {
-	astn result = newNode(ctx, kind);
+	astn result = newAstn(ctx, kind);
 	if (result != NULL) {
 		result->op.lhso = lhs;
 		result->op.rhso = rhs;
