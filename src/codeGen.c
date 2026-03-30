@@ -2632,18 +2632,17 @@ int ccGenCode(ccContext ctx, int debug) {
 			// remove the last (drop; ret) instructions if possible
 			if (testOcp(rt, rt->vm.pc, opc_spc, NULL)) {
 				size_t pc = var->offs;
-				size_t pc1 = pc;
-				while (pc < rt->vm.pc) {
-					pc1 = pc;
-					if (!nextOpc(rt, &pc, NULL)) {
+				for (size_t i = pc; i < rt->vm.pc; ) {
+					pc = i;
+					if (!nextOpc(rt, &i, NULL)) {
 						fatal(ERR_INTERNAL_ERROR);
 						return -1;
 					}
 				}
-				if (rt->vm.px < pc1 && testOcp(rt, pc1, opc_jmpi, NULL)) {
+				if (rt->vm.px < pc && testOcp(rt, pc, opc_jmpi, NULL)) {
 					// it is safe to remove the last opcode (clear stack)
 					if (rollbackPc(rt)) {
-						rt->vm.pc = pc1;
+						rt->vm.pc = pc;
 					}
 				}
 			}

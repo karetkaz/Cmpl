@@ -16,7 +16,7 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 
 	struct BigUint {
 		uint32 words[32];
-		inline "cmplStd/lib/math/numeric/UintImpl.cmpl";
+		inline "cmplStd/lib/math/number/UintImpl.cmpl";
 	}
 
 	uint64 bits = Float64.toBits(value);

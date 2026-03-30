@@ -4,9 +4,10 @@ export "CMPL_HOME=$(realpath "$(dirname "$(readlink -f "$0")")"/..)"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
+CMPL_BIN="$CMPL_HOME/.build"
+
 CMPL_API="$CMPL_HOME/extras/Cmpl.api"
 CMPL_DOC="$CMPL_HOME/extras/Cmpl.md"
-CMPL_BIN="$CMPL_HOME/.build"
 #BIN_EMC="$CMPL_BIN/wasm"
 
 export BIN="$CMPL_BIN/macos"
@@ -90,11 +91,9 @@ do
 		echo "**** cannot run test ❌: $file"
 		continue
 	fi
-	printf "**** test: %-99s\\r" "$file"
+	printf "**** test: %-120s\\r" "$file"
 	if [[ "$(head -n 1 "$file")" == "#!/usr/bin/env -S \${CMPL_HOME}/extras/CmplDiffTest.sh"* ]]; then
-		if ! "$file"; then
-			echo "****** test failed ❌: $file"
-		fi
+		if ! "$file"; then echo "****** test failed ❌: $file"; fi
 		continue
 	elif ! $BIN/cmpl $TEST_FLAGS -log/a/d "$DUMP_FILE" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "$file"; then
 		echo "****** test failed ❌: $file"

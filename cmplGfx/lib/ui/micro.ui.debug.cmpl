@@ -15,6 +15,7 @@ struct DebugView: View {
 	static void restartTimer(DebugView this&) {
 		this.durations[this.position] = 0;
 		this.started = System.millis();
+		invalidate(this, false);
 	}
 
 	/// Start time measurement until this view is drawn on screen
@@ -49,11 +50,7 @@ struct DebugView: View {
 		}
 	}
 
-	bool onClick^(DebugView this&) {
-		return this.onReset(this);
-	}
-
-	bool onReset^(DebugView this&) {
+	static void reset(DebugView this&) {
 		if (this.measures > 0) {
 			this.measures = 0;
 		}
@@ -65,12 +62,26 @@ struct DebugView: View {
 		}
 		this.position = 0;
 		this.started = 0;
-		return true;
+	}
+
+	State onTouchEvent^(DebugView this, Rect rect!, TouchEvent event!) {
+		State result = View.onTouchEvent(this, rect, event);
+		if (result != State.ignored) {
+			return result;
+		}
+		if (!event.release) {
+			// press, motion and long-press events are not consumed
+			// click happens only when the button is released
+			return State.ignored;
+		}
+
+		reset(this);
+		return State.handled;
 	}
 
 	void onCreate^(DebugView this&, View parent) {
 		View.onCreate(this, parent);
-		DebugView.onReset(&this);
+		reset(this);
 	}
 
 	bool onMeasure^(DebugView this, Rect rect&) {

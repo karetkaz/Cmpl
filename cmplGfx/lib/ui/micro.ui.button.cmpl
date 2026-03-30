@@ -3,6 +3,44 @@ struct Button: View {
 	///@public
 	char text[];
 
+	/// Callback function executed when the view is clicked
+	void onClick(Button this, int32 clicks) {
+	}
+
+	State onKeyEvent^(Button this, KeyEvent event!) {
+		State result = View.onKeyEvent(this, event);
+		if (result != State.ignored) {
+			return result;
+		}
+
+		if (event.key == ' ' || event.key == Window.KEY_CODE_ENTER) {
+			if (!event.release) {
+				// click happens only when the button is released
+				return event.repeat ? State.ignored : State.pressed;
+			}
+			// click with space or enter key
+			this.onClick(this, 1);
+			return State.handled;
+		}
+
+		return State.ignored;
+	}
+
+	State onTouchEvent^(Button this, Rect rect!, TouchEvent event!) {
+		State result = View.onTouchEvent(this, rect, event);
+		if (result != State.ignored) {
+			return result;
+		}
+		if (!event.release) {
+			// press, motion and long-press events are not consumed
+			// click happens only when the button is released
+			return State.ignored;
+		}
+
+		this.onClick(this, event.clicks);
+		return State.handled;
+	}
+
 	bool onMeasure^(Button this, Rect rect&) {
 		Style style! = this.style;
 		style.measure(&rect, this.text);

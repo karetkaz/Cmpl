@@ -4,8 +4,8 @@ export "CMPL_HOME=$(realpath "$(dirname "$(readlink -f "$0")")"/..)"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
-CMPL_BIN="$(realpath ~)/bin/Cmpl"
-#CMPL_BIN="$CMPL_HOME/.build"
+CMPL_BIN="$CMPL_HOME/.build"
+#CMPL_BIN="$(realpath ~)/bin/Cmpl"
 
 #CMPL_API="$CMPL_BIN/Cmpl.api"
 #CMPL_DOC="$CMPL_BIN/Cmpl.md"

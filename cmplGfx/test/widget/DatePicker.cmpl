@@ -12,6 +12,44 @@ struct IntButton: View {
 		return true;
 	}
 
+
+	/// Callback function executed when the view is clicked
+	void onClick(IntButton this, int32 clicks) {}
+
+	State onKeyEvent^(IntButton this, KeyEvent event!) {
+		State result = View.onKeyEvent(this, event);
+		if (result != State.ignored) {
+			return result;
+		}
+
+		if (event.key == ' ' || event.key == Window.KEY_CODE_ENTER) {
+			if (!event.release) {
+				// click happens only when the button is released
+				return State.pressed;
+			}
+			// click with space or enter key
+			this.onClick(this, 1);
+			return State.handled;
+		}
+
+		return State.ignored;
+	}
+
+	State onTouchEvent^(IntButton this, Rect rect!, TouchEvent event!) {
+		State result = View.onTouchEvent(this, rect, event);
+		if (result != State.ignored) {
+			return result;
+		}
+		if (!event.release) {
+			// press, motion and long-press events are not consumed
+			// click happens only when the button is released
+			return State.ignored;
+		}
+
+		this.onClick(this, event.clicks);
+		return State.handled;
+	}
+
 	bool onMeasure^(IntButton this, Rect rect&) {
 		Style style! = this.style;
 		style.measure(&rect, this.text);
@@ -37,7 +75,8 @@ struct DayButton: IntButton {
 }
 
 struct WeekButton: IntButton {
-	void onDraw(IntButton this, Image offs, Rect rect, Style style!) {
+
+	void onDraw(WeekButton this, Image offs, Rect rect, Style style!) {
 		style.align(rect, &rect, this.text);
 		offs.drawText(rect, style.font, this.text, style.valueColor);
 	}
@@ -105,55 +144,57 @@ struct DatePicker: Layout {
 		return true;
 	}
 
-	static bool addYears(DatePicker this, int value) {
+	static void addYears(DatePicker this, int value) {
 		Datetime c = Datetime(this.timestamp);
-		return this.update(Timestamp(c.add(value, 0, 0)));
+		this.update(Timestamp(c.add(value, 0, 0)));
 	}
 
-	static bool addMonths(DatePicker this, int value) {
+	static void addMonths(DatePicker this, int value) {
 		Datetime c = Datetime(this.timestamp);
-		return this.update(Timestamp(c.add(0, value, 0)));
+		this.update(Timestamp(c.add(0, value, 0)));
 	}
 
-	static bool addDays(DatePicker this, int value) {
-		return this.update(this.timestamp.add(value, Timeunit.Days));
+	static void addDays(DatePicker this, int value) {
+		this.update(this.timestamp.add(value, Timeunit.Days));
 	}
 
-	static bool setDate(DayButton btn) {
-		return btn.data.as(DatePicker).update(btn.timestamp);
+	static void setDate(DayButton btn, int32 clicks) {
+		btn.data.as(DatePicker).update(btn.timestamp);
 	}
 
 	void onCreate^(DatePicker this&, View parent) {
-		static bool setToday(Button btn) {
-			DatePicker this = btn.data.as(DatePicker);
-			return this.onReset(this);
+		static void setToday(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).update(Timestamp.now());
 		}
-		static bool incYear(Button btn) {
-			return btn.data.as(DatePicker).addYears(1);
+		static void incYear(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).addYears(1);
 		}
-		static bool decYear(Button btn) {
-			return btn.data.as(DatePicker).addYears(-1);
+		static void decYear(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).addYears(-1);
 		}
-		static bool incMonth(Button btn) {
-			return btn.data.as(DatePicker).addMonths(1);
+		static void incMonth(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).addMonths(1);
 		}
-		static bool decMonth(Button btn) {
-			return btn.data.as(DatePicker).addMonths(-1);
+		static void decMonth(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).addMonths(-1);
 		}
-		static bool incDay(Button btn) {
-			return btn.data.as(DatePicker).addDays(1);
+		static void incDay(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).addDays(1);
 		}
-		static bool decDay(Button btn) {
-			return btn.data.as(DatePicker).addDays(-1);
+		static void decDay(Button btn, int32 clicks) {
+			btn.data.as(DatePicker).addDays(-1);
 		}
 
 		IntButton btnYear = {
+			onClick: null;
 			enabled: false;
 		};
 		IntButton btnMonth = {
+			onClick: null;
 			enabled: false;
 		};
 		IntButton btnDay = {
+			onClick: null;
 			enabled: false;
 		};
 		View btnDays[] = {
@@ -286,16 +327,6 @@ struct DatePicker: Layout {
 		Timestamp initValue = this.timestamp;
 		this.timestamp = Timestamp(0, Timestamp.precision);
 		this.update(initValue);
-	}
-
-	bool onClick^(DatePicker this) {
-		trace("click");
-		return true;
-	}
-
-	bool onReset^(DatePicker this&) {
-		this.timestamp = Timestamp(-1, Timestamp.precision);
-		return this.update(Timestamp.now());
 	}
 }
 

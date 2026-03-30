@@ -1,0 +1,620 @@
+enum: int32 {
+	mpi_29: 0x6487ed51;                             // 3.141592653589793 : pi
+	pi: mpi_29 >> (29 - precision);                 // pi: 3.141592653589793
+	twoPi: mpi_29 >> (29 - precision - 1);          // 2 * pi
+	halfPi: mpi_29 >> (29 - precision + 1);         // pi / 2
+}
+
+// evaluate a polynomial using horner's method
+static int64 poly_30(int64 x, int32 polynomial...) {
+	int64 result = 0;
+	for (int i = polynomial.length - 1; i >= 0; i -= 1) {
+		result *= x;
+		result += result & (1 << 29);
+		result >>= 30;
+		result += polynomial[i];
+	}
+	return result;
+}
+
+/// Converts the input to degrees from radians: $radians * 180 / pi$
+static Fixed32 degrees(Fixed32 radians) {
+	int64 result = int64(radians.bits) * 180;
+	static if (struct(Fixed32.overflow) == function) {
+		if ((result >> 63) != (result >> 33) || radians.bits == nan) {
+			return Fixed32.overflow(result, "degrees", radians);
+		}
+	}
+	result = (result << 29) / mpi_29;
+	static if (struct(Fixed32.overflow) == function) {
+		if ((result >> 63) != (result >> 31)) {
+			return Fixed32.overflow(result, "degrees", radians);
+		}
+	}
+
+	return bits(result);
+}
+
+/// Converts the input to radians from degrees: $degrees * pi / 180$
+static Fixed32 radians(Fixed32 degrees) {
+	int64 result = int64(degrees.bits) * mpi_29 / 180;
+	result += result & (1 << 28);
+	result >>= 29;
+	static if (struct(Fixed32.overflow) == function) {
+		if ((result >> 63) != (result >> 31) || degrees.bits == nan) {
+			return Fixed32.overflow(result, "radians", degrees);
+		}
+	}
+	return bits(result);
+}
+
+/// Returns the sine of the radian argument `x`
+// Special cases:
+//  * sin(±0) = ±0
+//  * sin(±Inf) = NaN
+//  * sin(NaN) = NaN
+static Fixed32 sin(Fixed32 x) {
+	if (x.bits == -x.bits) {
+		// x.bits == 0 || x.bits == nan
+		return x;
+	}
+
+	enum: int32 {
+		/* old polynomial values:
+		p0: (1 << 30) / +1;				// 1/1!
+		p1: (1 << 30) / -6;				// 1/3!
+		p2: (1 << 30) / +120;			// 1/5!
+		p3: (1 << 30) / -5040;			// 1/7!
+		p4: (1 << 30) / +362880;		// 1/9!
+		p5: (1 << 30) / -39916800;		// 1/11!
+		*/// new values adapted from: https://www.geometrictools.com/GTE/Mathematics/SinEstimate.h
+		p0: (1 << 30) * +1.0;
+		p1: (1 << 30) * -1.6666666601721269e-1;
+		p2: (1 << 30) * +8.3333303183525942e-3;
+		p3: (1 << 30) * -1.9840782426250314e-4;
+		p4: (1 << 30) * +2.7521557770526783e-6;
+		p5: (1 << 30) * -2.3828544692960918e-8;
+
+		pi: mpi_29 >> 1;
+		twoPi: mpi_29 >> 0;
+		halfPi: mpi_29 >> 2;
+	}
+
+	int64 bits = int64(x.bits) << (28 - precision);
+	bits %= twoPi;
+	if (bits < 0) {
+		bits += twoPi;
+	}
+
+	// x in [0, 2*pi)
+	int32 sign = 1;
+	if (bits >= pi) {
+		bits -= pi;
+		sign = -1;
+	}
+
+	// x in [0, pi)
+	if (bits >= halfPi) {
+		bits = pi - bits;
+	}
+
+	// x in [0, pi / 2)
+	int64 xsq = bits * bits >> 2 * 28 - 30;
+	int64 res = poly_30(xsq, p0, p1, p2, p3, p4, p5);
+	res *= sign * bits;
+	res += res & (1U << 57 - precision);
+	return bits(res >> 58 - precision);
+}
+
+/// Returns the inverse sine of the radian argument `x`
+// Special cases:
+//  - asin(±0) = ±0
+//  * asin(x > 1) = NaN
+//  * asin(x < -1) = NaN
+//  * asin(NaN) = NaN
+//  - asin(±1/2) = ±pi/6
+//  - asin(±1) = ±pi/2
+// asin(x) = atan2(x, sqrt((1 + x) * (1 - x)))
+//  = 2 * atan(x / (1 + sqrt(1 - x * x)))
+static Fixed32 asin(Fixed32 x) {
+	if (x.bits < -one || x.bits > one) {
+		static if (struct(Fixed32.overflow) == function) {
+			return Fixed32.overflow(0, "asin.args", x);
+		}
+		return bits(nan);
+	}
+
+	enum: int32 {
+		// values adapted from: https://www.geometrictools.com/GTE/Mathematics/ACosEstimate.h
+		p0: (1 << 30) * +1.5707963267948966;
+		p1: (1 << 30) * -2.1458939285677325e-1;
+		p2: (1 << 30) * +8.8784960563641491e-2;
+		p3: (1 << 30) * -4.8887131453156485e-2;
+		p4: (1 << 30) * +2.7011519960012720e-2;
+		p5: (1 << 30) * -1.1210537323478320e-2;
+		p6: (1 << 30) * +2.3078166879102469e-3;
+	}
+
+	int32 sign = 1;
+	if (x.bits < 0) {
+		x.bits = -x.bits;
+		sign = -sign;
+	}
+	int64 res = x.bits << 30 - precision;
+	res = poly_30(res, p0, p1, p2, p3, p4, p5, p6);
+	x = sqrt(bits(one).sub(x));
+	res = res * x.bits >> 30;
+	return bits(sign * (halfPi - res));
+}
+
+/// Returns the hyperbolic sine of the radian argument `x`
+// Special cases:
+//  * sinh(±0) = ±0
+//  - sinh(±Inf) = ±Inf
+//  * sinh(NaN) = NaN
+// sinh(x) = (exp(x) - exp(-x)) / 2
+static Fixed32 sinh(Fixed32 x) {
+	if (x.bits == -x.bits) {
+		// x.bits == 0 || x.bits == nan
+		return x;
+	}
+
+	return sub(exp(x), exp(neg(x))).div(2);
+}
+
+/// Returns the inverse hyperbolic sine of the radian argument `x`
+// Special cases:
+//  * asinh(±0) = ±0
+//  - asinh(±Inf) = ±Inf
+//  * asinh(NaN) = NaN
+// asinh(x) = log(x + sqrt(x * x + 1))
+static Fixed32 asinh(Fixed32 x) {
+	if (x.bits == -x.bits) {
+		// x.bits == 0 || x.bits == nan
+		return x;
+	}
+
+	return ln(x.add(sqrt(madSat(x, x, bits(one)))));
+}
+
+
+/// Returns the cosine of the radian argument `x`
+// Special cases:
+//  * cos(±Inf) = NaN
+//  * cos(NaN) = NaN
+//  - cos(±0) = 1
+static Fixed32 cos(Fixed32 x) {
+	if (x.bits == nan) {
+		return x;
+	}
+
+	enum: int32 {
+		/* old polynomial values:
+		q0: (1 << 30) / +1;				// 1/0!
+		q1: (1 << 30) / -2;				// 1/2!
+		q2: (1 << 30) / +24;			// 1/4!
+		q3: (1 << 30) / -720;			// 1/6!
+		q4: (1 << 30) / +40320;			// 1/8!
+		q5: (1 << 30) / -3628800;		// 1/10!
+		q6: (1 << 30) / +479001600;		// 1/12!
+		*/// new adapted from: https://www.geometrictools.com/GTE/Mathematics/CosEstimate.h
+		q0: (1 << 30) * +1.0;
+		q1: (1 << 30) * -4.9999999508695869e-1;
+		q2: (1 << 30) * +4.1666638865338612e-2;
+		q3: (1 << 30) * -1.3888377661039897e-3;
+		q4: (1 << 30) * +2.4760495088926859e-5;
+		q5: (1 << 30) * -2.6051615464872668e-7;
+
+		pi: mpi_29 >> 1;
+		twoPi: mpi_29 >> 0;
+		halfPi: mpi_29 >> 2;
+	}
+
+	int64 bits = int64(x.bits) << (28 - precision);
+	bits %= twoPi;
+	if (bits < 0) {
+		bits += twoPi;
+	}
+
+	// x in [0, 2*pi)
+	if (bits > pi) {
+		bits = twoPi - bits;
+	}
+
+	// x in [0, pi)
+	int32 sign = 1;
+	if (bits >= halfPi) {
+		bits -= pi;
+		sign = -1;
+	}
+
+	// x in [0, pi / 2)
+	int64 xsq = bits * bits >> 2 * 28 - 30;
+	int64 res = poly_30(xsq, q0, q1, q2, q3, q4, q5);
+	res *= sign;
+	res += res & (1 << 29 - precision);
+	return bits(res >> (30 - precision));
+}
+
+/// Returns the inverse cosine of the radian argument `x`
+// Special cases:
+//  - acos(±0) = pi/2
+//  * acos(x > 1) = NaN
+//  * acos(x < -1) = NaN
+//  * acos(NaN) = NaN
+//  - acos(1) = 0
+//  - acos(-1) = pi
+//  - acos(1/2) = pi/3
+//  - acos(-1/2) = 2*pi/3
+// acos(x) = atan2(sqrt((1 + x) * (1 - x)), x)
+//  = pi / 2 - asin(x)
+static Fixed32 acos(Fixed32 x) {
+	if (x.bits < -one || x.bits > one) {
+		static if (struct(Fixed32.overflow) == function) {
+			return Fixed32.overflow(0, "acos.args", x);
+		}
+		return bits(nan);
+	}
+
+	enum: int32 {
+		// values adapted from: https://www.geometrictools.com/GTE/Mathematics/ACosEstimate.h
+		p0: (1 << 30) * +1.5707963267948966;
+		p1: (1 << 30) * -2.1458939285677325e-1;
+		p2: (1 << 30) * +8.8784960563641491e-2;
+		p3: (1 << 30) * -4.8887131453156485e-2;
+		p4: (1 << 30) * +2.7011519960012720e-2;
+		p5: (1 << 30) * -1.1210537323478320e-2;
+		p6: (1 << 30) * +2.3078166879102469e-3;
+	}
+
+	int32 shift = 0;
+	int32 sign = 1;
+	if (x.bits <= 0) {
+		x.bits = -x.bits;
+		shift = pi;
+		sign = -1;
+	}
+	int64 res = x.bits << 30 - precision;
+	res = poly_30(res, p0, p1, p2, p3, p4, p5, p6);
+	x = sqrt(bits(one).sub(x));
+	res = res * x.bits >> 30;
+	return bits(shift + sign * res);
+}
+
+/// Returns the hyperbolic cosine of the radian argument `x`
+// Special cases:
+//  * cosh(±0) = 1
+//  - cosh(±Inf) = +Inf
+//  * cosh(NaN) = NaN
+// cosh(x) = (exp(x) + exp(-x)) / 2
+static Fixed32 cosh(Fixed32 x) {
+	if (x.bits == -x.bits) {
+		if (x.bits == 0) {
+			return bits(one);
+		}
+		return x;
+	}
+
+	return add(exp(x), exp(neg(x))).div(2);
+}
+
+/// Returns the inverse hyperbolic cosine of the radian argument `x`
+// Special cases:
+//  * acosh(x < 1) = NaN
+//  - acosh(1) = 0
+//  - acosh(Inf) = Inf
+//  * acosh(NaN) = NaN
+// acosh(x) = log(x + sqrt(x * x - 1))
+static Fixed32 acosh(Fixed32 x) {
+	if (x.bits < one) {
+		// including nan
+		return bits(nan);
+	}
+
+	return ln(x.add(sqrt(madSat(x, x, bits(-one)))));
+}
+
+
+/// Returns the tangent of the radian argument `x`
+// Special cases:
+//  * tan(±0) = ±0
+//  - tan(±Inf) = NaN
+//  * tan(NaN) = NaN
+// tan(x) = sin(x) / cos(x)
+static Fixed32 tan(Fixed32 x) {
+	if (x.bits == -x.bits) {
+		// x.bits == 0 || x.bits == nan
+		return x;
+	}
+
+	enum: int32 {
+		q0: (1 << 30) / +1;				// 1/0!
+		p0: (1 << 30) / +1;				// 1/1!
+		q1: (1 << 30) / -2;				// 1/2!
+		p1: (1 << 30) / -6;				// 1/3!
+		q2: (1 << 30) / +24;			// 1/4!
+		p2: (1 << 30) / +120;			// 1/5!
+		q3: (1 << 30) / -720;			// 1/6!
+		p3: (1 << 30) / -5040;			// 1/7!
+		q4: (1 << 30) / +40320;			// 1/8!
+		p4: (1 << 30) / +362880;		// 1/9!
+		q5: (1 << 30) / -3628800;		// 1/10!
+		p5: (1 << 30) / -39916800;		// 1/11!
+		q6: (1 << 30) / +479001600;		// 1/12!
+		p6: (1 << 30) / +6227020800;	// 1/13!
+
+		pi: mpi_29 >> 1;
+		twoPi: mpi_29 >> 0;
+		halfPi: mpi_29 >> 2;
+	}
+
+	int64 bits = int64(x.bits) << (28 - precision);
+	bits %= twoPi;
+	if (bits < 0) {
+		bits += twoPi;
+	}
+
+	// x in [0, 2*pi)
+	int64 sin = bits;
+	int64 cos = bits;
+	int64 result = 1;
+	if (bits >= pi) {
+		sin = sin - pi;
+		cos = twoPi - cos;
+		result = -result;
+	}
+
+	// x in [0, pi)
+	if (sin >= halfPi) {
+		sin = pi - sin;
+	}
+	if (cos >= halfPi) {
+		cos = cos - pi;
+		result = -result;
+	}
+
+	// x in [0, pi / 2)
+	int64 ssq = sin * sin >> 2 * 28 - 30;
+	int64 csq = cos * cos >> 2 * 28 - 30;
+	sin = sin * poly_30(ssq, p0, p1, p2, p3, p4, p5, p6);
+	cos = poly_30(csq, q0, q1, q2, q3, q4, q5, q6);
+	if (cos != 0) {
+		result *= (sin >> 28 - precision) / cos;
+	}
+
+	static if (struct(Fixed32.overflow) == function) {
+		if ((result >> 63) != (result >> 31)) {
+			return Fixed32.overflow(result, "tan.result", x);
+		}
+	}
+	return bits(result);
+}
+
+/// Returns the inverse tangent of the radian argument `x`
+// Special cases:
+//  * atan(±0) = ±0
+//  - atan(±Inf) = ±pi/2
+//  * atan(NaN) = NaN
+//  - atan(±1) = ±pi/4
+static Fixed32 atan(Fixed32 x) {
+	if (x.bits == nan) {
+		static if (struct(Fixed32.overflow) == function) {
+			return Fixed32.overflow(0, "atan.args", x);
+		}
+		return x;
+	}
+
+	enum: int32 {
+		// values adapted from: https://www.geometrictools.com/GTE/Mathematics/ATanEstimate.h
+		p0: (1 << 30) * +1.0;
+		p1: (1 << 30) * -3.3324998579202170e-1;
+		p2: (1 << 30) * +1.9856563505717162e-1;
+		p3: (1 << 30) * -1.3374657325451267e-1;
+		p4: (1 << 30) * +8.1675882859940430e-2;
+		p5: (1 << 30) * -3.5059680836411644e-2;
+		p6: (1 << 30) * +7.2128853633444123e-3;
+	}
+
+	int32 sign = 1;
+	int32 shift = 0;
+	if (x.bits > one) {
+		// return pi / 2 - atan(1 / x);
+		x.bits = (int64(one) << precision) / x.bits;
+		shift = pi / 2;
+		sign = -1;
+	}
+	else if (x.bits < -one) {
+		// return -pi / 2 - atan(1 / x);
+		x.bits = (int64(one) << precision) / x.bits;
+		shift = -pi / 2;
+		sign = -1;
+	}
+
+	int64 xsq = x.bits * int64(x.bits);
+	static if (precision >= 15) {
+		xsq >>= 2 * precision - 30;
+	} else {
+		xsq <<= 30 - 2 * precision;
+	}
+	int64 res = poly_30(xsq, p0, p1, p2, p3, p4, p5, p6);
+	return bits(shift + (sign * res * x.bits >> 30));
+}
+
+/// Returns the hyperbolic tangent of the radian argument `x`
+// Special cases:
+//  * tanh(±0) = ±0
+//  - tanh(±Inf) = ±1
+//  * tanh(NaN) = NaN
+// tanh(x) = sinh(x) / cosh(x)
+//  = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+//  = (exp(2 * x) - 1) / (exp(2 * x) + 1)
+//  = (1 - exp(-2*x)) / (exp(-2*x) - 1 + 2)
+//  = ...
+//  = 1 - 2 / (exp(2 * x) + 1)
+static Fixed32 tanh(Fixed32 x) {
+	if (x.bits == -x.bits) {
+		// x.bits == 0 || x.bits == nan
+		return x;
+	}
+
+	// precision trick: calculate exp(-x)
+	int32 sign = 1;
+	if (x.bits > 0) {
+		x.bits = -x.bits;
+		sign = -1;
+	}
+
+	x = exp(x.mul(2));
+	return div(x.add(-1), x.add(1)).mul(sign);
+}
+
+/// Returns the inverse hyperbolic tangent of the radian argument `x`
+// Special cases:
+//  - atanh(±0) = ±0
+//  - atanh(±1) = ±Inf
+//  * atanh(x > 1) = NaN
+//  * atanh(x < -1) = NaN
+//  - atanh(±Inf) = NaN
+//  * atanh(NaN) = NaN
+// atanh(x) = ln((1 + x) / (1 - x)) / 2
+// = -ln((1 - x) / (1 + x)) / 2
+static Fixed32 atanh(Fixed32 x) {
+	if (x.bits <= -one || x.bits >= one) {
+		return bits(nan);
+	}
+
+	if (x.bits > 0) {
+		// better precision at division
+		return ln(bits(one).sub(x).divSat(x.add(1))).div(-2);
+	}
+	return ln(x.add(1).divSat(bits(one).sub(x))).div(2);
+}
+
+
+/// Returns the secant of the radian argument `x`
+// sec(x) = 1 / cos(x)
+static Fixed32 sec(Fixed32 x) { return x.cos().inv(); }
+
+/// Returns the inverse secant of the radian argument `x`
+// Special cases:
+//  - asec(±0) = Inf
+// asec(x) = acos(1 / x)
+static Fixed32 asec(Fixed32 x) {
+	if (x.bits == 0) {
+		return bits(nan);
+	}
+	return x.inv().acos();
+}
+
+/// Returns the hyperbolic secant of the radian argument `x`
+// sech(x) = 1 / cosh(x)
+static Fixed32 sech(Fixed32 x) { return x.cosh().inv(); }
+
+/// Returns the inverse hyperbolic secant of the radian argument `x`
+// Special cases:
+//  - asech(±0) = Inf
+//  * asech(1) = 0
+// asech(x) = ln((sqrt(1 - x * x) + 1) / x)
+static Fixed32 asech(Fixed32 x) {
+	if (x.bits == 0) {
+		return bits(nan);
+	}
+	if (x.bits == one) {
+		return bits(0);
+	}
+	return ln(sqrt(bits(one).sub(x.mul(x))).add(1).div(x));
+}
+
+
+/// Returns the cosecant of the radian argument `x`
+// csc(x) = 1 / sin(x)
+static Fixed32 csc(Fixed32 x) { return x.sin().inv(); }
+
+/// Returns the inverse cosecant of the radian argument `x`
+// Special cases:
+//  - acsc(±0) = Inf
+// acsc(x) = asin(1 / x)
+static Fixed32 acsc(Fixed32 x) {
+	if (x.bits == 0) {
+		return bits(nan);
+	}
+	return x.inv().asin();
+}
+
+/// Returns the hyperbolic cosecant of the radian argument `x`
+// csch(x) = 1 / sinh(x)
+static Fixed32 csch(Fixed32 x) { return x.sinh().inv(); }
+
+/// Returns the inverse hyperbolic cosecant of the radian argument `x`
+// Special cases:
+//  - acsch(±0) = Inf
+// acsch(x > 0) = ln((1 + sqrt(1 + x * x)) / x)
+// acsch(x < 0) = ln((1 - sqrt(1 + x * x)) / x)
+// = -acsch(-x)
+static Fixed32 acsch(Fixed32 x) {
+	if (x.bits == 0) {
+		return bits(nan);
+	}
+	if (x.bits < 0) {
+		// using `-acsch(-x)` for precision
+		x.bits = -x.bits;
+		return neg(ln(bits(one).add(sqrt(madSat(x, x, bits(one)))).div(x)));
+	}
+	return ln(bits(one).add(sqrt(madSat(x, x, bits(one)))).div(x));
+}
+
+/// Returns the cotangent of the radian argument `x`
+// cot(x) = 1 / tan(x)
+static Fixed32 cot(Fixed32 x) { return x.tan().invSat(); }
+
+/// Returns the inverse cotangent of the radian argument `x`
+// Special cases:
+//  - acot(±0) = pi / 2
+// acot(x) = atan(1 / x)
+static Fixed32 acot(Fixed32 x) {
+	if (x.bits == 0) {
+		return bits(halfPi);
+	}
+	return x.inv().atan();
+}
+
+/// Returns the hyperbolic cotangent of the radian argument `x`
+// coth(x) = 1 / tanh(x)
+static Fixed32 coth(Fixed32 x) { return x.tanh().inv(); }
+
+/// Returns the inverse hyperbolic cotangent of the radian argument `x`
+// Special cases:
+//  - acoth(±1) = ±Inf
+// acoth(x) = ln((x + 1) / (x - 1)) / 2
+static Fixed32 acoth(Fixed32 x) {
+	if (x.bits == one) {
+		return bits(nan);
+	}
+	if (x.bits == -one) {
+		return bits(nan);
+	}
+	return ln(x.add(1).divSat(x.add(-1))).div(2);
+}
+
+
+/*todo:/// Returns the inverse tangent of `y / x`
+static Fixed32 atan2(Fixed32 y, Fixed32 x) {
+	// Special cases (in order):
+	//  * atan2(y, NaN) = NaN
+	//  * atan2(NaN, x) = NaN
+	//  * atan2(+0, x>=0) = +0
+	//  * atan2(-0, x>=0) = -0
+	//  * atan2(+0, x<=-0) = +Pi
+	//  * atan2(-0, x<=-0) = -Pi
+	//  * atan2(y>0, 0) = +Pi/2
+	//  * atan2(y<0, 0) = -Pi/2
+	//  * atan2(+Inf, +Inf) = +Pi/4
+	//  * atan2(-Inf, +Inf) = -Pi/4
+	//  * atan2(+Inf, -Inf) = 3Pi/4
+	//  * atan2(-Inf, -Inf) = -3Pi/4
+	//  * atan2(y, +Inf) = 0
+	//  * atan2(y>0, -Inf) = +Pi
+	//  * atan2(y<0, -Inf) = -Pi
+	//  * atan2(+Inf, x) = +Pi/2
+	//  * atan2(-Inf, x) = -Pi/2
+}*/

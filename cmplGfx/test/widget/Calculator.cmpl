@@ -1,17 +1,28 @@
-// Simple Calculator with no precedence
+// Simple Calculator with no precedence to demonstrate `NumberFormat` and `Layout.Custom(4, ...)`
 
 static Style display! = {
 	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 48);
 	align: Style.right;
 	format: {
-		precision: 10;
-		digitGrouping: 3;
-		fractGrouping: 3;
+		digitSymbols: NumberFormat.digits[...10];
+		positiveSymbol: '';
+		negativeSymbol: '-';
+		infinitySymbol: "Infinity";		// 1 / 0.
+		undefinedSymbol: "Error";   	// 0 / 0.
+
 		groupingSymbol: ' ';
-		trailingZeros: false;       // 6 != 6.00
-		trailingSeparator: false;   // 6 != 6.
-		infinitySymbol: "Inf";      // 1 / 0.
-		undefinedSymbol: "Error";   // 0 / 0.
+		digitGrouping: 3;
+		firstGrouping: 0;
+		fractGrouping: 3;
+
+		paddingSymbol: NumberFormat.digits[0];
+		width: 1;
+
+		fractionSymbol: '.';			// use '.' as decimal point
+		trailingSeparator: false;  		// 6 != 6.
+
+		precision: 10;					// up to 10 digits after the decimal point
+		trailingZeros: false;       	// 6 != 6.00
 	};
 };
 static Style global! = {
@@ -24,7 +35,7 @@ char operation = '=';
 float64 value = 0;
 bool clear = true;
 
-bool onResult(Button this) {
+void onResult(Button this, int32 clicks) {
 	if (operation == 0) {
 		// value already calculated
 	}
@@ -54,52 +65,48 @@ bool onResult(Button this) {
 	clear = true;
 
 	display.format.format(result, 0, value);
-	return true;
 }
-bool onClear(Button this) {
+void onClear(Button this, int32 clicks) {
 	result.append(0, "0");
 	operation = '=';
 	value = 0;
 	clear = true;
-	return true;
 }
-bool onValue(Button this) {
+void onValue(Button this, int32 clicks) {
 	int len = length(result);
 	if (clear) {
 		clear = false;
 		len = 0;
 	}
 	result.append(len, this.text);
-	return true;
 }
-bool onNeg(Button this) {
-	int len = length(result);
+void onNeg(Button this, int32 clicks) {
+	int len = Int32.min(result.length, length(result));
 	if (result[0] == '-') {
 		for (int i = 1; i < len; i += 1) {
 			result[i - 1] = result[i];
 		}
 		result[len - 1] = 0;
-	} else {
+	}
+	else if (len < result.length) {
 		for (int i = len; i > 0; i -= 1) {
 			result[i] = result[i - 1];
 		}
 		result[len + 1] = 0;
 		result[0] = '-';
 	}
-	return true;
 }
-bool onOp(Button this) {
+void onOp(Button this, int32 clicks) {
 	assert(this.text.length() == 1);
 	if (clear) {
 		// keep the last clicked operator
 		operation = this.text[0];
-		return true;
+		return;
 	}
-	onResult(this);
+	onResult(this, clicks);
 	operation = this.text[0];
-	return true;
 }
-bool onFn(Button this) {
+void onFn(Button this, int32 clicks) {
 	if (this.text.equals("sqrt")) {
 		// todo: precalculate last operation: onResult(this);
 		value = Float64.sqrt(float64(result));
@@ -108,7 +115,7 @@ bool onFn(Button this) {
 		value = Float64.nan;
 	}
 	operation = 0;
-	return onResult(this);
+	onResult(this, clicks);
 }
 
 Button btnResult = {

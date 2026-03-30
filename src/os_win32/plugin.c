@@ -1,7 +1,7 @@
 #include <Windows.h>
-#include "../cmpl.h"
+#include <cmpl.h>
 #include "../printer.h"
-#include "../runtime.h"
+#include "../code.h"
 #include "../type.h"
 
 static struct pluginLib {
@@ -10,14 +10,14 @@ static struct pluginLib {
 	HANDLE handle;
 } *pluginLibs = NULL;
 
-int importLib(rtContext ctx, const char *path) {
+int importLib(rtContext ctx, ccContext cc, const char *path) {
 	HANDLE library = LoadLibraryA(path);
 	if (library == NULL) {
 		error(ctx, NULL, 0, "Error executing LoadLibrary(`%s`): 0x%08x", path, GetLastError());
 		return -2;
 	}
 
-	int (*install)(rtContext) = (void*)GetProcAddress(library, pluginLibInstall);
+	int (*install)(rtContext, ccContext) = (void*)GetProcAddress(library, pluginLibInstall);
 	if (install == NULL) {
 		error(ctx, NULL, 0, "Error executing GetProcAddress(`%s`, `%s`): 0x%08x", path, pluginLibInstall, GetLastError());
 		FreeLibrary(library);
@@ -35,13 +35,13 @@ int importLib(rtContext ctx, const char *path) {
 	lib->next = pluginLibs;
 	pluginLibs = lib;
 
-	if (install(ctx) != 0) {
+	if (install(ctx, cc) != 0) {
 		return -1;
 	}
 
 	const char *import = (void*)GetProcAddress(library, pluginLibImport);
 	if (import != NULL) {
-		char inlineUnit[512];
+		char inlineUnit[1024];
 		snprintf(inlineUnit, sizeof(inlineUnit), "inline \"%s\"?;", import);
 		if (!ccAddUnit(ctx->cc, NULL, 0, inlineUnit)) {
 			return 1;

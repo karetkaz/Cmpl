@@ -77,18 +77,17 @@ struct TabPage: Layout {
 
 	static void onDrawSeparator(View this, Image offs, Rect rect) {}
 
-	static bool onClickTab(Button button) {
+	static void onClickTab(Button button, int32 clicks) {
 		if (Layout page = button.data.as(Layout)) {
 			if (TabPage tabs& = page.data.as(Layout)) {
 				if (tabs.active == page) {
-					return false;
+					return;
 				}
 				tabs.active = page;
 				tabs.invalidate();
 				page.focus();
 			}
 		}
-		return true;
 	}
 
 	static TabPage addItems(TabPage this&, char text[], int32 align, View views...) {
@@ -204,15 +203,9 @@ struct Select: Layout {
 	static Select addItems(Select this&, int32 align, View views...) {
 		struct Header: Switch {
 			Select select;
-			bool onReset^(Header this&) {
-				return false;
-			}
-			bool onClick^(Header this) {
-				if (!Switch.onClick(this)) {
-					return false;
-				}
+			void onClick^(Header this, int32 clicks) {
+				Switch.onClick(this, clicks);
 				this.select.expand(this.selected != 0);
-				return true;
 			}
 		}
 		if (this.itemCount == 0) {
@@ -244,8 +237,8 @@ struct Select: Layout {
 	static Select addItem(Select this, char text[], variant data) {
 		struct SelectItem: Button {
 			Select select;
-			bool onClick^(SelectItem this) {
-				return this.select.onItemClick(this);
+			void onClick^(SelectItem this, int32 clicks) {
+				this.select.onItemClick(this);
 			}
 		}
 		SelectItem item = {

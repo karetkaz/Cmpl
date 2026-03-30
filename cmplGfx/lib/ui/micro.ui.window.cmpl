@@ -6,16 +6,21 @@ static struct Window {
 	/// Show the given `widget` in a window drawn to the `offscreen` image
 	static void show(Image offscreen, int32 onEvent(int32 action, int32 button, int32 x, int32 y), Widget widget) {
 		struct WindowData {
-			Image offscreen;
 			int32 onEvent(int32 action, int32 button, int32 x, int32 y);
+			Image offscreen;
 			Widget widget;
 			Rect rect;
 
-			int64 timeout = 0;
+			// long press timeout / delay
+			static int64 releaseDelay! = 1000;
+			int64 releaseTimeout = Window.timeoutMax;
+
+			// double and multi click timeout / delay
+			static int64 clickDelay! = 500;
+			int64 clickTimeout = Int64.min;
 
 			// Touch state
 			int32 clicks = 0;
-			int64 time = 0;
 			int32 button = 0;
 			int32 lastX = 0;
 			int32 lastY = 0;
@@ -28,7 +33,7 @@ static struct Window {
 			int32 repeat = 0;
 		}
 
-		static bool dispatchEvent(WindowData window&, Widget widget, int32 action, int32 button, int32 x, int32 y) {
+		static bool dispatch(WindowData window&, Widget widget, int32 action, int32 button, int32 x, int32 y) {
 			if (widget.parent == null) {
 				// widget was not created, so create it first
 				widget.onCreate(widget, widget);
@@ -56,15 +61,11 @@ static struct Window {
 					window.clicks = 0;
 				}
 				int64 now = System.millis();
-				if ((now - window.time) / 1000. > .5) {
+				if (now > window.clickTimeout) {
 					window.clicks = 0;
 				}
-				window.time = now;
-				if (button == 1) {
-					window.timeout = now + 1000;
-				} else {
-					window.timeout = 0;
-				}
+				window.releaseTimeout = now + WindowData.releaseDelay;
+				window.clickTimeout = now + WindowData.clickDelay;
 				window.button = button;
 				window.lastX = x;
 				window.lastY = y;
@@ -84,19 +85,18 @@ static struct Window {
 					x: x - window.rect.x0;
 					y: y - window.rect.y0;
 				};
-				return widget.onTouchEvent(widget, window.rect, event);
+				return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 			}
 			if (action == Window.MOUSE_MOTION) {
 				int32 lastX = window.lastX;
 				int32 lastY = window.lastY;
-				window.time = System.millis();
-				window.timeout = 0;
-				window.button = button;
+				window.releaseTimeout = Window.timeoutMax;
+				window.clickTimeout = Int64.min;
 				window.lastX = x;
 				window.lastY = y;
 				window.clicks = 0;
 
-				if (button != 0 && button != 1) {
+				if (button != 0 && button != window.button) {
 					return false;
 				}
 				TouchEvent event = {
@@ -106,20 +106,21 @@ static struct Window {
 					isAlt: window.isAlt;
 					clicks: window.clicks;
 					button: button;
-					dx: x - lastX;
-					dy: y - lastY;
 					x: x - window.rect.x0;
 					y: y - window.rect.y0;
+					dx: x - lastX;
+					dy: y - lastY;
 				};
-				return widget.onTouchEvent(widget, window.rect, event);
+				return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 			}
 			if (action == Window.MOUSE_RELEASE) {
-				int64 now = System.millis();
-				if ((now - window.time) / 1000. > .5) {
+				window.releaseTimeout = Window.timeoutMax;
+				if (System.millis() > window.clickTimeout) {
 					window.clicks = 0;
 				}
-				window.timeout = 0;
-				if (button != 1) {
+
+				if (button != window.button) {
+					// debug("button already released");
 					return false;
 				}
 
@@ -133,7 +134,7 @@ static struct Window {
 					x: x - window.rect.x0;
 					y: y - window.rect.y0;
 				};
-				return widget.onTouchEvent(widget, window.rect, event);
+				return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 			}
 
 			if (action == Window.KEY_PRESS) {
@@ -155,18 +156,7 @@ static struct Window {
 					repeat: window.repeat;
 					key: button;
 				};
-				int32 r = widget.onKeyEvent(widget, event);
-				if (button == Window.KEY_CODE_TAB && r == View.State.ignored) {
-					if (!Widget.focusNext(widget, window.isShift)) {
-						// focus run out of last focused item
-						if (!Widget.focusNext(widget, window.isShift)) {
-							// there is no focusable view found
-							return false;
-						}
-					}
-					return true;
-				}
-				return r != View.State.ignored;
+				return widget.onKeyEvent(widget, event) != View.State.ignored;
 			}
 			if (action == Window.KEY_RELEASE) {
 				window.isShift = (y & Window.KEY_MASK_SHIFT) != 0;
@@ -186,7 +176,21 @@ static struct Window {
 			}
 
 			if (action == Window.EVENT_TIMEOUT) {
-				return false;
+				if (window.releaseTimeout < System.millis()) {
+					window.releaseTimeout = Window.timeoutMax;
+
+					TouchEvent event = {
+						release: false;
+						isShift: window.isShift;
+						isCtrl: window.isCtrl;
+						isAlt: window.isAlt;
+						clicks: -1;
+						button: button;
+						x: x - window.rect.x0;
+						y: y - window.rect.y0;
+					};
+					return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
+				}
 			}
 
 			debug("event not processed", action);
@@ -199,12 +203,6 @@ static struct Window {
 				return Window.timeoutMax;
 			}
 			int64 timeout = Window.timeoutMax;
-			if (window.timeout > 0) {
-				timeout = window.timeout - System.millis();
-				if (timeout < 0) {
-					timeout = Window.timeoutMax;
-				}
-			}
 
 			Image offs = window.offscreen;
 			Rect rect& = window.rect;
@@ -237,11 +235,23 @@ static struct Window {
 			}
 
 			Widget widget = win.widget;
-			if (win.dispatchEvent(widget, action, button, x, y)) {
+			if (win.dispatch(widget, action, button, x, y)) {
 				action |= EVENT_PROCESSED;
+				widget.redraw = true;
 			}
-			int32 timeout = win.onEvent(action, button, x, y);
-			win.draw(widget);
+
+			// long press timeout
+			uint32 timeout = win.releaseTimeout - System.millis();
+
+			// event timeout, for FPS idle limitation
+			timeout = Uint32.min(timeout, win.onEvent(action, button, x, y));
+
+			if (!widget.redraw) {
+				return timeout;
+			}
+
+			// draw timeout, for animations
+			timeout = Uint32.min(timeout, win.draw(widget));
 			return timeout;
 		}
 

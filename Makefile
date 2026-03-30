@@ -61,6 +61,7 @@ ifeq "$(OS)" "Windows_NT"
 
 	CFLAGS+=-D NO_LIBJPEG
 	CFLAGS+=-D NO_LIBPNG
+	MKDIRF=-p
 else
 	SRC_CC_EXE=$(SRC_CC)\
 		$(CC_SRC)/os_linux/time.c\

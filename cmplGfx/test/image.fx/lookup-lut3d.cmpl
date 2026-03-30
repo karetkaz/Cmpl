@@ -317,7 +317,7 @@ ColorLut lut3d = ColorLut("../asset/lut3d/obs-guide-lut.png");
 Image back = Image("../asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
-bool exportLut(Button this);
+void exportLut(Button this, int32 clicks);
 Histogram histogram = {
 	enabled: false;
 };
@@ -369,18 +369,17 @@ offs.destroy();
 back.destroy();
 lut3d.destroy();
 
-bool exportLut(Button this) {
+void exportLut(Button this, int32 clicks) {
 	if (this == export64) {
 		debug.startTimer();
 		lut3d.saveBmp("../asset/lut3d/lut3d.64.bmp", 64);
-		return true;
+		return;
 	}
 	if (this == export256) {
 		debug.startTimer();
 		lut3d.saveBmp("../asset/lut3d/lut3d.256.bmp", 256);
-		return true;
+		return;
 	}
-	return false;
 }
 
 /* test linear interpolation of color cube values

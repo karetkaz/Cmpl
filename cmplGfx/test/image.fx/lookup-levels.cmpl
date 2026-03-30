@@ -55,9 +55,9 @@ DebugView debug = {
 };
 
 Switch chkAdvanced = {
-	static bool onClick(Switch switch) {
+	static void onClick(Switch switch, int32 clicks) {
 		switch.invalidate();
-		return Switch.onClick(switch);
+		Switch.onClick(switch, clicks);
 	}
 
 	text: "Advanced";

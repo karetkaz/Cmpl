@@ -24,10 +24,10 @@ Slider sldRy = {
 	value: 20;
 	stepSize: 1;
 };
-Slider time = {
-	text: "time";
-	enabled: false;
-	onDrawSlider: null;
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
 };
 Button separator = {
 	text: null;
@@ -46,7 +46,8 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		// action was not processed by the widget, do not redraw
 		return Window.timeoutMax;
 	}
-	uint64 start = System.millis();
+
+	debug.startTimer();
 	offs.fill(0);
 	int x = offs.width() / 2;
 	int y = offs.height() / 2;
@@ -55,11 +56,10 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	int rx = sldRx.value;
 	int ry = sldRy.value;
 	offs.fillRRect(x - sx, y - sy, x + sx, y + sy, rx, ry, 0xffffff);
-	time.value = System.millis() - start;
 	return Window.timeoutMax;
 }
 Window.show(offs, onEvent, FxWidget(
 	sldSx, sldSy, sldRx, sldRy,
-	separator, time
+	separator, debug
 ));
 offs.destroy();

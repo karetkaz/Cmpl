@@ -1,12 +1,10 @@
 ///@public
-struct Switch: View {
+struct Switch: Button {
 	static char onOff[][] = {
 		"off",
 		"on"
 	};
 
-	///@public
-	char text[];
 	///@public
 	char states[][] = onOff;
 
@@ -32,21 +30,17 @@ struct Switch: View {
 		}
 
 		if (this.selected == selected) {
-			return this.isDirty();
+			return false;
 		}
 
 		this.selected = selected;
 		return true;
 	}
 
-	bool onReset^(Switch this&) {
-		return this.onUpdate(this, this.resetValue);
-	}
-
-	bool onClick^(Switch this&) {
+	void onClick^(Switch this&, int32 clicks) {
 		if (this.focusable && this.clickToFocus) {
 			if (!this.isFocused()) {
-				return true;
+				return;
 			}
 		}
 		int maxValue = this.states.length;
@@ -58,7 +52,7 @@ struct Switch: View {
 		if (value >= maxValue) {
 			value = 0;
 		}
-		return this.onUpdate(this, value);
+		this.onUpdate(this, value);
 	}
 
 	void onCreate^(Switch this&, View parent) {
@@ -66,33 +60,54 @@ struct Switch: View {
 		// clamp to initial value and force update with a reset
 		Switch.onUpdate(this, this.selected);
 		this.resetValue = this.selected;
-		this.onReset(this);
+		this.onUpdate(this, this.resetValue);
 	}
 
 	State onKeyEvent^(Switch this, KeyEvent event!) {
-		if (!this.enabled || event.release) {
-			return View.onKeyEvent(this, event);
+		State state = Button.onKeyEvent(this, event);
+		if (state != State.ignored) {
+			return state;
+		}
+
+		if (event.key == Window.KEY_CODE_BACK) {
+			if (!event.release) {
+				// reset happens only when the button is released
+				if (event.repeat || this.selected == this.resetValue) {
+					return State.ignored;
+				}
+				return State.pressed;
+			}
+			this.onUpdate(this, this.resetValue);
+			return State.handled;
 		}
 		if (event.key == '+' || event.key == '=') {
-			int value = this.selected + 1;
-			return this.onUpdate(this, value);
+			if (!event.release) {
+				int max = this.states.length - 1;
+				if (max < 0) {
+					// graphical switch with only on/off
+					max = 1;
+				}
+				// change happens only when the button is released
+				if (event.repeat || this.selected >= max) {
+					return State.ignored;
+				}
+				return State.pressed;
+			}
+			this.onUpdate(this, this.selected + 1);
+			return State.handled;
 		}
 		if (event.key == '-' || event.key == '_') {
-			int value = this.selected - 1;
-			return this.onUpdate(this, value);
+			if (!event.release) {
+				// change happens only when the button is released
+				if (event.repeat || this.selected <= 0) {
+					return State.ignored;
+				}
+				return State.pressed;
+			}
+			this.onUpdate(this, this.selected - 1);
+			return State.handled;
 		}
-		return View.onKeyEvent(this, event);
-	}
-
-	bool onTouchEvent^(Switch this, Rect rect!, TouchEvent event!) {
-		if (!this.enabled || !event.release) {
-			return View.onTouchEvent(this, rect, event);
-		}
-		if (event.isShift && event.clicks >= 0) {
-			int value = this.selected - 1;
-			return this.onUpdate(this, value);
-		}
-		return View.onTouchEvent(this, rect, event);
+		return State.ignored;
 	}
 
 	bool onMeasure^(Switch this, Rect rect&) {

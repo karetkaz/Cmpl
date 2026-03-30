@@ -1,0 +1,335 @@
+/// A 32 bit fixed-point type, with `precision` bits used for fractional part, the rest for integer part
+struct Fixed32: 4 { // todo: packing should be automatically set to 4
+	int32 bits = 0;
+
+	enum: int32 {
+		precision: 20; // todo: precision should be type parameter
+
+		one: 1 << precision;
+		half: one / 2;
+		mask: one - 1;
+		nan: 0x80000000;
+	}
+
+	static if (precision > 30) { OneMustBeNonOverflowingPositiveNumber }
+
+	/// return the fixed point value of the given raw bits
+	static Fixed32 bits(int32 bits) { return { bits: bits }; }
+	/// return the internal raw value of the fixed point value
+	static int32 bits(Fixed32 value) { return value.bits; }
+
+	static Fixed32 overflow(int64 result, char message[*], variant args...) {
+		// raise(raise.error, raise.defTrace, message, ...args);
+		// static if (inf != nan) { return { bits: nan - Int64.sign(result) }; }
+		return { bits: nan };
+	}
+
+	/// Determines whether the given fixed point value is undefined
+	static bool isUndefined(Fixed32 x) { return x.bits == nan; }
+
+
+	/// Computes the negated value of the given number
+	static Fixed32 neg(Fixed32 x) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan) {
+				return Fixed32.overflow(0, "neg.args", x);
+			}
+		}
+		return { bits: -x.bits };
+	}
+
+	/// Adds the two fixed point numbers
+	static Fixed32 add(Fixed32 x, Fixed32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == nan) {
+				return Fixed32.overflow(0, "add.args", x, y);
+			}
+
+			int64 result = int64(x.bits) + y.bits;
+			if ((result >> 63) != (result >> 31)) {
+				return Fixed32.overflow(result, "add.result", x, y);
+			}
+			return { bits: result };
+		}
+		return { bits: x.bits + y.bits };
+	}
+
+	/// Subtract one from another fixed point number
+	static Fixed32 sub(Fixed32 x, Fixed32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == nan) {
+				return Fixed32.overflow(0, "sub.args", x, y);
+			}
+
+			int64 result = int64(x.bits) - y.bits;
+			if ((result >> 63) != (result >> 31)) {
+				return Fixed32.overflow(result, "sub.result", x, y);
+			}
+			return { bits: result };
+		}
+		return { bits: x.bits - y.bits };
+	}
+
+	/// Multiply two fixed-point numbers
+	static Fixed32 mul(Fixed32 x, Fixed32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == nan) {
+				return Fixed32.overflow(0, "mul.args", x, y);
+			}
+		}
+
+		int64 result = int64(x.bits) * y.bits;
+		result += result & half;
+		static if (struct(Fixed32.overflow) == function) {
+			if ((result >> 63) != (result >> 31 + precision)) {
+				return Fixed32.overflow(result, "mul.result", x, y);
+			}
+		}
+		return { bits: result >> precision };
+	}
+
+	/// Divide one fixed-point number with another one
+	static Fixed32 div(Fixed32 x, Fixed32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == -y.bits) {
+				if (y.bits == 0 && x.bits != -x.bits) {
+					return Fixed32.overflow(x.bits, "div.zero", x, y);
+				}
+				return Fixed32.overflow(0, "div.args", x, y);
+			}
+		} else {
+			if (y.bits == 0) {
+				return { bits: nan };
+			}
+		}
+
+		int64 result = (int64(x.bits) << precision) / y.bits;
+		static if (struct(Fixed32.overflow) == function) {
+			if ((result >> 63) != (result >> 31)) {
+				return Fixed32.overflow(result, "div.result", x, y);
+			}
+		}
+		return { bits: result };
+	}
+
+	/// Returns the remainder of the division of `x` by `y`
+	static Fixed32 rem(Fixed32 x, Fixed32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == -y.bits) {
+				return Fixed32.overflow(0, "rem.args", x, y);
+			}
+		} else {
+			if (y.bits == 0) {
+				return { bits: nan };
+			}
+		}
+		return { bits: x.bits % y.bits };
+	}
+
+	/// Compute the reciprocal of x: (1 / x)
+	static Fixed32 inv(Fixed32 x) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == -x.bits) {
+				// x.bits == 0 || x.bits == nan
+				return Fixed32.overflow(0, "inv.args", x);
+			}
+		} else {
+			if (x.bits == 0) {
+				return { bits: nan };
+			}
+		}
+
+		int64 result = (int64(one) << precision) / x.bits;
+		static if (struct(Fixed32.overflow) == function) {
+			if (result >> 31 != result >> 63) {
+				return Fixed32.overflow(result, "inv.result", x);
+			}
+		}
+		return { bits: result };
+	}
+
+	/// Determines whether the given fixed point is less than the other one
+	static int32 cmp(Fixed32 x, Fixed32 y) {
+		// todo: overflow check
+		return int32(x.bits < y.bits) - int32(x.bits > y.bits);
+	}
+
+	static Fixed32 add(Fixed32 x, int32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y == nan) {
+				return Fixed32.overflow(0, "add.i.args", x, y);
+			}
+		}
+		int64 result = x.bits + (int64(y) << precision);
+		static if (struct(Fixed32.overflow) == function) {
+			if ((result >> 63) != (result >> 31)) {
+				return Fixed32.overflow(result, "add.i.result", x, y);
+			}
+		}
+		return { bits: result };
+	}
+	static Fixed32 mul(Fixed32 x, int32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y == nan) {
+				return Fixed32.overflow(0, "mul.i.args", x, y);
+			}
+			int64 result = int64(x.bits) * y;
+			if ((result >> 63) != (result >> 31)) {
+				return Fixed32.overflow(result, "mul.i.result", x, y);
+			}
+			return { bits: result };
+		}
+		return { bits: x.bits * y };
+	}
+	static Fixed32 div(Fixed32 x, int32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y == -y) {
+				return Fixed32.overflow(0, "div.i.args", x, y);
+			}
+		} else {
+			if (y == 0) {
+				return { bits: nan };
+			}
+		}
+		return { bits: x.bits / y };
+	}
+	static Fixed32 madSat(Fixed32 x, Fixed32 y, Fixed32 z) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == nan || z.bits == nan) {
+				return Fixed32.overflow(0, "mad.args", x, y, z);
+			}
+		}
+
+		int64 result = int64(x.bits) * int64(y.bits);
+		result += int64(z.bits) << precision;
+		result += result & half;
+		if ((result >> 63) != (result >> 31 + precision)) {
+			return { bits: nan - Int64.sign(result) };
+		}
+		return { bits: result >> precision };
+	}
+	static Fixed32 divSat(Fixed32 x, Fixed32 y) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan || y.bits == -y.bits) {
+				if (y.bits == 0 && x.bits != -x.bits) {
+					return Fixed32.overflow(x.bits, "div.zero", x, y);
+				}
+				return Fixed32.overflow(0, "div.args", x, y);
+			}
+		} else {
+			if (y.bits == 0) {
+				return { bits: nan };
+			}
+		}
+
+		int64 result = (int64(x.bits) << precision) / y.bits;
+		if ((result >> 63) != (result >> 31)) {
+			return { bits: nan - Int64.sign(result) };
+		}
+		return { bits: result };
+	}
+	static Fixed32 invSat(Fixed32 x) {
+		if (x.bits == 0) {
+			return { bits: nan };
+		}
+
+		int64 result = (int64(one) << precision) / x.bits;
+		if (result >> 31 != result >> 63) {
+			return { bits: nan - Int64.sign(result) };
+		}
+		return { bits: result };
+	}
+
+
+
+	/// Returns the fractional part of the fixed point number
+	static Fixed32 fract(Fixed32 x) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan) {
+				return Fixed32.overflow(0, "fract.args", x);
+			}
+		}
+		if (x.bits < 0) {
+			return { bits: -(-x.bits & mask) };
+		}
+		return { bits: x.bits & mask };
+	}
+
+	/// Computes the largest integer that is less than or equal to `x`
+	static Fixed32 floor(Fixed32 x) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan) {
+				return Fixed32.overflow(0, "floor.args", x);
+			}
+		}
+		return { bits: x.bits & ~mask };
+	}
+
+	/// Computes the smallest integer that is greater than or equal to `x`
+	static Fixed32 ceil(Fixed32 x) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan) {
+				return Fixed32.overflow(0, "ceil.args", x);
+			}
+		}
+		return { bits: -(-x.bits & ~mask) };
+	}
+
+	/// Computes the nearest integer to `x`
+	static Fixed32 round(Fixed32 x) {
+		static if (struct(Fixed32.overflow) == function) {
+			if (x.bits == nan) {
+				return Fixed32.overflow(0, "round.args", x);
+			}
+		}
+		// todo: check overflow
+		return { bits: (x.bits + half) & ~mask };
+	}
+
+
+	// power and logarithm fixed point functions
+	static if (precision <= 28) {
+		inline "./Fixed32.pow.cmpl";
+	}
+
+	// trigonometry fixed point functions
+	static if (precision <= 28) {
+		inline "./Fixed32.trig.cmpl";
+	}
+}
+
+/// Convert the integer `value` to fixed-point value
+Fixed32 Fixed32(int32 value) {
+	int64 result = int64(value) << Fixed32.precision;
+	static if (struct(Fixed32.overflow) == function) {
+		if ((result >> 63) != (result >> 31)) {
+			return Fixed32.overflow(result, "Fixed32", value);
+		}
+	}
+	return { bits: result };
+}
+
+/// Convert the fixed point `value` to integer value
+inline int32(Fixed32 value!) = value.bits >> Fixed32.precision;
+
+/// Convert the floating point `value` to fixed-point value
+Fixed32 Fixed32(float64 value) {
+	static float64 max = float64(Fixed32.nan - 1) / Fixed32.one;
+
+	int64 result = Float64.round(value * Fixed32.one);
+	static if (struct(Fixed32.overflow) == function) {
+		if (value > max || value < -max || value != value) {
+		// if (result >> 63 != result >> 31) { int64(nan) == 0 on arm?
+			return Fixed32.overflow(result, "Fixed32", value);
+		}
+	}
+	return { bits: result };
+}
+
+/// Convert the fixed point `value` to floating point value
+float64 float64(Fixed32 value) {
+	if (value.bits == Fixed32.nan) {
+		return Float64.nan;
+	}
+	return value.bits / float64(Fixed32.one);
+}

@@ -1,8 +1,8 @@
 // Color picker demo.
 
 struct ColorPicker: View {
-	float32 hue = 0;
-	float32 lum = 0;
+	float32 hue = 0.591667;
+	float32 lum = 0.523438;
 
 	static argb get(ColorPicker this, float32 x, float32 y) {
 		// todo: use integer based color space conversions
@@ -17,14 +17,17 @@ struct ColorPicker: View {
 		return true;
 	}
 
-	bool onTouchEvent^(ColorPicker this, Rect rect!, TouchEvent event!) {
+	State onTouchEvent^(ColorPicker this, Rect rect!, TouchEvent event!) {
 		if (event.release || !event.button) {
 			return View.onTouchEvent(this, rect, event);
 		}
 
 		this.hue = Float32.clamp(float32(event.x - rect.x0), 0f, rect.width() - 1f) / rect.width();
 		this.lum = Float32.clamp(float32(event.y - rect.y0), 0f, rect.height() - 1f) / rect.height();
-		return this.onUpdate(this, this.value());
+		if (this.onUpdate(this, this.value())) {
+			return State.handled;
+		}
+		return State.ignored;
 	}
 
 	bool onMeasure^(Histogram this, Rect rect&) {
@@ -55,12 +58,12 @@ struct ColorPicker: View {
 	}
 }
 
-static bool printStyle(Button button) {
+static void onPrintStyle(Button button, int32 clicks) {
 	Style style& = button.style;
 	debug("style", style);
-	return true;
 }
 static bool updateColor(ColorPicker this, argb value);
+static bool updateSlider(Slider this, float64 value);
 static bool updateTheme(Switch this, int32 value);
 
 ColorPicker colorPicker = {
@@ -75,25 +78,36 @@ char themes[][] = {
 	"Dark"
 };
 Switch theme = {
-	text: "Theme";
-	states: themes;
+	text: "Dark theme";
+	states: null;
 	selected: 1;
 	onUpdate: updateTheme;
 };
-Switch switch = {
-	text: "Switch";
-	states: null;
-};
-
-Button button = {
-	text: "Button";
-	onClick: printStyle;
-};
-
 Slider slider = {
-	text: "Slider";
-	value: 0.42;
+	text: "Color saturation";
+	value: 0.75;
+	onUpdate: updateSlider;
 };
+
+Slider stepSlider = {
+	text: "stepped slider";
+	value: 0.72767676;
+	stepSize: 1. / 10;
+};
+
+static char switchStates[][] = {
+	"Option 1", "Option 2", "Option 3", "Option 4", "Option 5",
+};
+Switch switch = {
+	text: "Multi switch";
+	states: switchStates;
+};
+
+Button printStyle = {
+	text: "Dump style";
+	onClick: onPrintStyle;
+};
+
 
 DebugView debug = {
 	focusable: false;
@@ -105,20 +119,22 @@ Window.show(Widget(0, 0, style).addItems(
 
 	null,
 	theme,
-
-	button,
-	switch,
 	slider,
 
-	null,
-	debug
+	switch,
+	printStyle,
+
+	null, stepSlider,
+
+	null, debug
 ));
 
 static void updateTheme() {
+	argb value = argb(hsl2rgb(vec4f(colorPicker.hue, slider.value, 1 - colorPicker.lum)));
 	if (theme.selected != 0) {
-		style.setColor(Style.dark, colorPicker.value());
+		style.setColor(Style.dark, value);
 	} else {
-		style.setColor(Style.light, colorPicker.value());
+		style.setColor(Style.light, value);
 	}
 }
 static bool updateColor(ColorPicker this, argb value) {
@@ -140,6 +156,14 @@ static bool updateTheme(Switch this, int32 value) {
 		if (colorPicker.lum < .25) {
 			colorPicker.lum = 1 - colorPicker.lum;
 		}
+	}
+	updateTheme();
+	return true;
+}
+
+static bool updateSlider(Slider this, float64 value) {
+	if (!Slider.onUpdate(this, value)) {
+		return false;
 	}
 	updateTheme();
 	return true;

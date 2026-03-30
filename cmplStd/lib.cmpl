@@ -17,21 +17,21 @@ inline "./lib/lang/Debug.cmpl";
 inline sizeof(typename type) = typename.refSize(type);
 
 // Math
-inline "./lib/math/numeric/Int8.cmpl";
-inline "./lib/math/numeric/Int16.cmpl";
-inline "./lib/math/numeric/Int32.cmpl";
-inline "./lib/math/numeric/Int64.cmpl";
-inline "./lib/math/numeric/Float64.cmpl";
-inline "./lib/math/numeric/Float32.cmpl";
+inline "./lib/math/number/Int8.cmpl";
+inline "./lib/math/number/Int16.cmpl";
+inline "./lib/math/number/Int32.cmpl";
+inline "./lib/math/number/Int64.cmpl";
+inline "./lib/math/number/Float64.cmpl";
+inline "./lib/math/number/Float32.cmpl";
 static if (int == int32) { inline Int = Int32; }
 static if (int == int64) { inline Int = Int64; }
 
-inline "./lib/math/numeric/Fixed32.cmpl";
-inline "./lib/math/numeric/Complex.cmpl";
-//todo: inline "./lib/math/numeric/Rational.cmpl"?;
-//todo: inline "./lib/math/numeric/Decimal.cmpl"?;
-//todo: inline "./lib/math/numeric/BigInteger.cmpl"?;   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
-//todo: inline "./lib/math/numeric/BigDecimal.cmpl"?;   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
+inline "./lib/math/number/Fixed32.cmpl";
+inline "./lib/math/number/Complex.cmpl";
+//todo: inline "./lib/math/number/Rational.cmpl"?;
+//todo: inline "./lib/math/number/Decimal.cmpl"?;
+//todo: inline "./lib/math/number/BigInteger.cmpl"?;   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
+//todo: inline "./lib/math/number/BigDecimal.cmpl"?;   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
 inline "./lib/math/vector/Vector2d.cmpl";
 inline "./lib/math/vector/Vector4f.cmpl";
 inline "./lib/math/vector/Matrix4f.cmpl";

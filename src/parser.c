@@ -62,6 +62,19 @@ static inline void addLength(ccContext ctx, symn sym, astn init) {
 	sym->fields = leave(ctx, KIND_def, 0, 0, NULL, NULL);
 }
 
+static inline int pushBackTypeExpr(ccContext ctx, astn ast) {
+	if (!isTypeExpr(ast)) {
+		return 0;
+	}
+	if (ast->kind == OPER_dot) {
+		// todo: recycle the tree `Type1.Type2...`
+		backToken(ctx, lnkNode(ctx, linkOf(ast, 0)));
+	} else {
+		backToken(ctx, ast);
+	}
+	return 1;
+}
+
 static inline symn tagType(ccContext ctx, astn tag) {
 	symn tagType = ctx->symbolStack[tag->id.hash % lengthOf(ctx->symbolStack)];
 	tagType = lookup(ctx, tagType, tag, NULL, 0, 0);
@@ -257,9 +270,9 @@ static symn declare(ccContext ctx, ccKind kind, astn tag, symn type, symn params
 				error(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
 			}
 		} else {
-			warn(ctx->rt, def->file, def->line, WARN_DECLARATION_REDEFINED, def);
+			debug(ctx->rt, def->file, def->line, WARN_DECLARATION_REDEFINED, def);
 			if (ptr->file && ptr->line) {
-				warn(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
+				debug(ctx->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
 			}
 		}
 	}
@@ -346,41 +359,43 @@ static astn expand2Statement(ccContext ctx, astn node, int block) {
 	return result;
 }
 
-static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn list) {
-	astn keys = NULL;
-	ssize_t length = 0;
-
-	symn type = varNode->type;
-	if (initObj->type != NULL) {
-		type = initObj->type;
+static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer, astn list) {
+	dieif(initializer->kind != STMT_beg, ERR_INTERNAL_ERROR);
+	if (initializer->type != NULL) {
+		// todo: HACK: type of variable may differ from the initializer type, use initializer type (stronger):
+		// View views[] = { Button {...}, ... }
+		variable->type = initializer->type;
 	}
 
 	// translate initialization to assignment
-	if (initObj->stmt.stmt != NULL && initObj->stmt.stmt->kind == INIT_set) {
+	ssize_t length = 0;
+	if (initializer->stmt.stmt != NULL && initializer->stmt.stmt->kind == INIT_set) {
 		length = -1;
 	}
 
-	for (astn init = initObj->stmt.stmt; init != NULL; init = init->next) {
+	astn keys = NULL;
+	for (astn init = initializer->stmt.stmt; init != NULL; init = init->next) {
 		astn key = NULL;
 		astn value = init;
 		if (length < 0 && init->kind == INIT_set) {
+			// `key: value` => `variable.key := value;`
 			key = init->op.lhso;
 			value = init->op.rhso;
-			// key: value => variable.key = value;
-			init->op.lhso = opNode(ctx, NULL, OPER_dot, varNode, key);
-			if (!typeCheck(ctx, NULL, init->op.lhso, 0)) {
+			init->op.lhso = opNode(ctx, NULL, OPER_dot, variable, key);
+			if (!typeCheck(ctx, initializer->type, init->op.lhso, 0)) {
 				// HACK: type of variable may differ from the initializer type:
 				// object view = Button{ ... };
-				typeCheck(ctx, type, key, 0);
+				typeCheck(ctx, initializer->type, key, 1);
 			}
 			init->op.lhso->file = key->file;
 			init->op.lhso->line = key->line;
 		} else {
+			// `value` => `variable[i] := value;`
 			key = intNode(ctx, length);
 			key->file = value->file;
 			key->line = value->line;
 
-			key = opNode(ctx, NULL, OPER_idx, varNode, key);
+			key = opNode(ctx, NULL, OPER_idx, variable, key);
 			key->file = value->file;
 			key->line = value->line;
 
@@ -418,13 +433,14 @@ static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn
 		keys = key;
 	}
 
+	symn type = variable->type;
 	if (isArrayType(type)) {
 		symn len = type->fields;
 		if (len == NULL || len == ctx->length_ref) {
-			symn ref = linkOf(varNode, 0);
-			if (varNode->kind != TOKEN_var || (isMember(ref) && !isStatic(ref))) {
+			symn ref = linkOf(variable, 0);
+			if (variable->kind != TOKEN_var || (isMember(ref) && !isStatic(ref))) {
 				// non-static members can not expand their size, raise error, that this is not possible yet
-				error(ctx->rt, varNode->file, varNode->line, ERR_INVALID_INITIALIZER, varNode);
+				error(ctx->rt, variable->file, variable->line, ERR_INVALID_INITIALIZER, variable);
 				return NULL;
 			}
 
@@ -436,8 +452,8 @@ static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn
 			symn var = newSymn(ctx, KIND_var | CAST_val);
 
 			addLength(ctx, arr, intNode(ctx, length));
-			var->file = arr->file = varNode->file;
-			var->line = arr->line = varNode->line;
+			var->file = arr->file = variable->file;
+			var->line = arr->line = variable->line;
 			var->name = "init";
 
 			arr->type = type->type;
@@ -458,29 +474,29 @@ static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn
 
 			// for better performance initialize the fixed size array
 			// slice[0] = 42 => slice.array[0] = 42
-			*varNode = *arrArr;
+			*variable = *arrArr;
 		}
 		else if (length > intValue(len->init)) {
-			error(ctx->rt, varNode->file, varNode->line, ERR_INVALID_ARRAY_VALUES, len->init);
+			error(ctx->rt, variable->file, variable->line, ERR_INVALID_ARRAY_VALUES, len->init);
 		}
 	}
 
 	// if variable is instance of object then allocate it
 	if (isObjectType(type)) {
 		if (ctx->libc_new == NULL) {
-			error(ctx->rt, varNode->file, varNode->line, "Failed to allocate variable `%t` allocator not found or disabled", varNode);
-			return initObj;
+			error(ctx->rt, variable->file, variable->line, "Failed to allocate variable `%t` allocator not found or disabled", variable);
+			return initializer;
 		}
 
 		astn new = lnkNode(ctx, ctx->libc_new);
 		astn arg = lnkNode(ctx, type);
 		astn call = opNode(ctx, type, OPER_fnc, new, arg);
-		call->file = arg->file = new->file = initObj->file;
-		call->line = arg->line = new->line = initObj->line;
+		call->file = arg->file = new->file = initializer->file;
+		call->line = arg->line = new->line = initializer->line;
 
-		astn init = opNode(ctx, ctx->type_vid, INIT_set, varNode, call);
-		init->file = varNode->file;
-		init->line = varNode->line;
+		astn init = opNode(ctx, ctx->type_vid, INIT_set, variable, call);
+		init->file = variable->file;
+		init->line = variable->line;
 
 		// make allocation the first statement
 		addHead(list, expand2Statement(ctx, init, 0));
@@ -513,7 +529,7 @@ static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn
 
 		if (initialized || unionInitSize > 0) {
 			if (initialized && field->size < unionInitSize) {
-				warn(ctx->rt, varNode->file, varNode->line, ERR_PARTIAL_INITIALIZE_UNION, linkOf(varNode, 0), field);
+				warn(ctx->rt, variable->file, variable->line, ERR_PARTIAL_INITIALIZE_UNION, linkOf(variable, 0), field);
 			}
 			continue;
 		}
@@ -541,30 +557,30 @@ static astn expandInitializerObj(ccContext ctx, astn varNode, astn initObj, astn
 			}
 		}
 
-		if (defInit == NULL && isMutable(field) && isMutableVar(varNode)) {
+		if (defInit == NULL && isMutable(field) && isMutableVar(variable)) {
 			// only assignable members can be initialized with default type initializer.
 			defInit = field->type->init;
 		}
 
 		if (defInit == NULL) {
 			if (isFixedSizeArray(field->type)) {
-				warn(ctx->rt, varNode->file, varNode->line, ERR_UNINITIALIZED_MEMBER, linkOf(varNode, 0), field);
+				warn(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
 				continue;
 			}
-			error(ctx->rt, varNode->file, varNode->line, ERR_UNINITIALIZED_MEMBER, linkOf(varNode, 0), field);
+			error(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
 			continue;
 		}
 
 		if (defInit == field->init) {
-			debug(ctx->rt, varNode->file, varNode->line, WARN_USING_DEF_FIELD_INITIALIZER, field, defInit);
+			debug(ctx->rt, variable->file, variable->line, WARN_USING_DEF_FIELD_INITIALIZER, field, defInit);
 		} else {
-			debug(ctx->rt, varNode->file, varNode->line, WARN_USING_DEF_TYPE_INITIALIZER, field, defInit);
+			debug(ctx->rt, variable->file, variable->line, WARN_USING_DEF_TYPE_INITIALIZER, field, defInit);
 		}
 
-		astn fld = opNode(ctx, NULL, OPER_dot, varNode, lnkNode(ctx, field));
+		astn fld = opNode(ctx, NULL, OPER_dot, variable, lnkNode(ctx, field));
 		astn init = opNode(ctx, NULL, INIT_set, fld, defInit);
-		init->file = fld->file = varNode->file;
-		init->line = fld->line = varNode->line;
+		init->file = fld->file = variable->file;
+		init->line = fld->line = variable->line;
 
 		addTail(list, expand2Statement(ctx, init, 0));
 
@@ -583,17 +599,26 @@ static astn expandInitializer(ccContext ctx, symn variable, astn initializer) {
 	dieif(initializer->kind != STMT_beg, ERR_INTERNAL_ERROR);
 	dieif(initializer->lst.tail != NULL, ERR_INTERNAL_ERROR);
 	if (initializer->type == NULL) {
-		// initializer type not specified, use from declaration
+		// initializer type is not specified, use from declaration
 		initializer->type = variable->type;
 	}
 	if (!canAssign(ctx, variable, initializer, 0)) {
 		error(ctx->rt, variable->file, variable->line, ERR_INVALID_VALUE_ASSIGN, variable, initializer);
 		return initializer;
 	}
+
+	// todo: replace variable type from initializer for lookup, then revert it
+	// this is done for .result parameter: `View getButton() { return Button {...}; }
+	symn type = variable->type;
+	if (initializer->type != NULL) {
+		variable->type = initializer->type;
+	}
 	astn varNode = lnkNode(ctx, variable);
 	varNode->file = variable->file;
 	varNode->line = variable->line;
-	return expandInitializerObj(ctx, varNode, initializer, initializer);
+	astn result = expandInitializerObj(ctx, varNode, initializer, initializer);
+	variable->type = type;
+	return result;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Parser
 static astn statement_list(ccContext ctx);
@@ -1738,8 +1763,7 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 			if (enterThen) {
 				enter(ctx, ast, NULL);
 			}
-			if (isTypeExpr(test)) {
-				backToken(ctx, test);
+			if (pushBackTypeExpr(ctx, test)) {
 				astn def = declaration(ctx, ATTR_mut, NULL, NULL);
 				if (def != NULL && def->id.link->init != NULL) {
 					def->type = typeCheck(ctx, NULL, def, 1);
@@ -1806,8 +1830,7 @@ static astn statement_for(ccContext ctx) {
 	astn init = peekToken(ctx, STMT_end) ? NULL : expression(ctx, 0);
 	if (init != NULL) {
 		init->type = typeCheck(ctx, NULL, init, 1);
-		if (isTypeExpr(init)) {
-			backToken(ctx, init);
+		if (pushBackTypeExpr(ctx, init)) {
 			init = declaration(ctx, ATTR_mut, NULL, NULL);
 			if (init != NULL && init->id.link->init != NULL) {
 				astn astInit = init->id.link->init;
@@ -2132,8 +2155,7 @@ static astn statement(ccContext ctx, const char *doc) {
 				error(ctx->rt, ast->file, ast->line, ERR_INVALID_TYPE, ast);
 				type = ctx->type_vid;
 			}
-			else if (isTypeExpr(ast)) {
-				backToken(ctx, ast);
+			else if (pushBackTypeExpr(ctx, ast)) {
 				ast = declaration(ctx, attr | ATTR_mut, NULL, doc);
 				if (ast != NULL) {
 					dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);

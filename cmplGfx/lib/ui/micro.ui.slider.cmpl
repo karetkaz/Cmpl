@@ -1,8 +1,5 @@
 ///@public
-struct Slider: View {
-	///@public
-	char text[];
-
+struct Slider: Button {
 	///@public
 	float64 value = 0;
 	float64 _value = 0;
@@ -32,47 +29,45 @@ struct Slider: View {
 			value = Float64.round(value / this.stepSize) * this.stepSize;
 		}
 		if (this.value == value) {
-			return this.isDirty();
+			return false;
 		}
 		this.value = value;
 		return true;
 	}
 
-	bool onReset^(Slider this&) {
-		return this.onUpdate(this, this.resetValue);
-	}
-
-	bool onClick^(Slider this) {
-		return this.onUpdate(this, this.resetValue);
+	void onClick^(Slider this, int32 clicks) {
+		this.onUpdate(this, this.resetValue);
 	}
 
 	void onCreate^(Slider this&, View parent) {
-		View.onCreate(this, parent);
+		Button.onCreate(this, parent);
 		// clamp to initial value and force update with a reset
 		Slider.onUpdate(this, this.value);
 		this.resetValue = this.value;
-		this.onReset(this);
+		this.onUpdate(this, this.resetValue);
 	}
 
 	State onKeyEvent^(Slider this, KeyEvent event!) {
-		if (event.key >= '0' && event.key <= '9') {
-			// set percent
-			if (this.minimum == this.maximum) {
-				return State.ignored;
-			}
-			if (!event.release) {
-				return State.pressed;
-			}
-			float64 p = (event.key - '0') * (this.maximum - this.minimum) / 10;
-			this.onUpdate(this, this.minimum + p);
-			return State.consumed;
+		State result = Button.onKeyEvent(this, event);
+		if (result != State.ignored) {
+			return result;
 		}
 
-		// +/- =>
+		if (event.key == Window.KEY_CODE_BACK) {
+			if (!event.release) {
+				// reset happens only when the button is released
+				if (event.repeat || this.value == this.resetValue) {
+					return State.ignored;
+				}
+				return State.pressed;
+			}
+			this.onUpdate(this, this.resetValue);
+			return State.handled;
+		}
 		if (event.key == '+' || event.key == '=') {
 			// todo: event.key == Window.KEY_CODE_RIGHT, UP, PAGE_UP, ???
 			if (event.release) {
-				return State.consumed;
+				return State.handled;
 			}
 
 			float64 delta = this.maximum - this.minimum;
@@ -93,15 +88,12 @@ struct Slider: View {
 				delta = this.stepSize;
 			}
 
-			if (!this.onUpdate(this, this._value + delta)) {
-				return State.pressed;
-			}
-			return State.consumed;
+			return this.onUpdate(this, this._value + delta) ? State.pressed : State.ignored;
 		}
 		if (event.key == '-' || event.key == '_') {
 			// todo: event.key == Window.KEY_CODE_LEFT, DOWN, PAGE_DOWN
 			if (event.release) {
-				return State.consumed;
+				return State.handled;
 			}
 
 			float64 delta = this.maximum - this.minimum;
@@ -122,20 +114,29 @@ struct Slider: View {
 				delta = this.stepSize;
 			}
 
-			if (!this.onUpdate(this, this._value - delta)) {
-				return State.pressed;
-			}
-			return State.consumed;
+			return this.onUpdate(this, this._value - delta) ? State.pressed : State.ignored;
 		}
-		return View.onKeyEvent(this, event);
+		if (event.key >= '0' && event.key <= '9') {
+			if (event.release) {
+				return State.handled;
+			}
+			if (this.minimum == this.maximum) {
+				// no percent for unbound slider
+				return State.ignored;
+			}
+			float64 p = (event.key - '0') * (this.maximum - this.minimum) / 10;
+			return this.onUpdate(this, this.minimum + p) ? State.pressed : State.ignored;
+		}
+
+		return State.ignored;
 	}
 
-	bool onTouchEvent^(Slider this, Rect rect!, TouchEvent event!) {
+	State onTouchEvent^(Slider this, Rect rect!, TouchEvent event!) {
 		if (event.button == 0) {
-			return false;
+			return State.ignored;
 		}
 		if (event.release && (event.clicks < 0 || event.clicks > 1)) {
-			return this.onReset(this);
+			return this.onUpdate(this, this.resetValue) ? State.handled : State.ignored;
 		}
 
 		if (event.clicks < 1) {
@@ -145,22 +146,22 @@ struct Slider: View {
 			} else if (event.isShift) {
 				delta *= this.shiftFactor;
 			}
-			return this.onUpdate(this, this._value + delta);
+			return this.onUpdate(this, this._value + delta) ? State.handled : State.ignored;
 		}
-		if (event.release) {
+		if (event.release && !event.isMotion()) {
 			if (this.focusable && this.clickToFocus) {
 				if (!this.isFocused()) {
-					return true;
+					return State.focused;
 				}
 			}
 			if (Float64.isFinite(this.minimum) && Float64.isFinite(this.maximum)) {
 				float64 value = event.x - rect.x0;
 				value *= float64(this.maximum - this.minimum) / rect.width();
-				return this.onUpdate(this, this.minimum + value);
+				return this.onUpdate(this, this.minimum + value) ? State.handled : State.ignored;
 			}
-			return true;
+			return State.handled;
 		}
-		return View.onTouchEvent(this, rect, event);
+		return Button.onTouchEvent(this, rect, event);
 	}
 
 	bool onMeasure^(Slider this, Rect rect&) {

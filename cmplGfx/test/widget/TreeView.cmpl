@@ -56,9 +56,8 @@ TreeView TreeView(char text[], View items...) {
 }
 
 View TextView(char text[]) {
-	static bool click(Button this) {
+	static void click(Button this, int32 clicks) {
 		trace("click", this.text);
-		return true;
 	}
 	return Button {
 		text: text;

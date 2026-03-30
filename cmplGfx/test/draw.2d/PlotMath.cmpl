@@ -3,7 +3,7 @@ inline cBack = dark ? 0x1d1e21 : 0xffffff;
 inline cGrid = dark ? 0x3d3e41 : 0xdadada;
 inline cThis = dark ? 0x00ffff : 0x0000ff;  // color of function approximated here
 inline cMath = dark ? 0x00ff00 : 0x00ff00;  // color of function plotted using Math
-inline cErr = 0xb0ff0000;
+inline cErr = 0xd0ff0000;
 inline cText = cBack ^ 0xffffff;
 
 inline grid = 5;
@@ -14,58 +14,57 @@ inline w = h * 16 / 9;
 Image offs = Image(w, h, 32);
 Image gr = zoom <= 1 ? offs : Image(w / zoom, h / zoom, 32);
 
-static if (struct(Functions) == null) {
-// Functions is not defined, compare Float64 vs Fixed32
+// Functions is not defined, compare Float64 vs Float32
+static if (struct(Functions) != typename) {
 struct Functions {
+	static float64 minimum = -149;
+	static float64 maximum = 130;
+
 	char text[];
 	float64 base(float64 x);
-	Fixed32 test(Fixed32 x);
-
+	float32 test(float32 x);
 	static float64 test(Functions fn, float64 x) {
-		// return float32(fn.base(float32(x)));
-		return float64(fn.test(Fixed32(x)));
+		return fn.test(x);
 	}
 
-	static Fixed32 floor(Fixed32 x) = Fixed32.floor;
-	static Fixed32 ceil(Fixed32 x) = Fixed32.ceil;
-	static Fixed32 round(Fixed32 x) = Fixed32.round;
-	static Fixed32 sqrt(Fixed32 x) = Fixed32.sqrt;
+	static float32 Float32_nan(float32 x) { return Float32.nan; }
 
-	static Fixed32 exp(Fixed32 x) = Fixed32.exp;
-	static Fixed32 ln(Fixed32 x) = Fixed32.ln;
-	static Fixed32 exp2(Fixed32 x) = Fixed32.exp2;
-	static Fixed32 log2(Fixed32 x) = Fixed32.log2;
-
-	static Fixed32 sin(Fixed32 x) = Fixed32.sin;
-	static Fixed32 asin(Fixed32 x) = Fixed32.asin;
-	static Fixed32 sinh(Fixed32 x) = Fixed32.sinh;
-	static Fixed32 asinh(Fixed32 x) = Fixed32.asinh;
-
-	static Fixed32 cos(Fixed32 x) = Fixed32.cos;
-	static Fixed32 acos(Fixed32 x) = Fixed32.acos;
-	static Fixed32 cosh(Fixed32 x) = Fixed32.cosh;
-	static Fixed32 acosh(Fixed32 x) = Fixed32.acosh;
-
-	static Fixed32 tan(Fixed32 x) = Fixed32.tan;
-	static Fixed32 atan(Fixed32 x) = Fixed32.atan;
-	static Fixed32 tanh(Fixed32 x) = Fixed32.tanh;
-	static Fixed32 atanh(Fixed32 x) = Fixed32.atanh;
-
-	static Fixed32 sec(Fixed32 x) = Fixed32.sec;
-	static Fixed32 asec(Fixed32 x) = Fixed32.asec;
-	static Fixed32 sech(Fixed32 x) = Fixed32.sech;
-	static Fixed32 asech(Fixed32 x) = Fixed32.asech;
-
-	static Fixed32 csc(Fixed32 x) = Fixed32.csc;
-	static Fixed32 acsc(Fixed32 x) = Fixed32.acsc;
-	static Fixed32 csch(Fixed32 x) = Fixed32.csch;
-	static Fixed32 acsch(Fixed32 x) = Fixed32.acsch;
-
-	static Fixed32 cot(Fixed32 x) = Fixed32.cot;
-	static Fixed32 acot(Fixed32 x) = Fixed32.acot;
-	static Fixed32 coth(Fixed32 x) = Fixed32.coth;
-	static Fixed32 acoth(Fixed32 x) = Fixed32.acoth;
+	static float32 floor(float32 x) = Float32.floor;
+	static float32 round(float32 x) { return Float32.round(x); }
+	static float32 ceil(float32 x) { return Float32.ceil(x); }
+	static float32 sqrt(float32 x) = Float32.sqrt;
+	static float32 ln(float32 x) = Float32.ln;
+	static float32 log2(float32 x) = Float32.log2;
+	static float32 exp(float32 x) = Float32.exp;
+	static float32 exp2(float32 x) = Float32_nan;
+	static float32 sin(float32 x) = Float32.sin;
+	static float32 asin(float32 x) { return Float32.asin(x); }
+	static float32 sinh(float32 x) = Float32_nan;
+	static float32 asinh(float32 x) = Float32_nan;
+	static float32 cos(float32 x) = Float32.cos;
+	static float32 acos(float32 x) { return Float32.acos(x); }
+	static float32 cosh(float32 x) = Float32_nan;
+	static float32 acosh(float32 x) = Float32_nan;
+	static float32 tan(float32 x) = Float32.tan;
+	static float32 atan(float32 x) { return Float32.atan(x); }
+	static float32 tanh(float32 x) = Float32_nan;
+	static float32 atanh(float32 x) = Float32_nan;
+	static float32 sec(float32 x) = Float32_nan;
+	static float32 asec(float32 x) = Float32_nan;
+	static float32 sech(float32 x) = Float32_nan;
+	static float32 asech(float32 x) = Float32_nan;
+	static float32 csc(float32 x) = Float32_nan;
+	static float32 acsc(float32 x) = Float32_nan;
+	static float32 csch(float32 x) = Float32_nan;
+	static float32 acsch(float32 x) = Float32_nan;
+	static float32 cot(float32 x) = Float32_nan;
+	static float32 acot(float32 x) = Float32_nan;
+	static float32 coth(float32 x) = Float32_nan;
+	static float32 acoth(float32 x) = Float32_nan;
 }
+} else {
+// TODO: add missing methods if any
+// static if (struct(Functions.exp) == null) {static struct Functions { static function exp = null; }}
 }
 Functions functions[] = {
 	{base: Float64.floor, test: Functions.floor, text: "floor" },
@@ -116,8 +115,8 @@ Select chkFunctions = {
 };
 Slider sldScale = {
 	text: "scale (2 ** x)";
-	minimum: 0.5 - Fixed32.precision;
-	maximum: 31.5 - Fixed32.precision;
+	minimum: Functions.minimum;
+	maximum: Functions.maximum;
 	value: 2;
 };
 Slider sldXOffset = {
@@ -133,6 +132,7 @@ Slider sldYOffset = {
 Switch chkCenterY = {
 	text: "center y";
 	states: null;
+	selected: 1;
 	clickToFocus: false;
 };
 Switch chkDisplay = {
@@ -147,13 +147,8 @@ Switch chkDisplay = {
 	clickToFocus: false;
 };
 Switch chkSmooth = {
-	static char statesSmooth[][3] = {
-		"none",
-		"full",
-		"partial",
-	};
-	text: "smoothing";
-	states: statesSmooth;
+	text: "smooth";
+	states: null;
 	clickToFocus: false;
 };
 
@@ -164,13 +159,8 @@ DebugView debug = {
 	width: 200;
 };
 
-void aaBar(Image img, int32 x, float64 y0, float64 y1, uint32 color) {
-	if (chkSmooth.selected == 0) {
-		// return img.fillRect(x, y0, x, y1, 1, color);
-		if (y0 > y1) { float64 y = y0; y0 = y1; y1 = y; }
-		return img.fillRect(x, y0, x+1, Float64.max(y1, y0 + 1), 0, color);
-	}
-
+void aaLine(Image img, int32 x, float64 y0, float64 y1, uint32 color) {
+	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
 	int32 sign = 1;
 	if (y0 > y1) {
 		float64 y = y0;
@@ -179,11 +169,14 @@ void aaBar(Image img, int32 x, float64 y0, float64 y1, uint32 color) {
 		sign = -1;
 	}
 
-	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
 	if (y0 < 0) { y0 = 0; }
 	if (y1 > img.height()) { y1 = img.height(); }
 	if (y1 < 0 || y0 > img.height()) {
 		return;
+	}
+
+	if (chkSmooth.selected == 0) {
+		return img.fillRect(x, y0, x+1, Float64.max(y1, y0 + 1), 0, color);
 	}
 
 	if (y1 - y0 < 1) {
@@ -194,17 +187,18 @@ void aaBar(Image img, int32 x, float64 y0, float64 y1, uint32 color) {
 		return;
 	}
 
-	if (chkSmooth.selected != 1) {
-		return;
-	}
-
 	float64 dx = 1 / (y1 - y0);
-	float64 xx = 0;
-	for (float64 y = y0; y < y1; y += 1) {
-		int32 a = int32(xx * 256) & 255;
-		img.mix(x + sign, y, a, color);
-		img.mix(x, y, 255 - a, color);
-		xx += dx;
+	int32 iy0 = int32(y0);
+	int32 iy1 = int32(y1);
+	if (float64(iy1) >= y1) { iy1 -= 1; }
+	for (int32 yi = iy0; yi <= iy1; yi += 1) {
+		float64 yTop = y0;
+		if (yi > iy0) { yTop = float64(yi); }
+		float64 yBot = y1;
+		if (yi < iy1) { yBot = float64(yi + 1); }
+		int32 a = int32(((yTop + yBot) / 2 - y0) * dx * 256) & 255;
+		img.mix(x + sign, yi, a, color);
+		img.mix(x, yi, 255 - a, color);
 	}
 }
 
@@ -248,7 +242,7 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	for (int64 i = 0; i < yGood.length; i += 1) {
 		float64 x = xStart + xScale * (i - width / 2) / width * 2;
 		yGood[i] = fn.base(x);
-		yComp[i] = fn.test(x);
+		yComp[i] = Functions.test(fn, x);
 	}
 
 	if (chkDisplay.selected == 1) {
@@ -291,7 +285,33 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		yScale = Float64.min(yScale, xScale / width * height);
 	}
 
-	gr.fill(cBack);
+	if (cErr != -1) {
+		uint32 cErr1 = uint32(mix_rgb8(ach(argb(cErr)), argb(cErr), argb(cBack)));
+		uint32 cErr2 = uint32(mix_rgb8(ach(argb(cErr)), argb(cErr1), argb(cBack)));
+		uint32 errColor = cBack;
+		int errStart = 0;
+		for (int64 i = 0; i < yGood.length; i += 1) {
+			bool badGood = !Float64.isFinite(yGood[i]);
+			bool badComp = !Float64.isFinite(yComp[i]);
+			uint32 newColor = cBack;
+			if (badGood || badComp) {
+				if (badComp == badGood) {
+					newColor = cErr2;
+				} else {
+					newColor = cErr1;
+				}
+			}
+
+			if (errColor != newColor) {
+				gr.fillRect(errStart, 0, i, height, 0, errColor);
+				errColor = newColor;
+				errStart = i - 0;
+			}
+		}
+		gr.fillRect(errStart, 0, yGood.length, height, 0, errColor);
+	} else {
+		gr.fill(cBack);
+	}
 	static if (zoom <= 1 && grid > 1) {
 		float64 logStep = Float64.floor(Float64.log(xScale, grid));
 		float64 step = Float64.pow(float64(grid), logStep);
@@ -299,9 +319,9 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		uint32 cBar1 = uint32(mix_rgb8(128, argb(cGrid), argb(cBack)));
 		uint32 cBar2 = uint32(mix_rgb8(int32(255 * alpha), argb(cBar1), argb(cBack)));
 
-		float64 cx = w / 2 - xStart * w / 2 / xScale * step;
-		float64 cy = h / 2 + yStart * h / 2 / yScale * step;
-		for (float64 i = 0; i < grid; i += 1) {
+		float64 cx = w / 2 - (xStart % step) * w / 2 / xScale;
+		float64 cy = h / 2 + (yStart % step) * h / 2 / yScale;
+		for (float64 i = 0; i < grid * grid; i += 1) {
 			float64 x = i * w / 2 / xScale * (step / grid);
 			float64 y = i * h / 2 / yScale * (step / grid);
 			offs.fillRect(cx + x, 0, cx + x, w, 1, cBar2);
@@ -309,8 +329,6 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 			offs.fillRect(0, cy + y, w, cy + y, 1, cBar2);
 			offs.fillRect(0, cy - y, w, cy - y, 1, cBar2);
 		}
-		// cx = w / 2 - (xStart % step) * w / 2 / xScale * step;
-		// cy = h / 2 + (yStart % step) * h / 2 / yScale * step;
 		for (float64 i = 0; i < grid; i += 1) {
 			float64 x = i * w / 2 / xScale * step;
 			float64 y = i * h / 2 / yScale * step;
@@ -319,6 +337,12 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 			offs.fillRect(0, cy + y, w, cy + y, 1, cBar1);
 			offs.fillRect(0, cy - y, w, cy - y, 1, cBar1);
 		}
+		float64 x = w / 2 - xStart * w / 2 / xScale;
+		float64 y = h / 2 + yStart * h / 2 / yScale;
+		offs.fillRect(x - 1, 0, x - 1, h, 1, cGrid);
+		offs.fillRect(0, y - 1, w, y - 1, 1, cGrid);
+
+		// the real center on the screen
 		offs.fillRect(w / 2 - 1, 0, w / 2 - 1, h, 1, cGrid);
 		offs.fillRect(0, h / 2 - 1, w, h / 2 - 1, 1, cGrid);
 
@@ -366,55 +390,25 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		offs.drawText(rect, Window.font, text, cText);
 	}
 
-	if (chkDisplay.selected < 2) {
-		float64 oldThis = height / 2 - (yComp[0] - yStart) * height / 2 / yScale;
-		float64 oldGood = height / 2 - (yGood[0] - yStart) * height / 2 / yScale;
+	if (chkDisplay.selected != 2) {
+		float64 prev = height / 2 - (yComp[0] - yStart) * height / 2 / yScale;
 		for (int64 i = 0; i < yGood.length - 1; i += 1) {
-			float64 newThis = height / 2 - (yComp[i + 1] - yStart) * height / 2 / yScale;
-			float64 newGood = height / 2 - (yGood[i + 1] - yStart) * height / 2 / yScale;
-			if (Float64.isFinite(newThis) && Float64.isFinite(newGood)) {
-				if (Float64.isFinite(oldThis)) {
-					gr.aaBar(i, oldThis, newThis, cThis);
-				}
-				if (Float64.isFinite(oldGood)) {
-					gr.aaBar(i, oldGood, newGood, cMath);
-				}
-			} else {
-				gr.copy(Rect(i, 0, i + 1, height), argb(cErr));
-				if (Float64.isFinite(oldGood) && Float64.isFinite(newGood)) {
-					gr.aaBar(i, oldGood, newGood, cMath);
-				}
+			float64 next = height / 2 - (yComp[i + 1] - yStart) * height / 2 / yScale;
+			if (Float64.isFinite(next) && Float64.isFinite(prev)) {
+				gr.aaLine(i, prev, next, cThis);
 			}
-			oldGood = newGood;
-			oldThis = newThis;
+			prev = next;
 		}
 	}
-	else if (chkDisplay.selected == 2) {
-		float64 oldThis = height / 2 - (yGood[0] - yStart) * height / 2 / yScale;
+
+	if (chkDisplay.selected != 3) {
+		float64 prev = height / 2 - (yGood[0] - yStart) * height / 2 / yScale;
 		for (int64 i = 0; i < yGood.length - 1; i += 1) {
-			float64 newThis = height / 2 - (yGood[i + 1] - yStart) * height / 2 / yScale;
-			if (Float64.isFinite(newThis)) {
-				if (Float64.isFinite(oldThis)) {
-					gr.aaBar(i, oldThis, newThis, cMath);
-				}
-			} else {
-				gr.copy(Rect(i, 0, i + 1, height), argb(cErr));
+			float64 next = height / 2 - (yGood[i + 1] - yStart) * height / 2 / yScale;
+			if (Float64.isFinite(next) && Float64.isFinite(prev)) {
+				gr.aaLine(i, prev, next, cMath);
 			}
-			oldThis = newThis;
-		}
-	}
-	else if (chkDisplay.selected == 3) {
-		float64 oldThis = height / 2 - (yComp[0] - yStart) * height / 2 / yScale;
-		for (int64 i = 0; i < yGood.length - 1; i += 1) {
-			float64 newThis = height / 2 - (yComp[i + 1] - yStart) * height / 2 / yScale;
-			if (Float64.isFinite(newThis)) {
-				if (Float64.isFinite(oldThis)) {
-					gr.aaBar(i, oldThis, newThis, cMath);
-				}
-			} else {
-				gr.copy(Rect(i, 0, i + 1, height), argb(cErr));
-			}
-			oldThis = newThis;
+			prev = next;
 		}
 	}
 
@@ -433,8 +427,8 @@ Window.show(offs, onEvent, FxWidget(
 	chkFunctions.setSelectedIndex(8),
 	sldScale,
 	sldXOffset,
-	chkCenterY,
 	sldYOffset,
+	chkCenterY,
 	chkDisplay,
 	chkSmooth,
 	null, debug

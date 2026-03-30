@@ -9,7 +9,7 @@ static struct Math {
 		inline "cmplStd/tmp/wip.math/math.plan9.cmpl";  // fast
 	} else {
 		inline preferNativeCalls = false;
-		inline "cmplStd/lib/math/numeric/Float64.cmpl";
+		inline "cmplStd/lib/math/number/Float64.cmpl";
 		float64 ln(float64 x) {return Float64.ln(x);}
 		float64 exp(float64 x) {return Float64.exp(x);}
 		float64 sqrt(float64 x) {return Float64.sqrt(x);}
@@ -185,7 +185,8 @@ for (int n = 0; n < tests.length; n += 1) {
 	debug("results", Test.normalize(&test));
 }
 
-static if (false) { // test ulp of one
+// test ulp of one
+static if (false) {
 float64 value = Float64.ulp(1);
 char buff[128] = {...};
 
@@ -214,11 +215,10 @@ static float64 exp() {
 
 char text[256] = {...};
 
-float64 e = exp();
-Bits.fromFloat64(e).format(text, "Computed.e = 0x%08x");
+Float64.toBits(exp()).format(text, "Computed.e = 0x%08x");
 debug(text);
 
-Bits.fromFloat64(Float64.e).format(text, "Float64.e = 0x%08x");
+Float64.toBits(Float64.e).format(text, "Float64.e = 0x%08x");
 debug(text);
 
 debug("stdc.e = 0x4005bf0a8b145769");

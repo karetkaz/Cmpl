@@ -1,15 +1,16 @@
 @echo off
 
-SET "MINGW_HOME=%userprofile%\Dropbox\Software\bin\MinGw"
+SET "MINGW_HOME=C:\msys64"
+SET "PATH=%MINGW_HOME%\usr\bin;%PATH%"
+SET "PATH=%MINGW_HOME%\ucrt64\bin;%PATH%"
 
 cd "%~dp0\.."
 SET CMPL_HOME=%CD%
 echo cmpl home is: %CMPL_HOME%
 
 SET "BIN=%CMPL_HOME%\.build\windows"
-SET "PATH=%MINGW_HOME%\bin;%PATH%"
-mingw32-make -C "%CMPL_HOME%" BINDIR="%BIN%" clean
-mingw32-make -C "%CMPL_HOME%" -j 12 BINDIR="%BIN%" cmpl libFile.dll libGfx.dll
+make -C "%CMPL_HOME%" BINDIR="%BIN%" clean
+make -C "%CMPL_HOME%" -j 12 BINDIR="%BIN%" cmpl libFile.dll libGfx.dll
 
 :: test the virtual machine
 %BIN%\cmpl>"%BIN%-vm.dump.md" --test-vm
@@ -31,14 +32,15 @@ SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\lang\*.cmpl
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\math\*.cmpl
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\text\*.cmpl
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\time\*.cmpl
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\tmp\done\*.cmpl
 
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\*.cmpl
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo\*.cmpl
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo.procedural\*.cmpl
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo.widget\*.cmpl
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\tmp\demo\*.cmpl
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\tmp\draw\*.cmpl
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\draw.2d\*.cmpl
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\draw.3d\*.cmpl
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\games\*.cmpl
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\image.fx\*.cmpl
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\image.pd\*.cmpl
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\widget\*.cmpl
 
 SET DUMP_FILE=%BIN%-tests.exec.cmpl
 %BIN%\cmpl -log/d "%DUMP_FILE%"
@@ -51,3 +53,8 @@ FOR %%f IN (%TEST_FILES%) DO (
 )
 
 pause
+
+:: requirements to build and run on Windows
+:: install: https://www.msys2.org
+:: install: pacman -S mingw-w64-ucrt-x86_64-gcc
+:: install: pacman -S make

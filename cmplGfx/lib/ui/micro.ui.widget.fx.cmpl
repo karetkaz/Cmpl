@@ -9,26 +9,46 @@ struct FxWidget: Widget {
 	///@public
 	int32 radius = 0;
 
+	static bool resetAll(View view, KeyEvent event!) {
+		if (!view.enabled) {
+			return false;
+		}
+
+		Layout layout = view.as(Layout);
+		if (layout == null) {
+			return view.onKeyEvent(view, event) != State.ignored;
+		}
+
+		bool result = false;
+		for (int i = 0; i < layout.itemCount; i += 1) {
+			if (resetAll(layout.items[i].view, event)) {
+				result = true;
+			}
+		}
+		return result;
+	}
+
 	// forward the drag event to the focused view
-	bool onTouchEvent^(FxWidget this, Rect rect!, TouchEvent event!) {
-		if (Widget.onTouchEvent(this, rect, event)) {
-			return true;
+	State onTouchEvent^(FxWidget this, Rect rect!, TouchEvent event!) {
+		State result = Widget.onTouchEvent(this, rect, event);
+		if (result != State.ignored) {
+			return result;
 		}
 
 		if (!(event.button && (event.dx || event.dy))) {
 			// event is not a drag event
-			return false;
+			return State.ignored;
 		}
 
 		if (this.pressedIndex != -1) {
 			// there is a pressed view, and is different than the focused one
-			return false;
+			return State.ignored;
 		}
 
 		View view = Widget.getFocused(this);
 		if (view == null) {
 			// there is no focused view
-			return false;
+			return State.ignored;
 		}
 		Layout parent = view.parent.as(Layout);
 		Rect r& = parent.items[parent.focusedIndex].rect;
@@ -44,13 +64,13 @@ struct FxWidget: Widget {
 			if (event.repeat != 0 && event.release == this.enabled) {
 				// hide on long press, show on long release
 				if (changed && event.repeat == 1) {
-					return State.consumed;
+					return State.handled;
 				}
 				return State.ignored;
 			}
 			if (event.repeat == 0 && !event.release) {
 				// show/hide when button is on released, not when pressed
-				return changed ? State.consumed : State.ignored;
+				return changed ? State.handled : State.ignored;
 			}
 
 			this.clearState(State.hovered);
@@ -59,7 +79,7 @@ struct FxWidget: Widget {
 				if (this.align == Style.topLeft) {
 					this.enabled = !this.enabled;
 					this.invalidate();
-					return State.consumed;
+					return State.handled;
 				}
 				this.align = Style.topLeft;
 			}
@@ -67,30 +87,26 @@ struct FxWidget: Widget {
 				if (this.align == Style.topRight) {
 					this.enabled = !this.enabled;
 					this.invalidate();
-					return State.consumed;
+					return State.handled;
 				}
 				this.align = Style.topRight;
 			}
 
 			this.enabled = true;
 			this.invalidate();
-			return State.consumed;
+			return State.handled;
 		}
 
 		if (event.key == '\\') {
 			this.showOriginal = !event.release;
 			if (event.repeat == 0 || event.release) {
-				return State.consumed;
+				return State.handled;
 			}
 			return State.ignored;
 		}
 
-		if (event.release) {
-			return Widget.onKeyEvent(this, event);
-		}
-
-		if (event.key == Window.KEY_CODE_BACK && event.isShift) {
-			return this.onReset(this) ? State.consumed : State.ignored;
+		if (event.key == Window.KEY_CODE_BACK && event.release && event.isShift) {
+			return resetAll(this, event) ? State.handled : State.ignored;
 		}
 
 		return Widget.onKeyEvent(this, event);

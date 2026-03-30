@@ -1,0 +1,46 @@
+struct Functions {
+	static float64 minimum = 0.5 - Fixed32.precision;
+	static float64 maximum = 31.5 - Fixed32.precision;
+
+	char text[];
+	float64 base(float64 x);
+	Fixed32 test(Fixed32 x);
+	static float64 test(Functions fn, float64 x) {
+		return float64(fn.test(Fixed32(x)));
+	}
+
+	static Fixed32 floor(Fixed32 x) = Fixed32.floor;
+	static Fixed32 round(Fixed32 x) = Fixed32.round;
+	static Fixed32 ceil(Fixed32 x) = Fixed32.ceil;
+	static Fixed32 sqrt(Fixed32 x) = Fixed32.sqrt;
+	static Fixed32 ln(Fixed32 x) = Fixed32.ln;
+	static Fixed32 log2(Fixed32 x) = Fixed32.log2;
+	static Fixed32 exp(Fixed32 x) = Fixed32.exp;
+	static Fixed32 exp2(Fixed32 x) = Fixed32.exp2;
+	static Fixed32 sin(Fixed32 x) = Fixed32.sin;
+	static Fixed32 asin(Fixed32 x) = Fixed32.asin;
+	static Fixed32 sinh(Fixed32 x) = Fixed32.sinh;
+	static Fixed32 asinh(Fixed32 x) = Fixed32.asinh;
+	static Fixed32 cos(Fixed32 x) = Fixed32.cos;
+	static Fixed32 acos(Fixed32 x) = Fixed32.acos;
+	static Fixed32 cosh(Fixed32 x) = Fixed32.cosh;
+	static Fixed32 acosh(Fixed32 x) = Fixed32.acosh;
+	static Fixed32 tan(Fixed32 x) = Fixed32.tan;
+	static Fixed32 atan(Fixed32 x) = Fixed32.atan;
+	static Fixed32 tanh(Fixed32 x) = Fixed32.tanh;
+	static Fixed32 atanh(Fixed32 x) = Fixed32.atanh;
+	static Fixed32 sec(Fixed32 x) = Fixed32.sec;
+	static Fixed32 asec(Fixed32 x) = Fixed32.asec;
+	static Fixed32 sech(Fixed32 x) = Fixed32.sech;
+	static Fixed32 asech(Fixed32 x) = Fixed32.asech;
+	static Fixed32 csc(Fixed32 x) = Fixed32.csc;
+	static Fixed32 acsc(Fixed32 x) = Fixed32.acsc;
+	static Fixed32 csch(Fixed32 x) = Fixed32.csch;
+	static Fixed32 acsch(Fixed32 x) = Fixed32.acsch;
+	static Fixed32 cot(Fixed32 x) = Fixed32.cot;
+	static Fixed32 acot(Fixed32 x) = Fixed32.acot;
+	static Fixed32 coth(Fixed32 x) = Fixed32.coth;
+	static Fixed32 acoth(Fixed32 x) = Fixed32.acoth;
+}
+
+inline "./PlotMath.cmpl";

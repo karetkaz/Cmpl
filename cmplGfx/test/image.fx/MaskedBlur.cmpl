@@ -15,8 +15,8 @@ Image surf = Image("../asset/image/forest.jpg", 32);
 Image offs = Image(surf);
 Image blur = Image(surf);
 
-bool onTouchEvent(Button view, Rect rect!, TouchEvent event!);
-bool onResetClick(Button view);
+View.State onTouchEvent(Button view, Rect rect!, TouchEvent event!);
+void onResetClick(Button view, int32 clicks);
 Histogram histogram = {
 	enabled: false;
 };
@@ -30,7 +30,7 @@ Slider sldBlur = {
 Slider sldSharpness = {
 	text: "Sharp";
 	value: 2;
-	minimum: 1;
+	minimum: 0;
 	maximum: 4;
 };
 
@@ -172,18 +172,16 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		}
 		panMask.visible(true);
 	} else {
-		if (sldSharpness.isFocused()) {
-			offs.blendAlpha(0, 0, surf, null, 255 * sldSharpness.value);
-		}
+		offs.blendAlpha(0, 0, surf, null, 255 * sldSharpness.value);
 		panMask.visible(false);
 	}
 
 	histogram.update(offs);
 	return Window.timeoutMax;
 }
-bool onTouchEvent(Button view, Rect r!, TouchEvent event!) {
-	bool result = Button.onTouchEvent(view, r, event);
-	if (!event.button) {
+View.State onTouchEvent(Button view, Rect r!, TouchEvent event!) {
+	View.State result = Button.onTouchEvent(view, r, event);
+	if (result != View.State.ignored || event.button == 0) {
 		return result;
 	}
 	if (view.isPressed()) {
@@ -193,24 +191,23 @@ bool onTouchEvent(Button view, Rect r!, TouchEvent event!) {
 	// resize
 	if (event.isAlt || chkMoveScale.selected == 2) {
 		rect.adjust(0, 0, event.dx, event.dy);
-		return true;
+		return View.State.handled;
 	}
 	// move
 	if (event.isShift == bool(chkMoveScale.selected)) {
 		rect.translate(event.dx, event.dy);
-		return true;
+		return View.State.handled;
 	}
 
 	// resize while the center of the rect is pinned
 	rect.adjust(-event.dx, -event.dy, event.dx, event.dy);
-	return true;
+	return View.State.handled;
 }
-bool onResetClick(Button view) {
+void onResetClick(Button view, int32 clicks) {
 	rect.x0 = 0;
 	rect.y0 = 0;
 	rect.x1 = offs.width();
 	rect.y1 = offs.height();
-	return true;
 }
 
 Window.show(offs, onEvent, FxWidget(

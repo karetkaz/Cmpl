@@ -297,12 +297,12 @@ struct rtContextRec {
 
 /// Native function invocation context.
 struct nfcContextRec {
-	const rtContext rt;         // runtime context
-	const symn sym;             // invoked function (returned by ccAddCall)
+	rtContext rt;               // runtime context
+	symn sym;                   // invoked function (returned by ccAddCall)
 	const char *proto;          // static data (passed to ccAddCall)
 	const void *extra;          // extra data (passed to execute or invoke)
 	const void *argv;           // arguments
-	const size_t argc;          // argument count in bytes
+	size_t argc;                // argument count in bytes
 };
 
 /// Native function argument iterator.
