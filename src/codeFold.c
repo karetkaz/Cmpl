@@ -60,8 +60,8 @@ static int decrementStackAccess(rtContext ctx, size_t offsBegin, size_t offsEnd,
 }
 // to optimize assignment `a = a + 1`, `a` can be read only once in the expression
 static int checkStackReadAccess(rtContext ctx, size_t offsBegin, size_t offsEnd, size_t size) {
-	ssize_t ss = 0;
 	int result = 0;
+	ssize_t ss = (ssize_t) size * vm_stk_align;
 	for (size_t pc = offsBegin; pc < offsEnd; ) {
 		vmInstruction ip = nextOpc(ctx, &pc, &ss);
 		if (ip == NULL) {
@@ -75,7 +75,7 @@ static int checkStackReadAccess(rtContext ctx, size_t offsBegin, size_t offsEnd,
 			case opc_dup1:
 			case opc_dup2:
 			case opc_dup4:
-				result += ip->idx * vm_stk_align < size;
+				result += ip->idx * vm_stk_align < ss;
 				break;
 
 			case opc_set1:
@@ -86,11 +86,11 @@ static int checkStackReadAccess(rtContext ctx, size_t offsBegin, size_t offsEnd,
 			case opc_mov1:
 			case opc_mov2:
 			case opc_mov4:
-				result += ip->mov.src * vm_stk_align < size;
+				result += ip->mov.src * vm_stk_align < ss;
 				break;
 
 			case opc_ldsp:
-				result += (size_t) ip->rel < size;
+				result += (size_t) ip->rel < ss;
 				break;
 		}
 	}

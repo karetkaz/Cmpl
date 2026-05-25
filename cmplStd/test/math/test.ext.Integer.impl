@@ -1,0 +1,211 @@
+inline bits = Unsigned.bits;
+static uint64 mask = ~0U >> (64 - bits);
+static int64 max = mask >> 1;
+static int64 min = ~max;
+
+static if (struct(inc) != int64) {static int64 inc = (1U << bits - 7) - 1; }
+
+static if (bits <= 64) {
+// we trust compare to be correct ... it is double checked in the tests
+inline eq(Unsigned x, Unsigned y) = x.compare(y) == 0;
+inline eq(Signed x, Signed y) = x.compare(y) == 0;
+inline eq(Unsigned x, uint64 y) = x.compare(Unsigned(y)) == 0;
+inline eq(Signed x, int64 y) = x.compare(Signed(y)) == 0;
+} else {
+inline eq(Unsigned x, Unsigned y) = pointer.compare(x, y, 8) == 0;
+inline eq(Signed x, Signed y) = pointer.compare(x, y, 8) == 0;
+inline eq(Unsigned x, uint64 y) = pointer.compare(x, y, 8) == 0;
+inline eq(Signed x, int64 y) = pointer.compare(x, y, 8) == 0;
+}
+
+inline assertEq(Unsigned expected, Unsigned returned, char message[*], variant details...) = returned.eq(expected) ? void(0) : NotEquals.abort(message, NotEquals(expected, returned, details));
+inline assertEq(Signed expected, Signed returned, char message[*], variant details...) = returned.eq(expected) ? void(0) : NotEquals.abort(message, NotEquals(expected, returned, details));
+inline assertEq(uint64 expected, Unsigned returned, char message[*], variant details...) = returned.eq(expected) ? void(0) : NotEquals.abort(message, NotEquals(expected, returned, details));
+inline assertEq(int64 expected, Signed returned, char message[*], variant details...) = returned.eq(expected) ? void(0) : NotEquals.abort(message, NotEquals(expected, returned, details));
+
+trace("testing", Unsigned, Signed, mask, min, max, inc);
+for (int32 i = 0; i < bits; i += 1) {
+	for (int32 rotate = 0; rotate < bits + 2; rotate += 1) {
+		Unsigned x = Unsigned(i);
+		Unsigned y = x.rotateLeft(rotate);
+		Unsigned z = y.rotateRight(rotate);
+		assertEq(x, z, "rotate failed", x, y, z, rotate);
+	}
+
+	Unsigned x = Unsigned(i);
+	Unsigned y = Unsigned(1).shl(i);
+
+	assertEq(i, y.scanReverse(), "scanReverse", i, y);
+	assertEq(i, y.scanForward(), "scanForward", i, y);
+
+	assertEq(y.leadingZeros(), y.reverseBits().trailingZeros(), "leadingZeros", i, y);
+	assertEq(y.trailingZeros(), y.reverseBits().leadingZeros(), "trailingZeros", i, y);
+	assertEq(y.trailingZeros(), i, "assertion failed", i, y);
+
+	if (i != 0) {
+		assertEq(x.scanForward(), bits - 1 - x.reverseBits().scanReverse(), "assertion failed", i);
+		assertEq(x.scanReverse(), bits - 1 - x.reverseBits().scanForward(), "assertion failed", i);
+	} else {
+		assertEq(-1, x.scanForward(), "assertion failed", i);
+		assertEq(-1, x.scanReverse(), "assertion failed", i);
+	}
+
+	assertEq(x.length(), i == 0 ? 0 : uint64(Float64.log2((i & mask) * 2)), "rotate failed", i);
+
+	static if (bits <= 64) {
+		uint64 j = 1U << i;
+		uint64 k = j - 1;
+		Unsigned z = Unsigned(k);
+		uint64 l = ~k;
+		Unsigned w = Unsigned(l);
+
+		assertEq(-i, x.neg(), "neg", i, j, k);
+		assertEq(-j, y.neg(), "neg", i, j, k);
+		assertEq(-k, z.neg(), "neg", i, j, k);
+
+		assertEq(j + j, y.add(y), "add", j, k);
+		assertEq(k + k, z.add(z), "add", j, k);
+		assertEq(j + k, y.add(z), "add", j, k);
+		assertEq(k + j, z.add(y), "add", j, k);
+		assertEq(j + i, y.add(x), "add", j, k);
+		assertEq(k + i, z.add(x), "add", j, k);
+
+		assertEq(j - j, y.sub(y), "sub", j, k);
+		assertEq(k - k, z.sub(z), "sub", j, k);
+		assertEq(j - k, y.sub(z), "sub", j, k);
+		assertEq(k - j, z.sub(y), "sub", j, k);
+		assertEq(j - i, y.sub(x), "sub", j, k);
+		assertEq(k - i, z.sub(x), "sub", j, k);
+
+		assertEq(j * j, y.mul(y), "mul", j, k);
+		assertEq(k * k, z.mul(z), "mul", j, k);
+		assertEq(j * k, y.mul(z), "mul", j, k);
+		assertEq(k * j, z.mul(y), "mul", j, k);
+		assertEq(j * i, y.mul(x), "mul", j, k);
+		assertEq(k * i, z.mul(x), "mul", j, k);
+
+		assertEq((uint64(i) << i) & mask, x.shl(i), "shl", i, i);
+		assertEq(j << i, y.shl(i), "shl", j, i);
+		assertEq(k << i, z.shl(i), "shl", k, i);
+		assertEq(l << i, w.shl(i), "shl", l, i);
+
+		assertEq(uint64(i) >> i, x.shr(i), "shr", i, i);
+		assertEq(j >> i, y.shr(i), "shr", j, i);
+		assertEq(k >> i, z.shr(i), "shr", k, i);
+		assertEq(uint64(l & mask) >> i, w.shr(i), "shr", l, i);
+
+		assertEq(int64(i) >> i, x.sar(i), "sar", i, i);
+//		assertEq(int64(j) >> i, y.sar(i), "sar", j, i);
+		assertEq(int64(k) >> i, z.sar(i), "sar", k, i);
+//		assertEq(Signed(int64(l) >> i), Signed(inline(w.sar(i))), "sar", l, i);
+		assertEq(Unsigned(int64(l) >> i), w.sar(i), "sar", l, i);
+	}
+}
+for (uint64 i = 0; i < mask - inc; i += inc) {
+	Unsigned x = Unsigned(i);
+
+	assertEq(i, x, "assertion failed", i, x);
+	assertEq(~i, x.cmt(), "assertion failed", i);
+
+	assertEq(x.leadingZeros(), x.reverseBits().trailingZeros(), "leadingZeros", x, i);
+	assertEq(x.trailingZeros(), x.reverseBits().leadingZeros(), "trailingZeros", x, i);
+	assertEq(x.trailingZeros(), i == 0 ? bits : (uint64.len(i & -i) - 1), "assertion failed", x, i);
+
+	assertEq(i == 0 ? 0 : 1, x.test(), "assertion failed", i);
+	assertEq(i < 0 ? -i : i, x. abs(), "assertion failed", i);
+
+	Unsigned ovf = Unsigned(0);
+	for (uint64 j = 0; j < mask - inc; j += inc) {
+		Unsigned y = Unsigned(j);
+		int32 cmp = x.compare(y);
+		if (i == j) { assert(cmp == 0, "compare failed", i, j, cmp); }
+		if (i != j) { assert(cmp != 0, "compare failed", i, j, cmp); }
+		if (i <= j) { assert(cmp <= 0, "compare failed", i, j, cmp); }
+		if (i < j) { assert(cmp < 0, "compare failed", i, j, cmp); }
+		if (i >= j) { assert(cmp >= 0, "compare failed", i, j, cmp); }
+		if (i > j) { assert(cmp > 0, "compare failed", i, j, cmp); }
+
+		assertEq(i < j ? i : j, x.min(y), "assertion failed", i, j);
+		assertEq(i > j ? i : j, x.max(y), "assertion failed", i, j);
+
+		assertEq(i & j, x.and(y), "assertion failed", i, j);
+		assertEq(i | j, x.or(y), "assertion failed", i, j);
+		assertEq(i ^ j, x.xor(y), "assertion failed", i, j);
+
+//		assertEq((i >> j%bits), x.shr(j%bits), "assertion failed", i, j);
+//		assertEq((i << j%bits) & mask, x.shl(j%bits), "assertion failed", i, j);
+
+		assertEq(i < j ? i : j, x.min(y), "assertion failed", i, j);
+		assertEq(i > j ? i : j, x.max(y), "assertion failed", i, j);
+
+		uint64 add = i + j;
+		Unsigned addLo = Unsigned.add(x, y, &ovf);
+		assertEq(add, addLo, "assertion failed", i, j);
+		assertEq(addLo, Unsigned.add(x, y), "assertion failed", i, j, add);
+		assertEq(addLo, Unsigned.add(y, x), "assertion failed", i, j, add);
+		static if (bits < 64) { assertEq(add >> bits, ovf, "assertion failed", i, j, add); }
+
+		uint64 sub = i - j;
+		Unsigned subLo = Unsigned.sub(x, y, &ovf);
+		assertEq(sub, subLo, "assertion failed", i, j);
+		assertEq(subLo, Unsigned.sub(x, y), "assertion failed", i, j, sub);
+		assertEq(subLo, Unsigned.sub(y, x).neg(), "assertion failed", i, j, sub);
+		static if (bits < 64) { assertEq(-(sub >> bits), ovf, "assertion failed", i, j, sub); }
+
+		uint64 mul = i * j;
+		Unsigned mulLo = Unsigned.mul(x, y, &ovf);
+		assertEq(mul, mulLo, "assertion failed", i, j);
+		assertEq(mulLo, Unsigned.mul(x, y), "assertion failed", i, j, mul);
+		assertEq(mulLo, Unsigned.mul(y, x), "assertion failed", i, j, mul);
+		static if (bits < 64) { assertEq(mul >> bits, ovf, "assertion failed", i, j, mul); }
+
+		if (j != 0) {
+			assertEq(i / j, x.div(y), "assertion failed", i, j);
+			assertEq(i % j, x.rem(y), "assertion failed", i, j);
+		}
+	}
+}
+for (int64 i = min; i < max - inc; i += inc) {
+	Signed x = Signed(i);
+
+	assertEq(-i, x.neg(), "assertion failed", i);
+	assertEq(i == 0 ? 0 : i < 0 ? -1 : 1, x.sign(), "assertion failed", i);
+	assertEq(i < 0 ? -i : i, x.abs(), "assertion failed", i);
+
+	Signed ovf = Signed(0);
+	for (int64 j = min; j < max - inc; j += inc) {
+		Signed y = Signed(j);
+		int32 cmp = x.compare(y);
+		if (i == j) { assert(cmp == 0, "compare failed", i, j, cmp); }
+		if (i != j) { assert(cmp != 0, "compare failed", i, j, cmp); }
+		if (i <= j) { assert(cmp <= 0, "compare failed", i, j, cmp); }
+		if (i < j) { assert(cmp < 0, "compare failed", i, j, cmp); }
+		if (i >= j) { assert(cmp >= 0, "compare failed", i, j, cmp); }
+		if (i > j) { assert(cmp > 0, "compare failed", i, j, cmp); }
+
+		assertEq(i < j ? i : j, x.min(y), "assertion failed", i, j);
+		assertEq(i > j ? i : j, x.max(y), "assertion failed", i, j);
+
+		int64 add = i + j;
+		Signed addLo = Signed.add(x, y, &ovf);
+		assertEq(add, addLo, "assertion failed", i, j, add);
+		assertEq(addLo, x.add(y), "assertion failed", i, j, add);
+		assertEq(addLo, y.add(x), "assertion failed", i, j, add);
+		static if (bits < 64) { assertEq(int64(add > max || add < min), ovf, "assertion failed", i, j, add); }
+
+		int64 sub = i - j;
+		Signed subLo = Signed.sub(x, y, &ovf);
+		assertEq(sub & mask, subLo, "assertion failed", i, j, sub);
+		static if (bits < 64) { assertEq(int64(sub > max || sub < min), ovf, "assertion failed", i, j, add); }
+
+		int64 mul = i * j;
+		Signed mulLo = Signed.mul(x, y, &ovf);
+		assertEq(mul & mask, mulLo, "assertion failed", i, j);
+		static if (bits < 64) { assertEq(mul >> bits, ovf, "assertion failed", i, j); }
+
+		if (j != 0) {
+			assertEq(i / j, x.div(y), "assertion failed", i, j);
+			assertEq(i % j, x.rem(y), "assertion failed", i, j);
+		}
+	}
+}

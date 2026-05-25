@@ -1,0 +1,458 @@
+static if (struct(Unsigned) != null && struct(Signed) == null) {
+
+	enum { bits: 2 * Word.bits }
+
+	static Word wZero! = Word(0);
+	static Word wOne! = Word(1);
+
+	Word lo;
+	Word hi;
+
+	/// Compare to 0: Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
+	static int32 test(Unsigned x) {
+		return x.lo.or(x.hi).test();
+	}
+
+	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
+	static int32 compare(Unsigned x, Unsigned y) {
+		if (int32 hi = x.hi.compare(y.hi)) {
+			return hi;
+		}
+		return x.lo.compare(y.lo);
+	}
+
+	/// Negates an 32-bit unsigned value
+	static Unsigned neg(Unsigned x) {
+		Word c = wZero;
+		return {
+			lo: x.lo.cmt().add(wOne, &c);
+			hi: x.hi.cmt().add(c);
+		};
+	}
+
+	/// Adds two 32-bit unsigned integers
+	static Unsigned add(Unsigned x, Unsigned y) {
+		Word c = wZero;
+		return {
+			lo: Word.add(x.lo, y.lo, &c);
+			hi: Word.add(x.hi, y.hi).add(c);
+		};
+	}
+
+	/// Subtracts two 32-bit unsigned integers
+	static Unsigned sub(Unsigned x, Unsigned y) {
+		Word c = wZero;
+		return {
+			lo: Word.sub(x.lo, y.lo, &c);
+			hi: Word.sub(x.hi, y.hi).sub(c);
+		};
+	}
+
+	static Unsigned add(Unsigned x, Word y) {
+		Word c = wZero;
+		return {
+			lo: Word.add(x.lo, y, &c);
+			hi: Word.add(x.hi, c);
+		};
+	}
+
+	/// Multiplies two 32-bit unsigned integers
+	static Unsigned mul(Unsigned x, Unsigned y) {
+		Unsigned t0 = {...}; // xl * yl;
+		t0.lo = Word.mul(x.lo, y.lo, &t0.hi);
+		Word t1 = x.hi.mul(y.lo);
+		Word t2 = x.lo.mul(y.hi);
+		return {
+			lo : t0.lo,
+			hi : t0.hi.add(t1).add(t2)
+		};
+	}
+
+	/// Negates an 32-bit unsigned value
+	static Unsigned neg(Unsigned x, Unsigned overflow&) {
+		overflow.hi = wZero; // always overflows
+		overflow.lo = wOne; // always overflows
+		Word c = wZero;
+		return {
+			lo: x.lo.cmt().add(wOne, &c);
+			hi: x.hi.cmt().add(c);
+		};
+	}
+
+	/// Adds two 32-bit unsigned integers with carry out
+	static Unsigned add(Unsigned x, Unsigned y, Unsigned overflow&) {
+		overflow.hi = wZero;
+		return {
+			lo: Word.add(x.lo, y.lo, &overflow.lo);
+			hi: Word.add(x.hi, y.hi, overflow.lo, &overflow.lo);
+		};
+	}
+
+	/// Adds two 32-bit unsigned integers with carry in and out
+	static Unsigned add(Unsigned x, Unsigned y, Unsigned c, Unsigned overflow&) {
+		overflow.hi = wZero;
+		return {
+			lo: Word.add(x.lo, y.lo, c.lo, &c.lo);
+			hi: Word.add(x.hi, y.hi, c.lo, &overflow.lo);
+		};
+	}
+
+	/// Subtracts two 32-bit unsigned integers with borrow out
+	static Unsigned sub(Unsigned x, Unsigned y, Unsigned overflow&) {
+		overflow.hi = wZero;
+		return {
+			lo: Word.sub(x.lo, y.lo, &overflow.lo);
+			hi: Word.sub(x.hi, y.hi, overflow.lo, &overflow.lo);
+		};
+	}
+
+	/// Adds two 32-bit unsigned integers with carry in and out
+	static Unsigned sub(Unsigned x, Unsigned y, Unsigned c, Unsigned overflow&) {
+		overflow.hi = wZero;
+		return {
+			lo: Word.sub(x.lo, y.lo, c.lo, &c.lo);
+			hi: Word.sub(x.hi, y.hi, c.lo, &overflow.lo);
+		};
+	}
+
+	/// Multiplies two 32-bit unsigned integers with overflow out
+	static Unsigned mul(Unsigned x, Unsigned y, Unsigned overflow&) {
+		Unsigned t0 = {...}; // xl * yl;
+		Unsigned t1 = {...}; // xh * yl;
+		Unsigned t2 = {...}; // xl * yh;
+		Unsigned t3 = {...}; // xh * yh;
+		t0.lo = Word.mul(x.lo, y.lo, &t0.hi);
+		t1.lo = Word.mul(x.hi, y.lo, &t1.hi);
+		t2.lo = Word.mul(x.lo, y.hi, &t2.hi);
+		t3.lo = Word.mul(x.hi, y.hi, &t3.hi);
+
+		Unsigned u1 = add(t1, t0.hi);
+		Unsigned u2 = add(t2, u1.lo);
+
+		overflow = t3.add(u2.hi).add(u1.hi);
+		return { hi: u2.lo, lo: t0.lo };
+	}
+
+	/// Computes the bitwise NOT of an 32-bit unsigned value
+	static Unsigned cmt(Unsigned x) {
+		return {
+			lo: x.lo.cmt();
+			hi: x.hi.cmt();
+		};
+	}
+
+	/// Computes the bitwise OR of two 32-bit unsigned integers
+	static Unsigned or(Unsigned x, Unsigned y) {
+		return {
+			lo: x.lo.or(y.lo);
+			hi: x.hi.or(y.hi);
+		};
+	}
+
+	/// Computes the bitwise XOR of two 32-bit unsigned integers
+	static Unsigned xor(Unsigned x, Unsigned y) {
+		return {
+			lo: x.lo.xor(y.lo);
+			hi: x.hi.xor(y.hi);
+		};
+	}
+
+	/// Computes the bitwise AND of two 32-bit unsigned integers
+	static Unsigned and(Unsigned x, Unsigned y) {
+		return {
+			lo: x.lo.and(y.lo);
+			hi: x.hi.and(y.hi);
+		};
+	}
+
+	/// Performs a logical left shift of x by n bits for an 32-bit unsigned integer
+	static Unsigned shl(Unsigned x, uint32 n) {
+		if (n >= Word.bits) {
+			if (n >= bits) { n = bits; }
+			return {
+				hi: x.lo.shl(n - Word.bits);
+				lo: wZero;
+			};
+		}
+		return {
+			hi: x.hi.shl(n).or(x.lo.shr(Word.bits - n - 1).shr(1));
+			//todo: x.hi.shl(n).or(x.lo.shr(Word.bits - n));
+			lo: x.lo.shl(n);
+		};
+	}
+
+	/// Performs a logical right shift of x by n bits for an 32-bit unsigned integer
+	static Unsigned shr(Unsigned x, uint32 n) {
+		if (n >= Word.bits) {
+			if (n >= bits) { n = bits; }
+			return {
+				lo: x.hi.shr(n - Word.bits);
+				hi: wZero;
+			};
+		}
+		return {
+			lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n - 1).shl(1));
+			//todo: x.lo.shr(n).or(x.hi.shl(Word.bits - n));
+			hi: x.hi.shr(n);
+		};
+	}
+
+	/// Performs an arithmetic right shift of x by n bits for an 32-bit unsigned integer
+	static Unsigned sar(Unsigned x, uint32 n) {
+//		assert(n < bits);
+		if (n >= Word.bits) {
+			if (n >= bits) { n = bits; }
+			return {
+				lo: x.hi.sar(n - Word.bits);
+				hi: x.hi.sar(Word.bits - 1);
+			};
+		}
+		return {
+			lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n - 1).shl(1));
+			//todo: lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n));
+			hi: x.hi.sar(n);
+		};
+	}
+
+	/// Returns the value of x rotated left by (n mod size) bits
+	static Unsigned rotateLeft(Unsigned x, uint32 n) {
+		if (n % bits == 0) {
+//			trace("rotateLeft(x, 0) = x");
+			return x;
+		}
+		return x.shl(n & (bits - 1)).or(x.shr(bits - n & (bits - 1)));
+	}
+
+	/// Returns the value of x rotated right by (n mod size) bits
+	static Unsigned rotateRight(Unsigned x, uint32 n) {
+		if (n % bits == 0) {
+//			trace("rotateLeft(x, 0) = x");
+			return x;
+		}
+		return x.shr(n & (bits - 1)).or(x.shl(bits - n & (bits - 1)));
+	}
+
+	static Unsigned lowestBit(Unsigned x) { return x.and(neg(x)); }
+
+	/// Returns the minimum number of bits required to represent the value of `x`
+	static int32 length(Unsigned x) {
+		int32 hiLen = x.hi.length();
+		if (hiLen != 0) {
+			return hiLen + Word.bits;
+		}
+		return x.lo.length();
+	}
+
+	/// Returns the number of leading zero bits in x
+	static int32 leadingZeros(Unsigned x) { return bits - length(x); }
+
+	/// Returns the number of trailing zero bits in x
+	static int32 trailingZeros(Unsigned x) {
+		if (!x.test()) {
+			return bits;
+		}
+
+		return x.lowestBit().length() - 1;
+	}
+
+	/// Finds the index of the most significant(highest) set bit.
+	static int32 scanReverse(Unsigned x) { return x.length() - 1; }
+
+	/// Finds the index of the least significant(lowest) set bit
+	// or return x == 0 ? -1 : trailingZeros(x);
+	static int32 scanForward(Unsigned x) { return x.lowestBit().length() - 1; }
+
+	/// Returns the number of set bits ("population count") in x
+	static int32 countOnes(Unsigned x) {
+		return x.hi.countOnes() + x.lo.countOnes();
+	}
+
+	/// Returns the value of x with its bits in reversed order
+	static Unsigned reverseBits(Unsigned x) {
+		return {
+			lo: x.hi.reverseBits();
+			hi: x.lo.reverseBits();
+		};
+	}
+
+	/// Reverses the byte order of an 32-bit unsigned integer
+	static Unsigned reverseBytes(Unsigned x) {
+		return {
+			lo: x.hi.reverseBytes();
+			hi: x.lo.reverseBytes();
+		};
+	}
+
+	/// Divides two unsigned integers (binary long division)
+	static Unsigned div(Unsigned x, Unsigned y) {
+		Unsigned q = {hi: wZero, lo: wZero};
+		Unsigned r = {hi: wZero, lo: wZero};
+		Unsigned one = {hi: wZero, lo: wOne};
+		for (int32 i = bits - 1; i >= 0; i -= 1) {
+			r = r.shl(1).or(x.shr(i).and(one));
+			if (compare(r, y) >= 0) {
+				r = r.sub(y);
+				q = q.or(one.shl(i));
+			}
+		}
+		return q;
+	}
+
+	/// Divide x by y, returning remainder
+	static Unsigned rem(Unsigned x, Unsigned y) {
+		Unsigned r = {hi: wZero, lo: wZero};
+		Unsigned one = {hi: wZero, lo: wOne};
+		for (int32 i = bits - 1; i >= 0; i -= 1) {
+			r = r.shl(1).or(x.shr(i).and(one));
+			if (compare(r, y) >= 0) {
+				r = r.sub(y);
+			}
+		}
+		return r;
+	}
+
+	/// Returns the absolute value (identity for unsigned)
+	static Unsigned abs(Unsigned x) { return x; }
+
+	/// Returns the smaller of two values
+	static Unsigned min(Unsigned a, Unsigned b) { return compare(a, b) < 0 ? a : b; }
+
+	/// Returns the greater of two values
+	static Unsigned max(Unsigned a, Unsigned b) { return compare(a, b) > 0 ? a : b; }
+
+	/// Returns the `value` clamped between the provided `min` and `max`
+	static Unsigned clamp(Unsigned value, Unsigned lo, Unsigned hi) { return min(max(value, lo), hi); }
+}
+
+static if (struct(Unsigned) != null && struct(Signed) != null) {
+
+	enum { bits: Unsigned.bits }
+
+	Unsigned.Word lo;
+	Word hi;
+
+	static Unsigned Unsigned(Signed value) { return inline(value); }
+	static Signed toSigned(Unsigned value) { return inline(value); }
+
+	/// Returns sign or compare to 0
+	static int32 sign(Signed x) {
+		return x.hi.sign() | x.lo.test();
+	}
+
+	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
+	static int32 compare(Signed x, Signed y) {
+		if (int32 hi = x.hi.compare(y.hi)) {
+			return hi;
+		}
+		return x.lo.compare(y.lo);
+	}
+
+	/// Computes the arithmetic negation of a signed integer
+	static Signed neg(Signed x) { return Unsigned(x).neg().toSigned(); }
+
+	/// Adds two signed integers
+	static Signed add(Signed x, Signed y) { return Unsigned(x).add(Unsigned(y)).toSigned(); }
+
+	/// Subtracts two signed integers
+	static Signed sub(Signed x, Signed y) { return Unsigned(x).sub(Unsigned(y)).toSigned(); }
+
+	/// Multiplies two signed integers
+	static Signed mul(Signed x, Signed y) {
+		int32 sx = sign(x);
+		int32 sy = sign(y);
+		Unsigned ax = Unsigned(sx < 0 ? x.neg() : x);
+		Unsigned ay = Unsigned(sy < 0 ? y.neg() : y);
+		Unsigned r = Unsigned.mul(ax, ay);
+		return (sx ^ sy) < 0 ? r.neg().toSigned() : r.toSigned();
+	}
+
+	/// Divide x by y, returning quotient
+	static Signed div(Signed x, Signed y) {
+		int32 sx = sign(x);
+		int32 sy = sign(y);
+		Unsigned ax = Unsigned(sx < 0 ? x.neg() : x);
+		Unsigned ay = Unsigned(sy < 0 ? y.neg() : y);
+		Unsigned q = Unsigned.div(ax, ay);
+		return (sx ^ sy) < 0 ? q.neg().toSigned() : q.toSigned();
+	}
+
+	/// Divide x by y, returning remainder
+	static Signed rem(Signed x, Signed y) {
+		int32 sx = sign(x);
+		int32 sy = sign(y);
+		Unsigned ax = Unsigned(sx < 0 ? x.neg() : x);
+		Unsigned ay = Unsigned(sy < 0 ? y.neg() : y);
+		Unsigned r = Unsigned.rem(ax, ay);
+		return sx < 0 ? r.neg().toSigned() : r.toSigned();
+	}
+
+	/// Computes the arithmetic negation of an 32-bit signed integer
+	static Signed neg(Signed x, Signed overflow&) {
+		Word ovf& = pointer(overflow.lo);
+		overflow.hi = Word(0);
+		if (x.lo.test() == 0) {
+			return {
+				lo: x.lo;
+				hi: Word.neg(x.hi, &ovf);
+			};
+		}
+		return {
+			lo: x.lo.cmt();
+			hi: Word.neg(x.hi, &ovf);
+		};
+	}
+
+	/// Adds two 32-bit signed integers with carry out
+	static Signed add(Signed x, Signed y, Signed overflow&) {
+		Unsigned ux = Unsigned(x);
+		Unsigned uy = Unsigned(y);
+		Unsigned res = ux.add(uy);
+		overflow.hi = Word(0);
+		overflow.lo = res.hi.xor(ux.hi).and(res.hi.xor(uy.hi)).shr(Word.bits - 1);
+		return res.toSigned();
+	}
+
+	/// Subtracts two 32-bit signed integers with borrow out
+	static Signed sub(Signed x, Signed y, Signed overflow&) {
+		Unsigned ux = Unsigned(x);
+		Unsigned uy = Unsigned(y);
+		Unsigned res = ux.sub(uy);
+		overflow.hi = Word(0);
+		overflow.lo = res.hi.xor(ux.hi).and(ux.hi.xor(uy.hi)).shr(Word.bits - 1);
+		return res.toSigned();
+	}
+
+	/// Multiplies two signed integers with overflow out
+	static Signed mul(Signed x, Signed y, Signed overflow&) {
+		bool neg = false;
+		if (x.sign() < 0) {
+			neg = !neg;
+			x = x.neg();
+		}
+		if (y.sign() < 0) {
+			neg = !neg;
+			y = y.neg();
+		}
+
+		Unsigned o& = pointer(overflow);
+		Unsigned r = Unsigned.mul(Unsigned(x), Unsigned(y), &o);
+		if (neg) {
+			r = r.neg();
+			// Overflow from low to high
+			o = o.cmt().add(Unsigned.Word(1 - r.test()));
+		}
+		return r.toSigned();
+	}
+
+	/// Returns the absolute value (identity for unsigned)
+	static Signed abs(Signed x) { return sign(x) < 0 ? x.neg() : x; }
+
+	/// Returns the smaller of two values
+	static Signed min(Signed a, Signed b) { return compare(a, b) < 0 ? a : b; }
+
+	/// Returns the greater of two values
+	static Signed max(Signed a, Signed b) { return compare(a, b) > 0 ? a : b; }
+
+	/// Clamps value between min and max
+	static Signed clamp(Signed value, Signed lo, Signed hi) { return min(max(value, lo), hi); }
+}

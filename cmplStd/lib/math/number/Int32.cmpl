@@ -1,133 +1,171 @@
-/// 32-bit unsigned integer operations
-static struct Uint32 {
-	enum: uint32 {
+/// 32-bit unsigned integer
+struct Uint32: 4 {
+	uint32 value;
+
+	enum {
 		bits: 32;
-		min: 0x00000000;
-		max: 0xffffffff;
+		min: 0x00000000U;
+		max: 0xffffffffU;
 	}
 
-	/// Computes the bitwise NOT of an 32-bit unsigned value
-	uint32 cmt(uint32 x) { return inline(uint32(x), u32.cmt); }
+	inline u32(Uint32 x) = uint32(x.value);
+	inline u64(Uint32 x) = uint64(u32(x));
 
-	/// Computes the bitwise OR of two 32-bit unsigned integers
-	uint32 or(uint32 x, uint32 y) { return inline(uint32(x), uint32(y), u32.or); }
+	/// Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
+	static int32 test(Uint32 x) { return int32(u32(x) > 0); }
 
-	/// Computes the bitwise XOR of two 32-bit unsigned integers
-	uint32 xor(uint32 x, uint32 y) { return inline(uint32(x), uint32(y), u32.xor); }
+	/// Negates an 32-bit unsigned value
+	static Uint32 neg(Uint32 x) { return { value: inline(u32(x), i32.neg) }; }
 
-	/// Computes the bitwise AND of two 32-bit unsigned integers
-	uint32 and(uint32 x, uint32 y) { return inline(uint32(x), uint32(y), u32.and); }
+	/// Adds two 32-bit unsigned integers
+	static Uint32 add(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), i32.add) }; }
 
-	/// Performs a logical right shift of x by n bits for an 32-bit unsigned integer
-	uint32 shr(uint32 x, uint32 n) { return inline(uint32(x), uint32(n), u32.shr); }
+	/// Subtracts two 32-bit unsigned integers
+	static Uint32 sub(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), i32.sub) }; }
 
-	/// Performs a logical left shift of x by n bits for an 32-bit unsigned integer
-	uint32 shl(uint32 x, int32 n) { return inline(uint32(x), int32(n), u32.shl); }
+	/// Multiplies two 32-bit unsigned integers
+	static Uint32 mul(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.mul) }; }
 
-	/// Returns the signum of the input (`0` if zero, `1` if positive)
-	int32 sign(uint32 x) { return int32(x > 0); }
+	/// Divides two 32-bit unsigned integers
+	static Uint32 div(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.div) }; }
 
-	/// Returns the absolute value of the input
-	uint32 abs(uint32 x) { return x; }
+	/// Divide x by y, returning remainder
+	static Uint32 rem(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.rem) }; }
 
-	/// Returns the smaller value from the input values
-	uint32 min(uint32 a, uint32 b) { return a < b ? a : b; }
-
-	/// Returns the greater value from the input values
-	uint32 max(uint32 a, uint32 b) { return a > b ? a : b; }
-
-	/// Returns the `value` clamped between the provided `min` and `max`
-	uint32 clamp(uint32 value, uint32 min, uint32 max) { return min(max(value, min), max); }
-
-	/// Extract and zero-extends a bit field from a value
-	uint32 zeroExtend(uint32 value, int32 offs, int32 size) {
-		return value << (bits - (offs + size)) >> (bits - size);
+	/// Negates an 32-bit unsigned value
+	static Uint32 neg(Uint32 x, Uint32 overflow&) {
+		overflow.value = 1; // always overflows
+		return { value: inline(u32(x), i32.neg) };
 	}
 
 	/// Adds two 32-bit unsigned integers with carry out
-	uint32 add(uint32 x, uint32 y, uint32 overflow&) {
-		uint64 result = uint64(x) + uint64(y);
-		overflow = result >> bits;
-		return result;
+	static Uint32 add(Uint32 x, Uint32 y, Uint32 overflow&) {
+		uint64 result = inline(u64(x), u64(y), i64.add);
+		overflow.value = result >> bits;
+		return { value: result };
+	}
+
+	/// Adds two 32-bit unsigned integers with carry in and out
+	static Uint32 add(Uint32 x, Uint32 y, Uint32 c, Uint32 overflow&) {
+		int64 result = inline(u64(x), u64(y), i64.add, u64(c), i64.add);
+		overflow.value = result >> bits;
+		return { value: result };
 	}
 
 	/// Subtracts two 32-bit unsigned integers with borrow out
-	uint32 sub(uint32 x, uint32 y, uint32 overflow&) {
-		uint64 result = uint64(x) - uint64(y);
-		overflow = result >> bits;
-		return result;
+	static Uint32 sub(Uint32 x, Uint32 y, Uint32 overflow&) {
+		uint64 result = inline(u64(x), u64(y), i64.sub);
+		overflow.value = -(result >> bits);
+		return { value: result };
+	}
+
+	/// Subtracts two 32-bit unsigned integers with borrow out
+	static Uint32 sub(Uint32 x, Uint32 y, Uint32 c, Uint32 overflow&) {
+		uint64 result = inline(u64(x), u64(y), i64.sub, u64(c), i64.sub);
+		overflow.value = -(result >> bits);
+		return { value: result };
 	}
 
 	/// Multiplies two 32-bit unsigned integers with overflow out
-	uint32 mul(uint32 x, uint32 y, uint32 overflow&) {
-		uint64 result = uint64(x) * uint64(y);
-		overflow = result >> bits;
-		return result;
+	static Uint32 mul(Uint32 x, Uint32 y, Uint32 overflow&) {
+		uint64 result = inline(u64(x), u64(y), u64.mul);
+		overflow.value = result >> bits;
+		return { value: result };
 	}
 
-	/// Compares two 32-bit unsigned integers
-	int32 compare(uint32 x, uint32 y) {
-		return uint32(x > y) - uint32(x < y);
+	/// Computes the bitwise NOT of a 32-bit unsigned value
+	static Uint32 cmt(Uint32 x) { return { value: inline(u32(x), u32.cmt) }; }
+
+	/// Computes the bitwise OR of two 32-bit unsigned integers
+	static Uint32 or(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.or) }; }
+
+	/// Computes the bitwise XOR of two 32-bit unsigned integers
+	static Uint32 xor(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.xor) }; }
+
+	/// Computes the bitwise AND of two 32-bit unsigned integers
+	static Uint32 and(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.and) }; }
+
+	/// Performs a logical left shift of x by n bits for an 32-bit unsigned integer
+	static Uint32 shl(Uint32 x, uint32 n) { return { value: inline(u32(x), uint32(n), u32.shl) }; }
+
+	/// Performs a logical right shift of x by n bits for an 32-bit unsigned integer
+	static Uint32 shr(Uint32 x, uint32 n) { return { value: inline(u32(x), uint32(n), u32.shr) }; }
+
+	/// Performs an arithmetic right shift of x by n bits for an 32-bit unsigned integer
+	static Uint32 sar(Uint32 x, uint32 n) { return { value: inline(u32(x), uint32(n), u32.sar) }; }
+
+	/// Returns the value of x rotated left by (n mod size) bits
+	static Uint32 rotateLeft(Uint32 x, uint32 n) {
+		return x.shl(n & (bits - 1)).or(x.shr(bits - n & (bits - 1)));
 	}
+
+	/// Returns the value of x rotated right by (n mod size) bits
+	static Uint32 rotateRight(Uint32 x, uint32 n) {
+		return x.shr(n & (bits - 1)).or(x.shl(bits - n & (bits - 1)));
+	}
+
+	static Uint32 lowestBit(Uint32 x) { return x.and(neg(x)); }
 
 	/// Returns the minimum number of bits required to represent the value of `x`
-	int32 length(uint32 x) {
+	static int32 length(Uint32 x) {
 		static if (preferNativeCalls && struct(uint32.len) != null) {
 			// use the native method if available
-			return uint32.len(x);
+			return uint32.len(u32(x));
 		}
 
+		uint32 bits = u32(x);
 		int32 result = 0;
 
-		if ((x >> 16) != 0) {
+		if ((bits >> 16) != 0) {
 			result += 16;
-			x >>= 16;
+			bits >>= 16;
 		}
-		if ((x >> 8) != 0) {
+		if ((bits >> 8) != 0) {
 			result += 8;
-			x >>= 8;
+			bits >>= 8;
 		}
-		if ((x >> 4) != 0) {
+		if ((bits >> 4) != 0) {
 			result += 4;
-			x >>= 4;
+			bits >>= 4;
 		}
-		if ((x >> 2) != 0) {
+		if ((bits >> 2) != 0) {
 			result += 2;
-			x >>= 2;
+			bits >>= 2;
 		}
-		if ((x >> 1) != 0) {
+		if ((bits >> 1) != 0) {
 			result += 1;
-			x >>= 1;
+			bits >>= 1;
 		}
-		return result + x;
+		return result + bits;
 	}
 
 	/// Returns the number of leading zero bits in x
-	int32 leadingZeros(uint32 x) { return bits - length(x); }
+	static int32 leadingZeros(Uint32 x) { return bits - length(x); }
 
 	/// Returns the number of trailing zero bits in x
-	int32 trailingZeros(uint32 x) {
-		if (x == 0) {
+	static int32 trailingZeros(Uint32 x) {
+		if (x.value == 0) {
 			return bits;
 		}
 
-		return length(x & -x) - 1;
+		return x.lowestBit().length() - 1;
 	}
 
 	/// Finds the index of the most significant(highest) set bit.
-	int32 scanReverse(uint32 x) { return length(x) - 1; }
+	static int32 scanReverse(Uint32 x) { return x.length() - 1; }
 
 	/// Finds the index of the least significant(lowest) set bit
 	// or return x == 0 ? -1 : trailingZeros(x);
-	int32 scanForward(uint32 x) { return length(x & -x) - 1; }
+	static int32 scanForward(Uint32 x) { return x.lowestBit().length() - 1; }
 
 	/// Returns the number of set bits ("population count") in x
-	int32 countOnes(uint32 x) {
+	static int32 countOnes(Uint32 y) {
 		static if (preferNativeCalls && struct(uint32.pop) != null) {
 			// use the native method if available
-			return uint32.pop(x);
+			return uint32.pop(u32(y));
 		}
 
+		uint32 x = u32(y);
 		x -= (x >> 1) & 0x55555555;
 		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
 		x = (x + (x >> 4)) & 0x0f0f0f0f;
@@ -136,96 +174,175 @@ static struct Uint32 {
 		return x & 0x3f;
 	}
 
-	/// Returns the value of x rotated left by (n mod size) bits
-	uint32 rotateLeft(uint32 x, int32 n) {
-		n &= bits - 1;
-		return (x << n) | (x >> (bits - n));
-	}
-
-	/// Returns the value of x rotated right by (n mod size) bits
-	// inline rotateRight(uint16 x, int32 n) = rotateLeft(x, -n);
-	uint32 rotateRight(uint32 x, int32 n) {
-		n &= bits - 1;
-		return (x >> n) | (x << (bits - n));
-	}
-
 	/// Returns the value of x with its bits in reversed order
-	uint32 reverseBits(uint32 x) {
+	static Uint32 reverseBits(Uint32 y) {
+		uint32 x = u32(y);
 		x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 		x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
 		x = ((x >> 4) & 0x0f0f0f0f) | ((x & 0x0f0f0f0f) << 4);
 		x = ((x >> 8) & 0x00ff00ff) | ((x & 0x00ff00ff) << 8);
-		return (x >> 16) | (x << 16);
+		return { value: (x >> 16) | (x << 16) };
 	}
 
 	/// Reverses the byte order of an 32-bit unsigned integer
-	uint32 reverseBytes(uint32 x) {
+	static Uint32 reverseBytes(Uint32 y) {
+		uint32 x = u32(y);
 		x = (x & 0x0000ffff) << 16 | (x & 0xffff0000) >> 16;
 		x = (x & 0x00ff00ff) << 8  | (x & 0xff00ff00) >> 8;
-		return x;
-	}
-}
-
-/// 32-bit signed integer operations
-static struct Int32 {
-	enum {
-		bits: Uint32.bits;
-		max: Uint32.max >> 1;
-		min: ~max;
+		return { value: x };
 	}
 
-	/// Computes the arithmetic negation of an 32-bit signed integer
-	int32 neg(int32 x, int32 overflow&) {
-		overflow = int32(x == min);
-		return inline(int32(x), i32.neg);
-	}
+	/// Returns the absolute value (identity for unsigned)
+	static Uint32 abs(Uint32 x) { return x; }
 
-	/// Performs an arithmetic right shift of an 32-bit signed integer
-	int32 shr(int32 x, int32 n) { return inline(int32(x), int32(n), u32.sar); }
+	/// Returns the smaller of two values
+	static Uint32 min(Uint32 a, Uint32 b) { return u32(a) < u32(b) ? a : b; }
 
-	/// Adds two 32-bit signed integers with carry out
-	int32 add(int32 x, int32 y, int32 overflow&) {
-		int64 result = int64(x) + int64(y);
-		overflow = result >> bits;
-		return result;
-	}
-
-	/// Subtracts two 32-bit signed integers with borrow out
-	int32 sub(int32 x, int32 y, int32 overflow&) {
-		int64 result = int64(x) - int64(y);
-		overflow = result >> bits;
-		return result;
-	}
-
-	/// Multiplies two 32-bit signed integers with overflow out
-	int32 mul(int32 x, int32 y, int32 overflow&) {
-		int64 result = int64(x) * int64(y);
-		overflow = result >> bits;
-		return result;
-	}
-
-	/// Compares two 32-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
-	int32 compare(int32 x, int32 y) {
-		return int32(x > y) - int32(x < y);
-	}
-
-	/// Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
-	int32 sign(int32 x) {return int32(x > 0) - int32(x < 0); }
-
-	/// Returns the absolute value of the input
-	int32 abs(int32 x) { return x < 0 ? -x : x; }
-
-	/// Returns the smaller value from the input values
-	int32 min(int32 a, int32 b) { return a < b ? a : b; }
-
-	/// Returns the greater value from the input values
-	int32 max(int32 a, int32 b) { return a > b ? a : b; }
+	/// Returns the greater of two values
+	static Uint32 max(Uint32 a, Uint32 b) { return u32(a) > u32(b) ? a : b; }
 
 	/// Returns the `value` clamped between the provided `min` and `max`
-	int32 clamp(int32 value, int32 min, int32 max) { return min(max(value, min), max); }
+	static Uint32 clamp(Uint32 value, Uint32 lo, Uint32 hi) { return min(max(value, lo), hi); }
 
-	/// Extract and sign-extends a bit field from a signed byte value
-	int32 signExtend(int32 value, int32 offs, int32 size) {
+	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
+	static int32 compare(Uint32 x, Uint32 y) {
+		return int32(u32(x) > u32(y)) - int32(u32(x) < u32(y));
+	}
+
+	/// todo: deprecated method, use the called one
+	inline countOnes(uint32 x) = countOnes(Uint32(inline(x)));
+	/// todo: deprecated method, use the called one
+	inline reverseBits(uint32 x) = uint32(inline(reverseBits(Uint32(inline(x)))));
+	/// todo: deprecated method, use the called one
+	inline scanForward(uint32 x) = scanForward(Uint32(inline(x)));
+	/// todo: deprecated method, use the called one
+	inline scanReverse(uint32 x) = scanReverse(Uint32(inline(x)));
+	/// todo: deprecated method, use the called one
+	inline sign(uint32 x) = test(Uint32(inline(x)));
+	/// todo: deprecated method, use the called one
+	inline abs(uint32 x) = uint32(inline(abs(Uint32(inline(x)))));
+	/// todo: deprecated method, use the called one
+	inline min(uint32 x, uint32 y) = uint32(inline(min(Uint32(inline(x)), Uint32(inline(y)))));
+	/// todo: deprecated method, use the called one
+	inline max(uint32 x, uint32 y) = uint32(inline(max(Uint32(inline(x)), Uint32(inline(y)))));
+	/// todo: deprecated method, use the called one
+	inline clamp(uint32 value, uint32 lo, uint32 hi) = uint32(inline(clamp(Uint32(inline(value)), Uint32(inline(lo)), Uint32(inline(hi)))));
+	/// todo: deprecated method, use the called one
+	inline compare(uint32 x, uint32 y) = compare(Uint32(inline(x)), Uint32(inline(y)));
+
+	/// Extract and zero-extends a bit field from a value
+	static uint32 zeroExtend(uint32 value, int32 offs, int32 size) {
 		return value << (bits - (offs + size)) >> (bits - size);
 	}
 }
+
+/// 32-bit signed integer
+struct Int32: 4 {
+	int32 value;
+
+	enum {
+		bits: Uint32.bits;
+		max: 1 << bits - 1;
+		min: ~max;
+	}
+
+	inline i32(Int32 x) = int32(x.value);
+	inline i64(Int32 x) = int64(i32(x));
+
+	/// Computes the arithmetic negation of an 32-bit signed integer
+	static Int32 neg(Int32 x) { return { value: inline(i32(x), i32.neg) }; }
+
+	/// Add two values
+	static Int32 add(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.add) }; }
+
+	/// Subtract two values
+	static Int32 sub(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.sub) }; }
+
+	/// Multiply two values with overflow-out
+	static Int32 mul(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.mul) }; }
+
+	/// Divide x by y, returning quotient
+	static Int32 div(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.div) }; }
+
+	/// Divide x by y, returning remainder
+	static Int32 rem(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.rem) }; }
+
+	/// Computes the arithmetic negation of an 32-bit signed integer
+	static Int32 neg(Int32 x, Int32 overflow&) {
+		overflow.value = int32(i32(x) == min);
+		return { value: inline(i32(x), i32.neg) };
+	}
+
+	/// Adds two 32-bit signed integers with carry out
+	static Int32 add(Int32 x, Int32 y, Int32 overflow&) {
+		int64 result = inline(i64(x), i64(y), i64.add);
+		overflow.value = int32(result > max || result < min);
+		return { value: result };
+	}
+
+	/// Subtracts two 32-bit signed integers with borrow out
+	static Int32 sub(Int32 x, Int32 y, Int32 overflow&) {
+		int64 result = inline(i64(x), i64(y), i64.sub);
+		overflow.value = int32(result > max || result < min);
+		return { value: result };
+	}
+
+	/// Multiplies two 32-bit signed integers with overflow out
+	static Int32 mul(Int32 x, Int32 y, Int32 overflow&) {
+		int64 result = inline(i64(x), i64(y), i64.mul);
+		overflow.value = result >> bits;
+		return { value: result };
+	}
+
+	/// Returns 1 if nonzero, 0 if zero
+	static int32 sign(Int32 x) {
+		return int32(i32(x) > 0) - int32(i32(x) < 0);
+	}
+
+	/// Returns the absolute value (identity for unsigned)
+	static Int32 abs(Int32 x) { return i32(x) < 0 ? x.neg() : x; }
+
+	/// Returns the smaller of two values
+	static Int32 min(Int32 a, Int32 b) { return i32(a) < i32(b) ? a : b; }
+
+	/// Returns the greater of two values
+	static Int32 max(Int32 a, Int32 b) { return i32(a) > i32(b) ? a : b; }
+
+	/// Clamps value between min and max
+	static Int32 clamp(Int32 value, Int32 lo, Int32 hi) { return min(max(value, lo), hi); }
+
+	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
+	static int32 compare(Int32 x, Int32 y) {
+		return int32(i32(x) > i32(y)) - int32(i32(x) < i32(y));
+	}
+
+	/// todo: deprecated method, use the called one
+	inline sign(int32 x) = sign(Int32(inline(x)));
+	/// todo: deprecated method, use the called one
+	inline abs(int32 x) = int32(inline(abs(Int32(inline(x)))));
+	/// todo: deprecated method, use the called one
+	inline min(int32 x, int32 y) = int32(inline(min(Int32(inline(x)), Int32(inline(y)))));
+	/// todo: deprecated method, use the called one
+	inline max(int32 x, int32 y) = int32(inline(max(Int32(inline(x)), Int32(inline(y)))));
+	/// todo: deprecated method, use the called one
+	inline clamp(int32 value, int32 lo, int32 hi) = int32(inline(clamp(Int32(inline(value)), Int32(inline(lo)), Int32(inline(hi)))));
+	/// todo: deprecated method, use the called one
+	inline compare(int32 x, int32 y) = compare(Int32(inline(x)), Int32(inline(y)));
+
+	/// Extract and sign-extends a bit field from a signed byte value
+	static int32 signExtend(int32 value, int32 offs, int32 size) {
+		return value << (bits - (offs + size)) >> (bits - size);
+	}
+}
+
+/// Construct a Uint32 from a packed byte value
+Uint32 Uint32(uint32 value) { return { value: value }; }
+
+/// Convert a Uint32 value to a uint32
+uint32 uint32(Uint32 value) { return value.value; }
+
+/// Construct an Int32 from a signed byte value
+Int32 Int32(int32 value) { return { value: value }; }
+
+/// Convert an Int32 value to a int32
+int32 int32(Int32 value) { return value.value; }

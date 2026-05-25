@@ -263,7 +263,7 @@ static vmError sysRaise(nfcContext ctx) {
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	const char *file = rt->api.nextArg(&al)->ref;
 	const int line = rt->api.nextArg(&al)->i32;
-	const int logLevel = rt->api.nextArg(&al)->i32;
+	int logLevel = rt->api.nextArg(&al)->i32;
 	const int maxTrace = rt->api.nextArg(&al)->i32;
 	const char *message = rt->api.nextArg(&al)->ref;
 	struct nfcArgArr details = rt->api.nextArg(&al)->arr;
@@ -272,8 +272,14 @@ static vmError sysRaise(nfcContext ctx) {
 	if (rt->logFile == NULL || logLevel > (int)rt->logLevel) {
 		return noError;
 	}
+	
+	int abortExecution = 0;
+	if (logLevel == raiseFatal) {
+		logLevel = raiseError;
+		abortExecution = 1;
+	}
 
-	if (logLevel == raiseFatal && isChecked(rt)) {
+	if (abortExecution && isChecked(rt)) {
 		// do not terminate execution, just show the error
 		raiseStd(rt, raiseError, file, line, details, "%?s", message);
 	} else {
@@ -286,7 +292,7 @@ static vmError sysRaise(nfcContext ctx) {
 	}
 
 	// abort the execution
-	if (logLevel == raiseFatal) {
+	if (abortExecution) {
 		return nativeCallError;
 	}
 

@@ -2152,7 +2152,9 @@ static astn statement(ccContext ctx, const char *doc) {
 			ast = expression(ctx, 0);
 			symn type = typeCheck(ctx, NULL, ast, 1);
 			if (type == NULL) {
-				error(ctx->rt, ast->file, ast->line, ERR_INVALID_TYPE, ast);
+				const char *file = ast ? ast->file : ctx->file;
+				const int line = ast ? ast->line : ctx->line;
+				error(ctx->rt, file, line, ERR_INVALID_TYPE, ast);
 				type = ctx->type_vid;
 			}
 			else if (pushBackTypeExpr(ctx, ast)) {

@@ -441,7 +441,7 @@ symn typeCheck(ccContext ctx, symn loc, astn ast, int raise) {
 	astn arg = NULL;
 
 	if (ast == NULL) {
-		fatal(ERR_INTERNAL_ERROR);
+		logif("fatal", ERR_INTERNAL_ERROR);
 		return NULL;
 	}
 

@@ -420,190 +420,306 @@ assertEq(expected: int64, returned: int64, message: char[*], details: variant[])
 assertEq(expected: int64, returned: int64): void # abort execution if the returned value is not equal to the expected value
 assertEq(expected: bool, returned: bool, message: char[*], details: variant[]): void # abort execution if the returned value is not equal to the expected value
 sizeof(type: typename): int32 # Returns the size of the given type
-Uint8 # 8-bit unsigned integer operations
+Uint8 # 8-bit unsigned integer
+Uint8.value
 Uint8.bits
 Uint8.min
 Uint8.max
-Uint8.cmt(x: uint8): uint8 # Computes the bitwise NOT of an 8-bit unsigned value
-Uint8.or(x: uint8, y: uint8): uint8 # Computes the bitwise OR of two 8-bit unsigned integers
-Uint8.xor(x: uint8, y: uint8): uint8 # Computes the bitwise XOR of two 8-bit unsigned integers
-Uint8.and(x: uint8, y: uint8): uint8 # Computes the bitwise AND of two 8-bit unsigned integers
-Uint8.shr(x: uint8, n: uint32): uint8 # Performs a logical right shift of x by n bits for an 8-bit unsigned integer
-Uint8.shl(x: uint8, n: uint32): uint8 # Performs a logical left shift of x by n bits for an 8-bit unsigned integer
-Uint8.sign(x: uint8): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
-Uint8.abs(x: uint8): uint8 # Returns the absolute value of the input
-Uint8.min(a: uint8, b: uint8): uint8 # Returns the smaller value from the input values
-Uint8.max(a: uint8, b: uint8): uint8 # Returns the greater value from the input values
-Uint8.clamp(value: uint8, min: uint8, max: uint8): uint8 # Returns the `value` clamped between the provided `min` and `max`
-Uint8.zeroExtend(value: uint8, offs: int32, size: int32): uint8 # Extract and zero-extends a bit field from a byte value
-Uint8.add(x: uint8, y: uint8, overflow: uint8): uint8 # Adds two 8-bit unsigned integers with carry out
-Uint8.sub(x: uint8, y: uint8, overflow: uint8): uint8 # Subtracts two 8-bit unsigned integers with borrow out
-Uint8.mul(x: uint8, y: uint8, overflow: uint8): uint8 # Multiplies two 8-bit unsigned integers with overflow out
-Uint8.compare(x: uint8, y: uint8): int32 # Compares two 8-bit unsigned integers
-Uint8.length(x: uint8): int32 # Returns the minimum number of bits required to represent the value of `x`
-Uint8.leadingZeros(x: uint8): int32 # Returns the number of leading zero bits in x
-Uint8.trailingZeros(x: uint8): int32 # Returns the number of trailing zero bits in x
-Uint8.scanReverse(x: uint8): int32 # Finds the index of the most significant(highest) set bit.
-Uint8.scanForward(x: uint8): int32 # Finds the index of the least significant(lowest) set bit
-Uint8.countOnes(x: uint8): int32 # Returns the number of set bits ("population count") in x
-Uint8.rotateLeft(x: uint8, n: int32): uint8 # Returns the value of x rotated left by (n mod size) bits
-Uint8.rotateRight(x: uint8, n: int32): uint8 # Returns the value of x rotated right by (n mod size) bits
-Uint8.reverseBits(x: uint8): uint8 # Returns the value of x with its bits in reversed order
-Uint8.reverseBytes(x: uint8): uint8 # Reverses the byte order of an 8-bit unsigned integer
-Int8 # 8-bit signed integer operations
+Uint8.u32(x: Uint8): uint32
+Uint8.i32(x: Uint8): int32
+Uint8.test(x: Uint8): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
+Uint8.neg(x: Uint8): Uint8 # Negates an 8-bit unsigned value
+Uint8.add(x: Uint8, y: Uint8): Uint8 # Adds two 8-bit unsigned integers
+Uint8.sub(x: Uint8, y: Uint8): Uint8 # Subtracts two 8-bit unsigned integers
+Uint8.mul(x: Uint8, y: Uint8): Uint8 # Multiplies two 8-bit unsigned integers
+Uint8.div(x: Uint8, y: Uint8): Uint8 # Divides two 8-bit unsigned integers
+Uint8.rem(x: Uint8, y: Uint8): Uint8 # Divide x by y, returning remainder
+Uint8.neg(x: Uint8, overflow: Uint8): Uint8 # Negates an 8-bit unsigned value
+Uint8.add(x: Uint8, y: Uint8, overflow: Uint8): Uint8 # Adds two 8-bit unsigned integers with carry out
+Uint8.add(x: Uint8, y: Uint8, c: Uint8, overflow: Uint8): Uint8 # Adds two 8-bit unsigned integers with carry out
+Uint8.sub(x: Uint8, y: Uint8, overflow: Uint8): Uint8 # Subtracts two 8-bit unsigned integers with borrow out
+Uint8.sub(x: Uint8, y: Uint8, c: Uint8, overflow: Uint8): Uint8 # Subtracts two 8-bit unsigned integers with borrow out
+Uint8.mul(x: Uint8, y: Uint8, overflow: Uint8): Uint8 # Multiplies two 8-bit unsigned integers with overflow out
+Uint8.cmt(x: Uint8): Uint8 # Computes the bitwise NOT of an 8-bit unsigned value
+Uint8.or(x: Uint8, y: Uint8): Uint8 # Computes the bitwise OR of two 8-bit unsigned integers
+Uint8.xor(x: Uint8, y: Uint8): Uint8 # Computes the bitwise XOR of two 8-bit unsigned integers
+Uint8.and(x: Uint8, y: Uint8): Uint8 # Computes the bitwise AND of two 8-bit unsigned integers
+Uint8.shl(x: Uint8, n: uint32): Uint8 # Performs a logical left shift of x by n bits for an 8-bit unsigned integer
+Uint8.shr(x: Uint8, n: uint32): Uint8 # Performs a logical right shift of x by n bits for an 8-bit unsigned integer
+Uint8.sar(x: Uint8, n: uint32): Uint8 # Performs an arithmetic right shift of x by n bits for an 8-bit unsigned integer
+Uint8.rotateLeft(x: Uint8, n: uint32): Uint8 # Returns the value of x rotated left by (n mod size) bits
+Uint8.rotateRight(x: Uint8, n: uint32): Uint8 # Returns the value of x rotated right by (n mod size) bits
+Uint8.lowestBit(x: Uint8): Uint8
+Uint8.length(x: Uint8): int32 # Returns the minimum number of bits required to represent the value of `x`
+Uint8.leadingZeros(x: Uint8): int32 # Returns the number of leading zero bits in x
+Uint8.trailingZeros(x: Uint8): int32 # Returns the number of trailing zero bits in x
+Uint8.scanReverse(x: Uint8): int32 # Finds the index of the most significant(highest) set bit.
+Uint8.scanForward(x: Uint8): int32 # Finds the index of the least significant(lowest) set bit
+Uint8.countOnes(y: Uint8): int32 # Returns the number of set bits ("population count") in x
+Uint8.reverseBits(y: Uint8): Uint8 # Returns the value of x with its bits in reversed order
+Uint8.reverseBytes(x: Uint8): Uint8 # Reverses the byte order of an 8-bit unsigned integer
+Uint8.abs(x: Uint8): Uint8 # Returns the absolute value of the input (identity for unsigned)
+Uint8.min(a: Uint8, b: Uint8): Uint8 # Returns the smaller of two values
+Uint8.max(a: Uint8, b: Uint8): Uint8 # Returns the greater of two values
+Uint8.clamp(value: Uint8, lo: Uint8, hi: Uint8): Uint8 # Returns the `value` clamped between the provided `min` and `max`
+Uint8.compare(x: Uint8, y: Uint8): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Uint8.reverseBits(x: uint8): uint8 # todo: deprecated method, use the called one
+Int8 # 8-bit signed integer
+Int8.value
 Int8.bits
 Int8.min
 Int8.max
-Int8.neg(x: int8, overflow: int8): int8 # Computes the arithmetic negation of an 8-bit signed integer
-Int8.shr(x: int8, n: int32): int8 # Performs an arithmetic right shift of an 8-bit signed integer
-Int8.add(x: int8, y: int8, overflow: int8): int8 # Adds two 8-bit signed integers with carry out
-Int8.sub(x: int8, y: int8, overflow: int8): int8 # Subtracts two 8-bit signed integers with borrow out
-Int8.mul(x: int8, y: int8, overflow: int8): int8 # Multiplies two 8-bit signed integers with overflow out
-Int8.compare(x: int8, y: int8): int32 # Compares two 8-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
-Int8.sign(x: int8): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
-Int8.abs(x: int8): int8 # Returns the absolute value of the input
-Int8.min(a: int8, b: int8): int8 # Returns the smaller value from the input values
-Int8.max(a: int8, b: int8): int8 # Returns the greater value from the input values
-Int8.clamp(value: int8, min: int8, max: int8): int8 # Returns the `value` clamped between the provided `min` and `max`
-Int8.signExtend(value: int8, offs: int32, size: int32): int8 # Extract and sign-extends a bit field from a signed byte value
-Uint16 # 16-bit unsigned integer operations
+Int8.i32(x: Int8): int32
+Int8.neg(x: Int8): Int8 # Computes the arithmetic negation of an 8-bit signed integer
+Int8.add(x: Int8, y: Int8): Int8 # Add two values
+Int8.sub(x: Int8, y: Int8): Int8 # Subtract two values
+Int8.mul(x: Int8, y: Int8): Int8 # Multiply two values with overflow-out
+Int8.div(x: Int8, y: Int8): Int8 # Divide x by y, returning quotient
+Int8.rem(x: Int8, y: Int8): Int8 # Divide x by y, returning remainder
+Int8.neg(x: Int8, overflow: Int8): Int8 # Computes the arithmetic negation of an 8-bit signed integer
+Int8.add(x: Int8, y: Int8, overflow: Int8): Int8 # Add two values with carry-out
+Int8.sub(x: Int8, y: Int8, overflow: Int8): Int8 # Subtract two values with borrow-out
+Int8.mul(x: Int8, y: Int8, overflow: Int8): Int8 # Multiply two values with overflow-out (overflow holds upper 8 bits of 16-bit product)
+Int8.sign(x: Int8): int32 # Returns 1 if nonzero, 0 if zero
+Int8.abs(x: Int8): Int8 # Returns the absolute value (identity for unsigned)
+Int8.min(a: Int8, b: Int8): Int8 # Returns the smaller of two values
+Int8.max(a: Int8, b: Int8): Int8 # Returns the greater of two values
+Int8.clamp(value: Int8, lo: Int8, hi: Int8): Int8 # Clamps value between min and max
+Int8.compare(x: Int8, y: Int8): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Uint8(value: uint8): Uint8 # Construct a Uint8 from a packed byte value
+uint32(value: Uint8): uint32 # Convert a Uint8 value to a uint32
+Int8(value: int8): Int8 # Construct an Int8 from a signed byte value
+int32(value: Int8): int32 # Convert an Int8 value to a int32
+Uint16 # 16-bit unsigned integer
+Uint16.value
 Uint16.bits
 Uint16.min
 Uint16.max
-Uint16.cmt(x: uint16): uint16 # Computes the bitwise NOT of an 16-bit unsigned value
-Uint16.or(x: uint16, y: uint16): uint16 # Computes the bitwise OR of two 16-bit unsigned integers
-Uint16.xor(x: uint16, y: uint16): uint16 # Computes the bitwise XOR of two 16-bit unsigned integers
-Uint16.and(x: uint16, y: uint16): uint16 # Computes the bitwise AND of two 16-bit unsigned integers
-Uint16.shr(x: uint16, n: uint32): uint16 # Performs a logical right shift of x by n bits for an 16-bit unsigned integer
-Uint16.shl(x: uint16, n: uint32): uint16 # Performs a logical left shift of x by n bits for an 16-bit unsigned integer
-Uint16.sign(x: uint16): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
-Uint16.abs(x: uint16): uint16 # Returns the absolute value of the input
-Uint16.min(a: uint16, b: uint16): uint16 # Returns the smaller value from the input values
-Uint16.max(a: uint16, b: uint16): uint16 # Returns the greater value from the input values
-Uint16.clamp(value: uint16, min: uint16, max: uint16): uint16 # Returns the `value` clamped between the provided `min` and `max`
-Uint16.zeroExtend(value: uint16, offs: int32, size: int32): uint16 # Extract and zero-extends a bit field from a byte value
-Uint16.add(x: uint16, y: uint16, overflow: uint16): uint16 # Adds two 16-bit unsigned integers with carry out
-Uint16.sub(x: uint16, y: uint16, overflow: uint16): uint16 # Subtracts two 16-bit unsigned integers with borrow out
-Uint16.mul(x: uint16, y: uint16, overflow: uint16): uint16 # Multiplies two 16-bit unsigned integers with overflow out
-Uint16.compare(x: uint16, y: uint16): int32 # Compares two 16-bit unsigned integers
-Uint16.length(x: uint16): int32 # Returns the minimum number of bits required to represent the value of `x`
-Uint16.leadingZeros(x: uint16): int32 # Returns the number of leading zero bits in x
-Uint16.trailingZeros(x: uint16): int32 # Returns the number of trailing zero bits in x
-Uint16.scanReverse(x: uint16): int32 # Finds the index of the most significant(highest) set bit.
-Uint16.scanForward(x: uint16): int32 # Finds the index of the least significant(lowest) set bit
-Uint16.countOnes(x: uint16): int32 # Returns the number of set bits ("population count") in x
-Uint16.rotateLeft(x: uint16, n: int32): uint16 # Returns the value of x rotated left by (n mod size) bits
-Uint16.rotateRight(x: uint16, n: int32): uint16 # Returns the value of x rotated right by (n mod size) bits
-Uint16.reverseBits(x: uint16): uint16 # Returns the value of x with its bits in reversed order
-Uint16.reverseBytes(x: uint16): uint16 # Reverses the byte order of an 16-bit unsigned integer
-Int16 # 16-bit signed integer operations
+Uint16.u32(x: Uint16): uint32
+Uint16.i32(x: Uint16): int32
+Uint16.test(x: Uint16): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
+Uint16.neg(x: Uint16): Uint16 # Negates an 16-bit unsigned value
+Uint16.add(x: Uint16, y: Uint16): Uint16 # Adds two 16-bit unsigned integers
+Uint16.sub(x: Uint16, y: Uint16): Uint16 # Subtracts two 16-bit unsigned integers
+Uint16.mul(x: Uint16, y: Uint16): Uint16 # Multiplies two 16-bit unsigned integers
+Uint16.div(x: Uint16, y: Uint16): Uint16 # Divides two 16-bit unsigned integers
+Uint16.rem(x: Uint16, y: Uint16): Uint16 # Divide x by y, returning remainder
+Uint16.neg(x: Uint16, overflow: Uint16): Uint16 # Negates an 16-bit unsigned value
+Uint16.add(x: Uint16, y: Uint16, overflow: Uint16): Uint16 # Adds two 16-bit unsigned integers with carry out
+Uint16.add(x: Uint16, y: Uint16, c: Uint16, overflow: Uint16): Uint16 # Adds two 16-bit unsigned integers with carry out
+Uint16.sub(x: Uint16, y: Uint16, overflow: Uint16): Uint16 # Subtracts two 16-bit unsigned integers with borrow out
+Uint16.sub(x: Uint16, y: Uint16, c: Uint16, overflow: Uint16): Uint16 # Subtracts two 16-bit unsigned integers with borrow out
+Uint16.mul(x: Uint16, y: Uint16, overflow: Uint16): Uint16 # Multiplies two 16-bit unsigned integers with overflow out
+Uint16.cmt(x: Uint16): Uint16 # Computes the bitwise NOT of an 16-bit unsigned value
+Uint16.or(x: Uint16, y: Uint16): Uint16 # Computes the bitwise OR of two 16-bit unsigned integers
+Uint16.xor(x: Uint16, y: Uint16): Uint16 # Computes the bitwise XOR of two 16-bit unsigned integers
+Uint16.and(x: Uint16, y: Uint16): Uint16 # Computes the bitwise AND of two 16-bit unsigned integers
+Uint16.shl(x: Uint16, n: uint32): Uint16 # Performs a logical left shift of x by n bits for an 16-bit unsigned integer
+Uint16.shr(x: Uint16, n: uint32): Uint16 # Performs a logical right shift of x by n bits for an 16-bit unsigned integer
+Uint16.sar(x: Uint16, n: uint32): Uint16 # Performs an arithmetic right shift of x by n bits for an 16-bit unsigned integer
+Uint16.rotateLeft(x: Uint16, n: uint32): Uint16 # Returns the value of x rotated left by (n mod size) bits
+Uint16.rotateRight(x: Uint16, n: uint32): Uint16 # Returns the value of x rotated right by (n mod size) bits
+Uint16.lowestBit(x: Uint16): Uint16
+Uint16.length(x: Uint16): int32 # Returns the minimum number of bits required to represent the value of `x`
+Uint16.leadingZeros(x: Uint16): int32 # Returns the number of leading zero bits in x
+Uint16.trailingZeros(x: Uint16): int32 # Returns the number of trailing zero bits in x
+Uint16.scanReverse(x: Uint16): int32 # Finds the index of the most significant(highest) set bit.
+Uint16.scanForward(x: Uint16): int32 # Finds the index of the least significant(lowest) set bit
+Uint16.countOnes(y: Uint16): int32 # Returns the number of set bits ("population count") in x
+Uint16.reverseBits(y: Uint16): Uint16 # Returns the value of x with its bits in reversed order
+Uint16.reverseBytes(y: Uint16): Uint16 # Reverses the byte order of an 16-bit unsigned integer
+Uint16.abs(x: Uint16): Uint16 # Returns the absolute value (identity for unsigned)
+Uint16.min(a: Uint16, b: Uint16): Uint16 # Returns the smaller of two values
+Uint16.max(a: Uint16, b: Uint16): Uint16 # Returns the greater of two values
+Uint16.clamp(value: Uint16, lo: Uint16, hi: Uint16): Uint16 # Returns the `value` clamped between the provided `min` and `max`
+Uint16.compare(x: Uint16, y: Uint16): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Int16 # 16-bit signed integer
+Int16.value
 Int16.bits
 Int16.min
 Int16.max
-Int16.neg(x: int16, overflow: int16): int16 # Computes the arithmetic negation of an 16-bit signed integer
-Int16.shr(x: int16, n: int32): int16 # Performs an arithmetic right shift of an 16-bit signed integer
-Int16.add(x: int16, y: int16, overflow: int16): int16 # Adds two 16-bit signed integers with carry out
-Int16.sub(x: int16, y: int16, overflow: int16): int16 # Subtracts two 16-bit signed integers with borrow out
-Int16.mul(x: int16, y: int16, overflow: int16): int16 # Multiplies two 16-bit signed integers with overflow out
-Int16.compare(x: int16, y: int16): int32 # Compares two 16-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
-Int16.sign(x: int16): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
-Int16.abs(x: int16): int16 # Returns the absolute value of the input
-Int16.min(a: int16, b: int16): int16 # Returns the smaller value from the input values
-Int16.max(a: int16, b: int16): int16 # Returns the greater value from the input values
-Int16.clamp(value: int16, min: int16, max: int16): int16 # Returns the `value` clamped between the provided `min` and `max`
-Int16.signExtend(value: int16, offs: int32, size: int32): int16 # Extract and sign-extends a bit field from a signed byte value
-Uint32 # 32-bit unsigned integer operations
+Int16.i32(x: Int16): int32
+Int16.neg(x: Int16): Int16 # Computes the arithmetic negation of an 16-bit signed integer
+Int16.add(x: Int16, y: Int16): Int16 # Add two values
+Int16.sub(x: Int16, y: Int16): Int16 # Subtract two values
+Int16.mul(x: Int16, y: Int16): Int16 # Multiply two values with overflow-out
+Int16.div(x: Int16, y: Int16): Int16 # Divide x by y, returning quotient
+Int16.rem(x: Int16, y: Int16): Int16 # Divide x by y, returning remainder
+Int16.neg(x: Int16, overflow: Int16): Int16 # Computes the arithmetic negation of an 16-bit signed integer
+Int16.add(x: Int16, y: Int16, overflow: Int16): Int16 # Add two values with carry-out
+Int16.sub(x: Int16, y: Int16, overflow: Int16): Int16 # Subtract two values with borrow-out
+Int16.mul(x: Int16, y: Int16, overflow: Int16): Int16 # Multiply two values with overflow-out (overflow holds upper 16 bits of the 32-bit product)
+Int16.sign(x: Int16): int32 # Returns 1 if nonzero, 0 if zero
+Int16.abs(x: Int16): Int16 # Returns the absolute value (identity for unsigned)
+Int16.min(a: Int16, b: Int16): Int16 # Returns the smaller of two values
+Int16.max(a: Int16, b: Int16): Int16 # Returns the greater of two values
+Int16.clamp(value: Int16, lo: Int16, hi: Int16): Int16 # Clamps value between min and max
+Int16.compare(x: Int16, y: Int16): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Uint16(value: uint16): Uint16 # Construct a Uint16 from a packed byte value
+uint32(value: Uint16): uint32 # Convert a Uint16 value to a uint32
+Int16(value: int16): Int16 # Construct an Int16 from a signed byte value
+int32(value: Int16): int32 # Convert an Int16 value to a int32
+Uint32 # 32-bit unsigned integer
+Uint32.value
 Uint32.bits
 Uint32.min
 Uint32.max
-Uint32.cmt(x: uint32): uint32 # Computes the bitwise NOT of an 32-bit unsigned value
-Uint32.or(x: uint32, y: uint32): uint32 # Computes the bitwise OR of two 32-bit unsigned integers
-Uint32.xor(x: uint32, y: uint32): uint32 # Computes the bitwise XOR of two 32-bit unsigned integers
-Uint32.and(x: uint32, y: uint32): uint32 # Computes the bitwise AND of two 32-bit unsigned integers
-Uint32.shr(x: uint32, n: uint32): uint32 # Performs a logical right shift of x by n bits for an 32-bit unsigned integer
-Uint32.shl(x: uint32, n: int32): uint32 # Performs a logical left shift of x by n bits for an 32-bit unsigned integer
-Uint32.sign(x: uint32): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
-Uint32.abs(x: uint32): uint32 # Returns the absolute value of the input
-Uint32.min(a: uint32, b: uint32): uint32 # Returns the smaller value from the input values
-Uint32.max(a: uint32, b: uint32): uint32 # Returns the greater value from the input values
-Uint32.clamp(value: uint32, min: uint32, max: uint32): uint32 # Returns the `value` clamped between the provided `min` and `max`
+Uint32.u32(x: Uint32): uint32
+Uint32.u64(x: Uint32): uint64
+Uint32.test(x: Uint32): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
+Uint32.neg(x: Uint32): Uint32 # Negates an 32-bit unsigned value
+Uint32.add(x: Uint32, y: Uint32): Uint32 # Adds two 32-bit unsigned integers
+Uint32.sub(x: Uint32, y: Uint32): Uint32 # Subtracts two 32-bit unsigned integers
+Uint32.mul(x: Uint32, y: Uint32): Uint32 # Multiplies two 32-bit unsigned integers
+Uint32.div(x: Uint32, y: Uint32): Uint32 # Divides two 32-bit unsigned integers
+Uint32.rem(x: Uint32, y: Uint32): Uint32 # Divide x by y, returning remainder
+Uint32.neg(x: Uint32, overflow: Uint32): Uint32 # Negates an 32-bit unsigned value
+Uint32.add(x: Uint32, y: Uint32, overflow: Uint32): Uint32 # Adds two 32-bit unsigned integers with carry out
+Uint32.add(x: Uint32, y: Uint32, c: Uint32, overflow: Uint32): Uint32 # Adds two 32-bit unsigned integers with carry in and out
+Uint32.sub(x: Uint32, y: Uint32, overflow: Uint32): Uint32 # Subtracts two 32-bit unsigned integers with borrow out
+Uint32.sub(x: Uint32, y: Uint32, c: Uint32, overflow: Uint32): Uint32 # Subtracts two 32-bit unsigned integers with borrow out
+Uint32.mul(x: Uint32, y: Uint32, overflow: Uint32): Uint32 # Multiplies two 32-bit unsigned integers with overflow out
+Uint32.cmt(x: Uint32): Uint32 # Computes the bitwise NOT of a 32-bit unsigned value
+Uint32.or(x: Uint32, y: Uint32): Uint32 # Computes the bitwise OR of two 32-bit unsigned integers
+Uint32.xor(x: Uint32, y: Uint32): Uint32 # Computes the bitwise XOR of two 32-bit unsigned integers
+Uint32.and(x: Uint32, y: Uint32): Uint32 # Computes the bitwise AND of two 32-bit unsigned integers
+Uint32.shl(x: Uint32, n: uint32): Uint32 # Performs a logical left shift of x by n bits for an 32-bit unsigned integer
+Uint32.shr(x: Uint32, n: uint32): Uint32 # Performs a logical right shift of x by n bits for an 32-bit unsigned integer
+Uint32.sar(x: Uint32, n: uint32): Uint32 # Performs an arithmetic right shift of x by n bits for an 32-bit unsigned integer
+Uint32.rotateLeft(x: Uint32, n: uint32): Uint32 # Returns the value of x rotated left by (n mod size) bits
+Uint32.rotateRight(x: Uint32, n: uint32): Uint32 # Returns the value of x rotated right by (n mod size) bits
+Uint32.lowestBit(x: Uint32): Uint32
+Uint32.length(x: Uint32): int32 # Returns the minimum number of bits required to represent the value of `x`
+Uint32.leadingZeros(x: Uint32): int32 # Returns the number of leading zero bits in x
+Uint32.trailingZeros(x: Uint32): int32 # Returns the number of trailing zero bits in x
+Uint32.scanReverse(x: Uint32): int32 # Finds the index of the most significant(highest) set bit.
+Uint32.scanForward(x: Uint32): int32 # Finds the index of the least significant(lowest) set bit
+Uint32.countOnes(y: Uint32): int32 # Returns the number of set bits ("population count") in x
+Uint32.reverseBits(y: Uint32): Uint32 # Returns the value of x with its bits in reversed order
+Uint32.reverseBytes(y: Uint32): Uint32 # Reverses the byte order of an 32-bit unsigned integer
+Uint32.abs(x: Uint32): Uint32 # Returns the absolute value (identity for unsigned)
+Uint32.min(a: Uint32, b: Uint32): Uint32 # Returns the smaller of two values
+Uint32.max(a: Uint32, b: Uint32): Uint32 # Returns the greater of two values
+Uint32.clamp(value: Uint32, lo: Uint32, hi: Uint32): Uint32 # Returns the `value` clamped between the provided `min` and `max`
+Uint32.compare(x: Uint32, y: Uint32): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Uint32.countOnes(x: uint32): int32 # todo: deprecated method, use the called one
+Uint32.reverseBits(x: uint32): uint32 # todo: deprecated method, use the called one
+Uint32.scanForward(x: uint32): int32 # todo: deprecated method, use the called one
+Uint32.scanReverse(x: uint32): int32 # todo: deprecated method, use the called one
+Uint32.sign(x: uint32): int32 # todo: deprecated method, use the called one
+Uint32.abs(x: uint32): uint32 # todo: deprecated method, use the called one
+Uint32.min(x: uint32, y: uint32): uint32 # todo: deprecated method, use the called one
+Uint32.max(x: uint32, y: uint32): uint32 # todo: deprecated method, use the called one
+Uint32.clamp(value: uint32, lo: uint32, hi: uint32): uint32 # todo: deprecated method, use the called one
+Uint32.compare(x: uint32, y: uint32): int32 # todo: deprecated method, use the called one
 Uint32.zeroExtend(value: uint32, offs: int32, size: int32): uint32 # Extract and zero-extends a bit field from a value
-Uint32.add(x: uint32, y: uint32, overflow: uint32): uint32 # Adds two 32-bit unsigned integers with carry out
-Uint32.sub(x: uint32, y: uint32, overflow: uint32): uint32 # Subtracts two 32-bit unsigned integers with borrow out
-Uint32.mul(x: uint32, y: uint32, overflow: uint32): uint32 # Multiplies two 32-bit unsigned integers with overflow out
-Uint32.compare(x: uint32, y: uint32): int32 # Compares two 32-bit unsigned integers
-Uint32.length(x: uint32): int32 # Returns the minimum number of bits required to represent the value of `x`
-Uint32.leadingZeros(x: uint32): int32 # Returns the number of leading zero bits in x
-Uint32.trailingZeros(x: uint32): int32 # Returns the number of trailing zero bits in x
-Uint32.scanReverse(x: uint32): int32 # Finds the index of the most significant(highest) set bit.
-Uint32.scanForward(x: uint32): int32 # Finds the index of the least significant(lowest) set bit
-Uint32.countOnes(x: uint32): int32 # Returns the number of set bits ("population count") in x
-Uint32.rotateLeft(x: uint32, n: int32): uint32 # Returns the value of x rotated left by (n mod size) bits
-Uint32.rotateRight(x: uint32, n: int32): uint32 # Returns the value of x rotated right by (n mod size) bits
-Uint32.reverseBits(x: uint32): uint32 # Returns the value of x with its bits in reversed order
-Uint32.reverseBytes(x: uint32): uint32 # Reverses the byte order of an 32-bit unsigned integer
-Int32 # 32-bit signed integer operations
+Int32 # 32-bit signed integer
+Int32.value
 Int32.bits
 Int32.max
 Int32.min
-Int32.neg(x: int32, overflow: int32): int32 # Computes the arithmetic negation of an 32-bit signed integer
-Int32.shr(x: int32, n: int32): int32 # Performs an arithmetic right shift of an 32-bit signed integer
-Int32.add(x: int32, y: int32, overflow: int32): int32 # Adds two 32-bit signed integers with carry out
-Int32.sub(x: int32, y: int32, overflow: int32): int32 # Subtracts two 32-bit signed integers with borrow out
-Int32.mul(x: int32, y: int32, overflow: int32): int32 # Multiplies two 32-bit signed integers with overflow out
-Int32.compare(x: int32, y: int32): int32 # Compares two 32-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
-Int32.sign(x: int32): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
-Int32.abs(x: int32): int32 # Returns the absolute value of the input
-Int32.min(a: int32, b: int32): int32 # Returns the smaller value from the input values
-Int32.max(a: int32, b: int32): int32 # Returns the greater value from the input values
-Int32.clamp(value: int32, min: int32, max: int32): int32 # Returns the `value` clamped between the provided `min` and `max`
+Int32.i32(x: Int32): int32
+Int32.i64(x: Int32): int64
+Int32.neg(x: Int32): Int32 # Computes the arithmetic negation of an 32-bit signed integer
+Int32.add(x: Int32, y: Int32): Int32 # Add two values
+Int32.sub(x: Int32, y: Int32): Int32 # Subtract two values
+Int32.mul(x: Int32, y: Int32): Int32 # Multiply two values with overflow-out
+Int32.div(x: Int32, y: Int32): Int32 # Divide x by y, returning quotient
+Int32.rem(x: Int32, y: Int32): Int32 # Divide x by y, returning remainder
+Int32.neg(x: Int32, overflow: Int32): Int32 # Computes the arithmetic negation of an 32-bit signed integer
+Int32.add(x: Int32, y: Int32, overflow: Int32): Int32 # Adds two 32-bit signed integers with carry out
+Int32.sub(x: Int32, y: Int32, overflow: Int32): Int32 # Subtracts two 32-bit signed integers with borrow out
+Int32.mul(x: Int32, y: Int32, overflow: Int32): Int32 # Multiplies two 32-bit signed integers with overflow out
+Int32.sign(x: Int32): int32 # Returns 1 if nonzero, 0 if zero
+Int32.abs(x: Int32): Int32 # Returns the absolute value (identity for unsigned)
+Int32.min(a: Int32, b: Int32): Int32 # Returns the smaller of two values
+Int32.max(a: Int32, b: Int32): Int32 # Returns the greater of two values
+Int32.clamp(value: Int32, lo: Int32, hi: Int32): Int32 # Clamps value between min and max
+Int32.compare(x: Int32, y: Int32): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Int32.sign(x: int32): int32 # todo: deprecated method, use the called one
+Int32.abs(x: int32): int32 # todo: deprecated method, use the called one
+Int32.min(x: int32, y: int32): int32 # todo: deprecated method, use the called one
+Int32.max(x: int32, y: int32): int32 # todo: deprecated method, use the called one
+Int32.clamp(value: int32, lo: int32, hi: int32): int32 # todo: deprecated method, use the called one
+Int32.compare(x: int32, y: int32): int32 # todo: deprecated method, use the called one
 Int32.signExtend(value: int32, offs: int32, size: int32): int32 # Extract and sign-extends a bit field from a signed byte value
-Uint64 # 64-bit unsigned integer operations
+Uint32(value: uint32): Uint32 # Construct a Uint32 from a packed byte value
+uint32(value: Uint32): uint32 # Convert a Uint32 value to a uint32
+Int32(value: int32): Int32 # Construct an Int32 from a signed byte value
+int32(value: Int32): int32 # Convert an Int32 value to a int32
+Uint64 # 64-bit unsigned integer
+Uint64.value
 Uint64.bits
 Uint64.min
 Uint64.max
-Uint64.cmt(x: uint64): uint64 # Computes the bitwise NOT of an 64-bit unsigned value
-Uint64.or(x: uint64, y: uint64): uint64 # Computes the bitwise OR of two 64-bit unsigned integers
-Uint64.xor(x: uint64, y: uint64): uint64 # Computes the bitwise XOR of two 64-bit unsigned integers
-Uint64.and(x: uint64, y: uint64): uint64 # Computes the bitwise AND of two 64-bit unsigned integers
-Uint64.shr(x: uint64, n: int32): uint64 # Performs a logical right shift of x by n bits for an 64-bit unsigned integer
-Uint64.shl(x: uint64, n: int32): uint64 # Performs a logical left shift of x by n bits for an 64-bit unsigned integer
-Uint64.sign(x: uint64): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
-Uint64.abs(x: uint64): uint64 # Returns the absolute value of the input
-Uint64.min(a: uint64, b: uint64): uint64 # Returns the smaller value from the input values
-Uint64.max(a: uint64, b: uint64): uint64 # Returns the greater value from the input values
-Uint64.clamp(value: uint64, min: uint64, max: uint64): uint64 # Returns the `value` clamped between the provided `min` and `max`
+Uint64.u64(x: Uint64): uint64
+Uint64.test(x: Uint64): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
+Uint64.neg(x: Uint64): Uint64 # Negates an 64-bit unsigned value
+Uint64.add(x: Uint64, y: Uint64): Uint64 # Adds two 64-bit unsigned integers
+Uint64.sub(x: Uint64, y: Uint64): Uint64 # Subtracts two 64-bit unsigned integers
+Uint64.mul(x: Uint64, y: Uint64): Uint64 # Multiplies two 64-bit unsigned integers
+Uint64.div(x: Uint64, y: Uint64): Uint64 # Divides two 64-bit unsigned integers
+Uint64.rem(x: Uint64, y: Uint64): Uint64 # Divide x by y, returning remainder
+Uint64.neg(x: Uint64, overflow: Uint64): Uint64 # Negates an 64-bit unsigned value
+Uint64.add(x: Uint64, y: Uint64, overflow: Uint64): Uint64 # Adds two 64-bit unsigned integers with carry out
+Uint64.add(x: Uint64, y: Uint64, c: Uint64, overflow: Uint64): Uint64 # Adds two 64-bit unsigned integers with carry out
+Uint64.sub(x: Uint64, y: Uint64, overflow: Uint64): Uint64 # Subtracts two 64-bit unsigned integers with borrow out
+Uint64.sub(x: Uint64, y: Uint64, c: Uint64, overflow: Uint64): Uint64 # Subtracts two 64-bit unsigned integers with borrow out
+Uint64.mul(x: Uint64, y: Uint64, overflow: Uint64): Uint64 # Multiplies two 64-bit unsigned integers with overflow out
+Uint64.cmt(x: Uint64): Uint64 # Computes the bitwise NOT of a 64-bit unsigned value
+Uint64.or(x: Uint64, y: Uint64): Uint64 # Computes the bitwise OR of two 64-bit unsigned integers
+Uint64.xor(x: Uint64, y: Uint64): Uint64 # Computes the bitwise XOR of two 64-bit unsigned integers
+Uint64.and(x: Uint64, y: Uint64): Uint64 # Computes the bitwise AND of two 64-bit unsigned integers
+Uint64.shl(x: Uint64, n: uint32): Uint64 # Performs a logical left shift of x by n bits for an 64-bit unsigned integer
+Uint64.shr(x: Uint64, n: uint32): Uint64 # Performs a logical right shift of x by n bits for an 64-bit unsigned integer
+Uint64.sar(x: Uint64, n: uint32): Uint64 # Performs an arithmetic right shift of x by n bits for an 64-bit unsigned integer
+Uint64.rotateLeft(x: Uint64, n: uint32): Uint64 # Returns the value of x rotated left by (n mod size) bits
+Uint64.rotateRight(x: Uint64, n: uint32): Uint64 # Returns the value of x rotated right by (n mod size) bits
+Uint64.lowestBit(x: Uint64): Uint64
+Uint64.length(x: Uint64): int32 # Returns the minimum number of bits required to represent the value of `x`
+Uint64.leadingZeros(x: Uint64): int32 # Returns the number of leading zero bits in x
+Uint64.trailingZeros(x: Uint64): int32 # Returns the number of trailing zero bits in x
+Uint64.scanReverse(x: Uint64): int32 # Finds the index of the most significant(highest) set bit.
+Uint64.scanForward(x: Uint64): int32 # Finds the index of the least significant(lowest) set bit
+Uint64.countOnes(y: Uint64): int32 # Returns the number of set bits ("population count") in x
+Uint64.reverseBits(y: Uint64): Uint64 # Returns the value of x with its bits in reversed order
+Uint64.reverseBytes(y: Uint64): Uint64 # Reverses the byte order of an 64-bit unsigned integer
+Uint64.abs(x: Uint64): Uint64 # Returns the absolute value (identity for unsigned)
+Uint64.min(a: Uint64, b: Uint64): Uint64 # Returns the smaller of two values
+Uint64.max(a: Uint64, b: Uint64): Uint64 # Returns the greater of two values
+Uint64.clamp(value: Uint64, lo: Uint64, hi: Uint64): Uint64 # Clamps value between min and max
+Uint64.compare(x: Uint64, y: Uint64): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Uint64.reverseBytes(x: uint64): uint64 # todo: deprecated method, use the called one
 Uint64.zeroExtend(value: uint64, offs: int32, size: int32): uint64 # Extract and zero-extends a bit field from a value
-Uint64.add(x: uint64, y: uint64, overflow: uint64): uint64 # Adds two 64-bit unsigned integers with carry out
-Uint64.sub(x: uint64, y: uint64, overflow: uint64): uint64 # Subtracts two 64-bit unsigned integers with borrow out
-Uint64.mul(x: uint64, y: uint64, overflow: uint64): uint64 # Multiplies two 64-bit unsigned integers with overflow out
-Uint64.compare(x: uint64, y: uint64): int32 # Compares two 64-bit unsigned integers
-Uint64.length(x: uint64): int32 # Returns the minimum number of bits required to represent the value of `x`
-Uint64.leadingZeros(x: uint64): int32 # Returns the number of leading zero bits in x
-Uint64.trailingZeros(x: uint64): int32 # Returns the number of trailing zero bits in x
-Uint64.scanReverse(x: uint64): int32 # Finds the index of the most significant(highest) set bit.
-Uint64.scanForward(x: uint64): int32 # Finds the index of the least significant(lowest) set bit
-Uint64.countOnes(x: uint64): int32 # Returns the number of set bits ("population count") in x
-Uint64.rotateLeft(x: uint64, n: int32): uint64 # Returns the value of x rotated left by (n mod size) bits
-Uint64.rotateRight(x: uint64, n: int32): uint64 # Returns the value of x rotated right by (n mod size) bits
-Uint64.reverseBits(x: uint64): uint64 # Returns the value of x with its bits in reversed order
-Uint64.reverseBytes(x: uint64): uint64 # Reverses the byte order of an 64-bit unsigned integer
-Int64 # 64-bit signed integer operations
+Int64 # 64-bit signed integer
+Int64.value
 Int64.bits
 Int64.max
 Int64.min
-Int64.neg(x: int64, overflow: int64): int64 # Computes the arithmetic negation of an 64-bit signed integer
-Int64.shr(x: int64, n: int32): int64 # Performs an arithmetic right shift of an 64-bit signed integer
-Int64.add(x: int64, y: int64, overflow: int64): int64 # Adds two 64-bit signed integers with carry out
-Int64.sub(x: int64, y: int64, overflow: int64): int64 # Subtracts two 64-bit signed integers with borrow out
-Int64.mul(x: int64, y: int64, overflow: int64): int64 # Multiplies two 64-bit signed integers with overflow out
-Int64.compare(x: int64, y: int64): int32 # Compares two 64-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
-Int64.sign(x: int64): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
-Int64.abs(x: int64): int64 # Returns the absolute value of the input
-Int64.min(a: int64, b: int64): int64 # Returns the smaller value from the input values
-Int64.max(a: int64, b: int64): int64 # Returns the greater value from the input values
-Int64.clamp(value: int64, min: int64, max: int64): int64 # Returns the `value` clamped between `min` and `max`
+Int64.i64(x: Int64): int64
+Int64.neg(x: Int64): Int64 # Computes the arithmetic negation of an 64-bit signed integer
+Int64.add(x: Int64, y: Int64): Int64 # Add two values
+Int64.sub(x: Int64, y: Int64): Int64 # Subtract two values
+Int64.mul(x: Int64, y: Int64): Int64 # Multiply two values with overflow-out
+Int64.div(x: Int64, y: Int64): Int64 # Divide x by y, returning quotient
+Int64.rem(x: Int64, y: Int64): Int64 # Divide x by y, returning remainder
+Int64.neg(x: Int64, overflow: Int64): Int64 # Computes the arithmetic negation of an 64-bit signed integer
+Int64.add(x: Int64, y: Int64, overflow: Int64): Int64 # Adds two 64-bit signed integers with carry out
+Int64.sub(x: Int64, y: Int64, overflow: Int64): Int64 # Subtracts two 64-bit signed integers with borrow out
+Int64.mul(x: Int64, y: Int64, overflow: Int64): Int64 # Multiplies two 64-bit signed integers with overflow out
+Int64.sign(x: Int64): int32 # Returns 1 if nonzero, 0 if zero
+Int64.abs(x: Int64): Int64 # Returns the absolute value (identity for unsigned)
+Int64.min(a: Int64, b: Int64): Int64 # Returns the smaller of two values
+Int64.max(a: Int64, b: Int64): Int64 # Returns the greater of two values
+Int64.clamp(value: Int64, lo: Int64, hi: Int64): Int64 # Clamps value between min and max
+Int64.compare(x: Int64, y: Int64): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
+Int64.sign(x: int64): int32 # todo: deprecated method, use the called one
+Int64.abs(x: int64): int64 # todo: deprecated method, use the called one
 Int64.signExtend(value: int64, offs: int32, size: int32): int64 # Extract and sign-extends a bit field from a signed byte value
+Uint64(value: uint64): Uint64 # Construct a Uint64 from a packed byte value
+uint64(value: Uint64): uint64 # Convert a Uint64 value to a uint64
+Int64(value: int64): Int64 # Construct an Int64 from a signed byte value
+int64(value: Int64): int64 # Convert an Int64 value to a int64
 Float64 # 64 bit floating point struct and mathematical methods
 Float64.nan
 Float64.inf
