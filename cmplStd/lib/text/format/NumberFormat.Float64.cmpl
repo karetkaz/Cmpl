@@ -15,12 +15,15 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 	}
 
 	struct BigUint {
-		uint32 words[32];
+		// 34 words (1088 bits) holds the full magnitude of any finite double:
+		// the integer part needs at most 1024 bits, and the fraction of the
+		// smallest subnormal needs 1074 bits. Sizing for the fraction keeps
+		// `fractionShift` (below) non-negative for every input.
+		uint32 words[34];
 		inline "cmplStd/lib/math/number/UintImpl.cmpl";
 	}
 
 	uint64 bits = Float64.toBits(value);
-	bool negative = (bits >> 63) != 0;
 	int32 exponent = (bits >> 52) & 0x7ff;
 	uint64 mantissa = bits & ((1U << 52) - 1);
 	if (exponent == 0) {
@@ -74,7 +77,12 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 	pos = append(output, pos, format.fractionSymbol);
 
 	BigUint fractionPart = BigUint.make(mantissa);
-	fractionPart.shiftLeft(fractionPart.bits() - (52 - exponent));
+	int fractionShift = fractionPart.bits() - (52 - exponent);
+	if (fractionShift >= 0) {
+		fractionPart.shiftLeft(fractionShift);
+	} else {
+		fractionPart.shiftRight(-fractionShift);
+	}
 
 	int precision = Int32.abs(format.precision);
 	int fractionPos = pos;
@@ -97,6 +105,18 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 		// round if needed: `0.358` is `0.36` printed using 2 precision digits
 		uint32 overflow = fractionPart.mulOvf(digitSymbols.length);
 		bool carry = overflow >= digitSymbols.length / 2;
+		if (overflow == digitSymbols.length / 2 && fractionPart.isZero()) {
+			// round half to even: 77481518.85365295410156250000000...
+			// without this check: 77481518.853652954101563
+			// printf rounds down: 77481518.853652954101562
+			for (int i = pos - 1; i >= integerPos; i -= 1) {
+				int last = digitSymbols.indexOf(output[i]);
+				if (last >= 0) {
+					carry = (last & 1) == 1;
+					break;
+				}
+			}
+		}
 
 		for (int i = pos-1; carry && i >= integerPos; i -= 1) {
 			char idx = digitSymbols.indexOf(output[i]);
@@ -111,6 +131,11 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 			output[i] = digitSymbols[idx];
 		}
 		if (carry) {
+			if (pos >= output.length) {
+				error("buffer overrun on carry", pos);
+				output[output.length - 1] = 0;
+				return output.length;
+			}
 			// one extra digit is needed: 9.9999 => 10.000
 			for (int i = pos; i > integerPos; i -= 1) {
 				output[i] = output[i - 1];
@@ -118,6 +143,7 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 			output[integerPos] = digitSymbols[1];
 			pos += 1;
 			groupPosition += 1;
+			fractionPos += 1;
 		}
 	}
 

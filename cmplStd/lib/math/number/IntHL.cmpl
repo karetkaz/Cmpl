@@ -285,6 +285,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 
 	/// Divides two unsigned integers (binary long division)
 	static Unsigned div(Unsigned x, Unsigned y) {
+		// todo: https://github.com/hcs0/Hackers-Delight/blob/master/divlu.c.txt
+		// todo: https://ridiculousfish.com/blog/posts/labor-of-division-episode-v.html
 		Unsigned q = {hi: wZero, lo: wZero};
 		Unsigned r = {hi: wZero, lo: wZero};
 		Unsigned one = {hi: wZero, lo: wOne};

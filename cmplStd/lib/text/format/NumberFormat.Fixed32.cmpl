@@ -74,6 +74,18 @@ static int format(NumberFormat format!, char output&[], int pos, Fixed32 value) 
 		uint32 overflow = uint64(fractionPart) * digitSymbols.length >> Fixed32.precision;
 		fractionPart = fractionPart * digitSymbols.length & Fixed32.mask;
 		bool carry = overflow >= digitSymbols.length / 2;
+		if (overflow == digitSymbols.length / 2 && fractionPart == 0) {
+			// round half to even: 77481518.85365295410156250000000...
+			// without this check: 77481518.853652954101563
+			// printf rounds down: 77481518.853652954101562
+			for (int i = pos - 1; i >= integerPos; i -= 1) {
+				int last = digitSymbols.indexOf(output[i]);
+				if (last >= 0) {
+					carry = (last & 1) == 1;
+					break;
+				}
+			}
+		}
 
 		for (int i = pos-1; carry && i >= integerPos; i -= 1) {
 			char idx = digitSymbols.indexOf(output[i]);
@@ -87,7 +99,7 @@ static int format(NumberFormat format!, char output&[], int pos, Fixed32 value) 
 			}
 			output[i] = digitSymbols[idx];
 		}
-		if (carry) {
+		if (carry && pos < output.length) {
 			// one extra digit is needed: 9.9999 => 10.000
 			for (int i = pos; i > integerPos; i -= 1) {
 				output[i] = output[i - 1];
@@ -95,6 +107,7 @@ static int format(NumberFormat format!, char output&[], int pos, Fixed32 value) 
 			output[integerPos] = digitSymbols[1];
 			pos += 1;
 			groupPosition += 1;
+			fractionPos += 1;
 		}
 	}
 

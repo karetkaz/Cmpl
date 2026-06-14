@@ -136,7 +136,9 @@ struct TextWriter: Closeable {
 
 	/// Write a newline character
 	static TextWriter writeln(TextWriter this) {
-		return this.write("\n");
+		this.write("\n");
+		this.flush();
+		return this;
 	}
 
 	///@public

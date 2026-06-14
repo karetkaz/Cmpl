@@ -112,10 +112,6 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 			else if (button == Window.KEY_CODE_TAB) {
 				data.smooth = 1 - data.smooth;
 			}
-			else if (button == 'S') {
-				trace("dumping screen");
-				data.offs.saveBmp("out/offs.bmp", 0);
-			}
 		}
 		if (action == Window.WINDOW_INIT && !data.animate) {
 			char text[256] = {...};

@@ -25,7 +25,7 @@ for (float64 i = 0; i < 40; i += .001) {
 	float64.print(expect, value, print_flags, format.width, format.precision);
 	format.format(buff, 0, value);
 
-	if (!equals(expect, buff)) {
+	if (strcmp(expect, buff) != 0) {
 		struct NotEquals {
 			char expectedFull[128];
 			char expected[*];
@@ -49,10 +49,88 @@ float64 value = 0;
 for (int i = 0; i < 22; i += 1) {
 	float64.print(expect, value, 0, 0, 100);
 	value.format(buff, 0, "%.100f");
-	if (!equals(expect, buff)) {
+	if (strcmp(expect, buff) != 0) {
 		NotEquals.debug("not equals", NotEquals(expect, buff, null));
 	}
 	value += .1;
+}
+
+// regression: extreme magnitudes including subnormals must match the reference.
+// Before the fraction-shift fix, magnitudes below ~2e-293 (and every subnormal)
+// produced corrupted fraction digits.
+float64 extremes[] = {
+	1e-100, 1e-200, 1e-292, 1e-300, 9.3e-302,
+	Float64.smallestNormal,                 // 2.2250738585072014e-308
+	Float64.fromBits(1U),                   // smallest subnormal (~5e-324)
+	Float64.fromBits(0x000fffffffffffffU),  // largest subnormal
+	Float64.fromBits(0x0008000000000000U),  // mid subnormal
+	1.7976931348623157e308,                 // near the maximum double
+};
+char wideExpect[1450] = {...};
+char wideBuff[1450] = {...};
+NumberFormat wide = {
+	precision: 1100;
+	trailingZeros: true;
+};
+for (int i = 0; i < extremes.length; i += 1) {
+	float64 v = extremes[i];
+	float64.print(wideExpect, v, 0, 0, 1100);
+	wide.format(wideBuff, 0, v);
+	if (strcmp(wideExpect, wideBuff) != 0) {
+		error("extreme magnitude mismatch", v, wideExpect, wideBuff);
+	}
+}
+
+// non-finite values must match the reference representation
+char special[16] = {...};
+char specialRef[16] = {...};
+NumberFormat finite = {};
+float64 nonFinite[] = { +Float64.inf, -Float64.inf, Float64.nan };
+for (int i = 0; i < nonFinite.length; i += 1) {
+	float64 v = nonFinite[i];
+	float64.print(specialRef, v, 0, 0, 0);
+	finite.format(special, 0, v);
+	if (strcmp(specialRef, special) != 0) {
+		error("non-finite mismatch", v, specialRef, special);
+	}
+}
+
+// round-half-to-even on exact ties (terminating value = k / 2^n, so the decimal
+// expansion ends in a lone `5` at the rounding position). For precision >= 1 the
+// digit before the cut sits at output[pos-1] and the formatter matches the
+// printf reference; this guards the tie handling against regressions.
+char tieExpect[64] = {...};
+char tieBuff[64] = {...};
+void checkTie(int32 p, float64 value) {
+	float64.print(tieExpect, value, 0, 0, p);
+	NumberFormat tie = { precision: p; trailingZeros: true; };
+	tie.format(tieBuff, 0, value);
+	if (strcmp(tieExpect, tieBuff) != 0) {
+		error("tie rounding mismatch", value, tieExpect, tieBuff);
+	}
+}
+checkTie(1, 0.25); checkTie(1, 0.75);     // -> 0.2, 0.8
+checkTie(1, 1.25); checkTie(1, 1.75);     // -> 1.2, 1.8
+checkTie(1, 2.25); checkTie(1, 2.75);     // -> 2.2, 2.8
+checkTie(2, 0.125); checkTie(2, 0.375);   // -> 0.12, 0.38
+checkTie(2, 0.625); checkTie(2, 0.875);   // -> 0.62, 0.88
+checkTie(15, 77481518.8536529541015625);  // -> ...562 (the case from the fix)
+
+// round-half-to-even at precision 0: the digit whose parity decides the tie is
+// not at output[pos-1] (that is the fraction separator), so the formatter scans
+// back to the last real digit. Even integers round down: 0.5->0, 2.5->2, 4.5->4.
+char p0Expect[16] = {...};
+char p0Buff[16] = {...};
+NumberFormat tie0 = { precision: 0; trailingZeros: true; };
+// 9.5 and 99.5 round up to a new digit (10, 100): exercises the carry path
+float64 halves[] = { 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 9.5, 99.5 };
+for (int i = 0; i < halves.length; i += 1) {
+	float64 v = halves[i];
+	float64.print(p0Expect, v, 0, 0, 0);
+	tie0.format(p0Buff, 0, v);
+	if (strcmp(p0Expect, p0Buff) != 0) {
+		error("precision-0 tie not rounded to even", v, p0Expect, p0Buff);
+	}
 }
 
 static if (false) {/*

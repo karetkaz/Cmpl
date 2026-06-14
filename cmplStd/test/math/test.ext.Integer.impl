@@ -159,7 +159,7 @@ for (uint64 i = 0; i < mask - inc; i += inc) {
 		assertEq(mulLo, Unsigned.mul(y, x), "assertion failed", i, j, mul);
 		static if (bits < 64) { assertEq(mul >> bits, ovf, "assertion failed", i, j, mul); }
 
-		if (j != 0) {
+		if (j != 0 && !(i == min && j == -1)) {
 			assertEq(i / j, x.div(y), "assertion failed", i, j);
 			assertEq(i % j, x.rem(y), "assertion failed", i, j);
 		}
@@ -203,7 +203,7 @@ for (int64 i = min; i < max - inc; i += inc) {
 		assertEq(mul & mask, mulLo, "assertion failed", i, j);
 		static if (bits < 64) { assertEq(mul >> bits, ovf, "assertion failed", i, j); }
 
-		if (j != 0) {
+		if (j != 0 && !(i == min && j == -1)) {
 			assertEq(i / j, x.div(y), "assertion failed", i, j);
 			assertEq(i % j, x.rem(y), "assertion failed", i, j);
 		}

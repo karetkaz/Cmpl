@@ -32,6 +32,7 @@ GxWindow createWindow(GxImage offs, const char *title) {
 	result->window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, offs->width, offs->height, SDL_WINDOW_HIDDEN);
 	result->screen = SDL_GetWindowSurface(result->window);
 	SDL_ShowWindow(result->window);
+	SDL_StartTextInput();
 	return result;
 }
 
@@ -192,11 +193,14 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			*y = event.wheel.y;
 			return GESTURE_SCROLL;
 
+		case SDL_TEXTINPUT:
+			*x = utf8ToCodepoint(event.text.text);
+			*button = *x;
+			return KEY_PRESS;
+
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
 			*button = event.key.keysym.sym;
-			*x = event.key.keysym.scancode;
-			*y = 0;
 			if (event.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT)) {
 				*y |= KEY_MASK_SHIFT;
 			}
@@ -206,14 +210,17 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			if (event.key.keysym.mod & (KMOD_LALT | KMOD_RALT)) {
 				*y |= KEY_MASK_ALT;
 			}
-			switch (event.type) {
-				case SDL_KEYDOWN:
-					return KEY_PRESS;
 
-				case SDL_KEYUP:
-					return KEY_RELEASE;
+			if (event.type == SDL_KEYUP) {
+				return KEY_RELEASE;
 			}
-			break;
+
+			SDL_PumpEvents();
+			if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && event.type == SDL_TEXTINPUT) {
+				SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT);
+				*x = utf8ToCodepoint(event.text.text);
+			}
+			return KEY_PRESS;
 	}
 	return 0;
 }

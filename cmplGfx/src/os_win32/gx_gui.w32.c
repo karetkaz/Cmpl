@@ -1,7 +1,6 @@
 #include "../gx_gui.h"
 #include <windows.h>
 #include <winuser.h>
-#include <ctype.h>
 
 struct GxWindow {
 	GxImage image;
@@ -106,7 +105,6 @@ void flushWindow(GxWindow window) {
 
 int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 	static int btnMod = 0;
-	static int keyMod = 0;
 
 	MSG msg;
 	if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
@@ -205,118 +203,64 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			DispatchMessage(&msg);
 			return MOUSE_MOTION;
 
+		case WM_SYSKEYDOWN:
+		case WM_SYSKEYUP:
 		case WM_KEYDOWN:
 		case WM_KEYUP: {
-			// https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
-			int modifier = 0;
-			switch (msg.wParam) {
-				default:
-					if (msg.wParam >= 'A' && msg.wParam <= 'Z') {
-						*button = tolower(msg.wParam);
-					} else {
-						*button = msg.wParam;
-					}
-					break;
+			UINT keyCode = msg.wParam;
+			UINT scanCode = (msg.lParam >> 16) & 0xff;
+			int extended = (msg.lParam & (1 << 24)) != 0;
 
+			switch (keyCode) {
 				case VK_SHIFT:
-				case VK_LSHIFT:
-					*button = KEY_CODE_L_SHIFT;
-					modifier = KEY_MASK_SHIFT;
-					break;
-
-				case VK_RSHIFT:
-					*button = KEY_CODE_R_SHIFT;
-					modifier = KEY_MASK_SHIFT;
+					keyCode = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
 					break;
 
 				case VK_CONTROL:
-				case VK_LCONTROL:
-					*button = KEY_CODE_L_CTRL;
-					modifier = KEY_MASK_CTRL;
-					break;
-
-				case VK_RCONTROL:
-					*button = KEY_CODE_R_CTRL;
-					modifier = KEY_MASK_CTRL;
+					keyCode = extended ? VK_RCONTROL : VK_LCONTROL;
 					break;
 
 				case VK_MENU:
-				case VK_LMENU:
-					*button = KEY_CODE_L_ALT;
-					modifier = KEY_MASK_ALT;
+					keyCode = extended ? VK_RMENU : VK_LMENU;
 					break;
 
-				case VK_RMENU:
-					*button = KEY_CODE_R_ALT;
-					modifier = KEY_MASK_ALT;
-					break;
-
-				case VK_LWIN:
-					*button = KEY_CODE_L_GUI;
-					break;
-
-				case VK_RWIN:
-					*button = KEY_CODE_R_GUI;
-					break;
-
-				case VK_OEM_1:
-					*button = ';';
-					break;
-
-				case VK_OEM_PLUS:
-					*button = '+';
-					break;
-
-				case VK_OEM_COMMA:
-					*button = ',';
-					break;
-
-				case VK_OEM_MINUS:
-					*button = '-';
-					break;
-
-				case VK_OEM_PERIOD:
-					*button = '.';
-					break;
-
-				case VK_OEM_2:
-					*button = '/';
-					break;
-
-				case VK_OEM_3:
-					*button = '~';
-					break;
-
-				case VK_OEM_4:
-					*button = '[';
-					break;
-
-				case VK_OEM_5:
-				case VK_OEM_102:
-					*button = '\\';
-					break;
-
-				case VK_OEM_6:
-					*button = ']';
-					break;
-
-				case VK_OEM_7:
-					*button = '\'';
+				default:
 					break;
 			}
 
-			*x = HIWORD(msg.lParam) & 127;
+			if (keyCode >= 'A' && keyCode <= 'Z') {
+				*button = keyCode - 'A' + 'a';
+			} else {
+				*button = keyCode;
+			}
+
+			if (GetKeyState(VK_SHIFT) & 0x8000) {
+				*y |= KEY_MASK_SHIFT;
+			}
+			if (GetKeyState(VK_CONTROL) & 0x8000) {
+				*y |= KEY_MASK_CTRL;
+			}
+			if (GetKeyState(VK_MENU) & 0x8000) {
+				*y |= KEY_MASK_ALT;
+			}
+
 			DispatchMessage(&msg);
-
-			switch (msg.message) {
-				case WM_KEYDOWN:
-					*y = keyMod |= modifier;
-					return KEY_PRESS;
-
-				case WM_KEYUP:
-					*y = keyMod &= ~modifier;
-					return KEY_RELEASE;
+			if (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) {
+				return KEY_RELEASE;
 			}
+
+			BYTE keyState[256];
+			GetKeyboardState(keyState);
+
+			WCHAR buf[8];
+			int len = ToUnicode(keyCode, scanCode, keyState, buf, 8, 0);
+			if (len >= 2 && buf[0] >= 0xd800 && buf[0] <= 0xdbff && buf[1] >= 0xdc00 && buf[1] <= 0xdfff) {
+				*x = 0x10000 + ((buf[0] - 0xd800) << 10) + (buf[1] - 0xdc00);
+			}
+			if (len >= 1) {
+				*x = buf[0];
+			}
+			return KEY_PRESS;
 		}
 		break;
 	}

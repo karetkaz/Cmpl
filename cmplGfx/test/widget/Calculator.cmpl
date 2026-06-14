@@ -73,7 +73,7 @@ void onClear(Button this, int32 clicks) {
 	clear = true;
 }
 void onValue(Button this, int32 clicks) {
-	int len = length(result);
+	int len = length(result, result.length);
 	if (clear) {
 		clear = false;
 		len = 0;
@@ -81,7 +81,7 @@ void onValue(Button this, int32 clicks) {
 	result.append(len, this.text);
 }
 void onNeg(Button this, int32 clicks) {
-	int len = Int32.min(result.length, length(result));
+	int len = length(result, result.length);
 	if (result[0] == '-') {
 		for (int i = 1; i < len; i += 1) {
 			result[i - 1] = result[i];
@@ -97,7 +97,7 @@ void onNeg(Button this, int32 clicks) {
 	}
 }
 void onOp(Button this, int32 clicks) {
-	assert(this.text.length() == 1);
+	assert(this.text.length(4) == 1);
 	if (clear) {
 		// keep the last clicked operator
 		operation = this.text[0];

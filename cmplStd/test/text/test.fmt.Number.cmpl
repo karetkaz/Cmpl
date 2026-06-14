@@ -8,7 +8,7 @@ debug(buff);
 
 int64(0x20928374).format(buff, "value%%: %d = 0x%08x = 0b%032b = [%.5i]5");
 debug(buff);
-assert(equals(buff[...buff.length()], "value%: 546472820 = 0x20928374 = 0b00100000100100101000001101110100 = [2104344112240]5"));
+assert(strcmp(buff, "value%: 546472820 = 0x20928374 = 0b00100000100100101000001101110100 = [2104344112240]5") == 0);
 
 int64(-1).format(buff, "int64: %d = 0x%08x = 0b%032b = [%.5i]5");
 debug(buff);

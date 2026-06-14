@@ -155,6 +155,7 @@ static struct Window {
 					isAlt: window.isAlt;
 					repeat: window.repeat;
 					key: button;
+					chr: x;
 				};
 				return widget.onKeyEvent(widget, event) != View.State.ignored;
 			}
@@ -169,6 +170,7 @@ static struct Window {
 					isAlt: window.isAlt;
 					repeat: window.repeat;
 					key: button;
+					chr: x;
 				};
 				window.key = 0;
 				window.repeat = 0;

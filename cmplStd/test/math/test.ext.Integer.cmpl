@@ -344,8 +344,8 @@ for (int64 i = 1; i > 0; i <<= 1) {
 	assert(sign(-i) == Int64.sign(-i));
 }
 
-//https://github.com/mateofio/stdcxx-bitops/blob/master/include/bitops.hh
-//https://fgiesen.wordpress.com/2013/10/18/bit-scanning-equivalencies/
+https://github.com/mateofio/stdcxx-bitops/blob/master/include/bitops.hh
+https://fgiesen.wordpress.com/2013/10/18/bit-scanning-equivalencies/
 */
 
 // TODO: other utility functions manipulating binary representations

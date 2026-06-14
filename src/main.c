@@ -5,6 +5,7 @@
 #include "compiler.h"
 #include "printer.h"
 #include <time.h>
+#include <limits.h>
 
 // default values
 static const char * const CMPL_HOME = "CMPL_HOME";    // Home environment path variable name
@@ -1642,6 +1643,36 @@ static int usage() {
 	return 0;
 }
 
+static const char* detectHomeFolder(ccContext cc, const char *argv0) {
+	char *home = getenv(CMPL_HOME);
+	if (home != NULL) {
+		return ccUniqueStr(cc, home, -1, -1);
+	}
+
+	char buffer[PATH_MAX];
+	// path variable not set, try to guess based on executable path by going backward on parents,
+	// until `cmplUnit` file exists (works only if the executable is inside the project folder)
+	if (absolutePath(argv0, buffer, sizeof(buffer)) == NULL) {
+		return NULL;
+	}
+
+	char *separator = buffer + strlen(buffer);
+	while (--separator > buffer) {
+		if (*separator != '/') {
+			continue;
+		}
+		size_t max = sizeof(buffer) - (separator - buffer);
+		strncpy(separator + 1, cmplUnit, max - 1);
+		FILE *f = fopen(buffer, "r");
+		if (f != NULL) {
+			fclose(f);
+			*separator = '\0';
+			return ccUniqueStr(cc, buffer, -1, -1);
+		}
+	}
+	return NULL;
+}
+
 int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
@@ -1676,7 +1707,6 @@ int main(int argc, char *argv[]) {
 	extra.memory = 128 << 20;// 128 Mb memory compiler + runtime
 
 	const char *stdlib = cmplUnit;
-	const char *cmpl_home = getenv(CMPL_HOME);
 
 	ccConfig install = install_def;
 	char *ccFile = NULL;			// compiled filename
@@ -2377,7 +2407,7 @@ int main(int argc, char *argv[]) {
 	cc->genStaticGlobals = extra.genStaticGlobals != 0;
 	cc->errPrivateAccess = extra.errPrivateAccess != 0;
 	cc->errUninitialized = extra.errUninitialized != 0;
-	cc->home = ccUniqueStr(cc, cmpl_home, -1, -1);
+	cc->home = detectHomeFolder(cc, argv[0]);
 
 	if (install & installLibs) {
 		// install standard library.
@@ -2508,6 +2538,9 @@ int main(int argc, char *argv[]) {
 	if (rt->errors == 0) {
 		if (extra.steps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sGenerate: byte-code", extra.steps);}
 		if (ccGenCode(cc, run_code != run || extra.dmpAsmStmt) != 0) {
+			if (rt->errors == 0) {
+				error(rt, NULL, 0, "error generating code");
+			}
 			dbgTrace("error generating code");
 		}
 		// set breakpoints

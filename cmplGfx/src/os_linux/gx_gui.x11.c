@@ -1,6 +1,7 @@
 #include "../gx_gui.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <locale.h>
 #include <sys/poll.h>
 #include <stdlib.h>
 
@@ -8,6 +9,8 @@ struct GxWindow {
 	Display *display;
 	Window window;
 	XImage *image;
+	XIM inputMethod;
+	XIC inputContext;
 
 	Atom deleteWindow;
 	XGCValues gr_values;
@@ -15,6 +18,8 @@ struct GxWindow {
 };
 
 void initWindowing() {
+	setlocale(LC_CTYPE, "");
+	XSetLocaleModifiers("");
 }
 
 void quitWindowing() {
@@ -38,6 +43,17 @@ GxWindow createWindow(GxImage offs, const char *title) {
 	result->image = XCreateImage(result->display, CopyFromParent, depth, ZPixmap, 0, offs->basePtr, offs->width, offs->height, 32, offs->scanLen);
 	result->gc = XCreateGC(result->display, result->window, GCForeground, &result->gr_values);
 	XSetStandardProperties(result->display, result->window, title, "cmpl", None, NULL, 0, NULL);
+	result->inputMethod = XOpenIM(result->display, NULL, NULL, NULL);
+	if (result->inputMethod != NULL) {
+		result->inputContext = XCreateIC(result->inputMethod,
+			XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+			XNClientWindow, result->window,
+			XNFocusWindow, result->window,
+			NULL
+		);
+	} else {
+		result->inputContext = NULL;
+	}
 	XMapWindow(result->display, result->window);
 
 	XSelectInput(result->display, result->window, ExposureMask
@@ -72,6 +88,14 @@ void destroyWindow(GxWindow window) {
 	}
 
 	if (window->window) {
+		if (window->inputContext) {
+			XDestroyIC(window->inputContext);
+			window->inputContext = NULL;
+		}
+		if (window->inputMethod) {
+			XCloseIM(window->inputMethod);
+			window->inputMethod = NULL;
+		}
 		XDestroyWindow(window->display, window->window);
 		XFreeGC(window->display, window->gc);
 		XFlush(window->display);
@@ -86,8 +110,8 @@ void destroyWindow(GxWindow window) {
 }
 
 int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
+	static int modState = 0;
 	static int btnState = 0;
-	static int keyState = 0;
 
 	Display *display = window->display;
 
@@ -98,7 +122,7 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			.events = POLLIN,
 		};
 
-		if (poll(&pfd, 1, timeout) >= 0) {
+		if (poll(&pfd, 1, timeout) <= 0) {
 			return 0;
 		}
 	}
@@ -195,70 +219,55 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 
 		case KeyPress:
 		case KeyRelease: {
-			KeySym keysym = XLookupKeysym(&event.xkey, 0);
-			switch (keysym) {
-				default:
-					*button = keysym;
-					break;
+			*button = XLookupKeysym(&event.xkey, 0);
 
-				case XK_Escape:
-				case XK_BackSpace:
-				case XK_Tab:
-				case XK_Return:
-				case XK_Caps_Lock:
-				case XK_Print:
-				case XK_Scroll_Lock:
-				case XK_Pause:
-				case XK_Insert:
-				case XK_Home:
-				case XK_Page_Up:
-				case XK_Delete:
-				case XK_End:
-				case XK_Page_Down:
-				case XK_Right:
-				case XK_Left:
-				case XK_Down:
-				case XK_Up:
-				case XK_Super_L:
-				case XK_Super_R:
-					*button = keysym;
-					break;
-
+			switch (*button) {
 				case XK_Shift_L:
 				case XK_Shift_R:
-					*button = keysym;
-					if (event.type == KeyRelease) {
-						keyState &= ~KEY_MASK_SHIFT;
+					if (event.type == KeyPress) {
+						modState |= KEY_MASK_SHIFT;
 					} else {
-						keyState |= KEY_MASK_SHIFT;
+						modState &= ~KEY_MASK_SHIFT;
 					}
 					break;
 
 				case XK_Control_L:
 				case XK_Control_R:
-					*button = keysym;
-					if (event.type == KeyRelease) {
-						keyState &= ~KEY_MASK_CTRL;
+					if (event.type == KeyPress) {
+						modState |= KEY_MASK_CTRL;
 					} else {
-						keyState |= KEY_MASK_CTRL;
+						modState &= ~KEY_MASK_CTRL;
 					}
 					break;
 
 				case XK_Alt_L:
 				case XK_Alt_R:
-					*button = keysym;
-					if (event.type == KeyRelease) {
-						keyState &= ~KEY_MASK_ALT;
+					if (event.type == KeyPress) {
+						modState |= KEY_MASK_ALT;
 					} else {
-						keyState |= KEY_MASK_ALT;
+						modState &= ~KEY_MASK_ALT;
 					}
 					break;
 			}
 
-			*x = event.xkey.keycode;
-			*y = keyState;
+			*y = modState;
+
 			if (event.type == KeyRelease) {
 				return KEY_RELEASE;
+			}
+
+			char buffer[32] = {0};
+			if (window->inputContext) {
+				Status status = 0;
+				if (Xutf8LookupString(window->inputContext, &event.xkey, buffer, sizeof(buffer) - 1, NULL, &status) > 0) {
+					if (status != XBufferOverflow) {
+						*x = utf8ToCodepoint(buffer);
+					}
+				}
+			} else {
+				if (XLookupString(&event.xkey, buffer, sizeof(buffer) - 1, NULL, NULL) > 0) {
+					*x = utf8ToCodepoint(buffer);
+				}
 			}
 			return KEY_PRESS;
 		}

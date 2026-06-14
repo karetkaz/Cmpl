@@ -1130,7 +1130,7 @@ static ccKind genCall(ccContext ctx, astn ast, ccKind get) {
 		}
 
 		if (argOffs != stkOffset(rt, 0)) {
-			fatal(ERR_INTERNAL_ERROR": argument size does not match parameter size");
+			logif(ERR_INTERNAL_ERROR, "argument size does not match parameter size");
 			dbgTraceAst(ast);
 			return CAST_any;
 		}
@@ -1228,7 +1228,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_not:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_bit:
 					opc = opc_not;
@@ -1239,7 +1239,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_ceq:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_ptr:
 				case CAST_obj:
@@ -1278,7 +1278,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_clt:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_bit:
 				case CAST_i32:
@@ -1383,7 +1383,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_cgt:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_bit:
 				case CAST_i32:
@@ -1487,7 +1487,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_mns:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 				case CAST_u32:
@@ -1512,7 +1512,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_add:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 				case CAST_u32:
@@ -1537,7 +1537,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_sub:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 				case CAST_u32:
@@ -1562,7 +1562,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_mul:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 					opc = i32_mul;
@@ -1593,7 +1593,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_div:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 					opc = i32_div;
@@ -1624,7 +1624,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_mod:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 					opc = i32_rem;
@@ -1655,7 +1655,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_cmt:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 				case CAST_u32:
@@ -1672,7 +1672,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_shl:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 				case CAST_u32:
@@ -1689,7 +1689,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_shr:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_i32:
 					opc = u32_sar;
@@ -1712,7 +1712,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_and:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_bit:
 				case CAST_i32:
@@ -1730,7 +1730,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_ior:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_bit:
 				case CAST_i32:
@@ -1748,7 +1748,7 @@ static ccKind genOperator(rtContext ctx, ccToken token, ccKind cast) {
 		case OPER_xor:
 			switch (cast) {
 				default:
-					break;
+					return CAST_any;
 
 				case CAST_bit:
 				case CAST_u32:
@@ -2700,8 +2700,12 @@ int ccGenCode(ccContext ctx, int debug) {
 			if (!isVariable(var)) {
 				continue;
 			}
+			int errors = rt->errors;
 			size_t begin = emit(rt, markIP);
 			if (!genDeclaration(ctx, var, CAST_vid)) {
+				if (errors == rt->errors) {
+					error(rt, var->file, var->line, ERR_EMIT_VARIABLE, var);
+				}
 				dbgTraceAst(var->tag);
 				return -4;
 			}

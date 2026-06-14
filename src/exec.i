@@ -635,6 +635,7 @@ case i32_mul: NEXT(1, -1, 2) {
 }
 case i32_div: NEXT(1, -1, 2) {
 #if defined(EXEC)
+//	STOP(error_div, SP(0, i32) == -1 && SP(1, i32) == (1 << 31));
 	STOP(error_div, SP(0, i32) == 0);
 	SP(1, i32) /= SP(0, i32);
 #endif
@@ -717,6 +718,7 @@ case i64_mul: NEXT(1, -2, 4) {
 }
 case i64_div: NEXT(1, -2, 4) {
 #if defined(EXEC)
+//	STOP(error_div, SP(0, i64) == -1 && SP(2, i64) == (1 << 63));
 	STOP(error_div, SP(0, i64) == 0);
 	SP(2, i64) /= SP(0, i64);
 #endif

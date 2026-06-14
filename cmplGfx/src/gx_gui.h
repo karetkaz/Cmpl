@@ -65,3 +65,20 @@ extern int getWindowEvent(GxWindow window, int *button, int *x, int *y, int time
 extern void flushWindow(GxWindow window);
 
 extern void setWindowTitle(GxWindow window, const char *title);
+
+static inline int utf8ToCodepoint(const char text[4]) {
+	const unsigned char *s = (const unsigned char *) text;
+	if (s[0] < 0x80) {
+		return s[0];
+	}
+	if ((s[0] & 0xe0) == 0xc0 && (s[1] & 0xc0) == 0x80) {
+		return (s[0] & 0x1f) << 6 | (s[1] & 0x3f);
+	}
+	if ((s[0] & 0xf0) == 0xe0 && (s[1] & 0xc0) == 0x80 && (s[2] & 0xc0) == 0x80) {
+		return (s[0] & 0x0f) << 12 | (s[1] & 0x3f) << 6 | (s[2] & 0x3f);
+	}
+	if ((s[0] & 0xf8) == 0xf0 && (s[1] & 0xc0) == 0x80 && (s[2] & 0xc0) == 0x80 && (s[3] & 0xc0) == 0x80) {
+		return (s[0] & 0x07) << 18 | (s[1] & 0x3f) << 12 | (s[2] & 0x3f) << 6 | (s[3] & 0x3f);
+	}
+	return 0;
+}

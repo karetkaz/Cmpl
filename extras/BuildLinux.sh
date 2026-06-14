@@ -4,17 +4,16 @@ export "CMPL_HOME=$(realpath "$(dirname "$(readlink -f "$0")")"/..)"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
-CMPL_BIN="$CMPL_HOME/.build"
-#CMPL_BIN="$(realpath ~)/bin/Cmpl"
+export CMPL_BIN="$CMPL_HOME/.build/linux"
+export CMPL_BIN="$(realpath ~)/Desktop/Cmpl"
 
-#CMPL_API="$CMPL_BIN/Cmpl.api"
-#CMPL_DOC="$CMPL_BIN/Cmpl.md"
+CMPL_API="$CMPL_BIN/Cmpl.api"
+CMPL_DOC="$CMPL_BIN/Cmpl.md"
 #BIN_EMC="$CMPL_BIN/wasm"
 #BIN_WCC="$CMPL_BIN/wcc"
 
-export BIN="$CMPL_BIN/linux"
-#make clean BINDIR="$BIN"
-make -j 12 cmpl libFile.so libGfx.so BINDIR="$BIN"
+#make clean BINDIR="$CMPL_BIN"
+make -j 12 cmpl libFile.so libGfx.so BINDIR="$CMPL_BIN"
 
 if [ -n "$BIN_EMC" ]; then
 	make -j 12 cmpl.js libFile.wasm libGfx.wasm BINDIR="$BIN_EMC"
@@ -22,7 +21,7 @@ if [ -n "$BIN_EMC" ]; then
 fi
 
 # build and run test on 32 bit platform
-WATCOM="$(echo ~/Dropbox/Software/bin/Watcom/rel2)"
+WATCOM="$(echo ~/bin/Apps/ow_daily/rel2/)"
 if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 	export WATCOM="$WATCOM"
 	export INCLUDE="$WATCOM/lh:$CMPL_HOME/include"
@@ -51,35 +50,48 @@ if [ -n "$CMPL_DOC" ]; then
 fi
 
 # test the virtual machine
-[ -f $BIN_WCC/cmpl ] && $BIN_WCC/cmpl>"$BIN_WCC-vm.dump.md" --test-vm
-if ! $BIN/cmpl>"$BIN-vm.dump.md" --test-vm; then
+[ -f $BIN_WCC/cmpl ] && $BIN_WCC/cmpl>"$BIN_WCC/vm.dump.md" --test-vm
+if ! $CMPL_BIN/cmpl>"$CMPL_BIN/vm.dump.md" --test-vm; then
 	echo "virtual machine test failed"
 	exit 1
 fi
 
 ## dump api for scite including all libraries
-if [ -n "$CMPL_API" ] && ! $BIN/cmpl -dump.scite "$CMPL_API" "$BIN/libFile.so" "$BIN/libGfx.so"; then
+if [ -n "$CMPL_API" ] && ! $CMPL_BIN/cmpl -dump.scite "$CMPL_API" "$CMPL_BIN/libFile.so" "$CMPL_BIN/libGfx.so"; then
 	echo "failed to dump compiler api"
 	exit 1
 fi
 
 TEST_FLAGS="$(echo -X+steps+fold+fast-stdin-glob-offsets -api/A/d/p -asm/n/s -ast -doc -use)"
 [ -f $BIN_WCC/cmpl ] && $BIN_WCC/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$BIN_WCC.test-dump.cmpl" "cmplStd/test/test.cmpl"
-if ! $BIN/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$BIN.test-std.cmpl" "cmplStd/test/test.cmpl"; then
+if ! $CMPL_BIN/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$CMPL_BIN/test-std.cmpl" "cmplStd/test/test.cmpl"; then
 	echo "main test failed: $TEST_FLAGS"
 	exit 1
 fi
 
 # dump symbols, assembly, syntax tree and global variables
-$BIN/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$BIN.test.cmpl" -dump.ast.xml "$BIN.test.xml" "$BIN/libFile.so" "$BIN/libGfx.so" "cmplStd/test/test.cmpl"
-$BIN/cmpl -X-offsets -api/A/d/p -doc -log/d "$BIN.test.api.cmpl" "$BIN/libFile.so" "$BIN/libGfx.so" "cmplStd/test/test.cmpl"
-$BIN/cmpl -X-offsets -asm/A/d/p/n/s -log/d "$BIN.test.asm.cmpl" "$BIN/libFile.so" "$BIN/libGfx.so" "cmplStd/test/test.cmpl"
-$BIN/cmpl -profile/t/P/G/M $TEST_FLAGS -dump.json "$BIN.test.json" "$BIN/libFile.so" "$BIN/libGfx.so" "cmplStd/test/test.cmpl"
+$CMPL_BIN/cmpl -debug/G/M $TEST_FLAGS -log/d/15 "$CMPL_BIN/test.cmpl" -dump.ast.xml "$CMPL_BIN/test.xml" "$CMPL_BIN/libFile.so" "$CMPL_BIN/libGfx.so" "cmplStd/test/test.cmpl"
+$CMPL_BIN/cmpl -X-offsets -api/A/d/p -doc -log/d "$CMPL_BIN/test.api.cmpl" "$CMPL_BIN/libFile.so" "$CMPL_BIN/libGfx.so" "cmplStd/test/test.cmpl"
+$CMPL_BIN/cmpl -X-offsets -asm/A/d/p/n/s -log/d "$CMPL_BIN/test.asm.cmpl" "$CMPL_BIN/libFile.so" "$CMPL_BIN/libGfx.so" "cmplStd/test/test.cmpl"
+$CMPL_BIN/cmpl -profile/t/P/G/M $TEST_FLAGS -dump.json "$CMPL_BIN/test.json" "$CMPL_BIN/libFile.so" "$CMPL_BIN/libGfx.so" "cmplStd/test/test.cmpl"
 
-read -rsn1 -p "Compilation finished, press enter to run tests" && echo
-if [ -n "$REPLY" ]; then
-	exit 0
-fi
+TEST_FLAGS=-X-stdin+steps-offsets+native
+read -rsn1 -p "press R or enter to run tests, C to compile only, any other key to skip testing: "
+case "$REPLY" in
+	"R" | "r" | "")
+		TEST_FLAGS="$TEST_FLAGS -run"
+		echo "run tests"
+		;;
+
+	"C" | "c")
+		echo "compile tests"
+		;;
+
+	*)
+		echo "skip tests"
+		exit 0
+		;;
+esac
 
 TEST_FILES="$CMPL_HOME/cmplFile/test/*.cmpl"
 
@@ -94,21 +106,19 @@ TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/**/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplGfx/test/*.cmpl)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/wip/cmplGfx/test/**/*.cmpl)"
 
-DUMP_FILE=$BIN-tests.exec.cmpl
-$BIN/cmpl -log/d "$DUMP_FILE"
+DUMP_FILE="$CMPL_BIN/tests.exec.cmpl"
+$CMPL_BIN/cmpl -log/d "$DUMP_FILE"
 for file in $TEST_FILES
 do
 	if ! cd "$(dirname "$file")"; then
 		echo "**** cannot run test ❌: $file"
 		continue
 	fi
-	printf "**** test: %-99s\\r" "$file"
+	printf "**** test: %-120s\\r" "$file"
 	if [[ "$(head -n 1 "$file")" == "#!/usr/bin/env -S \${CMPL_HOME}/extras/CmplDiffTest.sh"* ]]; then
-		if ! "$file"; then
-			echo "****** test failed ❌: $file"
-		fi
+		if ! "$file"; then echo "****** test failed ❌: $file"; fi
 		continue
-	elif ! $BIN/cmpl -X-stdin+steps-offsets+native -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libGfx.so" "$file"; then
+	elif ! $CMPL_BIN/cmpl $TEST_FLAGS -log/a/d "$DUMP_FILE" "$CMPL_BIN/libFile.so" "$CMPL_BIN/libGfx.so" "$file"; then
 		echo "****** test failed ❌: $file"
 #	else
 #		echo "**** test finished ✅: $file"

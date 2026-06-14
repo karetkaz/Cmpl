@@ -49,5 +49,5 @@ inline "./lang/stmt.for.cmpl";
 inline "./math/test.Numbers.cmpl";
 //inline "./math/test.Fixed32.cmpl"; // todo: implement
 inline "./math/test.Math.cmpl";
-if (true) { inline "./math/test.Complex.cmpl"; }
-//if (true) { inline "./math/test.Polynomial.cmpl"; } // todo: requires file access
+{ inline "./math/test.Complex.cmpl"; }
+{ inline "./math/test.Polynomial.cmpl"; }

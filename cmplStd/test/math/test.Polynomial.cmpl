@@ -1,9 +1,56 @@
+static if(struct(FileWriter) == typename) {
 static TextWriter out = AsciiWriter {
 	writer: FileWriter {
 		file: File.log;
 		close: null;
 	};
 };
+} else {
+
+/// ByteWriter that writes to a buffer and flushes it with the raise function
+struct DebugWriter: ByteWriter {
+	char buffer[65536];
+	int position = 0;
+
+	void write^(DebugWriter this, uint8 bytes[]) {
+		for (int i = 0; i < bytes.length; i += 1) {
+			if (this.position >= this.buffer.length) {
+				this.flush(this);
+				assert(this.position == 0);
+			}
+			this.buffer[this.position] = bytes[i];
+			this.position += 1;
+		}
+	}
+
+	void flush^(DebugWriter this) {
+		if (this.position == 0) {
+			// empty buffer, nothing to do
+			return;
+		}
+
+		if (this.position < this.buffer.length) {
+			if (this.buffer[this.position - 1] == '\n') {
+				// raise will add a new line, ignore the last one in the buffer
+				this.position -= 1;
+			}
+			// raise still uses zero terminated string for printing, make sure is terminated
+			this.buffer[this.position] = 0;
+		}
+
+		raise(raise.print, raise.noTrace, this.buffer);
+		this.position = 0;
+	}
+
+	void close^(DebugWriter this) {
+		flush(this);
+	}
+}
+static TextWriter out = AsciiWriter {
+	writer: DebugWriter {
+	};
+};
+}
 
 //Polynomial a = Polynomial(1);                     // fixme: single parameter
 //Polynomial a = Polynomial(10, 3, 6, 2, 4, 9, 0, 4);
@@ -29,6 +76,7 @@ for (int i = 0; i < 10; i += 1) {
 //	a.set(i, a.get(i));  // long form: Polynomial.set(a, i, Polynomial.get(a, i));
 }
 
+out.close();
 /* TODO: implement enums, extra operator overloading
 	enum: Polynomial {
 		zero: {

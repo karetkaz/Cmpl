@@ -119,9 +119,9 @@ struct ColorLut: Blender {
 			char value0[*] = inc(buff, p0);
 			char value1[*] = inc(buff, p1 + 1);
 			char value2[*] = inc(buff, p2 + 1);
-			float64 r = float64(value0[...length(value0)]);
-			float64 g = float64(value1[...length(value1)]);
-			float64 b = float64(value2[...length(value2)]);
+			float64 r = float64(value0[...length(value0, buff.length - p0)]);
+			float64 g = float64(value1[...length(value1, buff.length - p1)]);
+			float64 b = float64(value2[...length(value2, buff.length - p2)]);
 			return vec4f(r, g, b, 0);
 		}
 
@@ -153,7 +153,7 @@ struct ColorLut: Blender {
 				pos = buff.indexOf(' ', 11) + 1;
 				assert(pos > 0);
 				char value[*] = inc(buff, pos);
-				size = float64(value[...length(value)]);
+				size = float64(value[...length(value, buff.length - pos)]);
 				assert(size > 1 && size < 256, "LUT_3D_SIZE expected to be between 2 and 255", size);
 				for (int z = 0; z < size; z += 1) {
 					points[z] = z * 255 / (size - 1);

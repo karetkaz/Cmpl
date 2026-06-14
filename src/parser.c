@@ -1893,6 +1893,11 @@ static astn statement_list(ccContext ctx) {
 			break;
 		}
 
+		int leaveScope = 0;
+		if (ast->kind == STMT_beg) {
+			enter(ctx, ast, NULL);
+			leaveScope = 1;
+		}
 		if ((ast = statement(ctx, doc))) {
 			if (tail != NULL) {
 				tail->next = ast;
@@ -1900,6 +1905,9 @@ static astn statement_list(ccContext ctx) {
 				head = ast;
 			}
 			tail = ast;
+		}
+		if (leaveScope) {
+			leave(ctx, KIND_def, 0, 0, NULL, NULL);
 		}
 		doc = NULL;
 	}

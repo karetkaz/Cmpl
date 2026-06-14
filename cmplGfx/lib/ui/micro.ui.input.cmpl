@@ -1,0 +1,260 @@
+/** Input is a single line, editable text field.
+ * the text is stored in a caller supplied, null terminated buffer,
+ * the capacity of the field is the length of the `text` slice.
+ */
+struct Input: View {
+	/// Editable, null terminated text buffer; its `.length` is the capacity.
+	char text[];
+
+	/// Text shown dimmed when the field is empty.
+	char placeholder[] = "";
+
+	/// Position of the caret, an index into `text` between 0 and its length.
+	int cursor = 0;
+
+	/// Horizontal pixel offset used to keep the caret visible.
+	int32 scroll = 0;
+
+	/// clicking on a non focused field will not move the caret, it will just focus it.
+	bool clickToFocus = false;
+
+	// printable ascii characters, indexed by `key - ' '` to convert a key code to a character
+//	static char printable[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+
+	/// Callback function executed when the text changes
+	void onChange(Input this) {
+	}
+
+	/// Callback function executed when the enter key is pressed
+	void onSubmit(Input this) {
+	}
+
+	/// Pixel offset of the caret placed before the character at `cursor`.
+	static int32 caretX(Input this, int32 cursor) {
+		if (cursor <= 0) {
+			return 0;
+		}
+		Rect rect = {...};
+		this.style.font.clipText(&rect, this.text[...cursor]);
+		return rect.width();
+	}
+
+	/// Index of the caret nearest to the horizontal position `px`.
+	static int32 caretAt(Input this, Rect rect!, int32 px) {
+		int32 relX = px - rect.x0 - this.style.padding + this.scroll;
+		if (relX <= 0) {
+			return 0;
+		}
+		int len = length(this.text);
+		for (int i = 0; i < len; i += 1) {
+			int32 a = caretX(this, i);
+			int32 b = caretX(this, i + 1);
+			if (relX < (a + b) / 2) {
+				return i;
+			}
+		}
+		return len;
+	}
+
+	/// Insert a character at the caret position, growing the text.
+	static bool insert(Input this, char chr) {
+		int len = length(this.text);
+		if (len + 1 >= this.text.length) {
+			// keep room for the terminating zero
+			return false;
+		}
+		int cursor = this.cursor;
+		for (int i = len; i > cursor; i -= 1) {
+			this.text[i] = this.text[i - 1];
+		}
+		this.text[cursor] = chr;
+		this.text[len + 1] = 0;
+		this.cursor = cursor + 1;
+		return true;
+	}
+
+	/// Remove the character at the caret.
+	static bool delete(Input this, bool backspace) {
+		int back = int(backspace);
+		if (this.cursor < back) {
+			// debug("delete first");
+			return false;
+		}
+
+		int len = length(this.text);
+		if (this.cursor >= len + back) {
+			// debug("delete last");
+			return false;
+		}
+
+		this.cursor -= back;
+		for (int i = this.cursor; i < len; i += 1) {
+			this.text[i] = this.text[i + 1];
+		}
+
+		return true;
+	}
+
+	/// Replace the content of the field with the given `value`, placing the caret at the end.
+	static void setText(Input this, char value[]) {
+		this.cursor = this.text.append(0, value);
+		this.scroll = 0;
+	}
+
+	void onCreate^(Input this, View parent) {
+		View.onCreate(this, parent);
+		int len = length(this.text);
+		if (this.cursor > len) {
+			this.cursor = len;
+		}
+		if (this.cursor < 0) {
+			this.cursor = 0;
+		}
+	}
+
+	State onKeyEvent^(Input this, KeyEvent event!) {
+		State result = View.onKeyEvent(this, event);
+		if (result != State.ignored) {
+			return result;
+		}
+		if (event.release) {
+			// editing is processed on key press, including auto repeat
+			return State.ignored;
+		}
+
+		int32 code = event.key;
+		if (code == Window.KEY_CODE_LEFT) {
+			if (this.cursor > 0) {
+				this.cursor -= 1;
+			}
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_RIGHT) {
+			if (this.cursor < length(this.text)) {
+				this.cursor += 1;
+			}
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_HOME) {
+			this.cursor = 0;
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_END) {
+			this.cursor = length(this.text);
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_BACK) {
+			if (this.delete(true)) {
+				this.onChange(this);
+			}
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_DELETE) {
+			if (this.delete(false)) {
+				this.onChange(this);
+			}
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_ENTER) {
+			this.onSubmit(this);
+			return State.handled;
+		}
+		if (code == Window.KEY_CODE_TAB) {
+			// allow to focus next view
+			return State.ignored;
+		}
+
+		if (event.chr == 0 || !this.insert(event.chr)) {
+			// let other keys (eg. tab to focus the next view) be handled elsewhere
+			return State.ignored;
+		}
+
+		this.onChange(this);
+		return State.handled;
+	}
+
+	State onTouchEvent^(Input this, Rect rect!, TouchEvent event!) {
+		State result = View.onTouchEvent(this, rect, event);
+		if (result != State.ignored) {
+			return result;
+		}
+
+		if (!event.release || event.isMotion()) {
+			// the caret is positioned on click, when the button is released
+			return State.ignored;
+		}
+
+		if (this.focusable && this.clickToFocus && !this.isFocused()) {
+			// the first click only focuses the field
+			return State.focused;
+		}
+
+		this.cursor = this.caretAt(rect, event.x);
+		return State.handled;
+	}
+
+	bool onMeasure^(Input this, Rect rect&) {
+		Rect placeholder = {};
+		Style style! = this.style;
+		style.measure(&rect, this.text);
+		style.measure(&placeholder, this.placeholder);
+		if (rect.width() < placeholder.width()) {
+			rect.width(placeholder.width());
+		}
+
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw^(Input this, Image offs, Rect rect) {
+		Style style! = this.style;
+		bool focused = this.isFocused();
+
+		Rect inner = rect;
+		inner.padded(-style.padding);
+		if (!inner.empty()) {
+			int len = length(this.text);
+			int32 caret = caretX(this, this.cursor);
+			int32 textWidth = caretX(this, len);
+			int32 innerWidth = inner.width();
+
+			// keep the caret visible without leaving a gap after the text
+			int32 maxScroll = textWidth - innerWidth;
+			if (maxScroll < 0) {
+				maxScroll = 0;
+			}
+			if (this.scroll > maxScroll) {
+				this.scroll = maxScroll;
+			}
+			if (caret - this.scroll > innerWidth) {
+				this.scroll = caret - innerWidth;
+			}
+			if (caret - this.scroll < 0) {
+				this.scroll = caret;
+			}
+
+			Image clip = offs.slice(inner);
+			int32 top = (clip.height() - style.font.height()) / 2;
+			Rect line = {
+				x0: -this.scroll;
+				y0: top;
+				x1: clip.width();
+				y1: clip.height();
+			};
+			if (len == 0) {
+				argb dim = mix_rgb8(128, argb(style.backgroundColor), argb(style.textColor));
+				clip.drawText(line, style.font, this.placeholder, uint32(dim));
+			} else {
+				clip.drawText(line, style.font, this.text, style.textColor);
+			}
+			if (focused) {
+				int32 x = caret - this.scroll;
+				clip.fillRect(x, top, x + 2, top + style.font.height(), style.valueColor);
+			}
+			clip.destroy();
+		}
+
+		// a baseline to indicate an editable field
+		uint32 baseline = focused ? style.valueColor : style.focusedColor;
+		offs.fillRect(rect.x0, rect.y1 - 2, rect.x1, rect.y1, baseline);
+	}
+}

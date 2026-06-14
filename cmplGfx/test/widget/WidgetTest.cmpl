@@ -108,6 +108,11 @@ Button printStyle = {
 	onClick: onPrintStyle;
 };
 
+char nameBuffer[100] = {0};
+Input input = {
+	text: nameBuffer;
+	placeholder: "text input";
+};
 
 DebugView debug = {
 	focusable: false;
@@ -125,6 +130,7 @@ Window.show(Widget(0, 0, style).addItems(
 	printStyle,
 
 	null, stepSlider,
+	null, input,
 
 	null, debug
 ));

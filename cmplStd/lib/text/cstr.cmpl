@@ -1,15 +1,17 @@
 // string related functions
 
-/// Computes the length of the string
-int length(char str[*]) {
-	if (str == null) {
-		return 0;
+/// Computes the length of the string, bounded by the slice (stops at a NUL terminator)
+int length(char str[]) {
+	for (int i = 0; i < str.length; i += 1) {
+		if (str[i] == 0) {
+			return i;
+		}
 	}
-	int result = 0;
-	for (; str[result]; result += 1) {
-	}
-	return result;
+	return str.length;
 }
+
+/// Computes the length of the string, bounded by the `max` argument (stops at a NUL terminator)
+inline length(char str[*], int max) = length(str[...max]);
 
 /// Returns the index of the first occurrence of a character in string
 int indexOf(char str[], char chr, int start) {
@@ -76,20 +78,17 @@ bool endsWith(char str[], char with[], int cmp(char chr, char with)) {
 
 /// Check if the two strings are equal, less or greater, using a custom comparator
 int compare(char str[], char with[], int cmp(char chr, char with)) {
-	int length = str.length < with.length ? str.length : with.length;
-	int result = compare(str, with, length, cmp);
-	if (result != 0) {
-		return result;
-	}
-//	return str.length - with.length;
 	if (str.length < with.length) {
 		return -1;
 	}
 	if (str.length > with.length) {
 		return 1;
 	}
-	return 0;
+	return compare(str, with, str.length, cmp);
 }
+
+/// Check if the two strings are equal, less or greater (stops at a NUL terminator)
+inline strcmp(char str[], char with[]) = compare(str[...str.length()], with[...with.length()], caseCmp);
 
 /// convert lower part (4 bits) of the input value to the corresponding lower case hexadecimal character
 inline toHex(int value) = "0123456789abcdef"[value & 0xf];

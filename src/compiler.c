@@ -703,6 +703,7 @@ static int install_base(ccContext ctx, ccConfig config, vmError onHalt(nfcContex
 			ctx->libc_dbg->doc = "Report messages or raise errors.";
 			error = error || !ccDefInt(ctx, "abort", raiseFatal);
 			error = error || !ccDefInt(ctx, "error", raiseError);
+			error = error || !ccDefInt(ctx, "print", raisePrint);
 			error = error || !ccDefInt(ctx, "warn", raiseWarn);
 			error = error || !ccDefInt(ctx, "info", raiseInfo);
 			error = error || !ccDefInt(ctx, "debug", raiseDebug);

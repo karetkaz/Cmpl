@@ -627,7 +627,11 @@ ccKind eval(ccContext ctx, astn res, astn ast) {
 
 			dieif(lhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
 			dieif(rhs.kind != TOKEN_val, ERR_INTERNAL_ERROR);
-			logif(lhs.type != rhs.type, "%?s:%?u", ast->file, ast->line);	// might happen: uint64(x) >> int32(1)
+			if (ast->kind != OPER_shr && ast->kind != OPER_shl) {
+				logif(rhs.type != ctx->type_i32 && rhs.type != ctx->type_u32, "%?s:%?u", ast->file, ast->line);
+			} else {
+				logif(lhs.type != rhs.type, "%?s:%?u", ast->file, ast->line);
+			}
 			dieif(ast->type != ctx->type_i32
 				&& ast->type != ctx->type_i64
 				&& ast->type != ctx->type_u32

@@ -6,65 +6,62 @@ Window.show(image, onEvent);
 image.destroy();
 
 static int onEvent(int action, int button, int x, int y) {
-	struct Event {
-		char actionName[*];
-		int action;
-		int button;
-		char char;
-		int x;
-		int y;
-	}
-	Event event = {
-		actionName: null;
-		action: action;
-		button: button;
-		char: button;
-		x: x;
-		y: y;
-	};
+	char actionName[] = null;
+	int unicode = 0;
 	if (action == Window.KEY_PRESS) {
-		event.actionName = "KEY_PRESS";
+		actionName = "KEY_PRESS";
+		unicode = x;
 	}
 	else if (action == Window.KEY_RELEASE) {
-		event.actionName = "KEY_RELEASE";
+		actionName = "KEY_RELEASE";
+		unicode = x;
 	}
 	else if (action == Window.MOUSE_PRESS) {
-		event.actionName = "MOUSE_PRESS";
+		actionName = "MOUSE_PRESS";
 	}
 	else if (action == Window.MOUSE_MOTION) {
-		event.actionName = "MOUSE_MOTION";
+		actionName = "MOUSE_MOTION";
 	}
 	else if (action == Window.MOUSE_RELEASE) {
-		event.actionName = "MOUSE_RELEASE";
+		actionName = "MOUSE_RELEASE";
 	}
 	else if (action == Window.FINGER_PRESS) {
-		event.actionName = "FINGER_PRESS";
+		actionName = "FINGER_PRESS";
 	}
 	else if (action == Window.FINGER_MOTION) {
-		event.actionName = "FINGER_MOTION";
+		actionName = "FINGER_MOTION";
 	}
 	else if (action == Window.FINGER_RELEASE) {
-		event.actionName = "FINGER_RELEASE";
+		actionName = "FINGER_RELEASE";
 	}
 	else if (action == Window.EVENT_TIMEOUT) {
-		event.actionName = "EVENT_TIMEOUT";
+		actionName = "EVENT_TIMEOUT";
 	}
 	else if (action == Window.GESTURE_SCROLL) {
-		event.actionName = "GESTURE_SCROLL";
+		actionName = "GESTURE_SCROLL";
 	}
 	else if (action == Window.WINDOW_INIT) {
-		event.actionName = "WINDOW_INIT";
+		actionName = "WINDOW_INIT";
 	}
 	else if (action == Window.WINDOW_CLOSE) {
-		event.actionName = "WINDOW_CLOSE";
+		actionName = "WINDOW_CLOSE";
 	}
 	else if (action == Window.WINDOW_ENTER) {
-		event.actionName = "WINDOW_ENTER";
+		actionName = "WINDOW_ENTER";
 	}
 	else if (action == Window.WINDOW_LEAVE) {
-		event.actionName = "WINDOW_LEAVE";
+		actionName = "WINDOW_LEAVE";
 	}
 
+	struct Event {
+		char actionName[*];
+		int action = action;
+		int button = button;
+		char key = unicode;
+		int x = x;
+		int y = y;
+	}
+	Event event = { actionName: actionName };
 	debug("event", event);
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		return Window.quit();
@@ -72,6 +69,7 @@ static int onEvent(int action, int button, int x, int y) {
 
 	static if (true) {
 		static char actionText[32] = {0};
+		static char keyText[32] = {0};
 		static Button btnAction = {
 			enabled: false;
 			text: actionText;
@@ -101,12 +99,22 @@ static int onEvent(int action, int button, int x, int y) {
 			text: "y";
 			stepSize: 1;
 		};
+		static Style style! = {
+			font: Image.openTtf("asset/font/NokiaPureText.ttf", 60);
+			align: Style.center;
+		};
+		static Button btnKey = {
+			enabled: false;
+			text: keyText;
+			style: style;
+		};
 		static FxWidget ui = FxWidget(
 			btnAction,
 			sldAction,
 			sldButton,
 			sldX,
-			sldY
+			sldY,
+			btnKey
 		);
 		static Rect rect = {
 			x0: 0;
@@ -120,7 +128,13 @@ static int onEvent(int action, int button, int x, int y) {
 			ui.onMeasure(ui, &rect);
 		}
 
-		actionText.append(0, event.actionName[...length(event.actionName)]);
+		if (action == Window.KEY_PRESS) {
+			keyText[0] = x > 255 ? 255 : x;
+		} else {
+			keyText[0] = 0;
+		}
+		btnKey.focus();
+		actionText.append(0, actionName);
 		sldAction.value = action;
 		sldButton.value = button;
 		sldX.value = x;
