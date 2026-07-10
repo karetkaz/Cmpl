@@ -192,3 +192,8 @@ int cmplInit(rtContext ctx, ccContext cc) {
 
 	return err;
 }
+
+void cmplClose(rtContext ctx) {
+	// nothing to clean up, exported to keep the plugin interface uniform
+	(void) ctx;
+}

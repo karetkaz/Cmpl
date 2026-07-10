@@ -53,7 +53,7 @@ Module.listFiles = function(folders, recursive) {
 		result = result.slice(0, tail).concat(sorted);
 
 		if (folders.length === 1 && folders[0] === Module.workspace) {
-			for (let i = 0; i < result. length; ++i) {
+			for (let i = 0; i < result.length; ++i) {
 				result[i] = result[i].substr(Module.workspace.length + 1);
 			}
 		}
@@ -84,7 +84,7 @@ Module.absolutePath = function(path) {
 };
 
 Module.parentDir = function(path) {
-	return path.replace(/^(.*[/])?(.*)(\..*)$/, "$1");
+	return path.substring(0, path.lastIndexOf('/') + 1);
 };
 
 Module.saveFile = function(path, content) {
@@ -244,14 +244,20 @@ Module.openProjectFile = function(data, callBack) {
 Module.wgetFiles = function(files) {
 	let isAsync = Module.onFileDownloaded != null;
 	let inProgress = files.length;
-	function saveFile(path, content) {
-		Module.saveFile(path, content);
-		FS.syncfs(function(error) {
-			if (error == null) {
-				return;
-			}
-			Module.printErr('error: ' + error);
-		});
+	function fileDone() {
+		inProgress -= 1;
+		if (Module.onFileDownloaded != null) {
+			Module.onFileDownloaded(inProgress, files.length);
+		}
+		if (inProgress === 0) {
+			// persist all files at once, do not start a sync per file
+			FS.syncfs(function(error) {
+				if (error != null) {
+					Module.printErr('error: ' + error);
+				}
+			});
+			Module.printLog("Project file(s) download complete.");
+		}
 	}
 
 	if (Module.onFileDownloaded != null) {
@@ -261,14 +267,15 @@ Module.wgetFiles = function(files) {
 		let path = file.file || file.path;
 		try {
 			if (file.content != null) {
-				saveFile(path, file.content);
+				Module.saveFile(path, file.content);
 				Module.print('Created file: ' + path);
+				fileDone();
 				continue;
 			}
 
 			// download the file
 			if (path == null) {
-				path = file.url.replace(/^(.*[/])?(.*)(\..*)$/, "$2$3");
+				path = file.url.substring(file.url.lastIndexOf('/') + 1);
 			}
 			let url = file.url;
 			if (!(url.startsWith('http://') || url.startsWith('https://'))) {
@@ -284,32 +291,20 @@ Module.wgetFiles = function(files) {
 				if (request.readyState !== 4) {
 					return;
 				}
-				inProgress -= 1;
 				if (request.status < 200 || request.status >= 300) {
-					let err = new Error(request.status + ' (' + request.statusText + ')')
-					Module.printErr('Download failed: `' + request.responseURL + '`: ' + err);
-					if (Module.onFileDownloaded != null) {
-						Module.onFileDownloaded(inProgress, files.length);
-					}
-					return err;
+					Module.printErr('Download failed: `' + request.responseURL + '`: ' + request.status + ' (' + request.statusText + ')');
+					fileDone();
+					return;
 				}
-				saveFile(path, new Uint8Array(request.response));
+				Module.saveFile(path, new Uint8Array(request.response));
 				Module.printLog('Downloaded file: ' + path + ': ' + request.responseURL);
-				if (Module.onFileDownloaded != null) {
-					Module.onFileDownloaded(inProgress, files.length);
-				}
-				if (inProgress === 0) {
-					Module.printLog("Project file(s) download complete.");
-				}
+				fileDone();
 			}
 			request.send();
 		}
 		catch (err) {
 			Module.printErr('Download failed: `' + path + '`: ' + err);
-			inProgress -= 1;
-			if (Module.onFileDownloaded != null) {
-				Module.onFileDownloaded(inProgress, files.length);
-			}
+			fileDone();
 		}
 	}
 	return isAsync && files.length > 0;

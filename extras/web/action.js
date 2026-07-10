@@ -107,7 +107,7 @@ function completeAction(action, hint) {
 				break;
 
 			case '!theme:':
-				hint = document.body.classList.contains('light') ? 'dark' : 'light';
+				hint = isLightTheme() ? 'dark' : 'light';
 				break;
 
 			case '!':

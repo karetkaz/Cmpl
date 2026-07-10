@@ -4,15 +4,16 @@ GX_SRC=cmplGfx/src
 
 CFLAGS=-Wall -Wextra -g0 -O3 -std=gnu99
 EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=0 -s INVOKE_RUN=0 -s ASSERTIONS=0
-EMFLAGS+=-s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=64MB -s STACK_SIZE=8MB
+EMFLAGS+=-s ALLOW_MEMORY_GROWTH=1 -s INITIAL_MEMORY=64MB -s STACK_SIZE=8MB
 EMFLAGS+=-D NO_LIBJPEG -D NO_LIBPNG
 
 EM_EMBED='--preload-file' 'cmplStd/lib.cmpl' '--preload-file' 'cmplGfx/lib.cmpl' '--preload-file' 'cmplFile/lib.cmpl'
 EM_EMBED+=$(shell find cmplStd/lib -type f -name '*.cmpl' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
 EM_EMBED+=$(shell find cmplGfx/lib -type f -name '*.cmpl' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
 EM_EMBED+=$(shell find cmplFile/lib -type f -name '*.cmpl' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
-EM_SIDE_MODULE=-s SIDE_MODULE=2 -s "EXPORTED_FUNCTIONS=['_cmplInit', '_cmplUnit']"
-EM_MAIN_MODULE=-s MAIN_MODULE=1 -lidbfs.js
+EM_SIDE_MODULE=-s SIDE_MODULE=2 -s "EXPORTED_FUNCTIONS=['_cmplInit', '_cmplUnit', '_cmplClose']"
+# EXPORTED_FUNCTIONS: emcc warns it is unused with MAIN_MODULE=1, but it still controls which Module._xxx aliases are generated in the js glue
+EM_MAIN_MODULE=-s MAIN_MODULE=1 -lidbfs.js -s "EXPORTED_FUNCTIONS=['_main', '_SDL_SendQuit']"
 
 CLIBS=-lm
 GXLIBS=-lm

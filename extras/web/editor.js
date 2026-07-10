@@ -78,6 +78,43 @@ function setStyle(element, ...styles) {
 
 var props = props || {};
 props.title = document.title;
+
+// the effective theme: forced by the body class, or the device theme
+function isLightTheme() {
+	if (hasStyle(document.body, 'light')) {
+		return true;
+	}
+	if (hasStyle(document.body, 'dark')) {
+		return false;
+	}
+	return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+}
+function toggleTheme() {
+	// toggle the class forcing the opposite of the device theme
+	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+		setStyle(document.body, '~dark', '-light');
+	} else {
+		setStyle(document.body, '-dark', '~light');
+	}
+}
+
+// base64 helpers, unlike plain atob/btoa these do not fail for non Latin1 characters
+function encodeContent(text) {
+	let bytes = new TextEncoder().encode(text);
+	let binary = '';
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(binary);
+}
+function decodeContent(value) {
+	let binary = atob(value);
+	let bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i += 1) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return new TextDecoder().decode(bytes);
+}
 //[0: match, 1: host, 2: path, 3: file, 4: line, 5: column, 6: query, 7: hash]
 const pathMather = /(?=[\w\/])((?:\w+:\/\/)(?:[^:@\n\r"'`]+(?:\:\w+)?@)?(?:[^:\/?#\n\r"'`]+)(?:\:\d+)?(?=[\/?#]))?([^<>=:;,?#*|\n\r"'`]*\/)?([^<>=:;,?#*|\n\r"'`]*)?(?:\:(?:(\d+)(?:\:(\d+))?))?(?:\?([^#\n\r"'`]*))?(?:\#([^\n\r"'`]*))?/;
 
@@ -121,7 +158,7 @@ let params = JsArgs('#', function (params, changes) {
 	function content(value) {
 		if (value != null) {
 			try {
-				return atob(value);
+				return decodeContent(value);
 			} catch (e) {
 				console.debug(e);
 			}
@@ -253,25 +290,11 @@ let params = JsArgs('#', function (params, changes) {
 
 		// check if the theme is defined in the html, in case it is, use that one
 		if (theme === undefined) {
-			if (document.body.classList.contains('light')) {
+			if (hasStyle(document.body, 'light')) {
 				theme = 'light';
 			}
-			else if (document.body.classList.contains('dark')) {
+			else if (hasStyle(document.body, 'dark')) {
 				theme = 'dark';
-			}
-		}
-
-		// theme is not defined in params or in the html, so request it from browser
-		if (window.matchMedia) {
-			let lightScheme = window.matchMedia('(prefers-color-scheme: light)');
-			lightScheme.addEventListener('change', function (e) {
-				if (params.theme === undefined) {
-					// keep the theme defined in the params
-					setStyle(document.body, '-dark', e.matches ? 'light' : '-light');
-				}
-			});
-			if (theme === undefined) {
-				theme = lightScheme.matches ? 'light' : 'dark';
 			}
 		}
 
@@ -429,7 +452,6 @@ editor.on('gutterClick', function(cm, n) {
 		let marker = document.createElement('div');
 		marker.classList.add('breakpoint');
 		marker.innerHTML = '●';
-		marker.value = n + 1;
 		cm.setGutterMarker(n, 'breakpoints', marker);
 	} else {
 		cm.setGutterMarker(n, 'breakpoints', null);
@@ -453,7 +475,7 @@ window.onkeydown = function(event) {
 		if (editor.hasFocus()) {
 			setStyle(document.body, '~output');
 		}
-		if (!document.body.classList.contains('canvas')) {
+		if (!hasStyle(document.body, 'canvas')) {
 			editor.setSelection(editor.getCursor());
 			editor.focus();
 		}
@@ -551,7 +573,7 @@ function saveInput(saveAs) {
 	}
 	let content = editor.getValue();
 	if (params.content !== undefined) {
-		params.update({ content: btoa(content), path});
+		params.update({ content: encodeContent(content), path});
 	}
 	openProjectFile({ content, path });
 	setStyle(document.body, '-edited');
@@ -567,7 +589,7 @@ function editProject() {
 
 		try {
 			if (content != null) {
-				content = atob(content);
+				content = decodeContent(content);
 			}
 		} catch (e) {
 			console.warn(e);
@@ -588,7 +610,7 @@ function editProject() {
 			content += JSON.stringify(file, null, '\t');
 		}
 		content = '[' + content + ']';
-		params.update({ content: btoa(content), project: undefined, path: undefined });
+		params.update({ content: encodeContent(content), project: undefined, path: undefined });
 	}
 }
 
@@ -659,7 +681,7 @@ function shareInput() {
 	setStyle(document.body, 'output');
 	let content = editor.getValue();
 	terminal.append('decoded uri: ' + decodeURIComponent(window.location));
-	let hash = 'content=' + btoa(content);
+	let hash = 'content=' + encodeContent(content);
 	if (params.path != null) {
 		hash = 'path=' + params.path + '&' + hash;
 	}
@@ -674,7 +696,7 @@ function shareInput() {
 	}
 	terminal.append('current file: ' + window.location.origin + window.location.pathname + '#' + hash);
 	if (content.startsWith('[{')) {
-		terminal.append('project file: ' + window.location.origin + window.location.pathname + '#project=' + btoa(content));
+		terminal.append('project file: ' + window.location.origin + window.location.pathname + '#project=' + encodeContent(content));
 	}
 }
 
@@ -751,16 +773,19 @@ function execute(cmd, args) {
 			if (args.file == null) {
 				return;
 			}
-			let paths = args.file.match(/^(.*[/])?(.*)(\..*)$/);
-			if (paths) {
-				args.file = paths[2] + paths[3];
-				args.path = paths[1];
+			let dirEnd = args.file.lastIndexOf('/') + 1;
+			if (dirEnd > 0) {
+				args.path = args.file.substring(0, dirEnd);
+				args.file = args.file.substring(dirEnd);
 			}
 
 			execArgs.push(args.file);
-			for (let ln of document.getElementsByClassName('breakpoint')) {
-				execArgs.push('-b/P/' + ln.value);
-			}
+			// resolve breakpoint lines at execution time, markers move with edits
+			editor.eachLine(function (handle) {
+				if (handle.gutterMarkers && handle.gutterMarkers.breakpoints) {
+					execArgs.push('-b/P/' + (editor.getLineNumber(handle) + 1));
+				}
+			});
 		}
 
 		terminal.command = execArgs.join(' ');
@@ -883,7 +908,8 @@ function process(data) {
 	}
 	if (data.progress !== undefined) {
 		if (data.progress > 0) {
-			spnStatus.innerText = 'Downloading files: ' + data.progress + ' / ' + data.total;
+			// progress counts the remaining files
+			spnStatus.innerText = 'Downloading files: ' + (data.total - data.progress) + ' / ' + data.total;
 			return;
 		}
 		spnStatus.innerText = null;

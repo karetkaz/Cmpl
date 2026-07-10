@@ -1,69 +1,86 @@
-.overlay { background-color: #50505050; }
+/* Theme colors: light-dark() picks the value based on the active color scheme.
+ * The scheme follows the device preference, unless the `light` or `dark`
+ * class is set on the body element, which forces the theme.
+ */
+:root {
+	color-scheme: light dark;
+
+	/* ui colors */
+	--toolbar-bg: light-dark(#eaeaea, #4a4a4a);
+	--toolbar-color: light-dark(#333, #ccc);
+	--toolbar-hover-bg: light-dark(#dadada, #5a5a5a);
+
+	--sidebar-bg: light-dark(#fafafa, #3f3f3f);
+	--sidebar-color: light-dark(#333, #bbb);
+	--sidebar-hover-bg: light-dark(#dadada, #6a6a6a);
+
+	--output-bg: light-dark(#f0f0f0, #181818);
+	--panel-bg: light-dark(#eee, #202020);
+	--link-color: light-dark(#007bff, #006bef);
+	--overlay-bg: #50505050;
+
+	/* editor colors */
+	--editor-bg: light-dark(white, #2a2a2a);
+	--editor-color: light-dark(black, #aaa);
+	--editor-gutter-bg: light-dark(#f7f7f7, #3a3a3a);
+	--editor-gutter-border: light-dark(#ddd, #4a4a4a);
+	--editor-active-line-bg: light-dark(#FFFAE3, #4f4f4f);
+	--editor-matching-bracket-bg: light-dark(lightgreen, darkgreen);
+
+	/* syntax highlight colors */
+	--syntax-number: light-dark(#0000FF, #6897BB);
+	--syntax-builtin: light-dark(#30a, #ab51b2);
+	--syntax-keyword: light-dark(#000080, #CC7832);
+	--syntax-operator: light-dark(black, #A9B7C6);
+	--syntax-string: light-dark(#008000, #6A8759);
+	--syntax-variable: light-dark(black, #A9B7C6);
+	--syntax-comment: #808080;
+
+	--scrollbar-bg: var(--editor-bg);
+	--scrollbar-thumb: var(--toolbar-hover-bg);
+	--scrollbar-thumb-hover: var(--sidebar-hover-bg);
+}
+body.light { color-scheme: light; }
+body.dark { color-scheme: dark; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+::-webkit-scrollbar-corner { background: var(--scrollbar-bg); }
+
+.overlay { background-color: var(--overlay-bg); }
 #output * { background-color: transparent; }
 
-/* dark theme */
-body { background-color: #4a4a4a; }
-body .toolbar {background-color: #4a4a4a;color: #ccc;}
-body .toolbar>span:hover { background-color: #5a5a5a; }
+body { background-color: var(--toolbar-bg); }
+.toolbar { background-color: var(--toolbar-bg); color: var(--toolbar-color); }
+.toolbar>span:hover { background-color: var(--toolbar-hover-bg); }
 
-body .sidebar { background-color: #3f3f3f; color: #bbb; }
-body .sidebar * { background-color: #3f3f3f; color: #bbb; }
-body .sidebar hr { background-color: #6a6a6a; }
-body .sidebar li:hover { background-color: #6a6a6a; }
-body .sidebar li:hover * { background-color: #6a6a6a; }
-body .sidebar button { background-color: #6a6a6a; border: solid 1px #4a4a4a; }
-body .sidebar button:hover {background-color: #3f3f3f;}
-body select {background-color: #3f3f3f;color: #bbb;}
-body #fileList > .active { background-color: #6a6a6a; }
+.sidebar { background-color: var(--sidebar-bg); color: var(--sidebar-color); }
+.sidebar * { background-color: var(--sidebar-bg); color: var(--sidebar-color); }
+.sidebar hr { background-color: var(--sidebar-hover-bg); }
+.sidebar li:hover { background-color: var(--sidebar-hover-bg); }
+.sidebar li:hover * { background-color: var(--sidebar-hover-bg); }
+.sidebar button { background-color: var(--sidebar-hover-bg); border: solid 1px var(--toolbar-bg); }
+.sidebar button:hover { background-color: var(--sidebar-bg); }
+select { background-color: var(--sidebar-bg); color: var(--sidebar-color); }
+#fileList > .active { background-color: var(--sidebar-hover-bg); }
 
-body #editor-panel .CodeMirror { background: #2a2a2a; color: #aaa; }
-body #editor-panel .CodeMirror-gutters { background: #3a3a3a; border-right: 1px solid #4a4a4a; }
-body #editor-panel .CodeMirror-matchingbracket { background: darkgreen; }
-body #editor-panel .CodeMirror-activeline-background { background: #4f4f4f; }
-body #editor-panel span.cm-number { color: #6897BB; }
-body #editor-panel span.cm-builtin { color: #ab51b2; }
-body #editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: #CC7832; }
-body #editor-panel span.cm-operator { color: #A9B7C6; }
-body #editor-panel span.cm-string-2,
-body #editor-panel span.cm-string { color: #6A8759; }
-body #editor-panel span.cm-variable-2,
-body #editor-panel span.cm-variable-3,
-body #editor-panel span.cm-variable { color: #A9B7C6; }
-body #editor-panel span.cm-comment { color: #808080; }
+#editor-panel .CodeMirror { background: var(--editor-bg); color: var(--editor-color); }
+#editor-panel .CodeMirror-gutters { background: var(--editor-gutter-bg); border-right: 1px solid var(--editor-gutter-border); }
+#editor-panel .CodeMirror-matchingbracket { background: var(--editor-matching-bracket-bg); }
+#editor-panel .CodeMirror-activeline-background { background: var(--editor-active-line-bg); }
+#editor-panel span.cm-number { color: var(--syntax-number); }
+#editor-panel span.cm-builtin { color: var(--syntax-builtin); }
+#editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: var(--syntax-keyword); }
+#editor-panel span.cm-operator { color: var(--syntax-operator); }
+#editor-panel span.cm-string-2,
+#editor-panel span.cm-string { color: var(--syntax-string); }
+#editor-panel span.cm-variable-2,
+#editor-panel span.cm-variable-3,
+#editor-panel span.cm-variable { color: var(--syntax-variable); }
+#editor-panel span.cm-comment { color: var(--syntax-comment); }
 
-body #output { background-color: #181818; }
-body #output-panel { background-color: #202020; color: #bbb; }
-body #output-panel a { color: #006bef; }
-
-/* light theme */
-body.light .toolbar { background-color: #eaeaea; color: #333; }
-body.light .toolbar>span:hover { background-color: #dadada; }
-
-body.light .sidebar { background-color: #fafafa; color:#333; }
-body.light .sidebar * { background-color: #fafafa; color:#333; }
-body.light .sidebar hr { background-color: #dadada; }
-body.light .sidebar li:hover { background-color: #dadada; }
-body.light .sidebar li:hover * { background-color: #dadada; }
-body.light .sidebar button { background-color: #dadada; border: solid 1px #eaeaea; }
-body.light .sidebar button:hover { background-color: #fafafa; }
-body.light select {background-color: #fafafa;color:#333;}
-body.light #fileList > .active { background-color: #dadada; }
-
-body.light #editor-panel .CodeMirror { background: white; color: black; }
-body.light #editor-panel .CodeMirror-gutters { background: #f7f7f7; border-right: 1px solid #ddd; }
-body.light #editor-panel .CodeMirror-activeline-background { background: #FFFAE3; }
-body.light #editor-panel span.CodeMirror-matchingbracket { background: lightgreen; }
-body.light #editor-panel span.cm-number { color: #0000FF; }
-body.light #editor-panel span.cm-builtin { color: #30a; }
-body.light #editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: #000080; }
-body.light #editor-panel span.cm-operator { color: black; }
-body.light #editor-panel span.cm-string-2,
-body.light #editor-panel span.cm-string {color: #008000;}
-body.light #editor-panel span.cm-variable-2,
-body.light #editor-panel span.cm-variable-3,
-body.light #editor-panel span.cm-variable { color: black; }
-body.light #editor-panel span.cm-comment { color: #808080; }
-
-body.light #output { background-color: #f0f0f0; }
-body.light #output-panel { background-color: #eee; }
-body.light #output-panel a { color: #007bff; }
+#output { background-color: var(--output-bg); }
+#output-panel { background-color: var(--panel-bg); color: var(--sidebar-color); }
+#output-panel a { color: var(--link-color); }

@@ -44,9 +44,8 @@ function Terminal(output, interpret) {
 		buffer = [];
 	}
 	output.onscroll = function(event) {
-		if (scrollToEnd === true) {
-			scrollToEnd = output.scrollTop === output.scrollHeight - output.clientHeight;
-		}
+		// re-enable auto scroll when scrolled (back) to the bottom
+		scrollToEnd = output.scrollTop >= output.scrollHeight - output.clientHeight - 1;
 	}
 	return {
 		scroll: function(end) {

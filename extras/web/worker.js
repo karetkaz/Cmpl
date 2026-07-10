@@ -62,7 +62,7 @@ args => {
 	dump - dump output to file: &dump=dump.txt|dump.json
 	log - log output to file: &log=dump.txt
 	mem - if 2MB memory is not enough: &mem=128M
-	X
+	X - override experimental flags: &X=-stdin+steps
 }*/
 onmessage = function(event) {
 	let data = event.data;
@@ -88,13 +88,18 @@ onmessage = function(event) {
 							result.path = data.dump;
 						}
 					}
-					sync = true;
 				} catch (error) {
 					result.error = '' + error;
 					result.exitCode = -1;
 					console.error(error);
 				} finally {
 					FS.chdir(currentPath);
+					// persist files written by the executed program
+					FS.syncfs(function(error) {
+						if (error != null) {
+							Module.printErr('error: ' + error);
+						}
+					});
 				}
 			}
 			postMessage(result);

@@ -416,7 +416,8 @@ function createTreeRow(node, data, depth) {
     }
 
     const samples = data.samples;
-    let sample = samples.samples[node.func.offs] || {};	// make everything undefined if function is not found
+    // fall back to the node's own function info if the sample is not found
+    let sample = samples.samples[node.func.offs] || { func: node.func || {} };
 
     hits.innerText = node.hits;
     self.innerText = toCost(node.self);
@@ -427,7 +428,7 @@ function createTreeRow(node, data, depth) {
     if (sample.func.file && sample.func.line) {
         title += '(' + sample.func.file + ':' + sample.func.line + ')';
     } else {
-        title += '<@0x' + sample.func.offs.toString(16) + '>'
+        title += '<@0x' + (sample.func.offs || 0).toString(16) + '>'
     }
     if (sample !== node && sample.hits > 1) {
         title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;

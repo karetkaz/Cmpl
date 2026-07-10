@@ -5,6 +5,9 @@
 	font-size: inherit;
 	font-family: inherit;
 }
+html {
+	width: 100%; height: 100%;
+	}
 body {
 	top: 0;
 	left: 0;
@@ -12,6 +15,7 @@ body {
 	bottom: 0;
 	width: inherit;
 	height: inherit;
+	box-sizing: border-box;
 	font-size: 1em;
 	overflow: hidden;
 	-webkit-text-size-adjust: 100%;
@@ -371,9 +375,15 @@ body.wrap-output #wrap-output:before { content: '✓ '; }
 body.dark #dark-theme:before { content: '✓ '; }
 body .sidebar li.checked:before { content: '✓ '; }
 
-#canvasMove.overlay:not(.gone) {
+#canvasMove {
 	position: absolute;
 	display: block;
+}
+body:not(.canvas-pan)>#overlay>#canvasMove {
+	display: none;
+}
+body.canvas-pan>#overlay {
+	overflow: auto;
 }
 
 /* custom look and feel */

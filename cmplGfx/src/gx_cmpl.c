@@ -1019,6 +1019,7 @@ static vmError window_show(nfcContext ctx) {
 	flushWindow(args.window);
 
 #ifdef __EMSCRIPTEN__
+	rt->api.raise(ctx, raiseWarn, "emscripten main loop end will quit the program, no further statements / cleanup / dump will be executed.");
 	emscripten_set_main_loop_arg((void*)mainLoopCallback, &args, 0, 1);
 	return noError;
 #endif

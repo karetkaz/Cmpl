@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8">
@@ -40,7 +41,7 @@
 			ontouchstart="event.stopPropagation();"
 			ontouchend="event.stopPropagation();"
 	></canvas>
-	<div id="canvasMove" class="gone overlay" onclick="classList.add('gone');"
+	<div id="canvasMove" class="gone overlay" onclick="setStyle(body, '-canvas-pan');"
 		 ontouchstart="event.stopPropagation();"
 		 ontouchend="event.stopPropagation();"
 	></div>
@@ -261,7 +262,7 @@
 
 	<!--span class="right icon" title="Toggle show menu" onclick="setStyle(body, '~right-bar', '-no-editor');">⋮</span-->
 	<span class="right icon" title="Toggle show output" onclick="setStyle(body, 'bottom-bar', '?-output', '~output');">⬓</span>
-	<span class="right icon" title="Toggle dark theme" onclick="setStyle(body, '-dark', '~light');">◑</span>
+	<span class="right icon" title="Toggle dark theme" onclick="toggleTheme();">◑</span>
 	<!--span class="canvas output right icon bold" title="Scroll to end" onclick="setStyle(body, 'bottom-bar'); terminal.scroll(true);">⏬</span-->
 	<span class="right" id="spnCounter"></span>
 
@@ -287,14 +288,12 @@
 var props = props || {};
 function onExecClick() {
 	// if already executing (canvas is shown), zoom or pan
-	if (document.body.classList.contains('canvas')) {
-		// todo: use style on body to do this: setStyle('canvas-pan');
-		if (canvasMove.classList.contains('gone')) {
-			canvasMove.classList.remove('gone');
-			centerCanvas(1);
-		} else {
-			canvasMove.classList.add('gone');
-			centerCanvas(Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height));
+	if (hasStyle(document.body, 'canvas')) {
+        setStyle(document.body, '~canvas-pan');
+		if (!hasStyle(document.body, 'canvas-pan')) {
+            centerCanvas(Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height));
+        } else {
+            centerCanvas(1);
 		}
 		return;
 	}
@@ -313,7 +312,13 @@ function showCanvas(show) {
 	if (!show) {
 		editor.setOption("readOnly", false);
 		setStyle(document.body, '-canvas');
-		Module._SDL_SendQuit();
+		if (typeof Module._SDL_SendQuit === 'function') {
+			// ask the application to quit gracefully
+			Module._SDL_SendQuit();
+		} else if (typeof MainLoop !== 'undefined' && MainLoop.pause != null) {
+			// for backward compatibility loading older compiler versions
+			MainLoop.pause();
+		}
 		return;
 	}
 
@@ -348,7 +353,6 @@ function centerCanvas(zoom) {
 		canvas.style.top = null;
 		canvas.style.left = null;
 		canvas.style.transform = null;
-		canvas.parentElement.style.overflow = null;
 		return;
 	}
 
@@ -356,14 +360,13 @@ function centerCanvas(zoom) {
 	canvas.style.left = 0;
 	canvas.style.transform = 'none';
 	canvas.style.zoom = null;
-	canvas.parentElement.style.overflow = 'auto';
 	let dx = canvas.clientWidth - canvas.parentElement.clientWidth;
 	if (dx > 0) {
 		canvas.parentElement.scrollLeft = dx / 2;
 		canvas.style.left = 0;
 	} else {
 		canvas.parentElement.scrollLeft = 0;
-		canvas.style.left = -dx / 2;
+		canvas.style.left = (-dx / 2) + 'px';
 	}
 	let dy = canvas.clientHeight - canvas.parentElement.clientHeight;
 	if (dy > 0) {
@@ -371,10 +374,10 @@ function centerCanvas(zoom) {
 		canvas.style.top = 0;
 	} else {
 		canvas.parentElement.scrollTop = 0;
-		canvas.style.top = -dy / 2;
+		canvas.style.top = (-dy / 2) + 'px';
 	}
-	canvasMove.style.width = Math.max(canvas.width, canvas.parentElement.clientWidth);
-	canvasMove.style.height = Math.max(canvas.height, canvas.parentElement.clientHeight);
+	canvasMove.style.width = Math.max(canvas.width, canvas.parentElement.clientWidth) + 'px';
+	canvasMove.style.height = Math.max(canvas.height, canvas.parentElement.clientHeight) + 'px';
 }
 
 let version = '/Cmpl/' + (params.version || 'build') + '/wasm/';
@@ -383,6 +386,10 @@ function importScripts(...urls) {
 	for (let url of urls) {
 		let scriptElement = document.createElement('script');
 		scriptElement.src = url;
+		scriptElement.onerror = function () {
+			spnStatus.innerText = 'Runtime failed to load';
+			process({ error: 'failed to load: ' + url });
+		};
 		document.getElementsByTagName('head')[0].appendChild(scriptElement);
 	}
 }
@@ -395,20 +402,21 @@ if (params.libGfx === undefined) {
 		//console.log('worker: ', event.data);
 		process(event.data);
 	};
+	worker.onerror = function (event) {
+		spnStatus.innerText = 'Runtime failed to load';
+		process({ error: 'worker error: ' + (event.message || event.filename || event.type) });
+	};
 
 	var openProjectFile = function(projectOrFile) {
 		worker.postMessage(projectOrFile);
 	}
 	var execInput = function(args, extra) {
 		setStyle(document.body, 'output');
-		let dump = undefined;
-		if (extra != null && extra.dump != null) {
-			dump = extra.dump;
-		}
+		extra = extra || {};
 		worker.postMessage({
 			execute: args || [],
 			path: extra.path,
-			dump
+			dump: extra.dump
 		});
 	}
 }
@@ -466,10 +474,10 @@ else {
 		}
 	}
 	var execInput = function(args, data) {
+		data = data || {};
 		// show overlay while compiling and initializing
 		canvasShown.width = 0;
-		canvasMove.classList.add('gone');
-		setStyle(document.body, 'canvas', 'output');
+		setStyle(document.body, 'output', 'canvas', '-canvas-pan');
 
 		setTimeout(function() {
 			let result = {};

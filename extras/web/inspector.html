@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8">
@@ -23,7 +24,7 @@
 	<span class="left icon" title="Show symbols" onclick="showSymbolList();">ƒ</span>
 	<span class="left icon" title="Show profile data" onclick="showCalltree();">⏱</span>
 	<span class="right icon" title="Export profile data" onclick="exportCallTree();">💾</span>
-	<span class="right icon" title="Toggle dark theme" onclick="setStyle(body, '-dark', '~light');">◑</span>
+	<span class="right icon" title="Toggle dark theme" onclick="toggleTheme();">◑</span>
 
 	<!-- filename -->
 	<span id="spnFileName" class="filename" onclick="dropFileInput.click();">
@@ -93,6 +94,11 @@ function setStyle(element, ...styles) {
 	}
 
 	return prevChanged;
+}
+function toggleTheme() {
+	// toggle the class forcing the opposite of the device theme
+	let deviceLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+	setStyle(document.body, deviceLight ? '-light' : '-dark', deviceLight ? '~dark' : '~light');
 }
 function onError() {
 	spnFileName.classList.add('error');
