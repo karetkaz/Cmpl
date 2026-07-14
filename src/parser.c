@@ -1328,7 +1328,7 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 				if (!canAssign(ctx, def, init, 0)) {
 					error(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
 				} else {
-					warn(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
+					raise(ctx->rt, raiseWInit, init->file, init->line, ERR_INVALID_INITIALIZER, init);
 				}
 			}
 		}

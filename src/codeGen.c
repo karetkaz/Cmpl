@@ -325,7 +325,7 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 		}
 		if (variable->init == NULL || variable->init != ctx->init_und) {
 			// not an undefined initializer: {...}
-			warn(ctx->rt, variable->file, variable->line, WARN_VARIABLE_TYPE_INCOMPLETE, variable);
+			warn(ctx->rt, variable->file, variable->line, WARN_VARIABLE_TYPE_PARTIAL, variable);
 		}
 		variable->size = variable->type->size;
 	}
@@ -369,7 +369,7 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 		}
 		if (varInit != NULL) {
 			if (!canAssign(ctx, variable, varInit, ATTR_mut | ATTR_opt)) {
-				warn(ctx->rt, varInit->file, varInit->line, ERR_INVALID_INITIALIZER, varInit);
+				raise(ctx->rt, raiseWInit, varInit->file, varInit->line, ERR_INVALID_INITIALIZER, varInit);
 			}
 			if (!(varCast = genAst(ctx, varInit, varCast))) {
 				dbgTraceAst(varInit);
@@ -387,7 +387,7 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 		// global variable or function argument
 		if (varInit != NULL) {
 			if (!canAssign(ctx, variable, varInit, ATTR_mut | ATTR_opt)) {
-				warn(ctx->rt, varInit->file, varInit->line, ERR_INVALID_INITIALIZER, varInit);
+				raise(ctx->rt, raiseWInit, varInit->file, varInit->line, ERR_INVALID_INITIALIZER, varInit);
 			}
 			if (varCast != genAst(ctx, varInit, varCast)) {
 				dbgTraceAst(varInit);
@@ -893,7 +893,7 @@ static ccKind genEmit(ccContext ctx, astn ast, ccKind get) {
 			// single argument emit: emit(v), do not warn
 			continue;
 		}
-		warn(rt, ast->file, ast->line, WARN_PASS_ARG_NO_CAST, arg, arg->type);
+		raise(rt, raiseWEmit, ast->file, ast->line, WARN_PASS_ARG_NO_CAST, arg, arg->type);
 	}
 	return get;
 }
@@ -2279,10 +2279,10 @@ static ccKind genAst(ccContext ctx, astn ast, ccKind get) {
 
 			if (var != NULL && isVariable(var) && !isStatic(var)) {
 				if (!canAssign(ctx, var, ast->op.rhso, ATTR_mut | ATTR_opt)) {
-					warn(ctx->rt, ast->file, ast->line, ERR_INVALID_INITIALIZER, ast);
+					raise(ctx->rt, raiseWInit, ast->file, ast->line, ERR_INVALID_INITIALIZER, ast);
 				}
 				else if (ast->kind != INIT_set && !isMutable(var)) {
-					warn(ctx->rt, ast->file, ast->line, ERR_INVALID_CONST_ASSIGN, ast);
+					raise(ctx->rt, raiseWInit, ast->file, ast->line, ERR_INVALID_CONST_ASSIGN, ast);
 				}
 			}
 			if (!genAst(ctx, ast->op.rhso, cast)) {
@@ -2457,10 +2457,10 @@ static ccKind genAst(ccContext ctx, astn ast, ccKind get) {
 	// generate cast
 	if (get != got) {
 		if ((get == CAST_u32 || get == CAST_u64) && (got == CAST_f32 || got == CAST_f64)) {
-			warn(rt, ctx->file, ctx->line, WARN_USING_SIGNED_CAST, ast);
+			raise(rt, raiseWSign, ctx->file, ctx->line, WARN_USING_SIGNED_CAST, ast);
 		}
 		if ((get == CAST_f32 || get == CAST_f64) && (got == CAST_u32 || got == CAST_u64)) {
-			warn(rt, ctx->file, ctx->line, WARN_USING_SIGNED_CAST, ast);
+			raise(rt, raiseWSign, ctx->file, ctx->line, WARN_USING_SIGNED_CAST, ast);
 		}
 
 		vmOpcode cast = opc_last;

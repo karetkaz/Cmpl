@@ -90,7 +90,7 @@ static int checkStackReadAccess(rtContext ctx, size_t offsBegin, size_t offsEnd,
 				break;
 
 			case opc_ldsp:
-				result += (size_t) ip->rel < ss;
+				result += (ssize_t) ip->rel < ss;
 				break;
 		}
 	}

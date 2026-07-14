@@ -209,6 +209,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define logif(__EXP, __FMT, ...) do { } while(0)
 
 #define fatal(__FMT, ...) dieif("fatal", __FMT, ##__VA_ARGS__)
+#define raise(__ENV, __LEVEL, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, __LEVEL, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #define error(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #define todo(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseError, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
 #define warn(__ENV, __FILE, __LINE, __FMT, ...) do { printLog(__ENV, raiseWarn, __FILE, __LINE, __FMT, ##__VA_ARGS__); } while(0)
@@ -326,7 +327,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define WARN_NO_NEW_LINE_AT_END "expected <new line> before end of input"
 
 
-#define WARN_VARIABLE_TYPE_INCOMPLETE "emitted variable has incomplete type: %T"
+#define WARN_VARIABLE_TYPE_PARTIAL "creating variable with partial type: %T"
 #define WARN_USING_BEST_OVERLOAD "using overload `%T` of %d declared symbols"
 #define WARN_USING_DEF_TYPE_INITIALIZER "using default type initializer: %T := %t"
 #define WARN_USING_DEF_FIELD_INITIALIZER "using default field initializer: %T := %t"

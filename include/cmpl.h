@@ -72,6 +72,9 @@ typedef enum {
 	raiseError = -1,
 	raisePrint = 0,
 	raiseWarn = 1,
+	raiseWSign = 9, // todo: using signed cast for unsigned value
+	raiseWInit = 9, // todo: invalid initialization (mutable / optional)
+	raiseWEmit = 9, // todo: argument `x` is passed to emit without cast as `Y`
 	raiseInfo = 13,
 	raiseDebug = 14,
 	raiseVerbose = 15,

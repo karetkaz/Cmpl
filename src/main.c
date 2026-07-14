@@ -2304,6 +2304,10 @@ int main(int argc, char *argv[]) {
 					extra.warnLevel *= on;
 					arg2 += 5;
 				}
+				else if (strBegins(arg2 + 1, "wall")) {
+					extra.warnLevel = 15;
+					arg2 += 5;
+				}
 				else if (strBegins(arg2 + 1, "init")) {
 					extra.errUninitialized = !on;
 					arg2 += 8;
