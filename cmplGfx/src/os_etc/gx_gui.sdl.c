@@ -194,7 +194,7 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			return GESTURE_SCROLL;
 
 		case SDL_TEXTINPUT:
-			*x = utf8ToCodepoint(event.text.text);
+			*x = (int) decodeUtf8(event.text.text, sizeof(event.text.text), NULL);
 			*button = *x;
 			return KEY_PRESS;
 
@@ -218,7 +218,7 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			SDL_PumpEvents();
 			if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && event.type == SDL_TEXTINPUT) {
 				SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT);
-				*x = utf8ToCodepoint(event.text.text);
+				*x = (int) decodeUtf8(event.text.text, sizeof(event.text.text), NULL);
 			}
 			return KEY_PRESS;
 	}

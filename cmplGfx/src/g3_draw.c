@@ -410,9 +410,9 @@ static void draw_tri_part(GxImage dst, GxRect roi, edge l, edge r, GxImage tex, 
 					if (tex) {
 						argb col;
 						col.val = getPixelLinear(tex, v.s, v.t);
-						cBuff[offs].b = sat_s8((v.b >> 15) * col.b >> 8);
-						cBuff[offs].g = sat_s8((v.g >> 15) * col.g >> 8);
-						cBuff[offs].r = sat_s8((v.r >> 15) * col.r >> 8);
+						cBuff[offs].b = sat_s8((v.b >> 15) * (col.b + (col.b >> 7)) >> 8);
+						cBuff[offs].g = sat_s8((v.g >> 15) * (col.g + (col.g >> 7)) >> 8);
+						cBuff[offs].r = sat_s8((v.r >> 15) * (col.r + (col.r >> 7)) >> 8);
 					} else {
 						cBuff[offs].b = (uint8_t) (v.b >> 16);
 						cBuff[offs].g = (uint8_t) (v.g >> 16);

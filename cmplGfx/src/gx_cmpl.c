@@ -259,7 +259,7 @@ static vmError surf_drawText(nfcContext ctx) {
 		return noError;
 	}
 
-	drawText(surf, rect, font, text.ref, text.length, color);
+	drawText(surf, rect, font, NULL, text.ref, text.length, color);
 	return noError;
 }
 
@@ -271,7 +271,7 @@ static vmError surf_clipText(nfcContext ctx) {
 	GxRect rect = rt->api.nextArg(&al)->ref;
 	struct nfcArgArr text = rt->api.nextArg(&al)->arr;
 
-	clipText(rect, font, text.ref, text.length);
+	clipText(rect, font, NULL, text.ref, text.length);
 	return noError;
 }
 

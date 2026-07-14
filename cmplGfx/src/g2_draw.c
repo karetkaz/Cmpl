@@ -32,12 +32,21 @@ void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t 
 	}
 }
 
-void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t color) {
+int drawChar(GxImage image, int x0, int y0, GxImage font, uint32_t chr, uint32_t color) {
 	if ((font->flags & ImageType) != ImageFnt) {
-		return;
+		return 0;
+	}
+	if (chr > 255) {
+		// glyph missing from the cache, render it directly from the backing font
+		return drawGlyph(image, x0, y0, font, chr, color);
 	}
 
-	struct GxFace *face = &font->LLUTPtr->data[chr & 255];
+	struct GxFace *face = &font->LLUTPtr->data[chr];
+	if (image == NULL) {
+		// measure only
+		return face->width;
+	}
+
 	struct GxRect clip = {
 		.x0 = x0 + face->pad_x,
 		.y0 = y0 + face->pad_y,
@@ -50,7 +59,7 @@ void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t col
 	char *sptr = face->basePtr;
 
 	if (dptr == NULL || sptr == NULL || blt == NULL) {
-		return;
+		return face->width;
 	}
 
 	int width = clip.x1 - clip.x0;
@@ -59,10 +68,10 @@ void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t col
 		dptr += image->scanLen;
 		sptr += font->scanLen;
 	}
+	return face->width;
 }
 
-// todo: no unicode support, only ascii text
-void clipText(GxRect rect, GxImage font, const char *text, size_t length) {
+void clipText(GxRect rect, GxImage font, const uint32_t *codepage, const char *text, size_t length) {
 	if ((font->flags & ImageType) != ImageFnt) {
 		return;
 	}
@@ -79,24 +88,31 @@ void clipText(GxRect rect, GxImage font, const char *text, size_t length) {
 	int x = 0;
 	int y = 0;
 
-	for (size_t i = 0; i < length; i++) {
-		char chr = text[i];
+	for (size_t i = 0; i < length; ) {
+		uint32_t chr;
+		if (codepage != NULL) {
+			chr = codepage[(uint8_t) text[i++]];
+		}
+		else {
+			chr = decodeUtf8(text, length, &i);
+		}
 		switch (chr) {
 			default:
-				x += font->LLUTPtr->data[chr & 0xff].width;
+				// measure only
+				x += drawChar(NULL, 0, 0, font, chr, 0);
 				break;
 
 			case 0:
 				return;
 
 			case '\r':
-				if (text[i + 1] == '\n') {
+				if (text[i] == '\n') {
 					// windows style line end (CrLf)
 					break;
 				}
 				// fall through
 			case '\n':
-				if (text[i + 1] == '\0') {
+				if (text[i] == '\0') {
 					// new line at end ot text
 					break;
 				}
@@ -117,7 +133,7 @@ void clipText(GxRect rect, GxImage font, const char *text, size_t length) {
 	}
 	rect->y1 += y;
 }
-void drawText(GxImage image, GxRect rect, GxImage font, const char *text, size_t length, uint32_t color) {
+void drawText(GxImage image, GxRect rect, GxImage font, const uint32_t *codepage, const char *text, size_t length, uint32_t color) {
 	if ((font->flags & ImageType) != ImageFnt) {
 		return;
 	}
@@ -130,25 +146,30 @@ void drawText(GxImage image, GxRect rect, GxImage font, const char *text, size_t
 
 	int x = rect->x0;
 	int y = rect->y0;
-	for (size_t i = 0; i < length; i++) {
-		char chr = text[i];
+	for (size_t i = 0; i < length; ) {
+		uint32_t chr;
+		if (codepage != NULL) {
+			chr = codepage[(uint8_t) text[i++]];
+		}
+		else {
+			chr = decodeUtf8(text, length, &i);
+		}
 		switch (chr) {
 			default:
-				drawChar(image, x, y, font, chr, color);
-				x += font->LLUTPtr->data[chr & 0xff].width;
+				x += drawChar(image, x, y, font, chr, color);
 				break;
 
 			case 0:
 				return;
 
 			case '\r':
-				if (text[i + 1] == '\n') {
+				if (text[i] == '\n') {
 					// windows style line end (CrLf)
 					break;
 				}
 				// fall through
 			case '\n':
-				if (text[i + 1] == '\0') {
+				if (text[i] == '\0') {
 					// new line at end of text
 					break;
 				}

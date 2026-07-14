@@ -261,12 +261,12 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 				Status status = 0;
 				if (Xutf8LookupString(window->inputContext, &event.xkey, buffer, sizeof(buffer) - 1, NULL, &status) > 0) {
 					if (status != XBufferOverflow) {
-						*x = utf8ToCodepoint(buffer);
+						*x = (int) decodeUtf8(buffer, sizeof(buffer), NULL);
 					}
 				}
 			} else {
 				if (XLookupString(&event.xkey, buffer, sizeof(buffer) - 1, NULL, NULL) > 0) {
-					*x = utf8ToCodepoint(buffer);
+					*x = (int) decodeUtf8(buffer, sizeof(buffer), NULL);
 				}
 			}
 			return KEY_PRESS;

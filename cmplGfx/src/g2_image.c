@@ -811,6 +811,24 @@ GxImage loadImg(GxImage dst, const char *src, int depth) {
 	return dst;
 }
 
+// ttf font backing: keeps the font loaded to render the glyphs missing from the cache
+typedef struct TtfFace {
+	stbtt_fontinfo info;
+	float scale;            // scale for the baked pixel height
+	int baseline;           // baked pixel height, baseline position in the glyph cache
+	size_t scratchSize;     // size of the scratch buffer
+	unsigned char *scratch; // renders glyphs without allocating each time, grows to the largest one used
+	unsigned char data[];   // content of the ttf file
+} *TtfFace;
+
+void destroyTtfFace(void *fontFace) {
+	TtfFace ttf = fontFace;
+	if (ttf != NULL) {
+		free(ttf->scratch);
+		free(ttf);
+	}
+}
+
 GxImage loadTtf(GxImage dst, const char *src, int height, int firstChar, int lastChars) {
 	const int numChars = lastChars - firstChar;
 	if (numChars > 256) {
@@ -824,83 +842,129 @@ GxImage loadTtf(GxImage dst, const char *src, int height, int firstChar, int las
 
 	fseek(fontFile, 0, SEEK_END);
 	long fileSize = ftell(fontFile);
-	unsigned char *fontBuffer = malloc(fileSize);
+	TtfFace ttf = malloc(sizeof(struct TtfFace) + fileSize);
 	fseek(fontFile, 0, SEEK_SET);
-	long readSize = fread(fontBuffer, fileSize, 1, fontFile);
+	long readSize = fread(ttf->data, fileSize, 1, fontFile);
 	fclose(fontFile);
 	if (readSize != 1) {
+		free(ttf);
 		return NULL;
 	}
 
-	stbtt_fontinfo font;
-	if (!stbtt_InitFont(&font, fontBuffer, 0)) {
-		free(fontBuffer);
+	if (!stbtt_InitFont(&ttf->info, ttf->data, 0)) {
+		free(ttf);
 		return NULL;
 	}
-
-	stbtt_bakedchar cdata[numChars];
-	unsigned char temp_bitmap[512 * 512];
-
-	// FIXME: no guarantee this fits!
-	stbtt_BakeFontBitmap(fontBuffer, 0, height, temp_bitmap, 512, 512, firstChar, numChars, cdata);
+	ttf->scale = stbtt_ScaleForPixelHeight(&ttf->info, height);
+	ttf->baseline = height;
+	ttf->scratchSize = 0;
+	ttf->scratch = NULL;
 
 	int width = 0;
-	int maxHeight = 0;
-	for (int i = 0; i < numChars; ++i) {
-		stbtt_bakedchar *inf = &cdata[i];
-		width += inf->xadvance;
+	int maxHeight = height;
+	for (int chr = firstChar; chr < lastChars; ++chr) {
+		int advance, lsb;
+		int glyph = stbtt_FindGlyphIndex(&ttf->info, chr);
+		stbtt_GetGlyphHMetrics(&ttf->info, glyph, &advance, &lsb);
+		width += (int) (advance * ttf->scale + .5f);
 
-		int yPos = 0;
-		if (inf->yoff < 0) {
-			yPos += height + inf->yoff;
-		}
-		int h = yPos + inf->y1 - inf->y0;
+		int glyphX0, glyphY0, glyphX1, glyphY1;
+		stbtt_GetGlyphBitmapBox(&ttf->info, glyph, ttf->scale, ttf->scale, &glyphX0, &glyphY0, &glyphX1, &glyphY1);
+		int h = height + glyphY1;
 		if (maxHeight < h) {
 			maxHeight = h;
 		}
 	}
-	if (maxHeight < height) {
-		maxHeight = height;
-	}
 
-	bltProc blt = getBltProc(blt_cvt_08, 8);
 	dst = createImage(dst, width, maxHeight, 8, ImageFnt);
 	if (dst == NULL) {
-		free(fontBuffer);
+		free(ttf);
 		return NULL;
 	}
 
-	int x = 0;
 	GxFLut lut = dst->LLUTPtr;
 	lut->count = numChars;
+	lut->fontFace = ttf;
 	fillRect(dst, 0, 0, dst->width, dst->height, 0, 0);
-	for (int i = 0; i < numChars; ++i) {
-		stbtt_bakedchar *inf = &cdata[i];
-		int yLen = inf->y1 - inf->y0;
-		int xLen = inf->x1 - inf->x0;
-		int yPos = 0;
-		if (inf->yoff < 0) {
-			yPos += height + inf->yoff;
-		}
-		for (int y = 0; y < yLen; ++y) {
-			if (y + yPos >= dst->height) {
-				break;
-			}
-			int dstOffs = x * dst->pixelLen + (y + yPos) * dst->scanLen;
-			int srcOffs = (inf->x0) + (y + inf->y0) * 512;
-			blt(dst->basePtr + dstOffs, temp_bitmap + srcOffs, NULL, xLen);
-		}
 
-		lut->data[i + firstChar].basePtr = dst->basePtr + x * dst->pixelLen;
-		lut->data[i + firstChar].width = inf->xadvance;
-		lut->data[i + firstChar].pad_x = 0;
-		lut->data[i + firstChar].pad_y = 0;
-		x += cdata[i].xadvance;
+	int x = 0;
+	struct GxImage column = {0};
+	for (int chr = firstChar; chr < lastChars; ++chr) {
+		int colWidth = drawGlyph(NULL, 0, 0, dst, chr, 0);
+
+		// cache the glyph into its own column, clipped to not bleed into the neighbors
+		struct GxRect rect = {.x0 = x, .y0 = 0, .x1 = x + colWidth, .y1 = dst->height};
+		drawGlyph(sliceImage(&column, dst, &rect), 0, 0, dst, chr, 0xffffffff);
+
+		lut->data[chr].basePtr = dst->basePtr + x * dst->pixelLen;
+		lut->data[chr].width = colWidth;
+		lut->data[chr].pad_x = 0;
+		lut->data[chr].pad_y = 0;
+		x += colWidth;
 	}
 	for (int i = 0; i < firstChar; i++) {
 		lut->data[i] = lut->data[firstChar];
 	}
-
-	free(fontBuffer);
 	return dst;
+}
+
+int drawGlyph(GxImage image, int x0, int y0, GxImage font, uint32_t chr, uint32_t color) {
+	if ((font->flags & ImageType) != ImageFnt) {
+		return 0;
+	}
+	TtfFace ttf = font->LLUTPtr->fontFace;
+	if (ttf == NULL) {
+		return 0;
+	}
+
+	int advance, lsb;
+	int glyph = stbtt_FindGlyphIndex(&ttf->info, chr);
+	stbtt_GetGlyphHMetrics(&ttf->info, glyph, &advance, &lsb);
+	int width = (int) (advance * ttf->scale + .5f);
+	if (image == NULL) {
+		// measure only
+		return width;
+	}
+
+	int glyphX0, glyphY0, glyphX1, glyphY1;
+	stbtt_GetGlyphBitmapBox(&ttf->info, glyph, ttf->scale, ttf->scale, &glyphX0, &glyphY0, &glyphX1, &glyphY1);
+	int xLen = glyphX1 - glyphX0;
+	int yLen = glyphY1 - glyphY0;
+	if (xLen <= 0 || yLen <= 0) {
+		return width;
+	}
+
+	size_t size = (size_t) xLen * yLen;
+	if (size > ttf->scratchSize) {
+		// keep the largest scratch buffer used so far
+		unsigned char *grown = realloc(ttf->scratch, size);
+		if (grown == NULL) {
+			return width;
+		}
+		ttf->scratch = grown;
+		ttf->scratchSize = size;
+	}
+	unsigned char *bitmap = ttf->scratch;
+	stbtt_MakeGlyphBitmap(&ttf->info, bitmap, xLen, yLen, xLen, ttf->scale, ttf->scale, glyph);
+
+	struct GxRect clip = {
+		.x0 = x0 + glyphX0,
+		.y0 = y0 + ttf->baseline + glyphY0,
+		.x1 = x0 + glyphX0 + xLen,
+		.y1 = y0 + ttf->baseline + glyphY0 + yLen,
+	};
+	int srcX0 = clip.x0;
+	int srcY0 = clip.y0;
+	bltProc blt = getBltProc(blt_set_mix, image->depth);
+	char *dptr = clipRect(image, &clip);
+	if (dptr != NULL && blt != NULL) {
+		// skip the clipped rows and columns of the glyph
+		unsigned char *sptr = bitmap + (clip.x0 - srcX0) + (clip.y0 - srcY0) * xLen;
+		for (int y = clip.y0; y < clip.y1; ++y) {
+			blt(dptr, &color, sptr, clip.x1 - clip.x0);
+			dptr += image->scanLen;
+			sptr += xLen;
+		}
+	}
+	return width;
 }

@@ -12,8 +12,15 @@ GxImage createImage(GxImage recycle, int width, int height, int depth, ImageFlag
 		}
 		flags |= freeImage;
 	}
-	else if (recycle->flags & freeData) {
-		free(recycle->basePtr);
+	else {
+		// keep the header ownership of the recycled image
+		flags |= recycle->flags & freeImage;
+		if (recycle->flags & freeData) {
+			if ((recycle->flags & ImageType) == ImageFnt && recycle->LLUTPtr != NULL) {
+				destroyTtfFace(recycle->LLUTPtr->fontFace);
+			}
+			free(recycle->basePtr);
+		}
 	}
 
 	recycle->width = (uint16_t) width;
@@ -88,6 +95,9 @@ GxImage createImage(GxImage recycle, int width, int height, int depth, ImageFlag
 		recycle->flags |= freeData;
 		if (offs != 0) {
 			recycle->tempPtr = recycle->basePtr + offs;
+			if ((flags & ImageType) == ImageFnt) {
+				recycle->LLUTPtr->fontFace = NULL;
+			}
 		}
 	}
 
@@ -104,6 +114,9 @@ GxImage sliceImage(GxImage recycle, GxImage parent, const GxRect roi) {
 		flags |= freeImage;
 	}
 	else if (recycle->flags & freeData) {
+		if ((recycle->flags & ImageType) == ImageFnt && recycle->LLUTPtr != NULL) {
+			destroyTtfFace(recycle->LLUTPtr->fontFace);
+		}
 		free(recycle->basePtr);
 	}
 
@@ -128,6 +141,9 @@ GxImage sliceImage(GxImage recycle, GxImage parent, const GxRect roi) {
 void destroyImage(GxImage image) {
 	if (image->flags & freeData) {
 		image->flags &= ~freeData;
+		if ((image->flags & ImageType) == ImageFnt && image->LLUTPtr != NULL) {
+			destroyTtfFace(image->LLUTPtr->fontFace);
+		}
 		if (image->basePtr != NULL) {
 			free(image->basePtr);
 		}
@@ -374,4 +390,35 @@ int blurImage(GxImage image, int radius, double sigma) {
 	}
 	destroyImage(tmp);
 	return 0;
+}
+
+uint32_t decodeUtf8(const char *text, size_t length, size_t *pos) {
+	size_t start = pos != NULL ? *pos : 0;
+	size_t i = start;
+	uint32_t chr = (uint8_t) text[i++];
+	int extra = 0;
+	if (chr >= 0xf0) {
+		chr &= 0x07;
+		extra = 3;
+	}
+	else if (chr >= 0xe0) {
+		chr &= 0x0f;
+		extra = 2;
+	}
+	else if (chr >= 0xc0) {
+		chr &= 0x1f;
+		extra = 1;
+	}
+	for (; extra > 0; extra -= 1) {
+		if (i >= length || ((uint8_t) text[i] & 0xc0) != 0x80) {
+			chr = (uint8_t) text[start];
+			i = start + 1;
+			break;
+		}
+		chr = (chr << 6) | ((uint8_t) text[i++] & 0x3f);
+	}
+	if (pos != NULL) {
+		*pos = i;
+	}
+	return chr;
 }

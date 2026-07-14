@@ -1391,6 +1391,7 @@ AsciiWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract meth
 Utf8Reader # Utf-8 decoder
 Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
 Utf8Writer # Utf-8 encoder
+Utf8Writer.encode(bytes: uint8[4], cp: uint32): int32 # encode a codepoint to utf-8 bytes and return the number of bytes written
 Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
 Easing # Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
 Easing.linear(t: float64): float64 # @public

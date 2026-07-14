@@ -403,7 +403,10 @@ vmError execute(rtContext ctx, const void *extra) {
 	// TODO: cells should be in runtime read only memory?
 	vmProcessor pu;
 
-	// invalidate compiler
+	// invalidate compiler, release the malloc allocated buffers before losing them
+	if (ctx->cc != NULL) {
+		freeBuff(&ctx->cc->jumps);
+	}
 	ctx->cc = NULL;
 
 	// invalidate memory manager

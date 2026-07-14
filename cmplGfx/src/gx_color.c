@@ -25,12 +25,12 @@ static int colset32(argb *dst, argb *src, void *lut, size_t cnt) {
 static int colcpy32_bgra(byte *dst, byte *src, void *lut, size_t cnt) {
 	// AAAAAAAA`BBBBBBBB`GGGGGGGG`RRRRRRRR => AAAAAAAA`RRRRRRRR`GGGGGGGG`BBBBBBBB
 	for (; cnt > 0; cnt -= 1, dst += 4, src += 4) {
-		int32_t val = *(int32_t *) src;
+		uint32_t val = *(uint32_t *) src;
 		val = (val & 0xff000000)
 			| ((val & 0x00ff0000) >> 16)
 			| (val & 0x0000ff00)
 			| ((val & 0x000000ff) << 16);
-		*(int32_t *) dst = val;
+		*(uint32_t *) dst = val;
 	}
 	(void) lut;
 	return 0;
@@ -38,11 +38,11 @@ static int colcpy32_bgra(byte *dst, byte *src, void *lut, size_t cnt) {
 static int colcpy32_bgr(byte *dst, byte *src, void *lut, size_t cnt) {
 	// BBBBBBBB`GGGGGGGG`RRRRRRRR => 00000000`RRRRRRRR`GGGGGGGG`BBBBBBBB
 	for (; cnt > 0; cnt -= 1, dst += 4, src += 3) {
-		int32_t val = *(int32_t *) src;
+		uint32_t val = *(uint32_t *) src;
 		val = ((val & 0xff0000) >> 16)
 			| (val & 0x00ff00)
 			| ((val & 0x0000ff) << 16);
-		*(int32_t *) dst = val;
+		*(uint32_t *) dst = val;
 	}
 	(void) lut;
 	return 0;
@@ -50,7 +50,7 @@ static int colcpy32_bgr(byte *dst, byte *src, void *lut, size_t cnt) {
 static int colcpy32_24(argb *dst, byte *src, void *lut, size_t cnt) {
 	// RRRRRRRR`GGGGGGGG`BBBBBBBB => 00000000`RRRRRRRR`GGGGGGGG`BBBBBBBB
 	for (size_t i = 0; i < cnt; ++i, ++dst, src += 3) {
-		int32_t val = *(int32_t *) src;
+		uint32_t val = *(uint32_t *) src;
 		dst->val = val & 0x00ffffff;
 	}
 	(void) lut;
@@ -59,7 +59,7 @@ static int colcpy32_24(argb *dst, byte *src, void *lut, size_t cnt) {
 static int colcpy32_16(argb *dst, word *src, void *lut, size_t cnt) {
 	// RRRRRGGG`GGGBBBBB => 00000000`RRRRR000`GGGGGG00`BBBBB000
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-		int32_t val = *src;
+		uint32_t val = *src;
 		dst->val = ((val & 0xf800) << 8)
 			| ((val & 0x07e0) << 5)
 			| ((val & 0x001f) << 3);
@@ -70,7 +70,7 @@ static int colcpy32_16(argb *dst, word *src, void *lut, size_t cnt) {
 static int colcpy32_15(argb *dst, word *src, void *lut, size_t cnt) {
 	// XRRRRRGG`GGGBBBBB => 00000000`RRRRR000`GGGGG000`BBBBB000
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-		int32_t val = *src;
+		uint32_t val = *src;
 		dst->val = ((val & 0x7c00) << 9)
 			| ((val & 0x03e0) << 6)
 			| ((val & 0x001f) << 3);
@@ -108,13 +108,14 @@ static int colset32_mix(argb *dst, argb *src, byte *lut, size_t cnt) {
 static int colcpy32_mix(byte *dst, byte *src, void *lut, size_t cnt) {
 	// lut points to the alpha value to be used
 	int alpha = *(int *)lut;
-	if (alpha < 0 || alpha > 255) {
+	alpha += alpha >> 7;
+	if (alpha < 0 || alpha > 256) {
 		for (size_t i = 0; i < 4 * cnt; ++i, ++dst, ++src) {
-			*dst = sat_s8(mix_s8(alpha, *dst, *src));
+			*dst = sat_s8(*dst + (alpha * (*src - *dst) >> 8));
 		}
 	} else {
 		for (size_t i = 0; i < 4 * cnt; ++i, ++dst, ++src) {
-			*dst = mix_s8(alpha, *dst, *src);
+			*dst += alpha * (*src - *dst) >> 8;
 		}
 	}
 	return 0;
@@ -300,7 +301,23 @@ static int (*const colcpy08_32)(void *dst, void *src, void *lut, size_t cnt) = N
 static int (*const colcpy08_24)(void *dst, void *src, void *lut, size_t cnt) = NULL;
 static int (*const colcpy08_16)(void *dst, void *src, void *lut, size_t cnt) = NULL;
 static int (*const colcpy08_15)(void *dst, void *src, void *lut, size_t cnt) = NULL;
-static int (*const colset08_mix)(void *dst, void *src, void *lut, size_t cnt) = NULL;
+static int colset08_mix(byte *dst, argb *src, byte *lut, size_t cnt) {
+	// src is the color, lut points to the alpha channel
+	int value = lum(src->val);
+	if (lut == NULL) {
+		int alpha = ach(src->val);
+		alpha += alpha >> 7;
+		for (size_t i = 0; i < cnt; ++i, ++dst) {
+			*dst += alpha * (value - *dst) >> 8;
+		}
+		return 0;
+	}
+
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++lut) {
+		*dst += (*lut + (*lut >> 7)) * (value - *dst) >> 8;
+	}
+	return 0;
+}
 static int (*const colcpy08_mix)(void *dst, void *src, void *lut, size_t cnt) = NULL;
 
 bltProc getBltProc(BltType type, int depth) {

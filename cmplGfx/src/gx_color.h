@@ -147,14 +147,18 @@ static inline argb sat_rgb(signed a, signed r, signed g, signed b) {
 }
 
 static inline int mix_s8(int alpha, int c1, int c2) {
-	return c1 + (c2 - c1) * alpha / 256;
+	int32_t mix = alpha + (alpha >> 7);
+	return c1 + ((c2 - c1) * mix >> 8);
 }
 static inline argb mix_rgb(uint8_t alpha, argb c1, argb c2) {
+	// scale alpha from 0..255 to 0..256, so a 255 alpha copies c2 exactly
+	uint32_t mix = alpha + (alpha >> 7);
+
 	uint32_t rb = c1.val & 0xff00ff;
-	rb += alpha * ((c2.val & 0xff00ff) - rb) >> 8;
+	rb += mix * ((c2.val & 0xff00ff) - rb) >> 8;
 
 	uint32_t g = c1.val & 0x00ff00;
-	g += alpha * ((c2.val & 0x00ff00) - g) >> 8;
+	g += mix * ((c2.val & 0x00ff00) - g) >> 8;
 
 	return cast_rgb((rb & 0xff00ff) | (g & 0x00ff00));
 }

@@ -372,7 +372,11 @@ int rtClose(rtContext ctx) {
 	// close log file
 	logFILE(ctx, NULL);
 
-	int errors = ctx->errors;
+	// release compiler memory
+	if (ctx->cc != NULL) {
+		freeBuff(&ctx->cc->jumps);
+	}
+
 	// release debugger memory
 	if (ctx->dbg != NULL) {
 		freeBuff(&ctx->dbg->functions);
@@ -380,6 +384,7 @@ int rtClose(rtContext ctx) {
 	}
 
 	// release memory
+	int errors = ctx->errors;
 	if (ctx->freeMem) {
 		free(ctx);
 	}

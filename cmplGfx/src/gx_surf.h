@@ -43,6 +43,7 @@ typedef struct GxCLut {
 // Layer Look Up Table
 typedef struct GxFLut {
 	uint32_t count;            // font faces
+	void *fontFace;            // ttf font backing: renders glyphs missing from the cache
 	struct GxFace {
 		uint8_t pad_x;
 		uint8_t pad_y;
@@ -237,10 +238,24 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 // draw
 void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t color);
 
-void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t color);
+// draw one unicode character, cached or rendered from the backing ttf font
+// returns the advance to the next character, pass a null image to measure only
+int drawChar(GxImage image, int x0, int y0, GxImage font, uint32_t chr, uint32_t color);
 
-void clipText(GxRect rect, GxImage font, const char *text, size_t length);
-void drawText(GxImage image, GxRect rect, GxImage font, const char *text, size_t length, uint32_t color);
+// release the ttf font backing of a font image (GxFLut.fontFace)
+void destroyTtfFace(void *fontFace);
+
+// render a glyph directly from the backing ttf font, bypassing the cache
+// returns the advance to the next character, pass a null image to measure only
+int drawGlyph(GxImage image, int x0, int y0, GxImage font, uint32_t chr, uint32_t color);
+
+// decode the next utf-8 code point from the text, advancing the optional position
+// an invalid sequence decodes as its first byte (latin-1 fallback)
+uint32_t decodeUtf8(const char *text, size_t length, size_t *pos);
+
+// codepage maps the 256 input bytes to unicode characters, if null the text is decoded as utf-8
+void clipText(GxRect rect, GxImage font, const uint32_t *codepage, const char *text, size_t length);
+void drawText(GxImage image, GxRect rect, GxImage font, const uint32_t *codepage, const char *text, size_t length, uint32_t color);
 
 int fillImage(GxImage image, const GxRect roi, void *color, void *extra, bltProc blt);
 int copyImage(GxImage image, int x, int y, GxImage src, const GxRect roi, void *extra, bltProc blt);
