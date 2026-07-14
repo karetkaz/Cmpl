@@ -1409,6 +1409,7 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 
 		case opc_move:
 		case opc_mad:
+		case opc_ckdx:
 			printFmt(out, esc, " %d", ip->rel);
 			break;
 

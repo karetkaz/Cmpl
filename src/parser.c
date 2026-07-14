@@ -804,9 +804,16 @@ static astn expression(ccContext ctx, int comma) {
 
 			case OPER_not:		// '!'
 			case OPER_cmt:		// '~'
-			case PNCT_dot3:		// '...'
 				if (!unary) {
 					error(ctx->rt, ast->file, ast->line, ERR_SYNTAX_ERR_BEFORE, ast);
+				}
+				unary = 1;
+				goto tok_operator;
+
+			case PNCT_dot3:		// '...'
+				if (unary) {
+					// prefix use: `a[...end]` slice, `f(...args)` spread
+					*postfix++ = NULL;
 				}
 				unary = 1;
 				goto tok_operator;

@@ -30,6 +30,9 @@ char* vmErrorMessage(vmError error) {
 		case illegalMemoryAccess:
 			return "Invalid memory access";
 
+		case illegalArrayAccess:
+			return "Array index out of bounds";
+
 		case illegalInstruction:
 			return "Invalid instruction";
 

@@ -182,6 +182,7 @@ struct userContextRec {
 	unsigned genStaticGlobals:1;
 	unsigned errPrivateAccess:1;
 	unsigned errUninitialized:1;
+	unsigned checkArrayBounds:1;
 	unsigned preferNativeCalls:1;
 
 	// debugger
@@ -1701,6 +1702,7 @@ int main(int argc, char *argv[]) {
 	extra.genStaticGlobals = 1;
 	extra.errPrivateAccess = 1;
 	extra.errUninitialized = 1;
+	extra.checkArrayBounds = 1;
 	extra.preferNativeCalls = 1;
 	extra.warnLevel = 5;
 	extra.raiseLevel = 15;
@@ -2318,6 +2320,10 @@ int main(int argc, char *argv[]) {
 					extra.steps = on ? "\n---------- " : NULL;
 					arg2 += 6;
 				}
+				else if (strBegins(arg2 + 1, "bounds")) {
+					extra.checkArrayBounds = on;
+					arg2 += 7;
+				}
 				else if (strBegins(arg2 + 1, "native")) {
 					extra.preferNativeCalls = on;
 					arg2 += 7;
@@ -2366,6 +2372,8 @@ int main(int argc, char *argv[]) {
 	rt->foldInstr2 = extra.foldInstruction != 0;
 	rt->foldMemory = extra.foldInstruction != 0;
 	rt->foldAssign = extra.foldInstruction != 0;
+
+	rt->checkBounds = extra.checkArrayBounds != 0;
 
 	// open the log file first (enabling dump appending)
 	if (logFileName != NULL) {

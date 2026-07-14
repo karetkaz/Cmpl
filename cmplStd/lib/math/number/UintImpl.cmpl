@@ -44,7 +44,7 @@ static void shiftLeft(BigUint this&, int count) {
 	if (wordShift < this.words.length) {
 		value = this.words[this.words.length - wordShift - 1];
 	} else {
-		wordShift = this.words.length;
+		wordShift = this.words.length - 1;
 	}
 
 	for (int i = this.words.length - 1; i > wordShift; i -= 1) {

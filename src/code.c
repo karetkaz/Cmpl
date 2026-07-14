@@ -354,6 +354,7 @@ rtContext rtInit(void *mem, size_t size) {
 	rt->foldInstr = 1;
 	rt->foldMemory = 1;
 	rt->foldAssign = 1;
+	rt->checkBounds = 1;
 	rt->freeMem = (unsigned) (mem == NULL);
 
 	*(size_t*)&rt->_size = size - sizeof(struct rtContextRec);

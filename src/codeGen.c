@@ -662,48 +662,179 @@ static ccKind genIndex(ccContext ctx, astn ast, ccKind get) {
 	}
 
 	dbgCgen("%?s:%?u: %t", ast->file, ast->line, ast);
-	if (!genAst(ctx, ast->op.lhso, CAST_ptr)) {
-		dbgTraceAst(ast);
-		return CAST_any;
+	symn array = ast->op.lhso->type;
+
+	int checkBounds = 0;
+	if (rt->checkBounds) {
+		// unknown size arrays (`int a[*]`) have no length to check against
+		checkBounds = isFixedSizeArray(array) || isDynamicSizeArray(array);
 	}
 
 	size_t elementSize = refSize(ast->type);	// size of array element
 	if (rt->foldConst && eval(ctx, &tmp, ast->op.rhso) == CAST_i64) {
-		size_t offs = elementSize * intValue(&tmp);
-		if (!emitInt(rt, opc_inc, offs)) {
-			dbgTraceAst(ast);
+		int64_t index = intValue(&tmp);
+		if (checkBounds && index < 0) {
+			error(rt, ast->file, ast->line, ERR_INVALID_ARRAY_INDEX, ast);
 			return CAST_any;
+		}
+		if (isFixedSizeArray(array)) {
+			struct astNode len = {0};
+			if (eval(ctx, &len, array->fields->init) == CAST_i64) {
+				if (index >= intValue(&len)) {
+					error(rt, ast->file, ast->line, ERR_INVALID_ARRAY_INDEX, ast);
+					return CAST_any;
+				}
+				// index is verified at compile time
+				checkBounds = 0;
+			}
+		}
+		if (!checkBounds) {
+			if (!genAst(ctx, ast->op.lhso, CAST_ptr)) {
+				dbgTraceAst(ast);
+				return CAST_any;
+			}
+			if (!emitInt(rt, opc_inc, elementSize * index)) {
+				dbgTraceAst(ast);
+				return CAST_any;
+			}
+			return genIndirection(ctx, ast->type, get, 1);
 		}
 	}
-	else {
-		if (!genAst(ctx, ast->op.rhso, refCast(ctx->type_int))) {
-			dbgTraceAst(ast);
-			return CAST_any;
-		}
-		if (!emitInt(rt, opc_mad, elementSize)) {
-			dbgTraceAst(ast);
-			return CAST_any;
-		}
+
+	// checked access loads the length with the reference: […, length, reference, index
+	if (!genAst(ctx, ast->op.lhso, checkBounds ? CAST_arr : CAST_ptr)) {
+		dbgTraceAst(ast);
+		return CAST_any;
+	}
+	if (!genAst(ctx, ast->op.rhso, refCast(ctx->type_int))) {
+		dbgTraceAst(ast);
+		return CAST_any;
+	}
+	if (!emitInt(rt, checkBounds ? opc_ckdx : opc_mad, elementSize)) {
+		dbgTraceAst(ast);
+		return CAST_any;
 	}
 
 	return genIndirection(ctx, ast->type, get, 1);
 }
-/// Generate byte-code for OPER_idx `a[...n]`.
+/// Generate byte-code for OPER_idx `a[...end]` and `a[start ... end]`.
 static ccKind genSlice(ccContext ctx, astn ast) {
+	rtContext rt = ctx->rt;
+	struct astNode tmp = {0};
+
 	if (ast->op.rhso == NULL || ast->op.rhso->kind != PNCT_dot3) {
 		return CAST_any;
 	}
 
-	if (ast->op.rhso->op.lhso != NULL) {
-		// not supported yet: `a[1 ... n]`.
+	astn start = ast->op.rhso->op.lhso;	// optional: `a[...end]` slices from the first element
+	astn end = ast->op.rhso->op.rhso;
+
+	symn array = ast->op.lhso->type;
+	size_t elementSize = refSize(array->type);	// size of array element
+	// unknown size arrays (`int a[*]`) have no length to check against
+	int checkBounds = isFixedSizeArray(array) || isDynamicSizeArray(array);
+
+	int64_t startValue = 0;
+	int constStart = start == NULL;
+	if (start != NULL && rt->foldConst && eval(ctx, &tmp, start) == CAST_i64) {
+		startValue = intValue(&tmp);
+		constStart = 1;
+		if (startValue < 0) {
+			error(rt, ast->file, ast->line, ERR_INVALID_ARRAY_INDEX, ast);
+			return CAST_any;
+		}
+	}
+
+	if (constStart && rt->foldConst && eval(ctx, &tmp, end) == CAST_i64) {
+		int64_t endValue = intValue(&tmp);
+		if (endValue < startValue) {
+			error(rt, ast->file, ast->line, ERR_INVALID_ARRAY_INDEX, ast);
+			return CAST_any;
+		}
+		if (isFixedSizeArray(array)) {
+			struct astNode len = {0};
+			if (eval(ctx, &len, array->fields->init) == CAST_i64) {
+				if (endValue > intValue(&len)) {
+					error(rt, ast->file, ast->line, ERR_INVALID_ARRAY_INDEX, ast);
+					return CAST_any;
+				}
+				// range is verified at compile time
+				checkBounds = 0;
+			}
+		}
+		if (!checkBounds) {
+			// emit the constant length and the offset reference
+			if (!emitOffs(rt, endValue - startValue)) {
+				return CAST_any;
+			}
+			if (!genAst(ctx, ast->op.lhso, CAST_ptr)) {
+				return CAST_any;
+			}
+			if (startValue > 0 && !emitInt(rt, opc_inc, startValue * elementSize)) {
+				return CAST_any;
+			}
+			return CAST_arr;
+		}
+	}
+
+	if (start == NULL) {
+		// `a[...end]`: stack: […, count, length, reference
+		if (!genAst(ctx, end, refCast(ctx->type_int))) {
+			return CAST_any;
+		}
+		if (!genAst(ctx, ast->op.lhso, checkBounds ? CAST_arr : CAST_ptr)) {
+			return CAST_any;
+		}
+		if (checkBounds && !emit(rt, opc_cklen)) {
+			return CAST_any;
+		}
+		return CAST_arr;
+	}
+
+	// `a[start ... end]`: stack: […, start, end, length, reference
+	if (!genAst(ctx, start, refCast(ctx->type_int))) {
+		return CAST_any;
+	}
+	if (!genAst(ctx, end, refCast(ctx->type_int))) {
+		return CAST_any;
+	}
+	if (checkBounds) {
+		if (!genAst(ctx, ast->op.lhso, CAST_arr)) {
+			return CAST_any;
+		}
+		// trap if end is greater than the length of the array
+		if (!emit(rt, opc_cklen)) {
+			return CAST_any;
+		}
+	}
+	else if (!genAst(ctx, ast->op.lhso, CAST_ptr)) {
 		return CAST_any;
 	}
 
-	if (!genAst(ctx, ast->op.rhso->op.rhso, refCast(ctx->type_int))) {
+	// stack: […, start, end, reference: compute the reference of the first element
+	if (!emitInt(rt, opc_dup1, 2)) {
+		return CAST_any;
+	}
+	if (!emitInt(rt, opc_mad, elementSize)) {
 		return CAST_any;
 	}
 
-	if (!genAst(ctx, ast->op.lhso, CAST_ptr)) {
+	// compute the length of the slice: end - start, overflows if start is greater than end
+	if (!emitInt(rt, opc_dup1, 1)) {
+		return CAST_any;
+	}
+	if (!emitInt(rt, opc_dup1, 3)) {
+		return CAST_any;
+	}
+	if (!emit(rt, i32_sub)) {
+		return CAST_any;
+	}
+	if (!emitInt(rt, opc_set1, 3)) {
+		return CAST_any;
+	}
+
+	// stack: […, count, end, reference: trap if count overflowed (start was greater than end)
+	if (!emit(rt, opc_cklen)) {
 		return CAST_any;
 	}
 

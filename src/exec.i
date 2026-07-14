@@ -98,6 +98,22 @@ case opc_mad:  NEXT(4, -1, 2) {
 #endif
 	break;
 }
+case opc_ckdx: NEXT(4, -2, 3) {
+#if defined(EXEC)
+	// stack: […, length, reference, index
+	STOP(error_idx, SP(0, u32) >= SP(2, u32));
+	SP(2, u32) = SP(1, u32) + SP(0, u32) * ip->rel;
+#endif
+	break;
+}
+case opc_cklen: NEXT(1, -1, 3) {
+#if defined(EXEC)
+	// stack: […, count, length, reference => […, count, reference
+	STOP(error_idx, SP(2, u32) > SP(1, u32));
+	SP(1, u32) = SP(0, u32);
+#endif
+	break;
+}
 //#}
 //#{ 0x1?: STK		// Stack
 case opc_spc:  NEXT(4, 0, 0) {

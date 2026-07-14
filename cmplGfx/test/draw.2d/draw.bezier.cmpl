@@ -30,7 +30,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		inline dst(int i, int cx, int cy) = dst(x[i] - cx, y[i] - cy);
 		for (int i = 0; i < x.length; i += 1) {
 			int len = dst(i, ex, ey);
-			if (len < 25 && len < dst(idx, ex, ey)) {
+			if (len < 25 && (idx < 0 || len < dst(idx, ex, ey))) {
 				idx = i;
 			}
 		}

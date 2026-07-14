@@ -85,6 +85,22 @@ Use `pointer` for the special `void *` type from c, when the type of elements is
 int a[*];
 ```
 
+### Array slicing
+A slice can be created from a fixed-size array, a slice or an unknown-size array using the slice operator:
+
+```cmpl
+int a[10] = {};
+int b[] = a[...4];      // the first 4 elements: a[0], … a[3]
+int c[] = a[2 ... 5];   // elements a[2], a[3] and a[4] (start is inclusive, end is exclusive)
+int d[] = a[3 ... 3];   // empty slice
+```
+
+- The start is optional and defaults to 0: `a[...end]` is the same as `a[0 ... end]`.
+- The bounds are checked: `start <= end` must hold, and `end` must not exceed the length of the sliced array.
+  Constant bounds on fixed-size arrays are verified at compile time, otherwise at runtime,
+  aborting the execution with `illegalArrayAccess`.
+- Unknown-size arrays (`int a[*]`) have no length, only the `start <= end` relation is validated.
+
 ### Associative arrays
 [TODO: implementation]
 

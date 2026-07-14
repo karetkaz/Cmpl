@@ -271,6 +271,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define ERR_PRIVATE_DECLARATION "declaration `%T` is not public"
 #define ERR_INVALID_ARRAY_LENGTH "positive integer constant expected, got `%t`"
 #define ERR_INVALID_ARRAY_VALUES "array initialized with too many values, only %t expected"
+#define ERR_INVALID_ARRAY_INDEX "array index out of bounds: `%t`"
 #define ERR_INVALID_INHERITANCE "type must be inherited from object, got `%t`"
 #define ERR_INVALID_BASE_OR_PACK "invalid struct base type or allignment, got `%t`"
 #define ERR_INVALID_BASE_TYPE "invalid struct base type, got `%t`"

@@ -1253,6 +1253,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 		case opc_move:
 		case opc_inc:
 		case opc_mad:
+		case opc_ckdx:
 			dieif(ip->rel != arg.i64, ERR_INTERNAL_ERROR);
 			break;
 	}

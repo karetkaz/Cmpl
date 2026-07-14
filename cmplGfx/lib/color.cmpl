@@ -126,7 +126,7 @@ inline mix_rgb8(int32 t, argb a, argb b) = argb(mix_s8(t, rch(a), rch(b)), mix_s
 
 /// linear interpolate a lookup-table with the given colors
 void lerpLut(argb lut&[], argb colors...) {
-	int32 dt = (colors.length - 1 << 16) / (lut.length - 1);
+	int32 dt = (colors.length - 1 << 16) / lut.length;
 	for (int i = 0; i < lut.length; i += 1) {
 		int32 t = i * dt;
 		argb c1 = colors[t >> 16];

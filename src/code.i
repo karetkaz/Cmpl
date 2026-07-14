@@ -19,8 +19,8 @@ OPCODE_DEF(opc_x08,  0x08, 0, 0, 0, NULL)           // sync
 OPCODE_DEF(opc_not,  0x09, 1, 1, 1, "not.u32")      // sp(0).u32 = !sp(0).u32;
 OPCODE_DEF(opc_inc,  0x0a, 4, 1, 1, "inc.i32")      // push32(popi32(n) + arg.rel);
 OPCODE_DEF(opc_mad,  0x0b, 4, 2, 1, "mad.u32")      // sp(1).u32 += sp(0).u32 * arg.rel; pop1;
-OPCODE_DEF(opc__0c,  0x0c, 0, 0, 0, NULL)           // -
-OPCODE_DEF(opc__0d,  0x0d, 0, 0, 0, NULL)           // -
+OPCODE_DEF(opc_ckdx, 0x0c, 4, 3, 1, "chk.idx")      // array bound check: if (sp(0).u32 >= sp(2).u32) {trap;} sp(2).u32 = sp(1).u32 + sp(0).u32 * arg.rel; pop2;
+OPCODE_DEF(opc_cklen,0x0d, 1, 3, 2, "chk.len")      // slice bound check: if (sp(2).u32 > sp(1).u32) {trap;} sp(1).u32 = sp(0).u32; pop1;
 OPCODE_DEF(opc_spc,  0x0e, 4, 0, 0, "inc.sp")       // SP += arg.rel;
 OPCODE_DEF(opc_move, 0x0f, 4, 2, 0, "copy.mem")     // todo: replace copy(sp(1), sp(0), ip.rel); pop2;
 

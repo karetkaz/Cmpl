@@ -270,6 +270,10 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 					execError = illegalMemoryAccess;
 					goto dbg_stop_vm;
 
+				dbg_error_idx:
+					execError = illegalArrayAccess;
+					goto dbg_stop_vm;
+
 				dbg_error_div_flt:
 					debugger(dbg, divisionByZero, st - sp, sp, pc, 0);
 					// continue execution on floating point division by zero.
@@ -316,6 +320,10 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 
 			error_mem:
 				execError = illegalMemoryAccess;
+				goto stop_vm;
+
+			error_idx:
+				execError = illegalArrayAccess;
 				goto stop_vm;
 
 			error_div_flt:

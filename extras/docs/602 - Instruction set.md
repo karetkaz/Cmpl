@@ -140,6 +140,45 @@ uint32 a = pop();
 push(a + b * imm.u24)
 ```
 
+### Instruction `chk.idx`
+
+Performs array bound check, then computes the address of the element.
+Aborts the execution with `illegalArrayAccess` if the index is out of bounds.
+
+* Instruction code: `0x0c`
+* Instruction length: 4 bytes
+* Requires 3 operands: […, `length`, `reference`, `index`
+* Returns 1 value: […, `reference + index * imm`
+
+```
+uint32 index = pop();
+uint32 reference = pop();
+uint32 length = pop();
+if (index >= length) {
+	trap(illegalArrayAccess);
+}
+push(reference + index * imm.u24)
+```
+
+### Instruction `chk.len`
+
+Performs slice bound check (`a[...n]`), keeping the requested count as the length of the resulting slice.
+Aborts the execution with `illegalArrayAccess` if the count exceeds the length of the sliced array.
+
+* Instruction code: `0x0d`
+* Instruction length: 1 byte
+* Requires 3 operands: […, `count`, `length`, `reference`
+* Returns 2 values: […, `count`, `reference`
+
+```
+uint32 reference = pop();
+uint32 length = pop();
+if (sp(0).u32 > length) {	// count stays on the stack
+	trap(illegalArrayAccess);
+}
+push(reference)
+```
+
 ### Instruction `inc.sp`
 
 Performs stack memory management (allocation or free)

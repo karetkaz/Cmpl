@@ -12,7 +12,6 @@ TOKEN_DEF(OPER_fnc, 0x0f, 2, NULL, "()")                  // a(x): function call
 TOKEN_DEF(OPER_idx, 0x0f, 2, NULL, "[]")                  // a[i]: index
 TOKEN_DEF(OPER_dot, 0x0f, 2, NULL, ".")                   // a.b:  member
 
-TOKEN_DEF(PNCT_dot3, 0x1e, 1, NULL, "...")                // ...a, triple dot
 TOKEN_DEF(OPER_adr, 0x1e, 1, NULL, "&")                   // & a:  address of
 TOKEN_DEF(OPER_pls, 0x1e, 1, "operator+", "+")            // + a:  unary plus
 TOKEN_DEF(OPER_mns, 0x1e, 1, "operator-", "-")            // - a:  unary minus
@@ -58,6 +57,8 @@ TOKEN_DEF(ASGN_shr, 0x12, 2, NULL, ">>=")                 // a >>= b
 TOKEN_DEF(ASGN_and, 0x12, 2, NULL, "&=")                  // a &= b
 TOKEN_DEF(ASGN_xor, 0x12, 2, NULL, "^=")                  // a ^= b
 TOKEN_DEF(ASGN_ior, 0x12, 2, NULL, "|=")                  // a |= b
+
+TOKEN_DEF(PNCT_dot3, 0x12, 2, NULL, "...")                // ...a: spread / length slice; a ... b: slice range (lhso may be null)
 
 TOKEN_DEF(OPER_com, 0x01, 2, NULL, ",")                   // a, b
 

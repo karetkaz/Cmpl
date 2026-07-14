@@ -85,7 +85,7 @@ typedef enum {
 	divisionByZero,
 	illegalInstruction,
 	illegalMemoryAccess,
-	//+ illegalArrayAccess, => TODO: array index out of bounds
+	illegalArrayAccess,
 	nativeCallError,
 } vmError;
 
@@ -179,6 +179,7 @@ struct rtContextRec {
 	unsigned foldInstr2: 1;  // fold mul, div, mod expressions to bitwise when possible: x * 4 => x << 2
 	unsigned foldMemory: 1; // replace `load address`, `load indirect` with `dup`, `set`, `load` or `store` instruction
 	unsigned foldAssign: 1; // replace `dup x`, `set y` instructions with `move x, y` instruction
+	unsigned checkBounds: 1;  // check for array index out of bound errors
 
 	int32_t errors;         // error count
 	FILE *logFile;          // log file

@@ -659,8 +659,25 @@ symn typeCheck(ccContext ctx, symn loc, astn ast, int raise) {
 			ast->type = type;
 			return type;
 
-		case OPER_adr:		// '&'
 		case PNCT_dot3:		// '...'
+			if (ast->op.lhso != NULL) {
+				// binary use: slice range `a[start ... end]`
+				lType = typeCheck(ctx, loc, ast->op.lhso, raise);
+				rType = typeCheck(ctx, loc, ast->op.rhso, raise);
+				if (!lType || !rType) {
+					dbgTraceAst(ast);
+					return NULL;
+				}
+				if ((type = promote(ctx, lType, rType)) == NULL) {
+					error(ctx->rt, ast->file, ast->line, ERR_INVALID_TYPE, ast);
+				}
+				ast->op.lhso = castTo(ctx, ast->op.lhso, type);
+				ast->op.rhso = castTo(ctx, ast->op.rhso, type);
+				ast->type = type;
+				return type;
+			}
+			// fall through
+		case OPER_adr:		// '&'
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
