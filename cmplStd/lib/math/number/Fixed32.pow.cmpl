@@ -387,7 +387,7 @@ static Fixed32 pow(Fixed32 x, Fixed32 y) {
 		}
 		int32 pow = Int32.abs(y.bits) >> precision;
 		int32 res = one;
-		for (;pow != 0;) {
+		for (pow != 0) {
 			if ((pow & 1) != 0) {
 				int64 result = int64(res) * sqr;
 				result += result & half;

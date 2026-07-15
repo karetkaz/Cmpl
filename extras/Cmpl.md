@@ -410,6 +410,18 @@ The if statement is a selection statement that can be used to execute a section 
 
 The main purpose of the if statement is to handle exceptional cases in the control flow.
 
+The condition may be preceded by an optional declaration, separated by a semicolon.
+The declared variable is visible in the condition and in the `true` branch of the statement.
+If only the declaration is given, its value converted to boolean is used as the condition:
+`if (float64 x = someMethod())` is equivalent to `if (float64 x = someMethod(); bool(x))`.
+
+**Example**
+```
+if (int fd = openFile(); fd > 0) {
+	// use the file
+}
+```
+
 ### Static if statement
 The static if construct can be used as a compile time check.
 
@@ -435,6 +447,10 @@ inline double = float64;
 The for statement is a repetition statement that can be used to execute a section of code in a loop, while a condition is met.
 
 The syntax of the for statement is similar to c like language for statement syntax.
+
+The init and step parts are optional, so the following forms are also valid:
+- `for (init; test)` — no step part.
+- `for (test)` — condition only, like a while loop.
 
 ### For-each statement
 The for-each statement iterates over the elements of an iterable type.

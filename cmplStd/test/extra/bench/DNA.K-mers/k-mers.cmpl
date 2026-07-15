@@ -30,7 +30,7 @@ s_last[len_str] = 0;
 s[len_str] = 0;
 
 int counter = 1;
-for (;!equals(s_last, s);) {
+for (!equals(s_last, s)) {
 	counter += 1;
 //	debug(s);//  uncomment to see all k-mers.
 	bool change_next = true;

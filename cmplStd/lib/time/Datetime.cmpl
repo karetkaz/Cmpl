@@ -241,7 +241,7 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 	int32 DaysToMonth![*] = Datetime.isLeapYear(year) ? Datetime.DaysToMonth366 : Datetime.DaysToMonth365;
 
 	// m = 1-based month number
-	for (;n >= DaysToMonth[m];) {
+	for (n >= DaysToMonth[m]) {
 		m += 1;
 	}
 

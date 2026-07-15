@@ -488,7 +488,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		// normalize x
 		int32 exp = int32((ix >> shift) & mask);
 		if (exp == 0) { // subnormal x
-			for (;(ix & (1U << shift)) == 0;) {
+			for ((ix & (1U << shift)) == 0) {
 				ix <<= 1;
 				exp -= 1;
 			}
@@ -506,7 +506,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		uint64 s = 0;
 		uint64 q = 0;               // q = sqrt(x)
 		uint64 r = 1U << (shift + 1); // r = moving bit from MSB to LSB
-		for (;r != 0;) {
+		for (r != 0) {
 			uint64 t = s + r;
 			if (t <= ix) {
 				s = t + r;

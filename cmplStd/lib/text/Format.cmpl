@@ -52,7 +52,7 @@ static NumberFormat parseFormat(char format[], int fmt&) {
 
 	if (chr >= '0' && chr <= '9') {
 		int width = 0;
-		for (;chr >= '0' && chr <= '9';) {
+		for (chr >= '0' && chr <= '9') {
 			width = width * 10 + chr - '0';
 			chr = format[fmt += 1];
 		}
@@ -62,7 +62,7 @@ static NumberFormat parseFormat(char format[], int fmt&) {
 	if (chr == '.') {
 		int precision = 0;
 		chr = format[fmt += 1];
-		for (;chr >= '0' && chr <= '9';) {
+		for (chr >= '0' && chr <= '9') {
 			precision = precision * 10 + chr - '0';
 			chr = format[fmt += 1];
 		}

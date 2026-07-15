@@ -1,7 +1,7 @@
 /// Add two numbers without using arithmetic operators
 // adapted from: https://www.geeksforgeeks.org/add-two-numbers-without-using-arithmetic-operators
 int add(int x, int y) {
-	for (; y != 0;) {
+	for (y != 0) {
 		int carry = x & y;
 		x = x ^ y;
 		y = carry << 1;
@@ -13,7 +13,7 @@ int add(int x, int y) {
 /// Subtract two numbers without using arithmetic operators
 // adapted from: https://www.geeksforgeeks.org/subtract-two-numbers-without-using-arithmetic-operators
 int sub(int x, int y) {
-	for (; y != 0;) {
+	for (y != 0) {
 		int borrow = (~x) & y;
 		x = x ^ y;
 		y = borrow << 1;
@@ -28,7 +28,7 @@ int mul(int x, int y) {
 	assert(x > 0 && y > 0);
 
 	int result = 0;
-	for (; y != 0;) {
+	for (y != 0) {
 		if ((y & 1) != 0) {
 			result = add(result, x);
 		}
@@ -47,14 +47,14 @@ int div(int x , int y) {
 	int divisor = y;
 	int quotient = 1;
 
-	for (; divisor <= x;) {
+	for (divisor <= x) {
 		divisor <<= 1;
 		quotient <<= 1;
 	}
 
 	int result = 0;
 	int remainder = x;
-	for (; quotient != 0;) {
+	for (quotient != 0) {
 		if (remainder >= divisor) {
 			remainder = sub(remainder, divisor);
 			result |= quotient;

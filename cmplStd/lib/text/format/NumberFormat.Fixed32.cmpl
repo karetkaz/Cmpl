@@ -54,7 +54,7 @@ static int format(NumberFormat format!, char output&[], int pos, Fixed32 value) 
 	int precision = Int32.abs(format.precision);
 	int fractionPos = pos;
 	groupPosition = format.fractGrouping(pos);
-	for (; precision > 0 && fractionPart != 0; ) {
+	for (precision > 0 && fractionPart != 0) {
 		if (pos >= output.length) {
 			break;
 		}
@@ -113,7 +113,7 @@ static int format(NumberFormat format!, char output&[], int pos, Fixed32 value) 
 
 	// add or remove trailing zeros
 	if (format.trailingZeros) {
-		for (; precision > 0; ) {
+		for (precision > 0) {
 			if (pos >= output.length) {
 				break;
 			}
@@ -127,7 +127,7 @@ static int format(NumberFormat format!, char output&[], int pos, Fixed32 value) 
 		}
 	} else {
 		// remove trailing zeros
-		for (;pos > fractionPos;) {
+		for (pos > fractionPos) {
 			if (digitSymbols.indexOf(output[pos - 1]) > 0) {
 				// stop if a digit is found, but not the first
 				break;

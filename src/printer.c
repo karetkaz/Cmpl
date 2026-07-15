@@ -974,6 +974,10 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 			}
 
 			printFmt(out, esc, "%s", " (");
+			if (ast->stmt.init != NULL) {
+				printAst(out, esc, ast->stmt.init, mode, exprLevel);
+				printFmt(out, esc, "%s", "; ");
+			}
 			printAst(out, esc, ast->stmt.test, mode, exprLevel);
 			printFmt(out, esc, "%s", ")");
 

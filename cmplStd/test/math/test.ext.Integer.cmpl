@@ -412,7 +412,7 @@ static struct Bits {
 		if (y == 0) {
 			return x;
 		}
-		for (;x != y;) {
+		for (x != y) {
 			if (x > y) {
 				x -= y;
 			} else {
@@ -423,7 +423,7 @@ static struct Bits {
 	}
 
 	uint64 gcd_mod(uint64 a, uint64 b) {
-		for (;b != 0;) {
+		for (b != 0) {
 			uint64 r = a % b;
 			a = b;
 			b = r;

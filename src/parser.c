@@ -1731,7 +1731,9 @@ static astn declare_enum(ccContext ctx, const char* doc) {
 	return tag;
 }
 
-/** Parse if statement: `if (test) statement [else statement]`.
+/** Parse if statement: `if ([init;] test) statement [else statement]`.
+ * The init part must be a declaration; if the test part is missing,
+ * the declared variable converted to boolean is used as condition.
  * @param ctx Compiler context.
  * @param attr Extra attributes, like `static`.
  * @return The parsed syntax tree.
@@ -1772,9 +1774,19 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 			}
 			if (pushBackTypeExpr(ctx, test)) {
 				astn def = declaration(ctx, ATTR_mut, NULL, NULL);
-				if (def != NULL && def->id.link->init != NULL) {
+				if (def != NULL) {
 					def->type = typeCheck(ctx, NULL, def, 1);
 					ast->stmt.init = def;
+				}
+				if (skipToken(ctx, STMT_end, 0) && !peekToken(ctx, RIGHT_par)) {
+					// if (declaration; condition)
+					test = expression(ctx, 0);
+					if (test != NULL) {
+						test->type = typeCheck(ctx, NULL, test, 1);
+					}
+				}
+				else if (def != NULL && def->id.link->init != NULL) {
+					// if (declaration) => if (declaration; bool(variable))
 					if (isIndirect(def->id.link)) {
 						test = opNode(ctx, NULL, OPER_cne, lnkNode(ctx, def->id.link), tagNode(ctx, "null"));
 					} else {
@@ -1782,6 +1794,10 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 					}
 					test->type = typeCheck(ctx, NULL, test, 1);
 				}
+			}
+			if (test != NULL && test->type != NULL && test->type != ctx->type_bol) {
+				// the condition must be a boolean expression
+				test = castTo(ctx, test, ctx->type_bol);
 			}
 		}
 		ast->stmt.test = test;
@@ -1820,7 +1836,8 @@ static astn statement_if(ccContext ctx, ccKind attr) {
 	return ast;
 }
 
-/** Parse for statement: `for (init; test; step) statement`.
+/** Parse for statement: `for ([init;] test [; step]) statement`.
+ * Allowed forms: `for (init; test; step)`, `for (init; test)` and `for (test)`.
  * @param ctx Compiler context.
  * @return The parsed syntax tree.
  */
@@ -1834,17 +1851,18 @@ static astn statement_for(ccContext ctx) {
 	enter(ctx, ast, NULL);
 	skipToken(ctx, OPER_fnc, 1);
 
+	int isDecl = 0;
 	astn init = peekToken(ctx, STMT_end) ? NULL : expression(ctx, 0);
 	if (init != NULL) {
 		init->type = typeCheck(ctx, NULL, init, 1);
 		if (pushBackTypeExpr(ctx, init)) {
 			init = declaration(ctx, ATTR_mut, NULL, NULL);
+			isDecl = 1;
 			if (init != NULL && init->id.link->init != NULL) {
 				astn astInit = init->id.link->init;
 				astInit->type = typeCheck(ctx, NULL, astInit, 1);
 			}
 		}
-		ast->stmt.init = init;
 	}
 
 	if (peekToken(ctx, OPER_cln)) {
@@ -1855,19 +1873,33 @@ static astn statement_for(ccContext ctx) {
 		fatal(ERR_UNIMPLEMENTED_FEATURE);
 	}
 
-	skipToken(ctx, STMT_end, 1);
-	astn test = peekToken(ctx, STMT_end) ? NULL : expression(ctx, 0);
-	if (test != NULL) {
-		test->type = typeCheck(ctx, NULL, test, 1);
-		ast->stmt.test = test;
+	astn test = NULL;
+	if (!isDecl && init != NULL && peekToken(ctx, RIGHT_par)) {
+		// for (test): the single expression is the loop condition
+		test = init;
+		init = NULL;
+	} else {
+		skipToken(ctx, STMT_end, 1);
+		test = peekToken(ctx, STMT_end) || peekToken(ctx, RIGHT_par) ? NULL : expression(ctx, 0);
+		if (test != NULL) {
+			test->type = typeCheck(ctx, NULL, test, 1);
+		}
+		// for (init; test): the step part is optional
+		if (skipToken(ctx, STMT_end, 0)) {
+			astn step = peekToken(ctx, RIGHT_par) ? NULL : expression(ctx, 0);
+			if (step != NULL) {
+				step->type = typeCheck(ctx, NULL, step, 1);
+				ast->stmt.step = step;
+			}
+		}
 	}
+	ast->stmt.init = init;
 
-	skipToken(ctx, STMT_end, 1);
-	astn step = peekToken(ctx, RIGHT_par) ? NULL : expression(ctx, 0);
-	if (step != NULL) {
-		step->type = typeCheck(ctx, NULL, step, 1);
-		ast->stmt.step = step;
+	if (test != NULL && test->type != NULL && test->type != ctx->type_bol) {
+		// the condition must be a boolean expression
+		test = castTo(ctx, test, ctx->type_bol);
 	}
+	ast->stmt.test = test;
 
 	skipToken(ctx, RIGHT_par, 1);
 

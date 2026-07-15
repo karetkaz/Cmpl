@@ -3,6 +3,18 @@ The if statement is a selection statement that can be used to execute a section 
 
 The main purpose of the if statement is to handle exceptional cases in the control flow.
 
+The condition may be preceded by an optional declaration, separated by a semicolon.
+The declared variable is visible in the condition and in the `true` branch of the statement.
+If only the declaration is given, its value converted to boolean is used as the condition:
+`if (float64 x = someMethod())` is equivalent to `if (float64 x = someMethod(); bool(x))`.
+
+**Example**
+```
+if (int fd = openFile(); fd > 0) {
+	// use the file
+}
+```
+
 ### Static if statement
 The static if construct can be used as a compile time check.
 

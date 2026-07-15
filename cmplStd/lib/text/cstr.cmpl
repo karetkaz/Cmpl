@@ -127,7 +127,7 @@ static void remove(char str&[], int start, int end) {
 		return;
 	}
 	assert(start <= end);
-	for (; end < str.length; ) {
+	for (end < str.length) {
 		str[start] = str[end];
 		start += 1;
 		end += 1;

@@ -3,6 +3,10 @@ The for statement is a repetition statement that can be used to execute a sectio
 
 The syntax of the for statement is similar to c like language for statement syntax.
 
+The init and step parts are optional, so the following forms are also valid:
+- `for (init; test)` — no step part.
+- `for (test)` — condition only, like a while loop.
+
 ### For-each statement
 The for-each statement iterates over the elements of an iterable type.
 

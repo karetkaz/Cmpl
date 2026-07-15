@@ -26,7 +26,7 @@ struct Base64Encoder: ByteWriter {
 		this.wrapSize += wrap;
 
 		// print the rest of the buffer as one or multiple lines
-		for ( ; wrap < size; ) {
+		for (wrap < size) {
 			writer.write(writer, "\n");
 
 			int len = Int.min(size - wrap, this.wrap);

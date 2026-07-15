@@ -143,7 +143,7 @@ struct DatetimeFormat {
 			 */
 
 			int32 width = 0;
-			for (;chr >= '0' && chr <= '9';) {
+			for (chr >= '0' && chr <= '9') {
 				width = width * 10 + chr - '0';
 				pos += 1;
 				chr = format[pos];
