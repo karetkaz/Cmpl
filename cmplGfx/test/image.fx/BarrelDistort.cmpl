@@ -16,11 +16,11 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(back);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(back);
 
 // source with a grid overlay to visualize how straight lines are bent
-Image grid = Image(back);
+static Image grid = Image(back);
 for (int x = 0; x < grid.width(); x += 40) {
 	grid.fillRect(x, 0, x, grid.height(), 1, 0x00ff00);
 }
@@ -28,52 +28,52 @@ for (int y = 0; y < grid.height(); y += 40) {
 	grid.fillRect(0, y, grid.width(), y, 1, 0x00ff00);
 }
 
-char filtering[][] = {
+static char filtering[][] = {
 	"nearest",
 	"linear",
 };
-Switch quality = {
+static Switch quality = {
 	text: "filtering";
 	states: filtering;
 	selected: 1;
 	focusable: false;
 };
-Switch showGrid = {
+static Switch showGrid = {
 	text: "show grid";
 	focusable: false;
 };
-Slider k1 = {
+static Slider k1 = {
 	text: "k1 (r^2)";
 	minimum: -1;
 	maximum: +1;
 };
-Slider k2 = {
+static Slider k2 = {
 	text: "k2 (r^4)";
 	minimum: -1;
 	maximum: +1;
 };
-Slider k3 = {
+static Slider k3 = {
 	text: "k3 (r^6)";
 	minimum: -1;
 	maximum: +1;
 };
-Slider zoom = {
+static Slider zoom = {
 	text: "zoom";
 	value: 1;
 	minimum: .25;
 	maximum: 4;
 };
-Slider centerX = {
+static Slider centerX = {
 	text: "center x";
 	minimum: -.5;
 	maximum: +.5;
 };
-Slider centerY = {
+static Slider centerY = {
 	text: "center y";
 	minimum: -.5;
 	maximum: +.5;
 };
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

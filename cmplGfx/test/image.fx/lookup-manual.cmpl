@@ -10,50 +10,50 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(back);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(back);
 
-void onButtonClick(Button this&, int32 clicks);
-bool onCurveUpdate(Histogram this&, int32 idx, argb value);
+static void onButtonClick(Button this&, int32 clicks);
+static bool onCurveUpdate(Histogram this&, int32 idx, argb value);
 
-Histogram histogram = {
+static Histogram histogram = {
 	enabled: false;
 };
-Histogram curves = {
+static Histogram curves = {
 	height: 256;
 	lines: true;
 	focusable: false;
 	onUpdate: onCurveUpdate;
 };
 
-Button btnLuminosity = {
+static Button btnLuminosity = {
 	onClick: onButtonClick;
 	text: "luminosity";
 };
-Button btnRgb = {
+static Button btnRgb = {
 	onClick: onButtonClick;
 	text: "rgb";
 };
-Button btnRed = {
+static Button btnRed = {
 	onClick: onButtonClick;
 	text: "red";
 };
-Button btnGreen = {
+static Button btnGreen = {
 	onClick: onButtonClick;
 	text: "green";
 };
-Button btnBlue = {
+static Button btnBlue = {
 	onClick: onButtonClick;
 	text: "blue";
 };
 
-Button btnDump = {
+static Button btnDump = {
 	onClick: onButtonClick;
 	text: "dump";
 	focusable: false;
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

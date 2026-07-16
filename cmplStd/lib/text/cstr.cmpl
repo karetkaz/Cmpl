@@ -57,7 +57,7 @@ int ignCaseCmp(char a, char b) {
 }
 
 /// default character comparator
-int caseCmp(char chr, char with) = pointer(null);
+static int caseCmp(char chr, char with) = pointer(null);
 
 /// Check if a string begins with a specified string, using a custom comparator
 bool startsWith(char str[], char with[], int cmp(char chr, char with)) {

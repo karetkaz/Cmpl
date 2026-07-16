@@ -1,32 +1,32 @@
 // rounded rectangle demo
 
-Image offs = Image(800, 600, 32);
+static Image offs = Image(800, 600, 32);
 
-Slider sldSx = {
+static Slider sldSx = {
 	text: "size.x";
 	maximum: offs.width() / 2;
 	value: offs.width() / 4;
 	stepSize: 1;
 };
-Slider sldSy = {
+static Slider sldSy = {
 	text: "size.y";
 	maximum: offs.height() / 2;
 	value: offs.height() / 4;
 	stepSize: 1;
 };
-Slider sldRx = {
+static Slider sldRx = {
 	text: "round.x";
 	maximum: sldSx.maximum;
 	value: 20;
 	stepSize: 1;
 };
-Slider sldRy = {
+static Slider sldRy = {
 	text: "round.y";
 	maximum: sldSy.maximum;
 	value: 20;
 	stepSize: 1;
 };
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

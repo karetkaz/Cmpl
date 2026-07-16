@@ -115,7 +115,7 @@ struct SkyDome: Sphere {
 	}
 }
 
-Light lights[] = {
+static Light lights[] = {
 	Light {
 		position: vec4f(0, 2, -4);
 		ambient: vec4f(.1);
@@ -124,7 +124,7 @@ Light lights[] = {
 	};
 };
 
-Thing things[20] = {
+static Thing things[20] = {
 	SkyDome { // fake the environment with a huge sphere
 		image: Image("../asset/image/garden.png");
 		position: vec4f(0, 0, 0);

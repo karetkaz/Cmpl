@@ -30,10 +30,10 @@ static Style global! = {
 	align: Style.center;
 };
 
-char result[16] = {'0', 0};
-char operation = '=';
-float64 value = 0;
-bool clear = true;
+static char result[16] = {'0', 0};
+static char operation = '=';
+static float64 value = 0;
+static bool clear = true;
 
 void onResult(Button this, int32 clicks) {
 	if (operation == 0) {

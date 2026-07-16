@@ -3,7 +3,7 @@
 
 inline displaySize = 400;
 inline gridSize = 10;
-int colors[] = {
+static int colors[] = {
 	0x0000ff;
 	0x00ff00;
 	0xff0000;
@@ -21,7 +21,7 @@ int colors[] = {
 	// 0x808080;
 };
 
-int grid[gridSize * gridSize] = {...};
+static int grid[gridSize * gridSize] = {...};
 bool flood(int i, int j, int o, int c) {
 	if (i < 0 || i >= gridSize) {
 		return false;
@@ -41,7 +41,7 @@ bool flood(int i, int j, int o, int c) {
 	return true;
 }
 
-Image image = Image(displaySize, displaySize, 32);
+static Image image = Image(displaySize, displaySize, 32);
 int onEvent(int action, int button, int x, int y) {
 	static int moves = 0;
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {

@@ -10,11 +10,11 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image("../asset/image/texture_nature_01.png", back.width(), back.height(), 32);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image("../asset/image/texture_nature_01.png", back.width(), back.height(), 32);
 
 /// compute the the transformation matrix to center/crop/fit an image to a new size.
-mat4f fitMatrix(Image src, int newWidth, int newHeight, bool fitWidth, bool fitHeight, float64 maxScale, float64 maxAspect) {
+static mat4f fitMatrix(Image src, int newWidth, int newHeight, bool fitWidth, bool fitHeight, float64 maxScale, float64 maxAspect) {
 	float64 scale = 1;
 	float64 widthScale = newWidth / float64(src.width());
 	float64 heightScale = newHeight / float64(src.height());
@@ -57,7 +57,7 @@ mat4f fitMatrix(Image src, int newWidth, int newHeight, bool fitWidth, bool fitH
 		w: {x: 0, y: 0, z: 0, w: 1};
 	};
 }
-mat4f skewMatrix(float64 sx, float64 sy) {
+static mat4f skewMatrix(float64 sx, float64 sy) {
 	return {
 		x: {x: 1, y: Float64.tan(sx), z: 0, w: 0};
 		y: {x: Float64.tan(sy), y: 1, z: 0, w: 0};
@@ -66,74 +66,74 @@ mat4f skewMatrix(float64 sx, float64 sy) {
 	};
 }
 
-char filtering[][] = {
+static char filtering[][] = {
 	"nearest",
 	"linear",
 	// TODO: Hermite, Gaussian, Bell, BSpline, Mitchel, Lanczos, Hanning
 };
-Switch quality = {
+static Switch quality = {
 	text: "filtering";
 	states: filtering;
 	selected: 1;
 	focusable: false;
 };
-Switch flipX = {
+static Switch flipX = {
 	text: "flip x";
 };
-Switch flipY = {
+static Switch flipY = {
 	text: "flip y";
 };
-Slider rotate = {
+static Slider rotate = {
 	text: "rotate";
 	maximum: 360;
 };
-Slider skewX = {
+static Slider skewX = {
 	text: "skew x";
 	minimum: -45;
 	maximum: +45;
 };
-Slider skewY = {
+static Slider skewY = {
 	text: "skew y";
 	minimum: -45;
 	maximum: +45;
 };
-Slider scaleX = {
+static Slider scaleX = {
 	text: "scale x";
 	value: 1;
 	minimum: .1;
 	maximum: 5;
 };
-Slider scaleY = {
+static Slider scaleY = {
 	text: "scale y";
 	value: 1;
 	minimum: .1;
 	maximum: 5;
 };
-Slider translateX = {
+static Slider translateX = {
 	text: "translate x";
 	minimum: -offs.width();
 	maximum: +offs.width();
 };
-Slider translateY = {
+static Slider translateY = {
 	text: "translate y";
 	minimum: -offs.height();
 	maximum: +offs.height();
 };
 
-Switch fitWidth = {
+static Switch fitWidth = {
 	text: "fit width";
 };
-Switch fitHeight = {
+static Switch fitHeight = {
 	text: "fit height";
 };
-Slider imgRatio = {
+static Slider imgRatio = {
 	text: "ratio";
 	enabled: false;
 	onDrawSlider: null;
 	value: float64(back.width()) / back.height();
 	maximum: 1000;
 };
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

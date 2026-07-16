@@ -69,6 +69,31 @@ struct Camera {
 		};
 	}
 
+	/// Create an orthographic(`fov` == 0) or perspective projection matrix in pixel space,
+	/// mapping camera rays to pixels: (x, y, z) -> (cx + focal * x / z, cy + focal * y / z).
+	/// `fov` is the full horizontal field of view in degrees; the w row holds the z divisor,
+	/// so homogeneous consumers (Image.transform) apply the perspective divide.
+	static mat4f projection(float32 fov, float32 width, float32 height) {
+		if (fov == 0) {
+			// orthographic: pixels map to pixels
+			return {
+				x: vec4f(1, 0, 0, 0);
+				y: vec4f(0, 1, 0, 0);
+				z: vec4f(0, 0, 1, 0);
+				w: vec4f(0, 0, 0, 1);
+			};
+		}
+
+		// pinhole camera: focal length in pixels from the field of view
+		float32 focal = .5 * width / Float32.tan(Float32.radians(fov) / 2);
+		return {
+			x: vec4f(focal, 0,     width / 2,  0);
+			y: vec4f(0,     focal, height / 2, 0);
+			z: vec4f(0,     0,     1,          0);
+			w: vec4f(0,     0,     1,          0);
+		};
+	}
+
 	/// Create a camera at the given `position` looking at the given `target`
 	static Camera lookAt(vec4f position, vec4f target, vec4f up) {
 		vec4f forward = normalize(target - position);

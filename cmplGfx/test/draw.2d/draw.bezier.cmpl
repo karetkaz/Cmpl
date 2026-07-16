@@ -2,11 +2,11 @@
  * click and drag a control point
  * use keyboard keys 0, 1, 2, 3 to select control point
  */
-Image offs = Image(1440, 900, 32);
+static Image offs = Image(1440, 900, 32);
 
-int idx = -1;
-int x[4] = {100, 400, 700, 400};
-int y[4] = {100, 100, 400, 400};
+static int idx = -1;
+static int x[4] = {100, 400, 700, 400};
+static int y[4] = {100, 100, 400, 400};
 
 int onEvent(int action, int button, int ex, int ey) {
 	static int ox = 0;

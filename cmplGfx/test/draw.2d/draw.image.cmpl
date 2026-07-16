@@ -5,11 +5,11 @@
  * click mouse button 1+2 to draw the image zoomed
  * press space bar to toggle fade out animation
  */
-Image offs = Image(1440, 900, 32);
-Image back = Image("../asset/image/forest.jpg", 32);
-Image draw = Image("../asset/image/david.png", 32);
+static Image offs = Image(1440, 900, 32);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image draw = Image("../asset/image/david.png", 32);
 
-argb lut[256] = {...};
+static argb lut[256] = {...};
 for (int idx = 0; idx < 256; idx += 1) {
 	int rgb = sat_s8(idx - 10);
 	lut[idx] = pack(idx, rgb, rgb, rgb);

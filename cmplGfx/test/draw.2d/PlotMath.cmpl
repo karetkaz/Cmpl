@@ -11,8 +11,8 @@ inline zoom = 1;
 
 inline h = 960;
 inline w = h * 16 / 9;
-Image offs = Image(w, h, 32);
-Image gr = zoom <= 1 ? offs : Image(w / zoom, h / zoom, 32);
+static Image offs = Image(w, h, 32);
+static Image gr = zoom <= 1 ? offs : Image(w / zoom, h / zoom, 32);
 
 // Functions is not defined, compare Float64 vs Float32
 static if (struct(Functions) != typename) {
@@ -108,34 +108,34 @@ Functions functions[] = {
 	{base: Float64.acoth, test: Functions.acoth, text: "acoth" },
 };
 
-Select chkFunctions = {
+static Select chkFunctions = {
 	text: "function";
 	focusable: true;
 	orientation: 4;
 };
-Slider sldScale = {
+static Slider sldScale = {
 	text: "scale (2 ** x)";
 	minimum: Functions.minimum;
 	maximum: Functions.maximum;
 	value: 2;
 };
-Slider sldXOffset = {
+static Slider sldXOffset = {
 	text: "offset.x";
 	minimum: -Float64.inf;
 	maximum: +Float64.inf;
 };
-Slider sldYOffset = {
+static Slider sldYOffset = {
 	text: "offset.y";
 	minimum: -Float64.inf;
 	maximum: +Float64.inf;
 };
-Switch chkCenterY = {
+static Switch chkCenterY = {
 	text: "center y";
 	states: null;
 	selected: 1;
 	clickToFocus: false;
 };
-Switch chkDisplay = {
+static Switch chkDisplay = {
 	static char statesDisplay[][4] = {
 		"diff",
 		"error",
@@ -146,13 +146,13 @@ Switch chkDisplay = {
 	states: statesDisplay;
 	clickToFocus: false;
 };
-Switch chkSmooth = {
+static Switch chkSmooth = {
 	text: "smooth";
 	states: null;
 	clickToFocus: false;
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

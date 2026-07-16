@@ -2,7 +2,7 @@
 // '[', ']', '\' to flip and rotate
 // Enter to edit
 
-uint64 patterns[] = {
+static uint64 patterns[] = {
 	0xffff0000ffff0000; // ====	line
 	0xcccccccccccccccc; // ||||	line
 	0x0102040810204080; //  / /	liteslash
@@ -53,7 +53,7 @@ uint64 patterns[] = {
 	0x8854224588152251; // Win2k - Weave
 };
 
-Image img = Image(1024, 1024, 32);
+static Image img = Image(1024, 1024, 32);
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	static int selected = 0;
 	static bool edit = false;

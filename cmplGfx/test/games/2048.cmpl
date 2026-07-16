@@ -5,10 +5,10 @@ inline gridSize = 4;
 inline fontSize = 28;
 inline displaySize = 400;
 
-Image font = Window.font(fontSize);
-Image image = Image(displaySize, displaySize, 32);
-argb colors[gridSize * gridSize + 1] = {argb(0)};
-int grid[gridSize * gridSize] = {};
+static Image font = Window.font(fontSize);
+static Image image = Image(displaySize, displaySize, 32);
+static argb colors[gridSize * gridSize + 1] = {argb(0)};
+static int grid[gridSize * gridSize] = {};
 
 void nextTurn() {
 	static Random random = Random();

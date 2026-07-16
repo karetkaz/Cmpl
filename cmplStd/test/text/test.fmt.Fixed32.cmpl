@@ -52,8 +52,8 @@ debug(buff);
 // Fixed32's 20 fractional bits). The Fixed32 formatter carries its own copy of
 // the rounding/carry logic; these guard it against the printf reference for the
 // exact value.
-char tieExpect[64] = {...};
-char tieBuff[64] = {...};
+static char tieExpect[64] = {...};
+static char tieBuff[64] = {...};
 void checkTie(int32 p, float64 value) {
 	Fixed32 fx = Fixed32(value);
 	float64.print(tieExpect, float64(fx), 0, 0, p);
@@ -87,8 +87,8 @@ for (int i = 0; i < halves.length; i += 1) {
 // precision >= 1 carry: fraction rounds up through all digits, creating a new
 // integer digit. fractionPos must shift +1 so the trailing-trim loop stops at
 // the right boundary (fractionPos bug: without the +1, "10.0" trims to "1").
-char carryExpect[32] = {...};
-char carryBuff[32] = {...};
+static char carryExpect[32] = {...};
+static char carryBuff[32] = {...};
 void checkCarry(int32 p, float64 value) {
 	Fixed32 fx = Fixed32(value);
 	float64.print(carryExpect, float64(fx), 0, 0, p);

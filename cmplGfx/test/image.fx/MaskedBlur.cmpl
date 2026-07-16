@@ -11,54 +11,54 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image surf = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(surf);
-Image blur = Image(surf);
+static Image surf = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(surf);
+static Image blur = Image(surf);
 
-View.State onTouchEvent(Button view, Rect rect!, TouchEvent event!);
-void onResetClick(Button view, int32 clicks);
-Histogram histogram = {
+static View.State onTouchEvent(Button view, Rect rect!, TouchEvent event!);
+static void onResetClick(Button view, int32 clicks);
+static Histogram histogram = {
 	enabled: false;
 };
 
-Slider sldBlur = {
+static Slider sldBlur = {
 	text: "Blur";
 	value: 20;
 	minimum: .3;
 	maximum: 20;
 };
-Slider sldSharpness = {
+static Slider sldSharpness = {
 	text: "Sharp";
 	value: 2;
 	minimum: 0;
 	maximum: 4;
 };
 
-Button btnLinear = {
+static Button btnLinear = {
 	text: "Linear";
 	onTouchEvent: onTouchEvent;
 };
-Button btnReflect = {
+static Button btnReflect = {
 	text: "Reflect";
 	onTouchEvent: onTouchEvent;
 };
-Button btnSquare = {
+static Button btnSquare = {
 	text: "Square";
 	onTouchEvent: onTouchEvent;
 };
-Button btnRadial = {
+static Button btnRadial = {
 	text: "Radial";
 	onTouchEvent: onTouchEvent;
 };
 
-Slider sldHardness = {
+static Slider sldHardness = {
 	text: "Hardness";
 	minimum: -255;
 	maximum: 255;
 	stepSize: 1;
 	focusable: false;
 };
-Slider sldAlpha = {
+static Slider sldAlpha = {
 	text: "Alpha";
 	minimum: -255;
 	maximum: 255;
@@ -66,33 +66,33 @@ Slider sldAlpha = {
 	stepSize: 1;
 	focusable: false;
 };
-char scaleMove[][] = {
+static char scaleMove[][] = {
 	"Move",
 	"Scale"
 };
-Switch chkMoveScale = {
+static Switch chkMoveScale = {
 	states: scaleMove;
 	text: "Drag mode";
 	focusable: false;
 };
-Switch chkRect = {
+static Switch chkRect = {
 	text: "Show rect";
 	focusable: false;
 };
-Switch chkMask = {
+static Switch chkMask = {
 	text: "Show mask";
 	focusable: false;
 };
-Button btnReset = {
+static Button btnReset = {
 	text: "Reset rect";
 	focusable: false;
 	onClick: onResetClick;
 };
-Panel panMask = {
+static Panel panMask = {
 	visible: false;
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;
@@ -101,13 +101,13 @@ DebugView debug = {
 //inline blur(Image surf, int radius) = surf.blur(radius, 0.3 * (radius - 1) + 0.8);
 inline blur(Image surf, float64 sigma) = surf.blur(Float64.max(1., (sigma - 0.8) / 0.3 + 1), sigma);
 
-Rect rect = {
+static Rect rect = {
 	x0: 0;
 	y0: 0;
 	x1: offs.width();
 	y1: offs.height();
 };
-float64 oldRadius = 0;
+static float64 oldRadius = 0;
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {

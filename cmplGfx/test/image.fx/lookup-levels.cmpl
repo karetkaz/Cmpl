@@ -10,8 +10,8 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(back);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(back);
 
 void levels(argb lut[256], int32 brightness, int32 x0, int32 x1, int32 y0, int32 y1) {
 	if (x1 == x0) {
@@ -36,25 +36,25 @@ void levels(argb lut[256], int32 brightness, int32 output, int32 input) {
 	return levels(&lut, brightness, x0, x1, y0, y1);
 }
 
-bool syncInputOutput(Slider slider, float64 value);
-bool showHideAdvanced(Slider slider, Rect rect&);
+static bool syncInputOutput(Slider slider, float64 value);
+static bool showHideAdvanced(Slider slider, Rect rect&);
 
-Histogram histogram = {
+static Histogram histogram = {
 	enabled: false;
 };
-Histogram lookup = {
+static Histogram lookup = {
 	lines: true;
 	enabled: false;
 	focusable: false;
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;
 };
 
-Switch chkAdvanced = {
+static Switch chkAdvanced = {
 	static void onClick(Switch switch, int32 clicks) {
 		switch.invalidate();
 		Switch.onClick(switch, clicks);
@@ -64,21 +64,21 @@ Switch chkAdvanced = {
 	onClick: onClick;
 };
 
-Slider sldBrightness = {
+static Slider sldBrightness = {
 	text: "Brightness";
 	minimum: -256;
 	maximum: 256;
 	stepSize: 1;
 };
 
-Slider sldInput = {
+static Slider sldInput = {
 	text: "Input";
 	minimum: -255;
 	maximum: 255;
 	stepSize: 1;
 	onUpdate: syncInputOutput;
 };
-Slider sldInputMin = {
+static Slider sldInputMin = {
 	text: " Input.min";
 	maximum: sldInput.maximum;
 	value: 0;
@@ -86,7 +86,7 @@ Slider sldInputMin = {
 	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
-Slider sldInputMax = {
+static Slider sldInputMax = {
 	text: " Input.max";
 	maximum: sldInput.maximum;
 	value: sldInput.maximum;
@@ -95,14 +95,14 @@ Slider sldInputMax = {
 	onMeasure: showHideAdvanced;
 };
 
-Slider sldOutput = {
+static Slider sldOutput = {
 	text: "Output";
 	minimum: -255;
 	maximum: 255;
 	stepSize: 1;
 	onUpdate: syncInputOutput;
 };
-Slider sldOutputMin = {
+static Slider sldOutputMin = {
 	text: " Output.min";
 	maximum: sldOutput.maximum;
 	value: 0;
@@ -110,7 +110,7 @@ Slider sldOutputMin = {
 	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
-Slider sldOutputMax = {
+static Slider sldOutputMax = {
 	text: " Output.max";
 	maximum: sldOutput.maximum;
 	value: sldOutput.maximum;
@@ -119,7 +119,7 @@ Slider sldOutputMax = {
 	onMeasure: showHideAdvanced;
 };
 
-int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+static int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return Window.quit();
@@ -141,7 +141,7 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	histogram.update(offs);
 	return Window.timeoutMax;
 }
-bool syncInputOutput(Slider slider, float64 value) {
+static bool syncInputOutput(Slider slider, float64 value) {
 	bool result = Slider.onUpdate(slider, value);
 	if (slider == sldInput) {
 		result |= Slider.onUpdate(sldInputMin, value > 0 ? 0 : -value);
@@ -163,7 +163,7 @@ bool syncInputOutput(Slider slider, float64 value) {
 	}
 	return result;
 }
-bool showHideAdvanced(Slider slider, Rect rect&) {
+static bool showHideAdvanced(Slider slider, Rect rect&) {
 	if (!chkAdvanced.selected) {
 		// view is hidden
 		rect.x1 = rect.x0;

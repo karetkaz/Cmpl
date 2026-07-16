@@ -2,8 +2,8 @@
 // based on: https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
 
 bool syncOrientation(Slider this, float64 value);
-bool syncAlignment(Switch this, int value);
-bool syncPadding(Slider this, float64 value);
+static bool syncAlignment(Switch this, int value);
+static bool syncPadding(Slider this, float64 value);
 
 inline itemSize = -50;
 inline minPadding = 0;
@@ -18,7 +18,7 @@ Slider orientation = {
 	stepSize: 1;
 };
 
-Slider paddingTop = {
+static Slider paddingTop = {
 	onUpdate: syncPadding;
 	text: "LayoutPadding.top";
 	minimum: minPadding;
@@ -26,7 +26,7 @@ Slider paddingTop = {
 	value: 20;
 	stepSize: 1;
 };
-Slider paddingLeft = {
+static Slider paddingLeft = {
 	onUpdate: syncPadding;
 	text: "LayoutPadding.left";
 	minimum: minPadding;
@@ -34,7 +34,7 @@ Slider paddingLeft = {
 	value: 20;
 	stepSize: 1;
 };
-Slider paddingRight = {
+static Slider paddingRight = {
 	onUpdate: syncPadding;
 	text: "LayoutPadding.right";
 	minimum: minPadding;
@@ -42,7 +42,7 @@ Slider paddingRight = {
 	value: 256;
 	stepSize: 1;
 };
-Slider paddingBottom = {
+static Slider paddingBottom = {
 	onUpdate: syncPadding;
 	text: "LayoutPadding.bottom";
 	minimum: minPadding;
@@ -51,81 +51,81 @@ Slider paddingBottom = {
 	stepSize: 1;
 };
 
-Switch layoutAlignTop = {
+static Switch layoutAlignTop = {
 	onUpdate: syncAlignment;
 	text: "LayoutAlign.top";
 	states: null;
 };
-Switch layoutAlignLeft = {
+static Switch layoutAlignLeft = {
 	onUpdate: syncAlignment;
 	text: "LayoutAlign.left";
 	states: null;
 };
-Switch layoutAlignRight = {
+static Switch layoutAlignRight = {
 	onUpdate: syncAlignment;
 	text: "LayoutAlign.right";
 	states: null;
 };
-Switch layoutAlignBottom = {
+static Switch layoutAlignBottom = {
 	onUpdate: syncAlignment;
 	text: "LayoutAlign.bottom";
 	states: null;
 };
 
-Switch itemAlignTop = {
+static Switch itemAlignTop = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.top";
 	states: null;
 	selected: 1;
 };
-Switch itemAlignLeft = {
+static Switch itemAlignLeft = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.left";
 	states: null;
 	selected: 1;
 };
-Switch itemAlignRight = {
+static Switch itemAlignRight = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.right";
 	states: null;
 	selected: 1;
 };
-Switch itemAlignBottom = {
+static Switch itemAlignBottom = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.bottom";
 	states: null;
 	selected: 1;
 };
 
-Switch textAlignTop = {
+static Switch textAlignTop = {
 	onUpdate: syncAlignment;
 	text: "TextAlign.top";
 	states: null;
 };
-Switch textAlignLeft = {
+static Switch textAlignLeft = {
 	onUpdate: syncAlignment;
 	text: "TextAlign.left";
 	states: null;
 	selected: 1;
 };
-Switch textAlignRight = {
+static Switch textAlignRight = {
 	onUpdate: syncAlignment;
 	text: "TextAlign.right";
 	states: null;
 };
-Switch textAlignBottom = {
+static Switch textAlignBottom = {
 	onUpdate: syncAlignment;
 	text: "TextAlign.bottom";
 	states: null;
 };
 
 // container for rectangles
-Layout layout = {
+static Layout layout = {
 	enabled: false;
 	focusable: false;
 };
 
-Style style = {
+static Style style = {
 	align: Style.center;
 };
 
@@ -203,7 +203,7 @@ bool syncOrientation(Slider this, float64 value) {
 	layout.invalidate();
 	return true;
 }
-bool syncPadding(Slider this, float64 value) {
+static bool syncPadding(Slider this, float64 value) {
 	if (!Slider.onUpdate(this, value)) {
 		return false;
 	}
@@ -214,7 +214,7 @@ bool syncPadding(Slider this, float64 value) {
 	layout.invalidate();
 	return true;
 }
-bool syncAlignment(Switch this, int value) {
+static bool syncAlignment(Switch this, int value) {
 	if (!Switch.onUpdate(this, value)) {
 		return false;
 	}

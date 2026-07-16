@@ -20,5 +20,5 @@ assert(int_(0) == 2010);
 assert(int_(0.) == 2015);
 
 // todo: error for one of: inline(-1d) or inline(-1D)
-int32 badRef1& = inline(-3545d);
-int32 badRef2& = inline(-3545D);
+static int32 badRef1& = inline(-3545d);
+static int32 badRef2& = inline(-3545D);

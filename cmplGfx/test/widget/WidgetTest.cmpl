@@ -66,7 +66,7 @@ static bool updateColor(ColorPicker this, argb value);
 static bool updateSlider(Slider this, float64 value);
 static bool updateTheme(Switch this, int32 value);
 
-ColorPicker colorPicker = {
+static ColorPicker colorPicker = {
 	width: 360;
 	height: 256/2;
 	focusable: false;
@@ -77,13 +77,13 @@ char themes[][] = {
 	"Light",
 	"Dark"
 };
-Switch theme = {
+static Switch theme = {
 	text: "Dark theme";
 	states: null;
 	selected: 1;
 	onUpdate: updateTheme;
 };
-Slider slider = {
+static Slider slider = {
 	text: "Color saturation";
 	value: 0.75;
 	onUpdate: updateSlider;
@@ -118,7 +118,7 @@ DebugView debug = {
 	focusable: false;
 };
 
-Style style = Widget.defaultStyle;
+static Style style = Widget.defaultStyle;
 Window.show(Widget(0, 0, style).addItems(
 	colorPicker,
 

@@ -10,8 +10,8 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(back);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(back);
 
 void brightnessContrastGamma(argb lut&[256], float64 brightness, float64 contrast, float64 gamma, float64 highlights, float64 shadows, float64 whites, float64 blacks) {
 	// adapted from: https://gitlab.bestminr.com/bestminr/FrontShaders/blob/master/shaders/whites_blacks.glsl
@@ -154,68 +154,68 @@ void presetAutoRgb(argb lut&[256]) {
 	}
 }
 
-Histogram histogram = {
+static Histogram histogram = {
 	enabled: false;
 };
-Histogram curves = {
+static Histogram curves = {
 	lines: true;
 	enabled: false;
 };
 
-Slider brightness = {
+static Slider brightness = {
 	text: "brightness";
 	minimum: -1;
 	maximum: +1;
 };
-Slider contrast = {
+static Slider contrast = {
 	text: "contrast";
 	value: 1;
 	minimum: -1;
 	maximum: +3;
 };
-Slider gamma = {
+static Slider gamma = {
 	text: "gamma";
 	value: 1;
 	minimum: .01;
 	maximum: 10;
 };
-Slider highlights = {
+static Slider highlights = {
 	text: "highlights";
 	minimum: -1;
 	maximum: +1;
 };
-Slider shadows = {
+static Slider shadows = {
 	text: "shadows";
 	minimum: -1;
 	maximum: +1;
 };
-Slider whites = {
+static Slider whites = {
 	text: "whites";
 	minimum: -1;
 	maximum: +1;
 };
-Slider blacks = {
+static Slider blacks = {
 	text: "blacks";
 	minimum: -1;
 	maximum: +1;
 };
 
-char options[][] = {
+static char options[][] = {
 	"luminosity";
 	"rgb stretch";
 };
-Switch auto = {
+static Switch auto = {
 	text: "auto";
 	states: options;
 	focusable: true;
 	clickToFocus: true;
 };
 
-Select preset = {
+static Select preset = {
 	text: "preset";
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

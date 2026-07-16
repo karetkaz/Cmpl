@@ -1699,7 +1699,7 @@ int main(int argc, char *argv[]) {
 	extra.dbgOnCaught = brkSkip;
 	extra.foldConstants = 1;
 	extra.foldInstruction = 1;
-	extra.genStaticGlobals = 1;
+	extra.genStaticGlobals = 0;
 	extra.errPrivateAccess = 1;
 	extra.errUninitialized = 1;
 	extra.checkArrayBounds = 1;

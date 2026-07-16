@@ -10,10 +10,10 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(back);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(back);
 
-void brightnessContrast(argb lut[256], int brightness, int contrast) {
+static void brightnessContrast(argb lut[256], int brightness, int contrast) {
 	float64 cVal = (256 + contrast) / 256.;
 
 	float64 easing(float64 ratio) = Easing.expo;
@@ -38,26 +38,26 @@ void brightnessContrast(argb lut[256], int brightness, int contrast) {
 	}
 }
 
-Slider brightness = {
+static Slider brightness = {
 	text: "brightness";
 	minimum: -256;
 	maximum: 256;
 	stepSize: 1;
 };
-Slider contrast = {
+static Slider contrast = {
 	text: "contrast";
 	minimum: -256;
 	maximum: 256;
 	stepSize: 1;
 };
-Histogram histogram = {
+static Histogram histogram = {
 	enabled: false;
 };
-Histogram curves = {
+static Histogram curves = {
 	lines: true;
 	enabled: false;
 };
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

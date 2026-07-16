@@ -1,12 +1,12 @@
 // Lens effect demo.
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(800, 600, 32);
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(800, 600, 32);
 
 //vec2d mag[magRadius][magRadius]; todo: multi dimensional arrays
 
-float64 magFactor = 3.4;
+static float64 magFactor = 3.4;
 inline magSize = 512;
-vec2d mag[magSize * magSize] = {...};
+static vec2d mag[magSize * magSize] = {...};
 
 void init() {
 	int32 r = magSize / 2;
@@ -34,8 +34,8 @@ void init() {
 	}
 }
 
-int32 mx = (offs.width() - magSize) / 2;
-int32 my = (offs.height() - magSize) / 2;
+static int32 mx = (offs.width() - magSize) / 2;
+static int32 my = (offs.height() - magSize) / 2;
 
 int onEvent(int action, int button, int x, int y) {
 	inline scrollPad = -50;

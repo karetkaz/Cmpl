@@ -46,7 +46,7 @@ struct Body {
 	}
 }
 
-Body planets[] = {
+static Body planets[] = {
 	{name: "Sun",     color: 0xffff00, mass: 1.98892e30,  radius: 696340e3};
 	{name: "Mercury", color: 0x504e51, mass: 0.330e24,    radius: 4879e3/2,   x: 57.9e9,   vy: -47.4e3};
 	{name: "Venus",   color: 0xffffff, mass: 4.87e24,     radius: 12104e3/2,  x: 108.2e9,  vy: -35.0e3};
@@ -61,19 +61,19 @@ Body planets[] = {
 	{name: "Pluto",   color: 0xff00ff, mass: 0.0130e24,   radius: 2376e3/2,   x: 5906.4e9, vy: -4.7e3};
 };
 
-Image offs = Image(1600, 900, 32);
-Switch chkShowAll = {
+static Image offs = Image(1600, 900, 32);
+static Switch chkShowAll = {
 	text: "Show all";
 	states: null;
 	clickToFocus: false;
 };
-Slider sldSpeed = {
+static Slider sldSpeed = {
 	text: "Idle fps";
 	minimum: 1e-10;
 	maximum: 60;
 	value: 60;
 };
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

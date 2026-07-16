@@ -313,26 +313,26 @@ ColorLut ColorLut(char filename[]) {
 
 //ColorLut lut3d = ColorLut("../../tmp/asset/lut3d/35 Free LUTs/Arabica 12.CUBE");
 //ColorLut lut3d = ColorLut("../asset/lut3d/exo-identity.png");
-ColorLut lut3d = ColorLut("../asset/lut3d/obs-guide-lut.png");
-Image back = Image("../asset/image/forest.jpg", 32);
-Image offs = Image(back);
+static ColorLut lut3d = ColorLut("../asset/lut3d/obs-guide-lut.png");
+static Image back = Image("../asset/image/forest.jpg", 32);
+static Image offs = Image(back);
 
-void exportLut(Button this, int32 clicks);
-Histogram histogram = {
+static void exportLut(Button this, int32 clicks);
+static Histogram histogram = {
 	enabled: false;
 };
 
-Button export64 = {
+static Button  export64 = {
 	text: "export 64";
 	focusable: false;
 	onClick: exportLut;
 };
-Button export256 = {
+static Button export256 = {
 	text: "export 256";
 	focusable: false;
 	onClick: exportLut;
 };
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

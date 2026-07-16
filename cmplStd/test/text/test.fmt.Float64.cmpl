@@ -99,8 +99,8 @@ for (int i = 0; i < nonFinite.length; i += 1) {
 // expansion ends in a lone `5` at the rounding position). For precision >= 1 the
 // digit before the cut sits at output[pos-1] and the formatter matches the
 // printf reference; this guards the tie handling against regressions.
-char tieExpect[64] = {...};
-char tieBuff[64] = {...};
+static char tieExpect[64] = {...};
+static char tieBuff[64] = {...};
 void checkTie(int32 p, float64 value) {
 	float64.print(tieExpect, value, 0, 0, p);
 	NumberFormat tie = { precision: p; trailingZeros: true; };

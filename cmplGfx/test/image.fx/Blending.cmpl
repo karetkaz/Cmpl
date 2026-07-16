@@ -10,10 +10,10 @@
  * drag the mouse left or right in the window to adjust selected slider value
  */
 
-Image base = Image("../asset/image/forest.jpg", 32);
-Image image = Image("../asset/image/texture_nature_01.png", 32);
-Image offs = Image(base);
-Image blend = Image(image, offs.width(), offs.height(), -1, 1.);
+static Image base = Image("../asset/image/forest.jpg", 32);
+static Image image = Image("../asset/image/texture_nature_01.png", 32);
+static Image offs = Image(base);
+static Image blend = Image(image, offs.width(), offs.height(), -1, 1.);
 
 static struct Blending {
 	inline linear_dodge(float32 base, float32 blend) = Float32.min(base + blend, 1f);
@@ -212,12 +212,12 @@ struct BlendButton: Button {
 	vec4f blend(vec4f base, vec4f blend);
 }
 
-Switch chkReverse = {
+static Switch chkReverse = {
 	text: "reverse";
 	focusable: false;
 	width: 192;
 };
-Slider btnAlpha = {
+static Slider btnAlpha = {
 	text: "alpha";
 	value: .75;
 };
@@ -301,7 +301,7 @@ BlendButton btnPinLight = {
 	blend: Blending.pinLight;
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

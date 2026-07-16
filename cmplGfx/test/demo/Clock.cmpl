@@ -4,7 +4,7 @@ inline hourText = 0xadadad;
 inline hourHand = 0xff0000;
 inline minuteHand = 0x00ff00;
 inline secondHand = 0xffffff;
-Image offs = Image(320, 320, 32);
+static Image offs = Image(320, 320, 32);
 
 void drawLine(Image image, int32 x0, int32 y0, int32 x1, int32 y1, bool smooth, uint32 color) {
 	static struct SmoothDraw {

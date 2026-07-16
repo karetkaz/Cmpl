@@ -9,10 +9,10 @@ struct Star {
 
 static Star stars[1024] = {...};
 
-int32 resolutionx = 1440;
-int32 resolutiony = 900;
-int32 centerx = resolutionx / 2;
-int32 centery = resolutiony / 2;
+static int32 resolutionx = 1440;
+static int32 resolutiony = 900;
+static int32 centerx = resolutionx / 2;
+static int32 centery = resolutiony / 2;
 
 void initStar(Star star&) {
 	static Random random = Random();
@@ -52,7 +52,7 @@ void drawStars(Image offScreen) {
 
 }
 
-Image image = Image(resolutionx, resolutiony, 32);
+static Image image = Image(resolutionx, resolutiony, 32);
 int32 onEvent(int32 action, int32 btn, int32 x, int32 y) {
 	if (action == Window.KEY_RELEASE && btn == Window.KEY_CODE_ESC) {
 		return Window.quit();

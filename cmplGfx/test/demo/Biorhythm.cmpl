@@ -1,10 +1,10 @@
 // Biorhythm calculator
 
-Datetime birthdate = Datetime(2000, 2, 29);
-Timestamp now = Timestamp.now();
+static Datetime birthdate = Datetime(2000, 2, 29);
+static Timestamp now = Timestamp.now();
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y);
-Image img = Image(1440, 500, 32);
+static Image img = Image(1440, 500, 32);
 Window.show(img, onEvent);
 
 struct Biorhythm {
@@ -27,7 +27,7 @@ struct Biorhythm {
 	}
 }
 
-Biorhythm biorhythms[] = {
+static Biorhythm biorhythms[] = {
 	{color: uint32(argb(234, 50, 35)), period: 23, label: "Physical"};
 	{color: uint32(argb(68, 144, 247)), period: 33, label: "Intellectual"};
 	{color: uint32(argb(242,168, 59)), period: 38, label: "Intuitive"};

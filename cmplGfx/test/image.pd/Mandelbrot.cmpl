@@ -1,9 +1,9 @@
 // procedural draw demo ~ Mandelbrot
 
-float64 size = 1.5;
-float64 xMin = -.5;
-float64 yMin = 0;
-argb colors[24] = {};
+static float64 size = 1.5;
+static float64 xMin = -.5;
+static float64 yMin = 0;
+static argb colors[24] = {};
 
 vec4f mandel(vec4f in) {
 	Complex c = {

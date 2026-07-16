@@ -20,7 +20,7 @@ struct Sphere {
 	float32 checkBoard = 0;
 }
 
-Light lights[] = {
+static Light lights[] = {
 	Light {
 		position: vec4f(0, 2, -4);
 		ambient: vec4f(.1);
@@ -29,7 +29,7 @@ Light lights[] = {
 	};
 };
 
-Sphere things[5] = {
+static Sphere things[5] = {
 	Sphere { // fake the floor with a huge sphere
 		position: vec4f(0.0, -1003, -8, 1000);
 		color: vec4f(.6, .6, .6);
@@ -112,8 +112,8 @@ vec4f shade(Sphere thing!, vec4f pos, vec4f dir, vec4f rayDir) {
 /// returns reflection vector
 inline reflect(vec4f v, vec4f n) = v - 2 * dp3(v, n) * n;
 
-Camera camera = {};
-mat4f mat = {};
+static Camera camera = {};
+static mat4f mat = {};
 
 // returns the color of the ray-traced scene
 vec4f raytrace(vec4f xy) {
@@ -170,7 +170,7 @@ vec4f raytrace(vec4f xy) {
 }
 
 inline resolution = 512 / 2;
-Image image = Image(resolution, resolution, 32);
+static Image image = Image(resolution, resolution, 32);
 
 int onEvent(int action, int button, int x, int y) {
 	int64 time = System.millis();

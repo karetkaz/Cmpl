@@ -2,23 +2,23 @@
 // https://demonstrations.wolfram.com/SunflowerSeedArrangements/
 // https://blog.wolfram.com/2011/07/28/how-i-made-wine-glasses-from-sunflowers/
 
-Image offs = Image(1440, 900, 32);
+static Image offs = Image(1440, 900, 32);
 
-Slider sldSeeds = {
+static Slider sldSeeds = {
 	text: "seeds";
 	minimum: 10;
 	maximum: 50000;
 	value: 10000;
 	stepSize: 1;
 };
-Slider sldSize = {
+static Slider sldSize = {
 	text: "size";
 	minimum: 2;
 	maximum: 32;
 	value: 6;
 };
 
-DebugView debug = {
+static DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;

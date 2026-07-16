@@ -1737,6 +1737,7 @@ Camera.forward # @public
 Camera.right # @public
 Camera.up # @public
 Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f # Create an orthographic(`fov` == 0) or perspective projection matrix
+Camera.projection(fov: float32, width: float32, height: float32): mat4f # so homogeneous consumers (Image.transform) apply the perspective divide.
 Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera # Create a camera at the given `position` looking at the given `target`
 Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can be multiplied with the projection matrix
 Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # get the matrix of the camera multiplied with the projection matrix
