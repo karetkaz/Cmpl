@@ -268,14 +268,52 @@ int transformImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int inte
 		.y1 = roi ? roi->y1 : src->height,
 	};
 
-	// convert floating point values to fixed point(16.16) values (scale + rotate + translate)
-	int32_t xx = mat ? (int32_t) (mat[0] * 65535) : (rectWidth(srcRec) << 16) / rectWidth(dstRec);
-	int32_t xy = mat ? (int32_t) (mat[1] * 65535) : 0;
-	int32_t xt = (mat ? (int32_t) (mat[3] * 65535) : (srcRec.x0 << 16)) - xx * dstRec.x0;
-	int32_t yy = mat ? (int32_t) (mat[5] * 65535) : (rectHeight(srcRec) << 16) / rectHeight(dstRec);
-	int32_t yx = mat ? (int32_t) (mat[4] * 65535) : 0;
-	int32_t yt = (mat ? (int32_t) (mat[7] * 65535) : (srcRec.y0 << 16)) - yy * dstRec.y0;
+	if (mat == NULL || (mat[12] == 0 && mat[13] == 0 && mat[15] == 1)) {
+		// convert floating point values to fixed point(16.16) values (scale + rotate + translate)
+		int32_t xx = mat ? (int32_t) (mat[0] * 65536) : (rectWidth(srcRec) << 16) / rectWidth(dstRec);
+		int32_t xy = mat ? (int32_t) (mat[1] * 65536) : 0;
+		int32_t xt = (mat ? (int32_t) (mat[3] * 65536) : (srcRec.x0 << 16)) - xx * dstRec.x0;
+		int32_t yy = mat ? (int32_t) (mat[5] * 65536) : (rectHeight(srcRec) << 16) / rectHeight(dstRec);
+		int32_t yx = mat ? (int32_t) (mat[4] * 65536) : 0;
+		int32_t yt = (mat ? (int32_t) (mat[7] * 65536) : (srcRec.y0 << 16)) - yy * dstRec.y0;
 
+		if (!clipRect(image, &dstRec)) {
+			// nothing to set
+			return 0;
+		}
+		if (!clipRect(src, &srcRec)) {
+			// nothing to get
+			return 0;
+		}
+
+		if (interpolation == 0 || xx > 0x20000 || yy > 0x20000) {
+			for (int y = dstRec.y0; y < dstRec.y1; ++y) {
+				for (int x = dstRec.x0; x < dstRec.x1; ++x) {
+					int32_t tx = (xx * x + xy * y + xt) >> 16;
+					int32_t ty = (yx * x + yy * y + yt) >> 16;
+					setPixel(image, x, y, getPixel(src, tx, ty));
+				}
+			}
+			return 1;
+		}
+
+		// round to the closest source pixel
+		xt -= 0x8000;
+		yt -= 0x8000;
+		for (int y = dstRec.y0; y < dstRec.y1; ++y) {
+			for (int x = dstRec.x0; x < dstRec.x1; ++x) {
+				int32_t tx = xx * x + xy * y + xt;
+				int32_t ty = yx * x + yy * y + yt;
+				tx *= !(tx < 0 && tx > -0x8000);
+				ty *= !(ty < 0 && ty > -0x8000);
+				setPixel(image, x, y, getPixelLinear(src, tx, ty));
+			}
+		}
+		return 1;
+	}
+
+	// homogeneous (perspective) transformation: needs a divide per pixel
+	// fixed point can not be used because the w row coefficients are tiny
 	if (!clipRect(image, &dstRec)) {
 		// nothing to set
 		return 0;
@@ -285,26 +323,31 @@ int transformImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int inte
 		return 0;
 	}
 
-	if (interpolation == 0 || xx > 0x20000 || yy > 0x20000) {
-		for (int y = dstRec.y0; y < dstRec.y1; ++y) {
-			for (int x = dstRec.x0; x < dstRec.x1; ++x) {
-				int32_t tx = (xx * x + xy * y + xt) >> 16;
-				int32_t ty = (yx * x + yy * y + yt) >> 16;
-				setPixel(image, x, y, getPixel(src, tx, ty));
-			}
-		}
-		return 1;
-	}
-
-	xt -= 0x7fff;
-	yt -= 0x7fff;
+	double xX = mat[0], xY = mat[1], xT = mat[3];
+	double yX = mat[4], yY = mat[5], yT = mat[7];
+	double wX = mat[12], wY = mat[13], wT = mat[15];
 	for (int y = dstRec.y0; y < dstRec.y1; ++y) {
+		// coordinates are linear in x: start at the first column, increment per pixel
+		double numX = xX * dstRec.x0 + xY * y + xT;
+		double numY = yX * dstRec.x0 + yY * y + yT;
+		double numW = wX * dstRec.x0 + wY * y + wT;
 		for (int x = dstRec.x0; x < dstRec.x1; ++x) {
-			int32_t tx = xx * x + xy * y + xt;
-			int32_t ty = yx * x + yy * y + yt;
-			tx *= !(tx < 0 && tx > -0x8000);
-			ty *= !(ty < 0 && ty > -0x8000);
-			setPixel(image, x, y, getPixelLinear(src, tx, ty));
+			uint32_t color = 0;
+			if (numW > 0) {
+				double tx = numX / numW;
+				double ty = numY / numW;
+				if (tx >= 0 && tx < src->width && ty >= 0 && ty < src->height) {
+					if (interpolation) {
+						color = getPixelLinear(src, (int32_t) (tx * 65536), (int32_t) (ty * 65536));
+					} else {
+						color = getPixel(src, (int32_t) (tx + .5), (int32_t) (ty + .5));
+					}
+				}
+			}
+			setPixel(image, x, y, color);
+			numX += xX;
+			numY += yX;
+			numW += wX;
 		}
 	}
 	return 1;

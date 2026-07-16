@@ -191,11 +191,13 @@ void eval(Image image, Rect roi?, float32 aspect, float32 time, vec4f eval(vec4f
 	}
 	h *= aspect;
 
+	float32 rx = rect.x0 - .5;
+	float32 ry = rect.y0 - .5;
 	vec4f in = vec4f(0, 0, 0, time);
 	for (int y = rect.y0; y < rect.y1; y += 1) {
-		in.y = (y - rect.y0) / h;
+		in.y = (y - ry) / h;
 		for (int x = rect.x0; x < rect.x1; x += 1) {
-			in.x = (x - rect.x0) / w;
+			in.x = (x - rx) / w;
 			image.set(x, y, argb(eval(in)));
 		}
 	}

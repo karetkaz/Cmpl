@@ -110,6 +110,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 				action = Window.WINDOW_INIT;
 			}
 			else if (button == Window.KEY_CODE_TAB) {
+				data.animate = data.downScale > 0;
 				data.smooth = 1 - data.smooth;
 			}
 		}
@@ -135,6 +136,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 				x0: r.x1 - r.x1 / data.downScale;
 				y0: r.y1 - r.y1 / data.downScale;
 			};
+			// todo: with linear interpolation the row or column outside the roi might bleed into the scale
 			data.offs.eval(r, data.aspect, time, data.eval);
 			data.offs.resize(null, data.offs, r, data.smooth);
 		} else {

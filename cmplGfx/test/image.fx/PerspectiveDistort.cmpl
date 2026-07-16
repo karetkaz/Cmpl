@@ -1,0 +1,198 @@
+/* Perspective distortion, usable for keystone correction.
+ *
+ * The image plane is rotated in 3d around its center (pitch, yaw, roll),
+ * then projected back with a pinhole camera model. The mapping is a
+ * homography: H = K * R^-1 * K^-1, applied inverse (every destination
+ * pixel computes its source position with a perspective divide).
+ * The matrix is passed to Image.transform, which detects the homogeneous
+ * w row and switches to its perspective implementation.
+ * To correct a keystoned photo (e.g. a projector or a tilted camera),
+ * apply the opposite tilt.
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse left or right in the window to adjust selected slider value
+ */
+
+Image back = Image("../asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+// source with a grid overlay to visualize how the perspective changes
+Image grid = Image(back);
+for (int x = 0; x < grid.width(); x += 40) {
+	grid.fillRect(x, 0, x, grid.height(), 1, 0x00ff00);
+}
+for (int y = 0; y < grid.height(); y += 40) {
+	grid.fillRect(0, y, grid.width(), y, 1, 0x00ff00);
+}
+
+char filtering[][] = {
+	"nearest",
+	"linear",
+};
+Switch quality = {
+	text: "filtering";
+	states: filtering;
+	selected: 1;
+	focusable: false;
+};
+Switch showGrid = {
+	text: "show grid";
+	focusable: false;
+};
+Switch recenter = {
+	text: "recenter";
+	selected: 1;
+	focusable: false;
+};
+Slider tiltX = {
+	text: "tilt x (pitch)";
+	minimum: -60;
+	maximum: +60;
+};
+Slider tiltY = {
+	text: "tilt y (yaw)";
+	minimum: -60;
+	maximum: +60;
+};
+Slider rotate = {
+	text: "rotate (roll)";
+	minimum: -180;
+	maximum: +180;
+};
+Slider fov = {
+	text: "fov";
+	value: 60;
+	minimum: 20;
+	maximum: 120;
+};
+Slider zoom = {
+	text: "zoom";
+	value: 1;
+	minimum: .25;
+	maximum: 4;
+};
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+// 3x3 matrix multiplication: dst = a * b (dst must not alias a or b)
+void mul3(float64 dst&[], float64 a[], float64 b[]) {
+	for (int r = 0; r < 3; r += 1) {
+		for (int c = 0; c < 3; c += 1) {
+			float64 sum = 0;
+			for (int k = 0; k < 3; k += 1) {
+				sum += a[3 * r + k] * b[3 * k + c];
+			}
+			dst[3 * r + c] = sum;
+		}
+	}
+}
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	if (action < Window.EVENT_PROCESSED) {
+		// action was not processed by the widget, do not redraw
+		return Window.timeoutMax;
+	}
+
+	debug.startTimer();
+	Image src = showGrid.selected != 0 ? grid : back;
+	if (FxWidget.showOriginal(debug.getWidget())) {
+		offs.copy(0, 0, src, null);
+		return Window.timeoutMax;
+	}
+
+	int width = offs.width();
+	int height = offs.height();
+	float64 cx = width * .5;
+	float64 cy = height * .5;
+
+	// pinhole camera: focal length in pixels from the field of view
+	float64 focal = .5 * width / Float64.tan(Float64.radians(fov.value) / 2);
+
+	// inverse rotation: R^-1 = Rx(-pitch) * Ry(-yaw) * Rz(-roll)
+	float64 ax = -Float64.radians(tiltX.value);
+	float64 ay = -Float64.radians(tiltY.value);
+	float64 az = -Float64.radians(rotate.value);
+	float64 sinX = Float64.sin(ax);
+	float64 cosX = Float64.cos(ax);
+	float64 sinY = Float64.sin(ay);
+	float64 cosY = Float64.cos(ay);
+	float64 sinZ = Float64.sin(az);
+	float64 cosZ = Float64.cos(az);
+
+	float64 rx[9] = {1, 0, 0, 0, cosX, -sinX, 0, sinX, cosX};
+	float64 ry[9] = {cosY, 0, sinY, 0, 1, 0, -sinY, 0, cosY};
+	float64 rz[9] = {cosZ, -sinZ, 0, sinZ, cosZ, 0, 0, 0, 1};
+
+	float64 tmp[9] = {};
+	float64 rot[9] = {};
+	mul3(tmp, rx, ry);
+	mul3(rot, tmp, rz);
+
+	// scale rows 0 and 1 by 1 / zoom (inverse mapping magnifies by sampling less)
+	float64 invZoom = 1 / zoom.value;
+	for (int i = 0; i < 6; i += 1) {
+		rot[i] *= invZoom;
+	}
+
+	// homography H = K * rot * K^-1, with K = [focal 0 cx; 0 focal cy; 0 0 1]
+	float64 k[9] = {focal, 0, cx, 0, focal, cy, 0, 0, 1};
+	float64 ki[9] = {1 / focal, 0, -cx / focal, 0, 1 / focal, -cy / focal, 0, 0, 1};
+	float64 h[9] = {};
+	mul3(tmp, k, rot);
+	mul3(h, tmp, ki);
+
+	if (recenter.selected != 0) {
+		// keep the image center fixed: translate in source space
+		// so the destination center samples the source center
+		float64 w = h[6] * cx + h[7] * cy + h[8];
+		float64 sx = (h[0] * cx + h[1] * cy + h[2]) / w;
+		float64 sy = (h[3] * cx + h[4] * cy + h[5]) / w;
+		float64 dx = cx - sx;
+		float64 dy = cy - sy;
+		for (int i = 0; i < 3; i += 1) {
+			h[i + 0] += dx * h[i + 6];
+			h[i + 3] += dy * h[i + 6];
+		}
+	}
+
+	// homogeneous transformation: x and y rows map to source coordinates,
+	// the w row (perspective) triggers the divide in Image.transform
+	mat4f mat = {
+		x: {x: h[0], y: h[1], z: 0, w: h[2]};
+		y: {x: h[3], y: h[4], z: 0, w: h[5]};
+		z: {x: 0, y: 0, z: 1, w: 0};
+		w: {x: h[6], y: h[7], z: 0, w: h[8]};
+	};
+	offs.transform(null, src, mat, quality.selected);
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent, FxWidget(
+	quality, showGrid, recenter,
+	tiltX, tiltY, rotate,
+	fov, zoom,
+	null, debug
+));
+grid.destroy();
+offs.destroy();
+back.destroy();
+
+/* References:
+https://en.wikipedia.org/wiki/Homography_(computer_vision)
+https://en.wikipedia.org/wiki/Keystone_effect
+https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html
+Generated by Claude code / Fable 5
+*/
