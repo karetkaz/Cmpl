@@ -1,6 +1,6 @@
 /// Fill a rectangle on the `image` specified by the coordinates with the given `color`
 void fillRect(Image image, int32 x0, int32 y0, int32 x1, int32 y1, int32 incl, uint32 color) {
-	static if (preferNativeCalls && struct(Image.fillRect) != null) {
+	static if (System.Platform.preferNativeCalls && struct(Image.fillRect) != null) {
 		return Image.fillRect(image, x0, y0, x1, y1, incl, color);
 	}
 

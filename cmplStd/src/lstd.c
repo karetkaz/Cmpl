@@ -389,6 +389,9 @@ static int installPlatform(rtContext rt, ccContext cc) {
 		//err = err || !rt->api.ccDefInt(cc, "Android", 0);
 		//err = err || !rt->api.ccDefInt(cc, "iOS", 0);
 		//err = err || !rt->api.ccDefInt(cc, "Dos", 0);
+
+		err = err || !rt->api.ccDefInt(cc, "runsInTestMode", cc->runsInTestMode);
+		err = err || !rt->api.ccDefInt(cc, "preferNativeCalls", cc->preferNativeCalls);
 		rt->api.ccEnd(cc, nsp);
 	}
 	return err;

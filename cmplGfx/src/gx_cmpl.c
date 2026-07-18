@@ -930,7 +930,7 @@ typedef struct mainLoopArgs {
 		int32_t x;
 		int32_t button;
 		int32_t action;
-		vmOffs closure;
+		vmOffs data;
 	} event;
 
 } *mainLoopArgs;
@@ -989,19 +989,19 @@ static void mainLoopCallback(mainLoopArgs args) {
 	flushWindow(args->window);
 }
 
-static const char *const proto_window_show = "void show(Image surf, pointer closure, int32 onEvent(pointer closure, int32 action, int32 button, int32 x, int32 y))";
+static const char *const proto_window_show = "void show(Image surf, pointer data, int32 onEvent(pointer data, int32 action, int32 button, int32 x, int32 y))";
 static vmError window_show(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	GxImage offScreen = rt->api.nextArg(&al)->ref;
-	size_t cbClosure = argRef(ctx, rt->api.nextArg(&al)->offset);
+	size_t cbData = argRef(ctx, rt->api.nextArg(&al)->offset);
 	size_t cbOffs = argRef(ctx, rt->api.nextArg(&al)->offset);
 
 	struct mainLoopArgs args = {0};
 	args.nfc = ctx;
 	args.error = noError;
 	args.callback = rt->api.lookup(ctx->rt, cbOffs, KIND_fun);
-	args.event.closure = (vmOffs) cbClosure;
+	args.event.data = (vmOffs) cbData;
 
 	int timeout = 0;
 	args.window = createWindow(offScreen, rt->main->unit);

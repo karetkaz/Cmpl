@@ -64,7 +64,7 @@ static struct Float32 {
 
 	/// Returns the natural logarithm of the argument `x`.
 	static float32 ln(float32 x) {
-		static if (preferNativeCalls && struct(float32.ln) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.ln) != null) {
 			// use the native method if available
 			return float32.ln(x);
 		}
@@ -74,7 +74,7 @@ static struct Float32 {
 
 	/// Returns the base-e exponential: $ e^x $.
 	static float32 exp(float32 x) {
-		static if (preferNativeCalls && struct(float32.exp) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.exp) != null) {
 			// use the native method if available
 			return float32.exp(x);
 		}
@@ -84,7 +84,7 @@ static struct Float32 {
 
 	/// Returns the base 2 logarithm of the argument `x`.
 	static float32 log2(float32 x) {
-		static if (preferNativeCalls && struct(float32.log2) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.log2) != null) {
 			// use the native method if available
 			return float32.log2(x);
 		}
@@ -94,7 +94,7 @@ static struct Float32 {
 
 	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
 	static float32 sqrt(float32 x) {
-		static if (preferNativeCalls && struct(float32.sqrt) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.sqrt) != null) {
 			// use the native method if available
 			return float32.sqrt(x);
 		}
@@ -104,7 +104,7 @@ static struct Float32 {
 
 	/// Returns `x` raised to the power of `y`: $ x^y $.
 	static float32 pow(float32 x, float32 y) {
-		static if (preferNativeCalls && struct(float32.pow) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.pow) != null) {
 			// use the native method if available
 			return float32.pow(x, y);
 		}
@@ -121,7 +121,7 @@ static struct Float32 {
 
 	/// Returns the sine of the radian argument `x`.
 	static float32 sin(float32 x) {
-		static if (preferNativeCalls && struct(float32.sin) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.sin) != null) {
 			// use the native method if available
 			return float32.sin(x);
 		}
@@ -131,7 +131,7 @@ static struct Float32 {
 
 	/// Returns the sine of the radian argument `x`.
 	static float32 cos(float32 x) {
-		static if (preferNativeCalls && struct(float32.cos) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.cos) != null) {
 			// use the native method if available
 			return float32.cos(x);
 		}
@@ -141,7 +141,7 @@ static struct Float32 {
 
 	/// Returns the tangent of the radian argument `x`.
 	static float32 tan(float32 x) {
-		static if (preferNativeCalls && struct(float32.tan) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.tan) != null) {
 			// use the native method if available
 			return float32.tan(x);
 		}
@@ -151,7 +151,7 @@ static struct Float32 {
 
 	/// Returns the inverse tangent of y/x.
 	static float32 atan2(float32 y, float32 x) {
-		static if (preferNativeCalls && struct(float32.atan2) != null) {
+		static if (System.Platform.preferNativeCalls && struct(float32.atan2) != null) {
 			// use the native method if available
 			return float32.atan2(y, x);
 		}

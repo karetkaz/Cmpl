@@ -108,7 +108,7 @@ struct Uint8: 1 {
 
 	/// Returns the minimum number of bits required to represent the value of `x`
 	static int32 length(Uint8 x) {
-		static if (preferNativeCalls && struct(uint32.len) != null) {
+		static if (System.Platform.preferNativeCalls && struct(uint32.len) != null) {
 			// use the native method if available
 			return uint32.len(u32(x));
 		}
@@ -152,7 +152,7 @@ struct Uint8: 1 {
 
 	/// Returns the number of set bits ("population count") in x
 	static int32 countOnes(Uint8 y) {
-		static if (preferNativeCalls && struct(uint32.pop) != null) {
+		static if (System.Platform.preferNativeCalls && struct(uint32.pop) != null) {
 			// use the native method if available
 			return uint32.pop(u32(y));
 		}

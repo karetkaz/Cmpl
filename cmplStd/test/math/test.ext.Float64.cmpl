@@ -8,7 +8,8 @@ static struct Math {
 //		inline "cmplStd/tmp/wip.math/math.watcom.cmpl"; // fast
 		inline "cmplStd/tmp/wip.math/math.plan9.cmpl";  // fast
 	} else {
-		inline preferNativeCalls = false;
+		// test the implemented math power and trigonometry functions
+		struct System { struct Platform { inline preferNativeCalls = false; } }
 		inline "cmplStd/lib/math/number/Float64.cmpl";
 		float64 ln(float64 x) {return Float64.ln(x);}
 		float64 exp(float64 x) {return Float64.exp(x);}

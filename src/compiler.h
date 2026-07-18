@@ -59,6 +59,8 @@ struct ccContextRec {
 	struct arrBuffer jumps;         // list of break and continue statements to fix
 
 	int32_t nest;                   // nest level: modified by (enter/leave)
+	unsigned runsInTestMode: 1;
+	unsigned preferNativeCalls: 1;
 	unsigned inStaticIfFalse: 1;    // inside a static if false
 	unsigned genDocumentation: 1;    // generate documentation
 	unsigned genStaticGlobals: 1;   // generate global variables as static variables

@@ -236,7 +236,6 @@ raise.debug # @builtin
 raise.verbose # @builtin
 raise.noTrace # @builtin
 raise.defTrace # @builtin
-preferNativeCalls # @builtin
 System # @builtin
 System.exit(code: int32): void # @builtin
 System.srand(seed: int32): void # @builtin
@@ -253,6 +252,8 @@ System.Platform.Windows # @builtin
 System.Platform.MacOS # @builtin
 System.Platform.Linux # @builtin
 System.Platform.Unix # @builtin
+System.Platform.runsInTestMode # @builtin
+System.Platform.preferNativeCalls # @builtin
 true
 false
 int32(value: int32): int32 # Explicit cast of base types
@@ -1613,7 +1614,7 @@ Window.KEY_CODE_R_GUI # @builtin
 Window.KEY_MASK_SHIFT # @builtin
 Window.KEY_MASK_CTRL # @builtin
 Window.KEY_MASK_ALT # @builtin
-Window.show(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void # @builtin
+Window.show(surf: Image, data: pointer, onEvent(data: pointer, action: int32, button: int32, x: int32, y: int32): int32): void # @builtin
 Window.setTitle(title: char[]): void # @builtin
 Window.quit(): int32 # @builtin
 Window.font(height: int32): Image # @builtin

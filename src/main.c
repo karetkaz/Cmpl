@@ -183,6 +183,7 @@ struct userContextRec {
 	unsigned errPrivateAccess:1;
 	unsigned errUninitialized:1;
 	unsigned checkArrayBounds:1;
+	unsigned runsInTestMode:1;
 	unsigned preferNativeCalls:1;
 
 	// debugger
@@ -2332,6 +2333,10 @@ int main(int argc, char *argv[]) {
 					extra.preferNativeCalls = on;
 					arg2 += 7;
 				}
+				else if (strBegins(arg2 + 1, "test")) {
+					extra.runsInTestMode = on;
+					arg2 += 5;
+				}
 				else {
 					break;
 				}
@@ -2415,6 +2420,9 @@ int main(int argc, char *argv[]) {
 		logFILE(rt, NULL);
 		return -6;
 	}
+	cc->runsInTestMode = extra.runsInTestMode != 0;
+	cc->preferNativeCalls = extra.preferNativeCalls != 0;
+
 	cc->genDocumentation = extra.dmpDoc;
 	cc->genStaticGlobals = extra.genStaticGlobals != 0;
 	cc->errPrivateAccess = extra.errPrivateAccess != 0;
@@ -2424,10 +2432,6 @@ int main(int argc, char *argv[]) {
 	if (install & installLibs) {
 		// install standard library.
 		if (extra.steps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.steps, stdlib);}
-		if (!ccDefInt(cc, "preferNativeCalls", extra.preferNativeCalls)) {
-			error(rt, NULL, 0, "error registering `preferNativeCalls`");
-			return -1;
-		}
 		if (cmplInit(rt, cc) != 0) {
 			error(rt, NULL, 0, "error registering standard library");
 			return -1;

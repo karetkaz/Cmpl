@@ -5,6 +5,24 @@ static struct Window {
 	/// calculate the timeout based on the given fps
 	inline timeoutFps(float64 fps) = int64(1000 / fps);
 
+	static if (System.Platform.runsInTestMode) {
+		void showAndQuit(Image surf, pointer data, int32 onEvent(pointer data, int32 action, int32 button, int32 x, int32 y)) {
+			struct Data {
+				pointer data;
+				int32 onEvent(pointer data, int32 action, int32 button, int32 x, int32 y);
+				static int32 delegate(Data data!, int32 action, int32 button, int32 ex, int32 ey) {
+					Window.quit();
+					return data.onEvent(data.data, action, button, ex, ey);
+				}
+			}
+			Data d = {data: data, onEvent: onEvent};
+			show(surf, d, pointer(Data.delegate));
+		}
+
+		/// replace the builtin method with the one that shows a single frame then quits.
+		inline show(Image surf, pointer data, int32 onEvent(pointer data, int32 action, int32 button, int32 x, int32 y)) = showAndQuit(surf, data, onEvent);
+	}
+
 /// Show the given `image` in a window and delegate the events to the `onEvent` callback
 void show(Image image, int onEvent(int action, int button, int ex, int ey)) {
 	if (onEvent == null) {
