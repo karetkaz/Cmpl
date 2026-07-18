@@ -14,7 +14,7 @@ struct Duration {
 
 	/// Return duration from the passed milliseconds
 	static Duration millis(int64 duration) {
-		return { value: convert(duration, Timeunit.Millis, Duration.precision); };
+		return { value: convert(duration, Timeunit.Millis, Duration.precision), };
 	}
 
 	/// Return milliseconds from the passed duration
@@ -24,7 +24,7 @@ struct Duration {
 
 	/// Return duration from the passed seconds
 	static Duration seconds(int64 duration) {
-		return { value: convert(duration, Timeunit.Seconds, Duration.precision); };
+		return { value: convert(duration, Timeunit.Seconds, Duration.precision), };
 	}
 
 	/// Return seconds from the passed duration
@@ -34,7 +34,7 @@ struct Duration {
 
 	/// Return duration from the passed minutes
 	static Duration minutes(int64 duration) {
-		return { value: convert(duration, Timeunit.Minutes, Duration.precision); };
+		return { value: convert(duration, Timeunit.Minutes, Duration.precision), };
 	}
 
 	/// Return minutes from the passed duration
@@ -44,7 +44,7 @@ struct Duration {
 
 	/// Return duration from the passed hours
 	static Duration hours(int64 duration) {
-		return { value: convert(duration, Timeunit.Hours, Duration.precision); };
+		return { value: convert(duration, Timeunit.Hours, Duration.precision), };
 	}
 
 	/// Return hours from the passed duration
@@ -54,7 +54,7 @@ struct Duration {
 
 	/// Return duration from the passed days
 	static Duration days(int64 duration) {
-		return { value: convert(duration, Timeunit.Days, Duration.precision); };
+		return { value: convert(duration, Timeunit.Days, Duration.precision), };
 	}
 
 	/// Return days from the passed duration

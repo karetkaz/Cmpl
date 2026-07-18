@@ -165,7 +165,7 @@ struct Slider: Button {
 	}
 
 	bool onMeasure^(Slider this, Rect rect&) {
-		char value[64] = {...};
+		char value[64] = {...?};
 		Style style! = this.style;
 		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
 			style.format.format(&value, 0, int64(this.value));
@@ -203,7 +203,7 @@ struct Slider: Button {
 	}
 
 	void onDraw^(Slider this, Image offs, Rect rect) {
-		char value[64] = {...};
+		char value[64] = {...?};
 		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
 			this.style.format.format(&value, 0, int64(this.value));
 		} else {

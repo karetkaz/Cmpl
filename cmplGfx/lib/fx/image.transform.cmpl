@@ -8,10 +8,10 @@ void transform(Image image, Rect rect?, Image src, mat4f mat!, int32 interpolate
 	assert(src.depth() == 32);
 
 	Rect dRec = {
-		x0: rect != null ? rect.x0 : 0;
-		y0: rect != null ? rect.y0 : 0;
-		x1: rect != null ? rect.x1 : image.width();
-		y1: rect != null ? rect.y1 : image.height();
+		x0: rect != null ? rect.x0 : 0,
+		y0: rect != null ? rect.y0 : 0,
+		x1: rect != null ? rect.x1 : image.width(),
+		y1: rect != null ? rect.y1 : image.height(),
 	};
 	if (!image.clip(&dRec)) {
 		// nothing to set
@@ -67,10 +67,10 @@ void resize(Image image, Rect rect?, Image src, Rect roi?, int32 interpolate) {
 	int32 dstWidth = rect != null ? rect.x1 - rect.x0 : image.width();
 	int32 dstHeight = rect != null ? rect.y1 - rect.y0 : image.height();
 	mat4f scale = {
-		x: vec4f(float32(srcWidth) / dstWidth, 0, 0, srcX0);
-		y: vec4f(0, float32(srcHeight) / dstHeight, 0, srcY0);
-		z: vec4f(0, 0, 1, 0);
-		w: vec4f(0, 0, 0, 1);
+		x: vec4f(float32(srcWidth) / dstWidth, 0, 0, srcX0),
+		y: vec4f(0, float32(srcHeight) / dstHeight, 0, srcY0),
+		z: vec4f(0, 0, 1, 0),
+		w: vec4f(0, 0, 0, 1),
 	};
 	scale = scale.mul(translation(vec4f(dstX0, dstY0, 0, 0), -1));
 	return transform(image, rect, src, scale, interpolate);
@@ -80,15 +80,15 @@ void resize(Image image, Rect rect?, Image src, Rect roi?, int32 interpolate) {
 Image Image(Image image, int width, int height, int align, float64 maxScale) {
 	// todo: merge with align from micro.ui.cmpl
 	enum: int {
-		center: 0;
-		left: 1;
-		right: 2;
-		top: 4;
-		bottom: 8;
-		fitVertical: left + right;
-		fitHorizontal: top + bottom;
-		fill: 0x10;
-		highRes: 0x20;
+		center: 0,
+		left: 1,
+		right: 2,
+		top: 4,
+		bottom: 8,
+		fitVertical: left + right,
+		fitHorizontal: top + bottom,
+		fill: 0x10,
+		highRes: 0x20,
 	}
 
 	int alignVertical = align & fitVertical;
@@ -134,10 +134,10 @@ Image Image(Image image, int width, int height, int align, float64 maxScale) {
 	}
 
 	mat4f mat = {
-		x: {x: 1 / scale, y: 0, z: 0, w: -tx / scale};
-		y: {x: 0, y: 1 / scale, z: 0, w: -ty / scale};
-		z: {x: 0, y: 0, z: 1 / scale, w: 0};
-		w: {x: 0, y: 0, z: 0, w: 1};
+		x: {x: 1 / scale, y: 0, z: 0, w: -tx / scale},
+		y: {x: 0, y: 1 / scale, z: 0, w: -ty / scale},
+		z: {x: 0, y: 0, z: 1 / scale, w: 0},
+		w: {x: 0, y: 0, z: 0, w: 1},
 	};
 
 	Image result = Image(width, height, image.depth());

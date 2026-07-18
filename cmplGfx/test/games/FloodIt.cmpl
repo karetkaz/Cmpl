@@ -4,13 +4,13 @@
 inline displaySize = 400;
 inline gridSize = 10;
 static int colors[] = {
-	0x0000ff;
-	0x00ff00;
-	0xff0000;
+	0x0000ff,
+	0x00ff00,
+	0xff0000,
 	// 0x00ffff;
 	// 0xff00ff;
-	0xffff00;
-	0xffffff;
+	0xffff00,
+	0xffffff,
 
 	// 0x000080;
 	// 0x008000;
@@ -21,7 +21,7 @@ static int colors[] = {
 	// 0x808080;
 };
 
-static int grid[gridSize * gridSize] = {...};
+static int grid[gridSize * gridSize] = {...?};
 bool flood(int i, int j, int o, int c) {
 	if (i < 0 || i >= gridSize) {
 		return false;

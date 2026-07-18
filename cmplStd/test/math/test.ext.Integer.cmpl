@@ -460,10 +460,10 @@ static struct Bits {
 				}
 
 				return {
-					bitSize: bitSize;
-					signedMin: min;
-					signedMax: (min - 1) & mask;
-					unsignedMax: mask;
+					bitSize: bitSize,
+					signedMin: min,
+					signedMax: (min - 1) & mask,
+					unsignedMax: mask,
 				};
 			}
 		}

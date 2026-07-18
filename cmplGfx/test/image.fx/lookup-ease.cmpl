@@ -39,28 +39,28 @@ static void brightnessContrast(argb lut&[256], int brightness, int contrast) {
 }
 
 static Slider brightness = {
-	text: "brightness";
-	minimum: -256;
-	maximum: 256;
-	stepSize: 1;
+	text: "brightness",
+	minimum: -256,
+	maximum: 256,
+	stepSize: 1,
 };
 static Slider contrast = {
-	text: "contrast";
-	minimum: -256;
-	maximum: 256;
-	stepSize: 1;
+	text: "contrast",
+	minimum: -256,
+	maximum: 256,
+	stepSize: 1,
 };
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 static Histogram curves = {
-	lines: true;
-	enabled: false;
+	lines: true,
+	enabled: false,
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

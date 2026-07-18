@@ -49,7 +49,7 @@ int32 onEvent(int32 action, int32 button, int32 ex, int32 ey) {
 			float64 angle = Float64.radians(i % 12 * (360 / 12) - 90);
 			int32 x2 = x1 + int32(Float64.cos(angle) * size);
 			int32 y2 = y1 + int32(Float64.sin(angle) * size);
-			char text[8] = {...};
+			char text[8] = {...?};
 			i.format(&text, "%d");
 			offs.drawText(x2 - 4, y2 - 8, font, text, hourText);
 		}

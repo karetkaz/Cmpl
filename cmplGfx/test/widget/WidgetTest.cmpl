@@ -67,10 +67,10 @@ static bool updateSlider(Slider this, float64 value);
 static bool updateTheme(Switch this, int32 value);
 
 static ColorPicker colorPicker = {
-	width: 360;
-	height: 256/2;
-	focusable: false;
-	onUpdate: updateColor;
+	width: 360,
+	height: 256/2,
+	focusable: false,
+	onUpdate: updateColor,
 };
 
 char themes[][] = {
@@ -78,44 +78,44 @@ char themes[][] = {
 	"Dark"
 };
 static Switch theme = {
-	text: "Dark theme";
-	states: null;
-	selected: 1;
-	onUpdate: updateTheme;
+	text: "Dark theme",
+	states: null,
+	selected: 1,
+	onUpdate: updateTheme,
 };
 static Slider slider = {
-	text: "Color saturation";
-	value: 0.75;
-	onUpdate: updateSlider;
+	text: "Color saturation",
+	value: 0.75,
+	onUpdate: updateSlider,
 };
 
 Slider stepSlider = {
-	text: "stepped slider";
-	value: 0.72767676;
-	stepSize: 1. / 10;
+	text: "stepped slider",
+	value: 0.72767676,
+	stepSize: 1. / 10,
 };
 
 static char switchStates[][] = {
 	"Option 1", "Option 2", "Option 3", "Option 4", "Option 5",
 };
 Switch switch = {
-	text: "Multi switch";
-	states: switchStates;
+	text: "Multi switch",
+	states: switchStates,
 };
 
 Button printStyle = {
-	text: "Dump style";
-	onClick: onPrintStyle;
+	text: "Dump style",
+	onClick: onPrintStyle,
 };
 
 char nameBuffer[100] = {0};
 Input input = {
-	text: nameBuffer;
-	placeholder: "text input";
+	text: nameBuffer,
+	placeholder: "text input",
 };
 
 DebugView debug = {
-	focusable: false;
+	focusable: false,
 };
 
 static Style style = Widget.defaultStyle;

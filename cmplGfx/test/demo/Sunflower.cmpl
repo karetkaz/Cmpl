@@ -5,24 +5,24 @@
 static Image offs = Image(1440, 900, 32);
 
 static Slider sldSeeds = {
-	text: "seeds";
-	minimum: 10;
-	maximum: 50000;
-	value: 10000;
-	stepSize: 1;
+	text: "seeds",
+	minimum: 10,
+	maximum: 50000,
+	value: 10000,
+	stepSize: 1,
 };
 static Slider sldSize = {
-	text: "size";
-	minimum: 2;
-	maximum: 32;
-	value: 6;
+	text: "size",
+	minimum: 2,
+	maximum: 32,
+	value: 6,
 };
 
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
-	width: 200;
+	focusable: false,
+	measures: -1,
+	draws: -1,
+	width: 200,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

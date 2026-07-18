@@ -21,12 +21,12 @@ void blur(Image image, int radius, float64 sigma) {
 		return SQRT_2_PI_INV * Float64.exp(-0.5 * t * t) / sigma;
 	}
 
-	int32 kernel[1024] = {...};
+	int32 kernel[1024] = {...?};
 	int size = radius * 2 + 1;
 	assert(size < kernel.length);
 
 	float64 kernelSum = 0;
-	float64 kernelFlt[kernel.length] = {...};
+	float64 kernelFlt[kernel.length] = {...?};
 	for (int i = 0; i < size; i += 1) {
 		kernelFlt[i] = gauss(radius - i, sigma);
 		kernelSum += kernelFlt[i];

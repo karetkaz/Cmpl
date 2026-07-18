@@ -4,44 +4,44 @@ static Image back = Image("../asset/image/forest.jpg", 32);
 static Image offs = Image(back);
 
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 
 static Button btnLum = {
-	text: "luminosity";
+	text: "luminosity",
 };
 static Button btnHue = {
-	text: "colors";
+	text: "colors",
 };
 static Button btnRgb = {
-	text: "rgb";
+	text: "rgb",
 };
 static Switch chkRed = {
-	text: "red";
-	selected: 1;
-	states: null;
-	focusable: false;
+	text: "red",
+	selected: 1,
+	states: null,
+	focusable: false,
 };
 static Switch chkGreen = {
-	text: "green";
-	selected: 1;
-	states: null;
-	focusable: false;
+	text: "green",
+	selected: 1,
+	states: null,
+	focusable: false,
 };
 static Switch chkBlue = {
-	text: "blue";
-	selected: 1;
-	states: null;
-	focusable: false;
+	text: "blue",
+	selected: 1,
+	states: null,
+	focusable: false,
 };
 static Panel panRGB = {
-	visible: false;
+	visible: false,
 };
 
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
@@ -55,7 +55,7 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	}
 
 	debug.startTimer();
-	uint32 hist[histogram.data.length] = {...};
+	uint32 hist[histogram.data.length] = {...?};
 
 	offs.copy(0, 0, back, null);
 	if (btnHue.isFocused()) {

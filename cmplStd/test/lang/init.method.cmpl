@@ -61,7 +61,7 @@ void globalFunction(RecordMethodTest this, int x) {
 /** create an instance of the type */
 RecordMethodTest recordMethodTest = {
 	// abstract method must be overridden
-	abstractMethod: globalFunction;                             // ok: global function
+	abstractMethod: globalFunction,                             // ok: global function
 //	abstractMethod: RecordMethodTest.staticMethod;              // ok: static method
 //	abstractMethod: RecordMethodTest.virtualMethod;             // ok: using the generated static method
 //	abstractMethod: RecordMethodTest.delegateMethod;            // Error: delegate method is an instance member

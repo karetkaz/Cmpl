@@ -277,6 +277,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define ERR_INVALID_BASE_OR_PACK "invalid struct base type or allignment, got `%t`"
 #define ERR_INVALID_BASE_TYPE "invalid struct base type, got `%t`"
 #define ERR_INVALID_INITIALIZER "invalid initialization: `%t`"
+#define ERR_UNDEFINED_INITIALIZER "undefined initializer requires `...?`: use `{...?}`"
 #define ERR_INVALID_VALUE_ASSIGN "invalid assignment: `%T` := `%t`"
 #define ERR_INVALID_CONST_ASSIGN "constants can not be assigned `%t`"
 #define ERR_INVALID_CONST_EXPR "constant expression expected, got: `%t`"

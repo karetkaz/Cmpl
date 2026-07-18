@@ -20,7 +20,7 @@ int a[2] = {42, 97};
   ```
 - [x] undefined initialization can be used when the array will be populated later:
   ```cmpl
-  int x[10] = {...};
+  int x[10] = {...?};
   ```
 - [ ] zero initialization can be used to initialize all the elements with zero:
   ```cmpl

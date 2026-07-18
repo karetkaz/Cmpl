@@ -1,33 +1,33 @@
 // Simple Calculator with no precedence to demonstrate `NumberFormat` and `Layout.Custom(4, ...)`
 
 static Style display = {
-	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 48);
-	align: Style.right;
+	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 48),
+	align: Style.right,
 	format: {
-		digitSymbols: NumberFormat.digits[...10];
-		positiveSymbol: '';
-		negativeSymbol: '-';
-		infinitySymbol: "Infinity";		// 1 / 0.
-		undefinedSymbol: "Error";   	// 0 / 0.
+		digitSymbols: NumberFormat.digits[...10],
+		positiveSymbol: '',
+		negativeSymbol: '-',
+		infinitySymbol: "Infinity",		// 1 / 0.
+		undefinedSymbol: "Error",   	// 0 / 0.
 
-		groupingSymbol: ' ';
-		digitGrouping: 3;
-		firstGrouping: 0;
-		fractGrouping: 3;
+		groupingSymbol: ' ',
+		digitGrouping: 3,
+		firstGrouping: 0,
+		fractGrouping: 3,
 
-		paddingSymbol: NumberFormat.digits[0];
-		width: 1;
+		paddingSymbol: NumberFormat.digits[0],
+		width: 1,
 
-		fractionSymbol: '.';			// use '.' as decimal point
-		trailingSeparator: false;  		// 6 != 6.
+		fractionSymbol: '.',			// use '.' as decimal point
+		trailingSeparator: false,  		// 6 != 6.
 
-		precision: 10;					// up to 10 digits after the decimal point
-		trailingZeros: false;       	// 6 != 6.00
-	};
+		precision: 10,					// up to 10 digits after the decimal point
+		trailingZeros: false,       	// 6 != 6.00
+	},
 };
 static Style global = {
-	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 24);
-	align: Style.center;
+	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 24),
+	align: Style.center,
 };
 
 static char result[16] = {'0', 0};
@@ -119,9 +119,9 @@ void onFn(Button this, int32 clicks) {
 }
 
 Button btnResult = {
-	text: result;
-	enabled: false;
-	style: display;
+	text: result,
+	enabled: false,
+	style: display,
 };
 
 Button buttons[] = {

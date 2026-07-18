@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 54
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 float32 testFlt(float32 x, float32 a0, float32 a1, float32 a2, float32 a3) {
 	inline poly(float32 x, float32 a0, float32 a1) = a0 + a1 * x;

@@ -3,9 +3,9 @@ struct Uint16: 2 {
 	uint16 value;
 
 	enum {
-		bits: 16;
-		min: 0x0000;
-		max: 0xffff;
+		bits: 16,
+		min: 0x0000,
+		max: 0xffff,
 	}
 
 	inline u32(Uint16 x) = uint32(x.value);
@@ -206,9 +206,9 @@ struct Int16: 2 {
 	int16 value;
 
 	enum {
-		bits: Uint16.bits;
-		min: -32768;
-		max: 32767;
+		bits: Uint16.bits,
+		min: -32768,
+		max: 32767,
 	}
 
 	inline i32(Int16 x) = int32(x.value);

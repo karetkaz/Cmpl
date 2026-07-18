@@ -1,6 +1,6 @@
 // DatePicker
 struct IntButton: View {
-	char text[16] = "";
+	char text[16];
 	int32 value = 0;
 
 	static bool update(IntButton this, int32 value) {
@@ -186,127 +186,127 @@ struct DatePicker: Layout {
 		}
 
 		IntButton btnYear = {
-			onClick: null;
-			enabled: false;
+			onClick: null,
+			enabled: false,
 		};
 		IntButton btnMonth = {
-			onClick: null;
-			enabled: false;
+			onClick: null,
+			enabled: false,
 		};
 		IntButton btnDay = {
-			onClick: null;
-			enabled: false;
+			onClick: null,
+			enabled: false,
 		};
 		View btnDays[] = {
-			Button {text: "Week", enabled: false};
-			Button {text: "Mon", enabled: false};
-			Button {text: "Tue", enabled: false};
-			Button {text: "Wed", enabled: false};
-			Button {text: "Thu", enabled: false};
-			Button {text: "Fri", enabled: false};
-			Button {text: "Sat", enabled: false};
-			Button {text: "Sun", enabled: false};
+			Button {text: "Week", enabled: false},
+			Button {text: "Mon", enabled: false},
+			Button {text: "Tue", enabled: false},
+			Button {text: "Wed", enabled: false},
+			Button {text: "Thu", enabled: false},
+			Button {text: "Fri", enabled: false},
+			Button {text: "Sat", enabled: false},
+			Button {text: "Sun", enabled: false},
 
-			WeekButton {enabled: false};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
+			WeekButton {enabled: false},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
 
-			WeekButton {enabled: false};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
+			WeekButton {enabled: false},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
 
-			WeekButton {enabled: false};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
+			WeekButton {enabled: false},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
 
-			WeekButton {enabled: false};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
+			WeekButton {enabled: false},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
 
-			WeekButton {enabled: false};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
+			WeekButton {enabled: false},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
 
-			WeekButton {enabled: false};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
-			DayButton {data: this, onClick: setDate};
+			WeekButton {enabled: false},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
+			DayButton {data: this, onClick: setDate},
 		};
 
 		if (this.header) {
 			Button btnYearDec = {
-				onClick: decYear;
-				focusable: false;
-				data: this;
-				text: "<";
+				onClick: decYear,
+				focusable: false,
+				data: this,
+				text: "<",
 			};
 			Button btnYearInc = {
-				onClick: incYear;
-				focusable: false;
-				data: this;
-				text: ">";
+				onClick: incYear,
+				focusable: false,
+				data: this,
+				text: ">",
 			};
 
 			Button btnMonthDec = {
-				onClick: decMonth;
-				focusable: false;
-				data: this;
-				text: "<";
+				onClick: decMonth,
+				focusable: false,
+				data: this,
+				text: "<",
 			};
 			Button btnMonthInc = {
-				onClick: incMonth;
-				focusable: false;
-				data: this;
-				text: ">";
+				onClick: incMonth,
+				focusable: false,
+				data: this,
+				text: ">",
 			};
 
 			Button btnDayDec = {
-				onClick: decDay;
-				focusable: false;
-				data: this;
-				text: "<";
+				onClick: decDay,
+				focusable: false,
+				data: this,
+				text: "<",
 			};
 			Button btnDayInc = {
-				onClick: incDay;
-				focusable: false;
-				data: this;
-				text: ">";
+				onClick: incDay,
+				focusable: false,
+				data: this,
+				text: ">",
 			};
 
 			Button btnToday = {
-				onClick: setToday;
-				focusable: false;
-				data: this;
-				text: "Today";
+				onClick: setToday,
+				focusable: false,
+				data: this,
+				text: "Today",
 			};
 
 			this.addItems(Style.fill, Layout.Row(
@@ -331,11 +331,11 @@ struct DatePicker: Layout {
 }
 
 DebugView debugView = {
-	focusable: false;
+	focusable: false,
 };
 
 static Style centeredStyle! = {
-	align: Style.center;
+	align: Style.center,
 };
 
 DatePicker datePicker = {};

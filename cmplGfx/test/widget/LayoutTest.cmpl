@@ -10,131 +10,131 @@ inline minPadding = 0;
 inline maxPadding = 1000;
 
 Slider orientation = {
-	onUpdate: syncOrientation;
-	text: "orientation";
-	minimum: -4;
-	maximum: 10;
-	value: -1;
-	stepSize: 1;
+	onUpdate: syncOrientation,
+	text: "orientation",
+	minimum: -4,
+	maximum: 10,
+	value: -1,
+	stepSize: 1,
 };
 
 static Slider paddingTop = {
-	onUpdate: syncPadding;
-	text: "LayoutPadding.top";
-	minimum: minPadding;
-	maximum: maxPadding;
-	value: 20;
-	stepSize: 1;
+	onUpdate: syncPadding,
+	text: "LayoutPadding.top",
+	minimum: minPadding,
+	maximum: maxPadding,
+	value: 20,
+	stepSize: 1,
 };
 static Slider paddingLeft = {
-	onUpdate: syncPadding;
-	text: "LayoutPadding.left";
-	minimum: minPadding;
-	maximum: maxPadding;
-	value: 20;
-	stepSize: 1;
+	onUpdate: syncPadding,
+	text: "LayoutPadding.left",
+	minimum: minPadding,
+	maximum: maxPadding,
+	value: 20,
+	stepSize: 1,
 };
 static Slider paddingRight = {
-	onUpdate: syncPadding;
-	text: "LayoutPadding.right";
-	minimum: minPadding;
-	maximum: maxPadding;
-	value: 256;
-	stepSize: 1;
+	onUpdate: syncPadding,
+	text: "LayoutPadding.right",
+	minimum: minPadding,
+	maximum: maxPadding,
+	value: 256,
+	stepSize: 1,
 };
 static Slider paddingBottom = {
-	onUpdate: syncPadding;
-	text: "LayoutPadding.bottom";
-	minimum: minPadding;
-	maximum: maxPadding;
-	value: 20;
-	stepSize: 1;
+	onUpdate: syncPadding,
+	text: "LayoutPadding.bottom",
+	minimum: minPadding,
+	maximum: maxPadding,
+	value: 20,
+	stepSize: 1,
 };
 
 static Switch layoutAlignTop = {
-	onUpdate: syncAlignment;
-	text: "LayoutAlign.top";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "LayoutAlign.top",
+	states: null,
 };
 static Switch layoutAlignLeft = {
-	onUpdate: syncAlignment;
-	text: "LayoutAlign.left";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "LayoutAlign.left",
+	states: null,
 };
 static Switch layoutAlignRight = {
-	onUpdate: syncAlignment;
-	text: "LayoutAlign.right";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "LayoutAlign.right",
+	states: null,
 };
 static Switch layoutAlignBottom = {
-	onUpdate: syncAlignment;
-	text: "LayoutAlign.bottom";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "LayoutAlign.bottom",
+	states: null,
 };
 
 static Switch itemAlignTop = {
-	onUpdate: syncAlignment;
-	text: "ItemAlign.top";
-	states: null;
-	selected: 1;
+	onUpdate: syncAlignment,
+	text: "ItemAlign.top",
+	states: null,
+	selected: 1,
 };
 static Switch itemAlignLeft = {
-	onUpdate: syncAlignment;
-	text: "ItemAlign.left";
-	states: null;
-	selected: 1;
+	onUpdate: syncAlignment,
+	text: "ItemAlign.left",
+	states: null,
+	selected: 1,
 };
 static Switch itemAlignRight = {
-	onUpdate: syncAlignment;
-	text: "ItemAlign.right";
-	states: null;
-	selected: 1;
+	onUpdate: syncAlignment,
+	text: "ItemAlign.right",
+	states: null,
+	selected: 1,
 };
 static Switch itemAlignBottom = {
-	onUpdate: syncAlignment;
-	text: "ItemAlign.bottom";
-	states: null;
-	selected: 1;
+	onUpdate: syncAlignment,
+	text: "ItemAlign.bottom",
+	states: null,
+	selected: 1,
 };
 
 static Switch textAlignTop = {
-	onUpdate: syncAlignment;
-	text: "TextAlign.top";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "TextAlign.top",
+	states: null,
 };
 static Switch textAlignLeft = {
-	onUpdate: syncAlignment;
-	text: "TextAlign.left";
-	states: null;
-	selected: 1;
+	onUpdate: syncAlignment,
+	text: "TextAlign.left",
+	states: null,
+	selected: 1,
 };
 static Switch textAlignRight = {
-	onUpdate: syncAlignment;
-	text: "TextAlign.right";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "TextAlign.right",
+	states: null,
 };
 static Switch textAlignBottom = {
-	onUpdate: syncAlignment;
-	text: "TextAlign.bottom";
-	states: null;
+	onUpdate: syncAlignment,
+	text: "TextAlign.bottom",
+	states: null,
 };
 
 // container for rectangles
 static Layout layout = {
-	enabled: false;
-	focusable: false;
+	enabled: false,
+	focusable: false,
 };
 
 static Style style = {
-	align: Style.center;
+	align: Style.center,
 };
 
 // container for controls
 Widget widget = {
-	width: 1440;
-	height: 900;
-	style: style;
-	orientation: 0;
+	width: 1440,
+	height: 900,
+	style: style,
+	orientation: 0,
 };
 
 // create some custom views with a background color and a text
@@ -147,11 +147,11 @@ View Rectangle(uint32 rgb, char text[]) {
 		}
 	}
 	return Rectangle {
-		background: argb(rgb);
-		enabled: false;
-		text: text;
-		width: itemSize;
-		height: itemSize;
+		background: argb(rgb),
+		enabled: false,
+		text: text,
+		width: itemSize,
+		height: itemSize,
 	};
 }
 

@@ -162,7 +162,7 @@ struct Base64Decoder: ByteReader {
 	int read^(Base64Decoder this, uint8 data&[]) {
 		inline isWhite(char c) = c == ' ' || c == '\t' || c == '\n' || c == '\r';
 
-		uint8 in[1] = {...};
+		uint8 in[1] = {...?};
 		ByteReader reader = this.reader;
 		int bitsDecoded& = this.bitsDecoded;
 		int charDecoded& = this.charDecoded;

@@ -34,7 +34,7 @@ struct Input: View {
 		if (cursor <= 0) {
 			return 0;
 		}
-		Rect rect = {...};
+		Rect rect = {...?};
 		this.style.font.clipText(&rect, this.text[...cursor]);
 		return rect.width();
 	}
@@ -235,10 +235,10 @@ struct Input: View {
 			Image clip = offs.slice(inner);
 			int32 top = (clip.height() - style.font.height()) / 2;
 			Rect line = {
-				x0: -this.scroll;
-				y0: top;
-				x1: clip.width();
-				y1: clip.height();
+				x0: -this.scroll,
+				y0: top,
+				x1: clip.width(),
+				y1: clip.height(),
 			};
 			if (len == 0) {
 				argb dim = mix_rgb8(128, argb(style.backgroundColor), argb(style.textColor));

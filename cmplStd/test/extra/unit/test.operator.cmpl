@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 22338
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 static if (struct(x) != null && struct(y) != null) {
 	assert(x + y, x, y);

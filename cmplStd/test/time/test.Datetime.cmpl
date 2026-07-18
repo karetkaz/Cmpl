@@ -1,11 +1,11 @@
 static TextWriter out = AsciiWriter {
 	writer: FileWriter {
-		file: File.log;
-		close: null;
-	};
+		file: File.log,
+		close: null,
+	}
 };
 TextWriter write(TextWriter writer, char format[], Datetime datetime) {
-	char buffer[65536] = {...};
+	char buffer[65536] = {...?};
 	int n = datetime.format(&buffer, format);
 	writer.write(buffer[...n]);
 	return writer;

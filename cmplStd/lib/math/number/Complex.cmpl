@@ -37,15 +37,15 @@ struct Complex {
 			float64 r = b.im / b.re;
 			float64 den = b.re + r * b.im;
 			return {
-				re: (a.re + r * a.im) / den;
-				im: (a.im - r * a.re) / den;
+				re: (a.re + r * a.im) / den,
+				im: (a.im - r * a.re) / den,
 			};
 		}
 		float64 r = b.re / b.im;
 		float64 den = b.im + r * b.re;
 		return {
-			re: (a.re * r + a.im) / den;
-			im: (a.im * r - a.re) / den;
+			re: (a.re * r + a.im) / den,
+			im: (a.im * r - a.re) / den,
 		};
 	}
 	/// Divide the complex number `a` by the real number `b`
@@ -60,8 +60,8 @@ struct Complex {
 	static Complex inv(Complex a) {
 		float64 d = a.re * a.re + a.im * a.im;
 		return {
-			re: +a.re / d;
-			im: -a.im / d;
+			re: +a.re / d,
+			im: -a.im / d,
 		};
 	}
 
@@ -71,8 +71,8 @@ struct Complex {
 	/// Compute the exponential of a complex number: $ e^a $.
 	static Complex exp(Complex a) {
 		return {
-			re: Float64.exp(a.re) * Float64.cos(a.im);
-			im: Float64.exp(a.re) * Float64.sin(a.im);
+			re: Float64.exp(a.re) * Float64.cos(a.im),
+			im: Float64.exp(a.re) * Float64.sin(a.im),
 		};
 	}
 
@@ -86,8 +86,8 @@ struct Complex {
 		float64 u = b.re * t + b.im * Float64.ln(r);
 		float64 v = Float64.pow(r, b.re) * Float64.exp(-b.im * t);
 		return {
-			re: v * Float64.cos(u);
-			im: v * Float64.sin(u);
+			re: v * Float64.cos(u),
+			im: v * Float64.sin(u),
 		};
 	}
 	/// Compute the complex number `a` raised to the power of `b`: $ a^b $.
@@ -99,15 +99,15 @@ struct Complex {
 	/// Compute the sine of the complex number `a`.
 	static Complex sin(Complex a) {
 		return {
-			re: Float64.sin(a.re) * Float64.cosh(a.im);
-			im: Float64.cos(a.re) * Float64.sinh(a.im);
+			re: Float64.sin(a.re) * Float64.cosh(a.im),
+			im: Float64.cos(a.re) * Float64.sinh(a.im),
 		};
 	}
 	/// Compute the cosine of the complex number `a`.
 	static Complex cos(Complex a) {
 		return {
-			re: Float64.cos(a.re) * Float64.cosh(a.im);
-			im: -Float64.sin(a.re) * Float64.sinh(a.im);
+			re: Float64.cos(a.re) * Float64.cosh(a.im),
+			im: -Float64.sin(a.re) * Float64.sinh(a.im),
 		};
 	}
 	/// Compute the tangent of the complex number `a`.
@@ -136,15 +136,15 @@ struct Complex {
 /// Create a Complex number from the given `value`
 Complex Complex(float64 value) {
 	return {
-		re: value;
+		re: value,
 	};
 }
 
 /// Create a Complex number from the given `real` and `imaginary` values
 Complex Complex(float64 real, float64 imaginary) {
 	return {
-		re: real;
-		im: imaginary;
+		re: real,
+		im: imaginary,
 	};
 }
 

@@ -1,6 +1,6 @@
 /// extension method to read a single byte from a file
 int read(File file) {
-	uint8 buff[1] = {...};
+	uint8 buff[1] = {...?};
 	if (file.read(&buff) <= 0) {
 		return -1;
 	}

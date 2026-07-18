@@ -107,7 +107,7 @@ struct Random {
 Random Random(int64 seed) {
 	return {
 		// use low 32 bits
-		m_w: uint32(seed);
+		m_w: uint32(seed),
 	};
 }
 
@@ -115,6 +115,6 @@ Random Random(int64 seed) {
 Random Random() {
 	return {
 		// use low 32 bits
-		m_w: uint32(System.millis());
+		m_w: uint32(System.millis()),
 	};
 }

@@ -1,17 +1,17 @@
 /// Month of year, January is 1, February is 2, ...
 enum Month: int8 {
-	January: 1;
-	February;
-	March;
-	April;
-	May;
-	June;
-	July;
-	August;
-	September;
-	October;
-	November;
-	December;
+	January: 1,
+	February,
+	March,
+	April,
+	May,
+	June,
+	July,
+	August,
+	September,
+	October,
+	November,
+	December,
 }
 /// FIXME: implement enum indexing
 Month Month(int32 index) { return index + Month.January; }
@@ -20,13 +20,13 @@ inline indexOf(Month value) = (value - Month.January);
 
 /// Day of week, Monday is 1, Tuesday is 2, ...
 enum Weekday: int8 {
-	Monday: 1;
-	Tuesday;
-	Wednesday;
-	Thursday;
-	Friday;
-	Saturday;
-	Sunday;
+	Monday: 1,
+	Tuesday,
+	Wednesday,
+	Thursday,
+	Friday,
+	Saturday,
+	Sunday,
 }
 /// FIXME: implement enum indexing
 Weekday Weekday(int32 index) {return index + Weekday.Monday; }
@@ -35,7 +35,7 @@ inline indexOf(Weekday value) = (value - Weekday.Monday);
 
 /// Type of the calendar
 enum Calendar: uint8 {
-	Gregorian;
+	Gregorian,
 //	Buddhist;
 //	Chinese;
 //	Coptic;
@@ -129,18 +129,18 @@ struct Datetime {
 		assert(days == 0);
 
 		return {
-			year: year;
-			month: Month(month % 12);
-			day: cal.day;
-			hour: cal.hour;
-			minute: cal.minute;
-			second: cal.second;
-			millis: cal.millis;
-			timezone: cal.timezone;
-			weekOfYear: cal.weekOfYear;
-			dayOfYear: cal.dayOfYear;
-			dayOfWeek: cal.dayOfWeek;
-			leapYear: isLeapYear(year);
+			year: year,
+			month: Month(month % 12),
+			day: cal.day,
+			hour: cal.hour,
+			minute: cal.minute,
+			second: cal.second,
+			millis: cal.millis,
+			timezone: cal.timezone,
+			weekOfYear: cal.weekOfYear,
+			dayOfYear: cal.dayOfYear,
+			dayOfWeek: cal.dayOfWeek,
+			leapYear: isLeapYear(year),
 		};
 	}
 }
@@ -182,17 +182,17 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 	assert(calendar == Calendar.Gregorian);
 	enum: int32 {
 		// Number of days in a non-leap year
-		DaysPerYear: 365;
+		DaysPerYear: 365,
 
 		// Number of days in a leap year
-		DaysPerLeapYear: 366;
+		DaysPerLeapYear: 366,
 
 		// Number of days in 4 years
-		DaysPer4Years: DaysPerYear * 4 + 1;
+		DaysPer4Years: DaysPerYear * 4 + 1,
 		// Number of days in 100 years
-		DaysPer100Years: DaysPer4Years * 25 - 1;
+		DaysPer100Years: DaysPer4Years * 25 - 1,
 		// Number of days in 400 years
-		DaysPer400Years: DaysPer100Years * 4 + 1;
+		DaysPer400Years: DaysPer100Years * 4 + 1,
 	}
 
 	Duration offset = timezone.offset(timestamp);
@@ -247,24 +247,24 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 
 	return {
 		// date
-		year: year;
-		month: Month(m - 1);
-		day: n - DaysToMonth[m - 1] + 1;
+		year: year,
+		month: Month(m - 1),
+		day: n - DaysToMonth[m - 1] + 1,
 
 		// time
-		hour: timestamp.value(Timeunit.Hours) % 24;
-		minute: timestamp.value(Timeunit.Minutes) % 60;
-		second: timestamp.value(Timeunit.Seconds) % 60;
-		millis: timestamp.value(Timeunit.Millis) % 1000;
+		hour: timestamp.value(Timeunit.Hours) % 24,
+		minute: timestamp.value(Timeunit.Minutes) % 60,
+		second: timestamp.value(Timeunit.Seconds) % 60,
+		millis: timestamp.value(Timeunit.Millis) % 1000,
 
 		// zone
-		timezone: timezone;
+		timezone: timezone,
 
 		// extra
-		dayOfYear: n + 1;
-		dayOfWeek: Weekday(dayOfWeek);
-		weekOfYear: (n - dayOfWeek + indexOf(Weekday.Thursday)) / 7 + 1;
-		leapYear: DaysToMonth == Datetime.DaysToMonth366;
+		dayOfYear: n + 1,
+		dayOfWeek: Weekday(dayOfWeek),
+		weekOfYear: (n - dayOfWeek + indexOf(Weekday.Thursday)) / 7 + 1,
+		leapYear: DaysToMonth == Datetime.DaysToMonth366,
 	};
 }
 
@@ -274,18 +274,18 @@ inline Datetime(Timestamp timestamp) = Datetime(timestamp, Calendar.Gregorian, T
 /// Construct the Datetime from the given parts
 Datetime Datetime(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millis, Timezone zone) {
 	return {
-		year: year;
-		month: Month(month - 1);
-		day: day;
-		hour: hour;
-		minute: minute;
-		second: second;
-		millis: millis;
-		timezone: zone;
-		weekOfYear: 0;
-		dayOfYear: 0;
-		dayOfWeek: Weekday.Monday;
-		leapYear: Datetime.isLeapYear(year);
+		year: year,
+		month: Month(month - 1),
+		day: day,
+		hour: hour,
+		minute: minute,
+		second: second,
+		millis: millis,
+		timezone: zone,
+		weekOfYear: 0,
+		dayOfYear: 0,
+		dayOfWeek: Weekday.Monday,
+		leapYear: Datetime.isLeapYear(year),
 	};
 }
 

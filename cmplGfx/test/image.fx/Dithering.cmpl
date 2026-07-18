@@ -21,7 +21,7 @@ struct Dithering {
 		if (levels >= 256) {
 			levels = 256;
 		}
-		int cols[256] = {...};
+		int cols[256] = {...?};
 		int colors = levels - 1;
 		for (int i = 0; i < levels; i += 1) {
 			cols[i] = i * 255 / colors;
@@ -78,7 +78,7 @@ struct Dithering {
 		if (levels >= 256) {
 			levels = 256;
 		}
-		int cols[256] = {...};
+		int cols[256] = {...?};
 		int colors = levels - 1;
 		for (int i = 0; i < cols.length; i += 1) {
 			cols[i] = (i * levels / cols.length) * cols.length / colors;
@@ -186,7 +186,7 @@ struct Dithering {
 		if (levels >= 256) {
 			levels = 256;
 		}
-		int cols[256] = {...};
+		int cols[256] = {...?};
 		int colors = levels - 1;
 		for (int i = 0; i < cols.length; i += 1) {
 			cols[i] = (i * levels / cols.length) * cols.length / colors;
@@ -245,7 +245,7 @@ struct Dithering {
 		if (levels >= 256) {
 			levels = 256;
 		}
-		int cols[256] = {...};
+		int cols[256] = {...?};
 		int colors = levels - 1;
 		for (int i = 0; i < cols.length; i += 1) {
 			cols[i] = (i * levels / cols.length) * cols.length / colors;
@@ -306,7 +306,7 @@ struct Dithering {
 		if (levels >= 256) {
 			levels = 256;
 		}
-		int cols[256] = {...};
+		int cols[256] = {...?};
 		int colors = levels - 1;
 		for (int i = 0; i < cols.length; i += 1) {
 			cols[i] = (i * levels / cols.length) * cols.length / colors;
@@ -383,38 +383,38 @@ struct Dithering {
 }
 
 Dithering methods[] = {
-	{name: "threshold", apply: Dithering.threshold};
-	{name: "bayer", apply: Dithering.bayer1};
-	{name: "bayer 2", apply: Dithering.bayer2};
-	{name: "steinbergFalse", apply: Dithering.steinbergFalse};
-	{name: "steinberg", apply: Dithering.steinberg};
-	{name: "stucki", apply: Dithering.stucki};
+	{name: "threshold", apply: Dithering.threshold},
+	{name: "bayer", apply: Dithering.bayer1},
+	{name: "bayer 2", apply: Dithering.bayer2},
+	{name: "steinbergFalse", apply: Dithering.steinbergFalse},
+	{name: "steinberg", apply: Dithering.steinberg},
+	{name: "stucki", apply: Dithering.stucki},
 };
 
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 static Slider sldLevels = {
-	text: "Levels";
-	value: 5;
-	minimum: 2;
-	maximum: 16;
-	stepSize: 1;
+	text: "Levels",
+	value: 5,
+	minimum: 2,
+	maximum: 16,
+	stepSize: 1,
 };
 static Switch chkGrayscale = {
-	text: "Grayscale";
-	selected: 1;
-	states: null;
-	focusable: false;
+	text: "Grayscale",
+	selected: 1,
+	states: null,
+	focusable: false,
 };
 static Select selDither = {
-	focusable: false;
-	text: "Dithering";
+	focusable: false,
+	text: "Dithering",
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

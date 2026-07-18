@@ -3,9 +3,9 @@ struct Uint8: 1 {
 	uint8 value;
 
 	enum {
-		bits: 8;
-		min: 0x00;
-		max: 0xff;
+		bits: 8,
+		min: 0x00,
+		max: 0xff,
 	}
 
 	inline u32(Uint8 x) = uint32(x.value);
@@ -202,9 +202,9 @@ struct Int8: 1 {
 	int8 value;
 
 	enum {
-		bits: Uint8.bits;
-		min: -128;
-		max: 127;
+		bits: Uint8.bits,
+		min: -128,
+		max: 127,
 	}
 
 	inline i32(Int8 x) = int32(x.value);

@@ -17,55 +17,55 @@ static void drawColorSlider(Slider this, Image offs, Rect rect);
 static bool syncMinMax(Slider this, float64 value);
 
 static Histogram histogram = {
-	enabled: false;
-	color: true;
+	enabled: false,
+	color: true,
 };
 
 static Slider sldHueMin = {
-	onDrawSlider: drawColorSlider;
-	onUpdate: syncMinMax;
-	text: "Hue.min";
-	focusable: false;
-	maximum: 359;
-	stepSize: 1;
+	onDrawSlider: drawColorSlider,
+	onUpdate: syncMinMax,
+	text: "Hue.min",
+	focusable: false,
+	maximum: 359,
+	stepSize: 1,
 };
 static Slider sldHueMax = {
-	onDrawSlider: drawColorSlider;
-	onUpdate: syncMinMax;
-	text: "Hue.max";
-	focusable: false;
-	maximum: 359;
-	stepSize: 1;
+	onDrawSlider: drawColorSlider,
+	onUpdate: syncMinMax,
+	text: "Hue.max",
+	focusable: false,
+	maximum: 359,
+	stepSize: 1,
 };
 
 static Slider sldLumMin = {
-	onDrawSlider: drawColorSlider;
-	onUpdate: syncMinMax;
-	text: "Luminance.min";
-	focusable: false;
-	maximum: 255;
-	stepSize: 1;
+	onDrawSlider: drawColorSlider,
+	onUpdate: syncMinMax,
+	text: "Luminance.min",
+	focusable: false,
+	maximum: 255,
+	stepSize: 1,
 };
 static Slider sldLumMax = {
-	onDrawSlider: drawColorSlider;
-	onUpdate: syncMinMax;
-	text: "Luminance.max";
-	focusable: false;
-	maximum: 255;
-	value: 255;
-	stepSize: 1;
+	onDrawSlider: drawColorSlider,
+	onUpdate: syncMinMax,
+	text: "Luminance.max",
+	focusable: false,
+	maximum: 255,
+	value: 255,
+	stepSize: 1,
 };
 
 static Slider sldVal = {
-	text: "Amount";
-	focusable: false;
-	value: .1;
+	text: "Amount",
+	focusable: false,
+	value: .1,
 };
 
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 // blending method executed for each pixel in the image

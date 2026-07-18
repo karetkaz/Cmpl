@@ -16,19 +16,19 @@ static Image offs = Image(back);
 static struct ColorMatrix {
 mat4f brightness(float32 val) {
 	return {
-		x: vec4f(1, 0, 0, val);
-		y: vec4f(0, 1, 0, val);
-		z: vec4f(0, 0, 1, val);
-		w: vec4f(0, 0, 0,  1.);
+		x: vec4f(1, 0, 0, val),
+		y: vec4f(0, 1, 0, val),
+		z: vec4f(0, 0, 1, val),
+		w: vec4f(0, 0, 0,  1.),
 	};
 }
 mat4f exposure(float32 val) {
 	// adapted from: https://stackoverflow.com/questions/22427424/image-processing-exposure-effect-on-image
 	return {
-		x: vec4f(1 + val, 0, 0, 0);
-		y: vec4f(0, 1 + val, 0, 0);
-		z: vec4f(0, 0, 1 + val, 0);
-		w: vec4f(0, 0, 0,  1);
+		x: vec4f(1 + val, 0, 0, 0),
+		y: vec4f(0, 1 + val, 0, 0),
+		z: vec4f(0, 0, 1 + val, 0),
+		w: vec4f(0, 0, 0,  1),
 	};
 }
 mat4f saturation(float32 val) {
@@ -38,10 +38,10 @@ mat4f saturation(float32 val) {
 	float32 B = .072f * inv;
 
 	return {
-		x: vec4f(R + val, G, B, 0.);
-		y: vec4f(R, G + val, B, 0.);
-		z: vec4f(R, G, B + val, 0.);
-		w: vec4f(0., 0., 0., 1.);
+		x: vec4f(R + val, G, B, 0.),
+		y: vec4f(R, G + val, B, 0.),
+		z: vec4f(R, G, B + val, 0.),
+		w: vec4f(0., 0., 0., 1.),
 	};
 }
 mat4f contrast(float32 val) {
@@ -49,26 +49,26 @@ mat4f contrast(float32 val) {
 	float32 t = (1 - c) / 2;
 
 	return {
-		x: vec4f(c, 0, 0, t);
-		y: vec4f(0, c, 0, t);
-		z: vec4f(0, 0, c, t);
-		w: vec4f(0, 0, 0, 1);
+		x: vec4f(c, 0, 0, t),
+		y: vec4f(0, c, 0, t),
+		z: vec4f(0, 0, c, t),
+		w: vec4f(0, 0, 0, 1),
 	};
 }
 mat4f warmth(float32 val) {
 	return {
-		x: vec4f(1 + val, 0, 0, 0);
-		y: vec4f(0, 1, 0, 0);
-		z: vec4f(0, 0, 1 - val, 0);
-		w: vec4f(0, 0, 0, 1);
+		x: vec4f(1 + val, 0, 0, 0),
+		y: vec4f(0, 1, 0, 0),
+		z: vec4f(0, 0, 1 - val, 0),
+		w: vec4f(0, 0, 0, 1),
 	};
 }
 mat4f tint(float32 val) {
 	return {
-		x: vec4f(1 + val, 0, 0, 0);
-		y: vec4f(0, 1, 0, 0);
-		z: vec4f(0, 0, 1 + val, 0);
-		w: vec4f(0, 0, 0, 1);
+		x: vec4f(1 + val, 0, 0, 0),
+		y: vec4f(0, 1, 0, 0),
+		z: vec4f(0, 0, 1 + val, 0),
+		w: vec4f(0, 0, 0, 1),
 	};
 }
 mat4f hue(float32 val) {
@@ -79,10 +79,10 @@ mat4f hue(float32 val) {
 	float32 cV = Float32.cos(val);
 	float32 sV = Float32.sin(val);
 	return {
-		x: vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
-		y: vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
-		z: vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
-		w: vec4f(0., 0., 0., 1.);
+		x: vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.),
+		y: vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.),
+		z: vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.),
+		w: vec4f(0., 0., 0., 1.),
 	};
 }
 
@@ -183,54 +183,54 @@ mat4f lsd = mat4f(
 }
 
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 
 // controls
 static Slider brightness = {
-	text: "brightness";
-	minimum: -1;
-	maximum: 1;
+	text: "brightness",
+	minimum: -1,
+	maximum: 1,
 };
 static Slider exposure = {
-	text: "exposure";
-	minimum: -1;
-	maximum: 1;
+	text: "exposure",
+	minimum: -1,
+	maximum: 1,
 };
 static Slider saturation = {
-	text: "saturation";
-	value: 1;
-	maximum: 5;
+	text: "saturation",
+	value: 1,
+	maximum: 5,
 };
 static Slider contrast = {
-	text: "contrast";
-	value: 1;
-	minimum: -1;
-	maximum: 3;
+	text: "contrast",
+	value: 1,
+	minimum: -1,
+	maximum: 3,
 };
 static Slider warmth = {
-	text: "warmth";
-	minimum: -.5;
-	maximum: +.5;
+	text: "warmth",
+	minimum: -.5,
+	maximum: +.5,
 };
 static Slider tint = {
-	text: "tint";
-	minimum: -.5;
-	maximum: +.5;
+	text: "tint",
+	minimum: -.5,
+	maximum: +.5,
 };
 static Slider hue = {
-	text: "hue";
-	maximum: 360;
-	stepSize: 1;
+	text: "hue",
+	maximum: 360,
+	stepSize: 1,
 };
 
 static Select preset = {
-	text: "preset";
+	text: "preset",
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

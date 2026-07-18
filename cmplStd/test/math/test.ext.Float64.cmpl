@@ -35,25 +35,25 @@ debug(typename.lookup(Math.ln).file());
 struct Test {
 	static float64 initError = float64.exp2(-100);	// 52 bits of mantissa
 	static float64 values![] = {
-		+Float64.nan;
-		+Float64.inf;
-		1e100;
-		Float64.pi;
-		Float64.e;
-		+1;
-		.5;
-		1e-50;
-		Float64.ulp(1);
-		+0;
-		-0;
-		-Float64.ulp(1);
-		-1e-50;
-		-.5;
-		-1;
-		-Float64.e;
-		-Float64.pi;
-		-1e100;
-		-Float64.inf;
+		+Float64.nan,
+		+Float64.inf,
+		1e100,
+		Float64.pi,
+		Float64.e,
+		+1,
+		.5,
+		1e-50,
+		Float64.ulp(1),
+		+0,
+		-0,
+		-Float64.ulp(1),
+		-1e-50,
+		-.5,
+		-1,
+		-Float64.e,
+		-Float64.pi,
+		-1e100,
+		-Float64.inf,
 	};
 
 	int32 steps = 100000;
@@ -189,7 +189,7 @@ for (int n = 0; n < tests.length; n += 1) {
 // test ulp of one
 static if (false) {
 float64 value = Float64.ulp(1);
-char buff[128] = {...};
+char buff[128] = {...?};
 
 value.format(buff, 0, "%.100f");
 debug(buff);
@@ -214,7 +214,7 @@ static float64 exp() {
 	return result;// - Float64.ulp(result);
 }
 
-char text[256] = {...};
+char text[256] = {...?};
 
 Float64.toBits(exp()).format(text, "Computed.e = 0x%08x");
 debug(text);

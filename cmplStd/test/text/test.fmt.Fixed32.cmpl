@@ -2,20 +2,20 @@
 
 // test floating point number formatting
 NumberFormat format = {
-//	digitSymbols: NumberFormat.digits[...2];
-//	positiveSymbol: '+'; // force sign
-//	fractionSymbol: ',';
-//	groupingSymbol: ' ';
-//	groupingDigits: 8;
+//	digitSymbols: NumberFormat.digits[...2],
+//	positiveSymbol: '+'; // force sig,
+//	fractionSymbol: ',',
+//	groupingSymbol: ' ',
+//	groupingDigits: 8,
 
-//	width: 0;
-	precision: 32;
-	trailingZeros: true;
-//	trailingSeparator: true;
+//	width: 0,
+	precision: 32,
+	trailingZeros: true,
+//	trailingSeparator: true,
 };
 
-char expect[512] = {...};
-char buff[expect.length] = {...};
+char expect[512] = {...?};
+char buff[expect.length] = {...?};
 
 //* testing the number formatter
 for (int i = 0; i < 1024; i += 1) {
@@ -52,12 +52,12 @@ debug(buff);
 // Fixed32's 20 fractional bits). The Fixed32 formatter carries its own copy of
 // the rounding/carry logic; these guard it against the printf reference for the
 // exact value.
-static char tieExpect[64] = {...};
-static char tieBuff[64] = {...};
+static char tieExpect[64] = {...?};
+static char tieBuff[64] = {...?};
 void checkTie(int32 p, float64 value) {
 	Fixed32 fx = Fixed32(value);
 	float64.print(tieExpect, float64(fx), 0, 0, p);
-	NumberFormat tie = { precision: p; trailingZeros: true; };
+	NumberFormat tie = { precision: p, trailingZeros: true };
 	tie.format(&tieBuff, 0, fx);
 	if (strcmp(tieExpect, tieBuff) != 0) {
 		error("fixed32 tie rounding mismatch", value, tieExpect, tieBuff);
@@ -70,9 +70,9 @@ checkTie(2, 0.125); checkTie(2, 0.375);   // -> 0.12, 0.38
 checkTie(2, 0.625); checkTie(2, 0.875);   // -> 0.62, 0.88
 
 // precision 0 ties: round to even, including carry into a new digit (9.5->10)
-char p0Expect[16] = {...};
-char p0Buff[16] = {...};
-NumberFormat tie0 = { precision: 0; trailingZeros: true; };
+char p0Expect[16] = {...?};
+char p0Buff[16] = {...?};
+NumberFormat tie0 = { precision: 0, trailingZeros: true };
 float64 halves[] = { 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 9.5, 99.5, 999.5 };
 for (int i = 0; i < halves.length; i += 1) {
 	float64 dv = halves[i];
@@ -87,12 +87,12 @@ for (int i = 0; i < halves.length; i += 1) {
 // precision >= 1 carry: fraction rounds up through all digits, creating a new
 // integer digit. fractionPos must shift +1 so the trailing-trim loop stops at
 // the right boundary (fractionPos bug: without the +1, "10.0" trims to "1").
-static char carryExpect[32] = {...};
-static char carryBuff[32] = {...};
+static char carryExpect[32] = {...?};
+static char carryBuff[32] = {...?};
 void checkCarry(int32 p, float64 value) {
 	Fixed32 fx = Fixed32(value);
 	float64.print(carryExpect, float64(fx), 0, 0, p);
-	NumberFormat fmt = { precision: p; trailingZeros: true; };
+	NumberFormat fmt = { precision: p, trailingZeros: true };
 	fmt.format(&carryBuff, 0, fx);
 	if (strcmp(carryExpect, carryBuff) != 0) {
 		error("fixed32 carry fractionPos mismatch", value, carryExpect, carryBuff);
@@ -103,7 +103,7 @@ checkCarry(1, 99.99);  // 99.9x -> 100.0
 checkCarry(2, 9.999);  // 9.99x -> 10.00
 
 // trailingZeros=false: separator + trailing zeros must be stripped after carry
-NumberFormat noTrail = { precision: 1; };
+NumberFormat noTrail = { precision: 1 };
 noTrail.format(&carryBuff, 0, Fixed32(9.99));
 assert(strcmp(carryBuff, "10") == 0, "carry+noTrail: expected '10'", carryBuff);
 noTrail.format(&carryBuff, 0, Fixed32(99.99));

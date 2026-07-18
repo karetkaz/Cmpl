@@ -72,21 +72,21 @@ struct BufferedFileWriter: FileWriter {
 ///@public
 FileReader FileReader(char path[]) {
 	return {
-		file: File.open(path);
+		file: File.open(path),
 	};
 }
 
 ///@public
 FileWriter FileWriter(char path[], bool append) {
 	return {
-		file: append ? File.append(path) : File.create(path);
+		file: append ? File.append(path) : File.create(path),
 	};
 }
 
 ///@public
 BufferedFileWriter BufferedFileWriter(char path[], bool append) {
 	return {
-		buffer: null;
-		file: append ? File.append(path) : File.create(path);
+		buffer: null,
+		file: append ? File.append(path) : File.create(path),
 	};
 }

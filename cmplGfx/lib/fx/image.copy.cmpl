@@ -10,10 +10,10 @@ void copy(Image image, int32 x0, int32 y0, Image src, Rect roi?, pointer extra, 
 
 	// clip roi with source image
 	Rect rect = {
-		x0: roi != null ? roi.x0 : 0;
-		y0: roi != null ? roi.y0 : 0;
-		x1: roi != null ? roi.x1 : src.width();
-		y1: roi != null ? roi.y1 : src.height();
+		x0: roi != null ? roi.x0 : 0,
+		y0: roi != null ? roi.y0 : 0,
+		x1: roi != null ? roi.x1 : src.width(),
+		y1: roi != null ? roi.y1 : src.height(),
 	};
 	if (x0 < 0) {
 		rect.x0 -= x0;
@@ -84,10 +84,10 @@ void copy(Image image, Rect roi!, argb col) {
 	argb blender(argb color?, argb base, argb with) {
 		int alpha = ach(color);
 		return {
-			b: mix_s8(alpha, bch(color), bch(base));
-			g: mix_s8(alpha, gch(color), gch(base));
-			r: mix_s8(alpha, rch(color), rch(base));
-			a: alpha;
+			b: mix_s8(alpha, bch(color), bch(base)),
+			g: mix_s8(alpha, gch(color), gch(base)),
+			r: mix_s8(alpha, rch(color), rch(base)),
+			a: alpha,
 		};
 	}
 	return copy(image, roi.x0, roi.y0, image, roi, col, blender);
@@ -109,10 +109,10 @@ void blendAlpha(Image image, int32 x, int32 y, Image src, Rect roi?, int32 alpha
 
 	static argb blender(int32 alpha?, argb base, argb with) {
 		return {
-			b: sat_s8(mix_s8(alpha, bch(base), bch(with)));
-			g: sat_s8(mix_s8(alpha, gch(base), gch(with)));
-			r: sat_s8(mix_s8(alpha, rch(base), rch(with)));
-			a: alpha;
+			b: sat_s8(mix_s8(alpha, bch(base), bch(with))),
+			g: sat_s8(mix_s8(alpha, gch(base), gch(with))),
+			r: sat_s8(mix_s8(alpha, rch(base), rch(with))),
+			a: alpha,
 		};
 	}
 	return image.copy(x, y, src, roi, alpha, blender);
@@ -127,10 +127,10 @@ void blendDstAlpha(Image image, int32 x, int32 y, Image src, Rect roi?) {
 	argb blender(pointer _, argb base, argb with) {
 		int alpha = ach(base);
 		return {
-			b: mix_s8(alpha, bch(base), bch(with));
-			g: mix_s8(alpha, gch(base), gch(with));
-			r: mix_s8(alpha, rch(base), rch(with));
-			a: alpha;
+			b: mix_s8(alpha, bch(base), bch(with)),
+			g: mix_s8(alpha, gch(base), gch(with)),
+			r: mix_s8(alpha, rch(base), rch(with)),
+			a: alpha,
 		};
 	}
 	return image.copy(x, y, src, roi, null, blender);
@@ -146,10 +146,10 @@ Image Image(Image copy) {
 /// copy the `src` image multiple times so it fills the whole `image`
 void tile(Image image, int x, int y, Image src, Rect roi?) {
 	Rect rect = {
-		x0: roi != null ? roi.x0 : 0;
-		y0: roi != null ? roi.y0 : 0;
-		x1: roi != null ? roi.x1 : src.width();
-		y1: roi != null ? roi.y1 : src.height();
+		x0: roi != null ? roi.x0 : 0,
+		y0: roi != null ? roi.y0 : 0,
+		x1: roi != null ? roi.x1 : src.width(),
+		y1: roi != null ? roi.y1 : src.height(),
 	};
 
 	if (!src.clip(&rect)) {
@@ -174,10 +174,10 @@ void tile(Image image, int x, int y, Image src, Rect roi?) {
 /// Fill the surface by evaluating the given function for each pixel
 void eval(Image image, Rect roi?, float32 aspect, float32 time, vec4f eval(vec4f in)) {
 	Rect rect = {
-		x0: roi != null ? roi.x0 : 0;
-		y0: roi != null ? roi.y0 : 0;
-		x1: roi != null ? roi.x1 : image.width();
-		y1: roi != null ? roi.y1 : image.height();
+		x0: roi != null ? roi.x0 : 0,
+		y0: roi != null ? roi.y0 : 0,
+		x1: roi != null ? roi.x1 : image.width(),
+		y1: roi != null ? roi.y1 : image.height(),
 	};
 
 	if (!image.clip(&rect)) {

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 27
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 struct PackedUnion: 0 {int32 value;}
 struct PackedStruct1: 1 {int32 value;}

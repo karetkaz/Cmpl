@@ -24,7 +24,7 @@ struct ByteReader: Closeable {
 
 	/// Read a single byte from the stream, a negative number is returned in case of error
 	static int read(ByteReader this) {
-		uint8 bytes[1] = {...};
+		uint8 bytes[1] = {...?};
 		if (this.read(&bytes) <= 0) {
 			return -1;
 		}
@@ -74,7 +74,7 @@ struct ByteWriter: Closeable {
 
 	/// Copy all bytes from the reader to the writer
 	static int copy(ByteWriter this, ByteReader reader) {
-		uint8 buffer[4096] = {...};
+		uint8 buffer[4096] = {...?};
 		int result = 0;
 		for ( ; ; ) {
 			int read = reader.read(&buffer);

@@ -34,8 +34,8 @@ struct Style {
 
 	/// the default number format used for widgets
 	static NumberFormat defaultFormat! = {
-		trailingZeros: true;
-		precision: 2;
+		trailingZeros: true,
+		precision: 2,
 	};
 
 	/// Formatting to be used printing numbers, dates, etc
@@ -54,26 +54,26 @@ struct Style {
 	uint32 textColor = uint32(lum(theme) > 127 ? dark : light);
 
 	enum: int32 {
-		top: 1;
-		left: 2;
-		right: 4;
-		bottom: 8;
-		center: 0;
+		top: 1,
+		left: 2,
+		right: 4,
+		bottom: 8,
+		center: 0,
 
-		topLeft: top | left;
-		topRight: top | right;
-		bottomLeft: bottom | left;
-		bottomRight: bottom | right;
+		topLeft: top | left,
+		topRight: top | right,
+		bottomLeft: bottom | left,
+		bottomRight: bottom | right,
 
-		vertical: left | right;
-		verticalTop: vertical | top;
-		verticalBottom: vertical | bottom;
+		vertical: left | right,
+		verticalTop: vertical | top,
+		verticalBottom: vertical | bottom,
 
-		horizontal: top | bottom;
-		horizontalLeft: horizontal | left;
-		horizontalRight: horizontal | right;
+		horizontal: top | bottom,
+		horizontalLeft: horizontal | left,
+		horizontalRight: horizontal | right,
 
-		fill: top | left | right | bottom;
+		fill: top | left | right | bottom,
 	}
 
 	/// Place the given `rect` inside the `parent` rectangle conforming to `align`
@@ -237,12 +237,12 @@ struct TouchEvent {
 struct View: object {
 	/// State of the view used for drawing, and returned from event handlers
 	enum State: int32 {
-		ignored: 0;		// the view is in normal state, or the event is ignored by the handler
-		hovered: 1;     // the view is hovered by a touch event
-		focused: 2;     // the view is focused
-		pressed: 4;     // the view is pressed
-		handled: 8;     // the event is consumed by the view
-		disabled: -1;	// the view is disabled, can not receive any events
+		ignored: 0,		// the view is in normal state, or the event is ignored by the handler
+		hovered: 1,     // the view is hovered by a touch event
+		focused: 2,     // the view is focused
+		pressed: 4,     // the view is pressed
+		handled: 8,     // the event is consumed by the view
+		disabled: -1,	// the view is disabled, can not receive any events
 	}
 
 	/// fixed or minimum width of the view
@@ -262,7 +262,7 @@ struct View: object {
 
 	/// the default style used for widgets
 	static Style defaultStyle! = {
-		align: Style.left;
+		align: Style.left,
 	};
 
 	/// style to be used for measuring and drawing views
@@ -515,9 +515,9 @@ struct Layout: View {
 				return this.separator;
 			}
 			View separator& = {
-				enabled: false;
-				focusable: false;
-				onDraw: onDraw;
+				enabled: false,
+				focusable: false,
+				onDraw: onDraw,
 			};
 			this.separator = separator;
 			return separator;
@@ -819,10 +819,10 @@ struct Layout: View {
 			}
 
 			Rect r = {
-				x0: measured.x0;
-				y0: measured.y0;
-				x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
-				y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
+				x0: measured.x0,
+				y0: measured.y0,
+				x1: measured.x0 + (this.width > 0 ? this.width : measured.width()),
+				y1: measured.y0 + (this.height > 0 ? this.height : measured.height()),
 			};
 
 			int32 n = cols;
@@ -904,10 +904,10 @@ struct Layout: View {
 			}
 
 			Rect r = {
-				x0: measured.x0;
-				y0: measured.y0;
-				x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
-				y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
+				x0: measured.x0,
+				y0: measured.y0,
+				x1: measured.x0 + (this.width > 0 ? this.width : measured.width()),
+				y1: measured.y0 + (this.height > 0 ? this.height : measured.height()),
 			};
 
 			int32 n = rows;
@@ -987,10 +987,10 @@ struct Layout: View {
 		}
 
 		Rect r = {
-			x0: measured.x0;
-			y0: measured.y0;
-			x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
-			y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
+			x0: measured.x0,
+			y0: measured.y0,
+			x1: measured.x0 + (this.width > 0 ? this.width : measured.width()),
+			y1: measured.y0 + (this.height > 0 ? this.height : measured.height()),
 		};
 
 		for (int i = 0; i < this.itemCount; i += 1) {
@@ -1037,7 +1037,7 @@ struct Layout: View {
 	/// Create a custom Layout containing the given `items` all of them aligned as `alignment`
 	static Layout Custom(int32 rowsCols, int32 alignment, View items?...) {
 		Layout layout = {
-			orientation: rowsCols;
+			orientation: rowsCols,
 		};
 		if (items.length > 0) {
 			layout.addItems(alignment, ...items);

@@ -324,7 +324,7 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 			return CAST_vid;
 		}
 		if (variable->init == NULL || variable->init != ctx->init_und) {
-			// not an undefined initializer: {...}
+			// not an undefined initializer: {...?}
 			warn(ctx->rt, variable->file, variable->line, WARN_VARIABLE_TYPE_PARTIAL, variable);
 		}
 		variable->size = variable->type->size;

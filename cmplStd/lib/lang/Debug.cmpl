@@ -37,8 +37,8 @@ struct DebugTimer {
 	static DebugTimer start() {
 		int64 now = System.millis();
 		return {
-			start: now;
-			last: now;
+			start: now,
+			last: now,
 		};
 	}
 
@@ -86,9 +86,9 @@ struct NotEquals {
 /// Create a not equals record for inspection from expected and returned
 NotEquals NotEquals(variant expected, variant returned, variant details[]) {
 	return {
-		expected: expected;
-		returned: returned;
-		details: details;
+		expected: expected,
+		returned: returned,
+		details: details,
 	};
 }
 

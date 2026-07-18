@@ -28,12 +28,12 @@ struct Biorhythm {
 }
 
 static Biorhythm biorhythms[] = {
-	{color: uint32(argb(234, 50, 35)), period: 23, label: "Physical"};
-	{color: uint32(argb(68, 144, 247)), period: 33, label: "Intellectual"};
-	{color: uint32(argb(242,168, 59)), period: 38, label: "Intuitive"};
-	{color: 0xfeab00, period: 23, period2: 28, label: "Passion"};  // physical + emotional
-	{color: 0x6f6f6f, period: 23, period2: 33, label: "Mastery"};  // physical + intellectual
-	{color: 0x9466db, period: 28, period2: 33, label: "Wisdom"};   // emotional + intellectual
+	{color: uint32(argb(234, 50, 35)), period: 23, label: "Physical"},
+	{color: uint32(argb(68, 144, 247)), period: 33, label: "Intellectual"},
+	{color: uint32(argb(242,168, 59)), period: 38, label: "Intuitive"},
+	{color: 0xfeab00, period: 23, period2: 28, label: "Passion"},  // physical + emotional
+	{color: 0x6f6f6f, period: 23, period2: 33, label: "Mastery"},  // physical + intellectual
+	{color: 0x9466db, period: 28, period2: 33, label: "Wisdom"},   // emotional + intellectual
 	// extra biorhythms, uncomment to see them too
 //	{color: 0xdadada, period: 43, label: "Aesthetic"};
 //	{color: 0xdadada, period: 53, label: "Spiritual"};
@@ -54,7 +54,7 @@ void drawBiorhythm(Image dst, Timestamp birth, Timestamp time, int32 days, int32
 	int32 padding2 = imgWidth / days / 2;
 	int32 textPosition = imgHeight - padding - lineHeight * (biorhythms.length + 1);
 
-	char text[128] = {...};
+	char text[128] = {...?};
 
 	// clear screen
 	dst.fill(0);

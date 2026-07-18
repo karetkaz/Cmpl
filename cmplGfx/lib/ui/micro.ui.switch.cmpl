@@ -132,10 +132,10 @@ struct Switch: Button {
 	void onDraw^(Switch this, Image offs, Rect rect) {
 		if (this.states.length == 0) {
 			Rect onOffRect = {
-				x0: rect.x0;
-				y0: rect.y0;
-				x1: rect.x0 + rect.height() * 3 / 2;
-				y1: rect.y1;
+				x0: rect.x0,
+				y0: rect.y0,
+				x1: rect.x0 + rect.height() * 3 / 2,
+				y1: rect.y1,
 			};
 			Style.align(rect, &onOffRect, Style.right);
 			rect.x1 = onOffRect.x0;

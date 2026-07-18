@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 11
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 static char str3[10] = {'t', 'e', 's', 't', '3', ''};
 static char str2[*] = str3;

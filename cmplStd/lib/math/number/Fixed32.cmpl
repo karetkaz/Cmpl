@@ -3,12 +3,12 @@ struct Fixed32: 4 { // todo: packing should be automatically set to 4
 	int32 bits = 0;
 
 	enum: int32 {
-		precision: 20; // todo: precision should be type parameter
+		precision: 20, // todo: precision should be type parameter
 
-		one: 1 << precision;
-		half: one / 2;
-		mask: one - 1;
-		nan: 0x80000000;
+		one: 1 << precision,
+		half: one / 2,
+		mask: one - 1,
+		nan: 0x80000000,
 	}
 
 	static if (precision > 30) { OneMustBeNonOverflowingPositiveNumber }

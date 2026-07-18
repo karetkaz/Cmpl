@@ -80,67 +80,67 @@ void eval(Mesh mesh, int sGrid, int tGrid, float64 epsilon, vec4f pos(float64 s,
 
 vec4f ellipse(float64 s, float64 t) {
 	enum: float64 {
-		X: 1;
-		Y: 1;
-		Z: 1;
-		smin: 0.;
-		smax: 2 * Float64.pi;
-		tmin: -Float64.pi / 2;
-		tmax: +Float64.pi / 2;
+		X: 1,
+		Y: 1,
+		Z: 1,
+		smin: 0.,
+		smax: 2 * Float64.pi,
+		tmin: -Float64.pi / 2,
+		tmax: +Float64.pi / 2,
 	}
 
 	s = Float64.mix(smin, smax, s);
 	t = Float64.mix(tmin, tmax, t);
 
 	return {
-		x: X * Float64.cos(t) * Float64.cos(s);
-		y: Y * Float64.cos(t) * Float64.sin(s);
-		z: Z * Float64.sin(t);
+		x: X * Float64.cos(t) * Float64.cos(s),
+		y: Y * Float64.cos(t) * Float64.sin(s),
+		z: Z * Float64.sin(t),
 	};
 }
 vec4f cylinder(float64 s, float64 t) {
 	enum: float64 {
-		sMin: 0;
-		sMax: 1;
-		tMin: 0;
-		tMax: 2 * Float64.pi;
+		sMin: 0,
+		sMax: 1,
+		tMin: 0,
+		tMax: 2 * Float64.pi,
 	}
 
 	s = Float64.mix(sMin, sMax, s);
 	t = Float64.mix(tMin, tMax, t);
 
 	return {
-		x: Float64.cos(t);
-		y: Float64.sin(t);
-		z: -s;
+		x: Float64.cos(t),
+		y: Float64.sin(t),
+		z: -s,
 	};
 }
 vec4f peak(float64 s, float64 t) {
 	enum: float64 {
-		h: 10.;
-		H: 20.;
-		smin: -H;
-		smax: +H;
-		tmin: -H;
-		tmax: +H;
+		h: 10.,
+		H: 20.,
+		smin: -H,
+		smax: +H,
+		tmin: -H,
+		tmax: +H,
 	}
 	s = Float64.mix(smin, smax, s);
 	t = Float64.mix(tmin, tmax, t);
 	float64 sst = Float64.sqrt(s*s + t*t);
 	return {
-		x: s / H;
-		y: t / H;
-		z: h / H * Float64.sin(sst) / sst;
+		x: s / H,
+		y: t / H,
+		z: h / H * Float64.sin(sst) / sst,
 	};
 }
 vec4f shell(float64 s, float64 t) {
 	enum: float64 {
-		N: 5;
-		H: 3;
-		tMin: -Float64.pi;
-		tMax: +Float64.pi;
-		sMin: 0.;
-		sMax: 2. * Float64.pi;
+		N: 5,
+		H: 3,
+		tMin: -Float64.pi,
+		tMax: +Float64.pi,
+		sMin: 0.,
+		sMax: 2. * Float64.pi,
 	}
 
 	s = Float64.mix(sMin, sMax, s);
@@ -148,9 +148,9 @@ vec4f shell(float64 s, float64 t) {
 
 	float64 w = s / (2 * Float64.pi);
 	return {
-		x: w * Float64.cos(N * s) * (1 + Float64.cos(t));
-		y: w * Float64.sin(N * s) * (1 + Float64.cos(t));
-		z: w * Float64.sin(t) + H * (w * w);
+		x: w * Float64.cos(N * s) * (1 + Float64.cos(t)),
+		y: w * Float64.sin(N * s) * (1 + Float64.cos(t)),
+		z: w * Float64.sin(t) + H * (w * w),
 	};
 }
 

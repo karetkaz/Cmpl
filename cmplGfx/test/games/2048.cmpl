@@ -143,10 +143,10 @@ int onEvent(int action, int button, int x, int y) {
 	for (int j = 0; j < gridSize; j += 1) {
 		for (int i = 0; i < gridSize; i += 1) {
 			Rect rect = {
-				x0: i * displaySize / gridSize;
-				y0: j * displaySize / gridSize;
-				x1: (i + 1) * displaySize / gridSize - 1;
-				y1: (j + 1) * displaySize / gridSize - 1;
+				x0: i * displaySize / gridSize,
+				y0: j * displaySize / gridSize,
+				x1: (i + 1) * displaySize / gridSize - 1,
+				y1: (j + 1) * displaySize / gridSize - 1,
 			};
 
 			int v = grid[i + j * gridSize];
@@ -155,7 +155,7 @@ int onEvent(int action, int button, int x, int y) {
 
 			if (c != 0) {
 				Rect r = {};
-				char text[8] = {...};
+				char text[8] = {...?};
 				(1 << v).format(&text, "%d");
 
 				font.clipText(&r, text);

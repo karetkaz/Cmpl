@@ -6,8 +6,8 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	int capacity;
 
 	enum: scalar {
-		c_zero: 0;
-		c_unit: 1;
+		c_zero: 0,
+		c_unit: 1,
 	}
 
 	// Formatted printing of the polynomial to the text writer
@@ -62,8 +62,8 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		scalar coefficients[*] = pointer.alloc(null, capacity * sizeof(scalar));
 		Polynomial result& = {
 			// fixme: coefficients: pointer.alloc(null, capacity * sizeof(scalar));
-			coefficients: coefficients;
-			capacity: capacity;
+			coefficients: coefficients,
+			capacity: capacity,
 		};
 
 		for (int i = 0; i < values.length; i += 1) {

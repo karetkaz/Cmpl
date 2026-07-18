@@ -68,21 +68,21 @@ struct DatetimeFormat {
 		static int append(DatetimeFormat formatter!, char output&[], int end, uint64 value, int width, int defaultWidth, int pad) {
 			// todo: this should be the same and as simple as: NumberFormat format = { *: formatter.numberFormat, width, paddingSymbol };
 			NumberFormat format = {
-				digitSymbols: formatter.numberFormat.digitSymbols;
-				positiveSymbol: formatter.numberFormat.positiveSymbol;
-				negativeSymbol: formatter.numberFormat.negativeSymbol;
-				infinitySymbol: formatter.numberFormat.infinitySymbol;
-				undefinedSymbol: formatter.numberFormat.undefinedSymbol;
-				groupingSymbol: formatter.numberFormat.groupingSymbol;
-				digitGrouping: formatter.numberFormat.digitGrouping;
-				firstGrouping: formatter.numberFormat.firstGrouping;
-				fractGrouping: formatter.numberFormat.fractGrouping;
-				paddingSymbol: pad;
-				width: width > 0 ? width : defaultWidth;
-				fractionSymbol: formatter.numberFormat.fractionSymbol;
-				trailingSeparator: formatter.numberFormat.trailingSeparator;
-				precision: formatter.numberFormat.precision;
-				trailingZeros: formatter.numberFormat.trailingZeros;
+				digitSymbols: formatter.numberFormat.digitSymbols,
+				positiveSymbol: formatter.numberFormat.positiveSymbol,
+				negativeSymbol: formatter.numberFormat.negativeSymbol,
+				infinitySymbol: formatter.numberFormat.infinitySymbol,
+				undefinedSymbol: formatter.numberFormat.undefinedSymbol,
+				groupingSymbol: formatter.numberFormat.groupingSymbol,
+				digitGrouping: formatter.numberFormat.digitGrouping,
+				firstGrouping: formatter.numberFormat.firstGrouping,
+				fractGrouping: formatter.numberFormat.fractGrouping,
+				paddingSymbol: pad,
+				width: width > 0 ? width : defaultWidth,
+				fractionSymbol: formatter.numberFormat.fractionSymbol,
+				trailingSeparator: formatter.numberFormat.trailingSeparator,
+				precision: formatter.numberFormat.precision,
+				trailingZeros: formatter.numberFormat.trailingZeros,
 			};
 			return format.format(&output, end, uint64(value));
 		}

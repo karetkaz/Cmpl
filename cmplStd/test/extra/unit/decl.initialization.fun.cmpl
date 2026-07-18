@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 12
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 int argByMut(int mut&) { return mut += 1; }
 int argByVal(int value) { return argByMut(&value); }

@@ -47,12 +47,14 @@ expression
 typename: 'struct' '(' expression ')' | expression;
 variable: typename Identifier ('&' | '?' | '!' | '&?')? ('[' ('*' | expression)? ']')*;
 function: typename Identifier '(' parameterList? ')';
-property: (Literal | Identifier ':')? initializer;
-initializer: typename? '{' ('...' | propertyList) '}' | expression;
+property: ((Literal | Identifier) ':')? initializer;
+initializer: typename? '{' spread? propertyList? '}' | expression;
+spread: '...' ('?' | '{' propertyList? '}' | generator | expression)? ','?;
+generator: '(' variable ')' '{' statementList '}';
 
 parameterList: 'static'? (variable | function) (',' parameterList)? '...'?;
 argumentList: ('...')? expression (',' argumentList)?;
-propertyList: ('static'? declaration | property ';')* | (property (',' property)* ','?)?;    // todo: remove declaration
+propertyList: ('static' declaration)* (property (',' property)* ','?)?;
 declExpr: expression | (variable '=' initializer);
 
 binary: arithmetic | bitwise | relational | equality | assignment;

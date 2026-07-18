@@ -35,9 +35,9 @@ struct ColorLut: Blender {
 		inline mix2(int32 f, uint32 a, uint32 b) = (a + ((f + (f >> 7)) * (b - a) >> 8)) & 0x00ff00ff;
 		inline mix(int32 f, argb a, argb b) = argb(mix2(f, a.v & 0x00ff00ff, b.v & 0x00ff00ff) | (mix2(f, a.v >> 8 & 0x00ff00ff, b.v >> 8 & 0x00ff00ff) << 8));
 
-		int offs_0[256] = {...};
-		int offs_1[256] = {...};
-		int offs_f[256] = {...};
+		int offs_0[256] = {...?};
+		int offs_1[256] = {...?};
+		int offs_f[256] = {...?};
 		int p = 1;
 		for (int z = 0; z < 256; z += 1) {
 			if (z >= points[p] && p < points.length - 1) {
@@ -128,7 +128,7 @@ struct ColorLut: Blender {
 		int xyz = 0;
 		int size = 1;
 		int points[256] = {0};
-		for (char buff[1024] = {...}; readLine(file, &buff); ) {
+		for (char buff[1024] = {...?}; readLine(file, &buff); ) {
 			int pos = 0;
 			if (buff[pos] == 0) {
 				// empty line
@@ -208,7 +208,7 @@ struct ColorLut: Blender {
 		else if (image.width() == 512 && image.height() == 512) {
 			// adapted from: https://streamshark.io/obs-guide/color-grading-lut
 			// input: 64 x 64 x 64
-			int points[64] = {...};
+			int points[64] = {...?};
 			int mod = 512 / points.length;
 			for (int z = 0; z < points.length; z += 1) {
 				int b = z * 255 / (points.length - 1);
@@ -229,7 +229,7 @@ struct ColorLut: Blender {
 		else if (image.width() == 32 && image.height() == 1024) {
 			// adapted from: https://github.com/androidx/media/blob/release/libraries/test_data/src/test/assets/test-generated-goldens/lut/identity.png
 			// input: 32 x 32 x 32
-			int points[32] = {...};
+			int points[32] = {...?};
 			int mod = 1024 / points.length;
 			for (int z = 0; z < points.length; z += 1) {
 				int r = z * 255 / (points.length - 1);
@@ -312,23 +312,23 @@ static Image offs = Image(back);
 
 static void exportLut(Button this, int32 clicks);
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 
 static Button  export64 = {
-	text: "export 64";
-	focusable: false;
-	onClick: exportLut;
+	text: "export 64",
+	focusable: false,
+	onClick: exportLut,
 };
 static Button export256 = {
-	text: "export 256";
-	focusable: false;
-	onClick: exportLut;
+	text: "export 256",
+	focusable: false,
+	onClick: exportLut,
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
@@ -378,7 +378,7 @@ void exportLut(Button this, int32 clicks) {
 /* test linear interpolation of color cube values
 void testLutLerp() {
 	ColorLut lookup = {data: {}};
-	int pointsTmp[256] = {...};
+	int pointsTmp[256] = {...?};
 	for (int i = 2; i < 256; i += 1) {
 		int points[] = pointsTmp[... i];
 		debug("points.length", points.length);

@@ -109,31 +109,31 @@ Functions functions[] = {
 };
 
 static Select chkFunctions = {
-	text: "function";
-	focusable: true;
-	orientation: 4;
+	text: "function",
+	focusable: true,
+	orientation: 4,
 };
 static Slider sldScale = {
-	text: "scale (2 ** x)";
-	minimum: Functions.minimum;
-	maximum: Functions.maximum;
-	value: 2;
+	text: "scale (2 ** x)",
+	minimum: Functions.minimum,
+	maximum: Functions.maximum,
+	value: 2,
 };
 static Slider sldXOffset = {
-	text: "offset.x";
-	minimum: -Float64.inf;
-	maximum: +Float64.inf;
+	text: "offset.x",
+	minimum: -Float64.inf,
+	maximum: +Float64.inf,
 };
 static Slider sldYOffset = {
-	text: "offset.y";
-	minimum: -Float64.inf;
-	maximum: +Float64.inf;
+	text: "offset.y",
+	minimum: -Float64.inf,
+	maximum: +Float64.inf,
 };
 static Switch chkCenterY = {
-	text: "center y";
-	states: null;
-	selected: 1;
-	clickToFocus: false;
+	text: "center y",
+	states: null,
+	selected: 1,
+	clickToFocus: false,
 };
 static Switch chkDisplay = {
 	static char statesDisplay[][4] = {
@@ -142,21 +142,21 @@ static Switch chkDisplay = {
 		"native",
 		"computed",
 	};
-	text: "display";
-	states: statesDisplay;
-	clickToFocus: false;
+	text: "display",
+	states: statesDisplay,
+	clickToFocus: false,
 };
 static Switch chkSmooth = {
-	text: "smooth";
-	states: null;
-	clickToFocus: false;
+	text: "smooth",
+	states: null,
+	clickToFocus: false,
 };
 
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
-	width: 200;
+	focusable: false,
+	measures: -1,
+	draws: -1,
+	width: 200,
 };
 
 void aaLine(Image img, int32 x, float64 y0, float64 y1, uint32 color) {
@@ -347,12 +347,12 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		offs.fillRect(0, h / 2 - 1, w, h / 2 - 1, 1, cGrid);
 
 		NumberFormat fmt = {
-			positiveSymbol: '+';	// force sign symbol
-			trailingZeros: true;
-			groupingSymbol: ' ';
-			precision: 9;
+			positiveSymbol: '+',	// force sign symbol
+			trailingZeros: true,
+			groupingSymbol: ' ',
+			precision: 9,
 		};
-		char text[1024] = {...};
+		char text[1024] = {...?};
 		Rect rect = {};
 		int p = 0;
 

@@ -14,16 +14,16 @@ struct Timezone {
 			return { value: 0 };
 		}
 		return {
-			offset: offset;
-			name: "UTC";
+			offset: offset,
+			name: "UTC",
 		};
 	}
 
 	static Timezone lookup(char name[]) {
 		abort("todo");
 		return {
-			offset: null;
-			name: name;
+			offset: null,
+			name: name,
 		};
 	}
 
@@ -35,8 +35,8 @@ struct Timezone {
 			return Duration(3, Timeunit.Hours);
 		}
 		return {
-			offset: offset;
-			name: "GMT+3";
+			offset: offset,
+			name: "GMT+3",
 		};
 	}
 }

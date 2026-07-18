@@ -421,7 +421,7 @@ static void install_type(ccContext ctx, ccConfig config) {
 		}
 	}
 
-	// undefined initializer: {...}
+	// undefined initializer: {...?}
 	ctx->init_und = newAstn(ctx, STMT_beg);
 	dieif(ctx->init_und == NULL, ERR_INTERNAL_ERROR);
 	ctx->init_und->type = ctx->type_vid;

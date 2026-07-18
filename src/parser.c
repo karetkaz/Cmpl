@@ -359,12 +359,125 @@ static astn expand2Statement(ccContext ctx, astn node, int block) {
 	return result;
 }
 
+static astn expandInitializer(ccContext ctx, symn variable, astn initializer);
+
+/** Check if a type can be initialized with `{}` (recursive rule):
+ * every non-static field has a default initializer,
+ * or its type is itself default-initializable.
+ */
+static int isDefaultInitializable(ccContext ctx, symn type) {
+	if (type->init != NULL) {
+		return 1;
+	}
+	switch (castOf(type)) {
+		default:
+			return 0;
+
+		case CAST_bit:
+		case CAST_i32:
+		case CAST_u32:
+		case CAST_i64:
+		case CAST_u64:
+		case CAST_f32:
+		case CAST_f64:
+			// primitives default to zero
+			return 1;
+
+		case CAST_val:
+			break;
+	}
+	if (isArrayType(type)) {
+		// todo: array elements with default initializers
+		return 0;
+	}
+	for (symn field = type->fields; field != NULL; field = field->next) {
+		if (isStatic(field)) {
+			continue;
+		}
+		if (field->name != NULL && *field->name == '.') {
+			continue;
+		}
+		if (field->init != NULL) {
+			continue;
+		}
+		if (!isDefaultInitializable(ctx, field->type)) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer, astn list) {
 	dieif(initializer->kind != STMT_beg, ERR_INTERNAL_ERROR);
 	if (initializer->type != NULL) {
 		// todo: HACK: type of variable may differ from the initializer type, use initializer type (stronger):
 		// View views[] = { Button {...}, ... }
 		variable->type = initializer->type;
+	}
+
+	// decode the spread base: {...?}, {...0}, {...instance}, {...{element}}, {...(int i) {...}}
+	astn spread = initializer->stmt.init;
+	astn spreadCopy = NULL, spreadFill = NULL, spreadGen = NULL;
+	int spreadUninit = 0, spreadZero = 0;
+	if (spread != NULL) {
+		if (spread->kind == OPER_sel) {
+			spreadUninit = 1;
+		}
+		else if (spread->kind == STMT_ret) {
+			spreadGen = spread;
+		}
+		else if (spread->kind == STMT_beg) {
+			spreadFill = spread;
+		}
+		else if (spread->kind == TOKEN_val && spread->type != NULL && spread->cInt == 0
+				&& (castOf(spread->type) == CAST_i32 || castOf(spread->type) == CAST_i64
+				|| castOf(spread->type) == CAST_u32 || castOf(spread->type) == CAST_u64)) {
+			spreadZero = 1;
+		}
+		else {
+			spreadCopy = spread;
+		}
+	}
+
+	// primitive initialized with a single value: `float64 x = {3.14};`
+	if (initializer->stmt.stmt != NULL && initializer->stmt.stmt->kind != INIT_set
+			&& initializer->stmt.stmt->next == NULL && variable->type != NULL) {
+		switch (castOf(variable->type)) {
+			default:
+				break;
+
+			case CAST_ptr:
+			case CAST_obj:
+			case CAST_arr:
+			case CAST_var: {
+				// `{null}`: assign null to the reference itself, not to an element
+				astn value = initializer->stmt.stmt;
+				if (value->kind != TOKEN_var) {
+					break;
+				}
+				typeCheck(ctx, NULL, value, 0);
+				if (linkOf(value, 1) != ctx->null_ref) {
+					break;
+				}
+			}
+				// fall through
+			case CAST_bit:
+			case CAST_i32:
+			case CAST_u32:
+			case CAST_i64:
+			case CAST_u64:
+			case CAST_f32:
+			case CAST_f64: {
+				astn init = opNode(ctx, NULL, INIT_set, variable, initializer->stmt.stmt);
+				init->file = variable->file;
+				init->line = variable->line;
+				typeCheck(ctx, NULL, init, 1);
+				init->type = ctx->type_vid;
+				initializer->stmt.stmt = NULL;
+				addTail(list, expand2Statement(ctx, init, 0));
+				return list;
+			}
+		}
 	}
 
 	// translate initialization to assignment
@@ -377,7 +490,23 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 	for (astn init = initializer->stmt.stmt; init != NULL; init = init->next) {
 		astn key = NULL;
 		astn value = init;
-		if (length < 0 && init->kind == INIT_set) {
+		if (length < 0 && init->kind == INIT_set && init->op.lhso->kind == TOKEN_val) {
+			// indexed override: `2: value` => `variable[2] := value;`
+			key = init->op.lhso;
+			value = init->op.rhso;
+			if (initializer->stmt.init == NULL) {
+				error(ctx->rt, key->file, key->line, "indexed overrides require a spread base");
+			}
+			for (astn prev = keys; prev != NULL; prev = prev->next) {
+				if (prev->kind == TOKEN_val && intValue(prev) == intValue(key)) {
+					error(ctx->rt, key->file, key->line, "duplicate index in initializer: %t", key);
+				}
+			}
+			init->op.lhso = opNode(ctx, NULL, OPER_idx, variable, key);
+			init->op.lhso->file = key->file;
+			init->op.lhso->line = key->line;
+		}
+		else if (length < 0 && init->kind == INIT_set) {
 			// `key: value` => `variable.key := value;`
 			key = init->op.lhso;
 			value = init->op.rhso;
@@ -434,6 +563,240 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 	}
 
 	symn type = variable->type;
+	if (spread != NULL && isArrayType(type)) {
+		if (length > 0) {
+			error(ctx->rt, initializer->file, initializer->line, "positional values can not be mixed with a spread base, use indexed overrides");
+			return initializer;
+		}
+
+		symn len = type->fields;
+		if (len == NULL || len == ctx->length_ref || !isStatic(len) || len->init == NULL) {
+			error(ctx->rt, initializer->file, initializer->line, "spread base requires a fixed size array");
+			return initializer;
+		}
+		int64_t count = intValue(len->init);
+		symn elem = type->type;
+
+		// validate the indexed overrides
+		for (astn key = keys; key != NULL; key = key->next) {
+			if (key->kind != TOKEN_val) {
+				continue;
+			}
+			if (intValue(key) < 0 || intValue(key) >= count) {
+				error(ctx->rt, key->file, key->line, "index out of bounds in initializer: %t", key);
+			}
+		}
+
+		if (spreadUninit) {
+			// {...?, overrides}: only the overrides are written
+			return list;
+		}
+
+		if (spreadGen != NULL) {
+			// generator: seeds are written first, then the loop covers the remaining indices
+			symn def = spreadGen->ret.func;
+			symn res = def->params;		// .result
+			symn prm = res != NULL ? res->next : NULL;
+			if (def->init == NULL || prm == NULL) {
+				error(ctx->rt, spreadGen->file, spreadGen->line, ERR_INVALID_INITIALIZER, initializer);
+				return initializer;
+			}
+
+			// the overrides must seed a contiguous prefix: [0 .. seeds)
+			int64_t seeds = 0;
+			for (astn key = keys; key != NULL; key = key->next) {
+				if (key->kind == TOKEN_val) {
+					seeds += 1;
+				}
+			}
+			for (astn key = keys; key != NULL; key = key->next) {
+				if (key->kind == TOKEN_val && intValue(key) >= seeds) {
+					error(ctx->rt, key->file, key->line, "generator overrides must seed a contiguous prefix from index 0");
+					return initializer;
+				}
+			}
+
+			// hidden index variable of the lowered loop
+			symn idx = newSymn(ctx, KIND_var | ATTR_mut | CAST_i32);
+			astn idxDecl = lnkNode(ctx, idx);
+			idx->name = ".index";
+			idx->type = prm->type != NULL ? prm->type : ctx->type_int;
+			idx->size = idx->type->size;
+			idx->init = intNode(ctx, seeds);
+			idx->unit = ctx->unit;
+			idx->file = variable->file;
+			idx->line = variable->line;
+			idx->tag = idxDecl;
+			idxDecl->type = idx->type;
+			idxDecl->file = variable->file;
+			idxDecl->line = variable->line;
+
+			// call: def(idx)
+			astn call = opNode(ctx, NULL, OPER_fnc, lnkNode(ctx, def), lnkNode(ctx, idx));
+			call->file = variable->file;
+			call->line = variable->line;
+
+			// variable[idx] := def(idx)
+			astn elemAt = opNode(ctx, NULL, OPER_idx, variable, lnkNode(ctx, idx));
+			astn assign = opNode(ctx, NULL, INIT_set, elemAt, call);
+			assign->file = elemAt->file = variable->file;
+			assign->line = elemAt->line = variable->line;
+			if (typeCheck(ctx, NULL, assign, 1) == NULL) {
+				error(ctx->rt, spreadGen->file, spreadGen->line, ERR_INVALID_INITIALIZER, initializer);
+				return initializer;
+			}
+			assign->type = ctx->type_vid;
+
+			astn test = opNode(ctx, NULL, OPER_clt, lnkNode(ctx, idx), intNode(ctx, count));
+			astn inc = opNode(ctx, NULL, OPER_add, lnkNode(ctx, idx), intNode(ctx, 1));
+			astn step = opNode(ctx, NULL, ASGN_set, lnkNode(ctx, idx), inc);
+			test->file = inc->file = step->file = variable->file;
+			test->line = inc->line = step->line = variable->line;
+			test->type = typeCheck(ctx, NULL, test, 1);
+			step->type = typeCheck(ctx, NULL, step, 1);
+
+			astn loop = newAstn(ctx, STMT_for);
+			loop->type = ctx->type_vid;
+			loop->file = variable->file;
+			loop->line = variable->line;
+			loop->stmt.test = test;
+			loop->stmt.step = step;
+			loop->stmt.stmt = expand2Statement(ctx, assign, 0);
+
+			astn block = newAstn(ctx, STMT_beg);
+			block->type = ctx->type_vid;
+			block->file = variable->file;
+			block->line = variable->line;
+			block->stmt.stmt = idxDecl;
+			idxDecl->next = loop;
+
+			// after the seed overrides, so already-initialized elements are readable
+			addTail(list, expand2Statement(ctx, block, 0));
+			return list;
+		}
+
+		// hidden index variable of the lowered loop
+		symn idx = newSymn(ctx, KIND_var | ATTR_mut | CAST_i32);
+		astn idxDecl = lnkNode(ctx, idx);
+		idx->name = ".index";
+		idx->type = ctx->type_int;
+		idx->size = ctx->type_int->size;
+		idx->init = intNode(ctx, 0);
+		idx->unit = ctx->unit;
+		idx->file = variable->file;
+		idx->line = variable->line;
+		idx->tag = idxDecl;
+		idxDecl->type = ctx->type_int;
+		idxDecl->file = variable->file;
+		idxDecl->line = variable->line;
+
+		astn decls = idxDecl;
+		astn rhs = NULL;
+		if (spreadZero || spreadFill != NULL) {
+			// fill: evaluate the element once, then copy it to every element
+			astn fillInit = spreadFill;
+			if (fillInit == NULL) {
+				// {...0}: fill with the zero initialized element
+				fillInit = newAstn(ctx, STMT_beg);
+				fillInit->stmt.init = spread;
+			}
+			symn tmp = newSymn(ctx, KIND_var | ATTR_mut | refCast(elem));
+			astn tmpDecl = lnkNode(ctx, tmp);
+			tmp->name = ".element";
+			tmp->type = elem;
+			tmp->size = refSize(elem);
+			tmp->unit = ctx->unit;
+			tmp->file = variable->file;
+			tmp->line = variable->line;
+			tmp->tag = tmpDecl;
+			tmpDecl->type = elem;
+			tmpDecl->file = variable->file;
+			tmpDecl->line = variable->line;
+			tmp->init = expandInitializer(ctx, tmp, fillInit);
+
+			tmpDecl->next = idxDecl;
+			decls = tmpDecl;
+			rhs = lnkNode(ctx, tmp);
+		}
+		else if (spreadCopy != NULL) {
+			// copy: variable[.index] := source[.index];
+			symn srcType = typeCheck(ctx, NULL, spreadCopy, 1);
+			if (srcType == NULL || !isArrayType(srcType)) {
+				error(ctx->rt, spreadCopy->file, spreadCopy->line, ERR_INVALID_INITIALIZER, spreadCopy);
+				return initializer;
+			}
+			symn srcLen = srcType->fields;
+			if (srcLen != NULL && srcLen != ctx->length_ref && isStatic(srcLen) && srcLen->init != NULL) {
+				if (intValue(srcLen->init) != count) {
+					error(ctx->rt, spreadCopy->file, spreadCopy->line, "the copied array must have the same length: %t", spreadCopy);
+					return initializer;
+				}
+			}
+			// todo: runtime length check for slices
+			rhs = opNode(ctx, NULL, OPER_idx, spreadCopy, lnkNode(ctx, idx));
+			rhs->file = spreadCopy->file;
+			rhs->line = spreadCopy->line;
+		}
+		else {
+			error(ctx->rt, initializer->file, initializer->line, ERR_INVALID_INITIALIZER, initializer);
+			return initializer;
+		}
+
+		// for (<element>, <index>; .index < count; .index += 1) variable[.index] := <element>;
+		astn elemAt = opNode(ctx, NULL, OPER_idx, variable, lnkNode(ctx, idx));
+		astn assign = opNode(ctx, NULL, INIT_set, elemAt, rhs);
+		assign->file = elemAt->file = variable->file;
+		assign->line = elemAt->line = variable->line;
+		if (typeCheck(ctx, NULL, assign, 1) == NULL) {
+			error(ctx->rt, variable->file, variable->line, ERR_INVALID_INITIALIZER, initializer);
+			return initializer;
+		}
+		assign->type = ctx->type_vid;
+
+		astn test = opNode(ctx, NULL, OPER_clt, lnkNode(ctx, idx), intNode(ctx, count));
+		astn inc = opNode(ctx, NULL, OPER_add, lnkNode(ctx, idx), intNode(ctx, 1));
+		astn step = opNode(ctx, NULL, ASGN_set, lnkNode(ctx, idx), inc);
+		inc->file = variable->file;
+		inc->line = variable->line;
+		test->file = step->file = variable->file;
+		test->line = step->line = variable->line;
+		test->type = typeCheck(ctx, NULL, test, 1);
+		step->type = typeCheck(ctx, NULL, step, 1);
+
+		astn loop = newAstn(ctx, STMT_for);
+		loop->type = ctx->type_vid;
+		loop->file = variable->file;
+		loop->line = variable->line;
+		loop->stmt.test = test;
+		loop->stmt.step = step;
+		loop->stmt.stmt = assign;
+
+		// { <declarations>; for (; .index < count; ...) ...; }
+		// wrapped in a statement, so the hidden locals are dropped at the end
+		astn block = newAstn(ctx, STMT_beg);
+		block->type = ctx->type_vid;
+		block->file = variable->file;
+		block->line = variable->line;
+		block->stmt.stmt = decls;
+		for (astn last = decls; last != NULL; last = last->next) {
+			if (last->next == NULL) {
+				last->next = loop;
+				break;
+			}
+		}
+
+		// the loop must run before the indexed overrides
+		addHead(list, expand2Statement(ctx, block, 0));
+		return list;
+	}
+	if (spreadFill != NULL) {
+		error(ctx->rt, spreadFill->file, spreadFill->line, "fill base is valid only for array initializers");
+		return initializer;
+	}
+	if (spreadGen != NULL) {
+		error(ctx->rt, spreadGen->file, spreadGen->line, "generator base is valid only for array initializers");
+		return initializer;
+	}
 	if (isArrayType(type)) {
 		symn len = type->fields;
 		if (len == NULL || len == ctx->length_ref) {
@@ -481,6 +844,29 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 		}
 	}
 
+	// spread copy base: `variable := instance;` as the first statement (after allocation)
+	if (spreadCopy != NULL) {
+		if (isObjectType(type)) {
+			// todo: allocate + member-wise copy
+			error(ctx->rt, spreadCopy->file, spreadCopy->line, "spread copy of object types is not implemented yet");
+			return initializer;
+		}
+		astn init = opNode(ctx, NULL, INIT_set, variable, spreadCopy);
+		init->file = spreadCopy->file;
+		init->line = spreadCopy->line;
+		if (typeCheck(ctx, NULL, init, 1) == NULL) {
+			error(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
+			return initializer;
+		}
+		symn ref = linkOf(variable, 1);
+		if (ref != NULL && !canAssign(ctx, ref, spreadCopy, 0)) {
+			error(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
+			return initializer;
+		}
+		init->type = ctx->type_vid;
+		addHead(list, expand2Statement(ctx, init, 0));
+	}
+
 	// if variable is instance of object then allocate it
 	if (isObjectType(type)) {
 		if (ctx->libc_new == NULL) {
@@ -502,7 +888,43 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 		addHead(list, expand2Statement(ctx, init, 0));
 	}
 
+	if (spreadUninit || spreadCopy != NULL) {
+		// {...?, overrides}: the rest stays uninitialized
+		// {...instance, overrides}: all fields are covered by the copy
+		return list;
+	}
+
+	// primitives have no fields to initialize: {} => default value, {...0} => zero
+	switch (castOf(type)) {
+		default:
+			break;
+
+		case CAST_bit:
+		case CAST_i32:
+		case CAST_u32:
+		case CAST_i64:
+		case CAST_u64:
+		case CAST_f32:
+		case CAST_f64: {
+			if (keys != NULL) {
+				break;
+			}
+			astn defInit = type->init;
+			if (spreadZero || defInit == NULL) {
+				defInit = intNode(ctx, 0);
+			}
+			astn init = opNode(ctx, NULL, INIT_set, variable, defInit);
+			init->file = variable->file;
+			init->line = variable->line;
+			typeCheck(ctx, NULL, init, 1);
+			init->type = ctx->type_vid;
+			addTail(list, expand2Statement(ctx, init, 0));
+			return list;
+		}
+	}
+
 	// add default initializer of uninitialized fields
+	int unionZeroed = 0;
 	size_t unionInitSize = type->size;
 	for (symn field = type->fields; field; field = field->next) {
 		if (isStatic(field)) {
@@ -527,11 +949,16 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 			}
 		}
 
+		int zeroUnion = 0;
 		if (initialized || unionInitSize > 0) {
 			if (initialized && field->size < unionInitSize) {
 				warn(ctx->rt, variable->file, variable->line, ERR_PARTIAL_INITIALIZE_UNION, linkOf(variable, 0), field);
 			}
-			continue;
+			if (!spreadZero || initialized || unionZeroed || field->size != unionInitSize) {
+				continue;
+			}
+			// {...0} on a union: zero only the largest member, before the overrides
+			zeroUnion = unionZeroed = 1;
 		}
 
 		if (field->name != NULL && *field->name == '.') {
@@ -543,38 +970,91 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 			continue;
 		}
 
-		astn defInit = field->init;
-		for (symn ovr = type->fields; ovr != NULL; ovr = ovr->next) {
-			if (field->tag == ovr->tag) {
-				continue;
-			}
-			if (field != ovr->override) {
-				continue;
-			}
-			if (ovr->init != NULL) {
-				defInit = lnkNode(ctx, ovr);
-				break;
+		astn defInit = NULL;
+		if (spreadZero) {
+			// {...0}: zero the member, bypassing the default initializers
+			switch (castOf(field)) {
+				case CAST_obj:
+					if (!isOptional(field)) {
+						error(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
+						continue;
+					}
+					defInit = lnkNode(ctx, ctx->null_ref);
+					break;
+
+				case CAST_ptr:
+				case CAST_arr:
+				case CAST_var:
+					defInit = lnkNode(ctx, ctx->null_ref);
+					break;
+
+				case CAST_val: {
+					// zero a nested record recursively
+					astn fld = opNode(ctx, NULL, OPER_dot, variable, lnkNode(ctx, field));
+					fld->file = variable->file;
+					fld->line = variable->line;
+					astn sub = newAstn(ctx, STMT_beg);
+					sub->stmt.init = spread;
+					sub->type = field->type;
+					if (typeCheck(ctx, NULL, fld, 1) != NULL) {
+						expandInitializerObj(ctx, fld, sub, list);
+					}
+					continue;
+				}
+
+				default:
+					defInit = intNode(ctx, 0);
+					break;
 			}
 		}
+		else {
+			defInit = field->init;
+			for (symn ovr = type->fields; ovr != NULL; ovr = ovr->next) {
+				if (field->tag == ovr->tag) {
+					continue;
+				}
+				if (field != ovr->override) {
+					continue;
+				}
+				if (ovr->init != NULL) {
+					defInit = lnkNode(ctx, ovr);
+					break;
+				}
+			}
 
-		if (defInit == NULL && isMutable(field) && isMutableVar(variable)) {
-			// only assignable members can be initialized with default type initializer.
-			defInit = field->type->init;
-		}
+			if (defInit == NULL && isMutable(field) && isMutableVar(variable)) {
+				// only assignable members can be initialized with default type initializer.
+				defInit = field->type->init;
+			}
 
-		if (defInit == NULL) {
-			if (isFixedSizeArray(field->type)) {
-				warn(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
+			if (defInit == NULL && castOf(field) == CAST_val && !isArrayType(field->type)
+					&& isDefaultInitializable(ctx, field->type)) {
+				// nested record with default initializers: expand recursively
+				astn fld = opNode(ctx, NULL, OPER_dot, variable, lnkNode(ctx, field));
+				fld->file = variable->file;
+				fld->line = variable->line;
+				astn sub = newAstn(ctx, STMT_beg);
+				sub->type = field->type;
+				if (typeCheck(ctx, NULL, fld, 1) != NULL) {
+					expandInitializerObj(ctx, fld, sub, list);
+				}
 				continue;
 			}
-			error(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
-			continue;
-		}
 
-		if (defInit == field->init) {
-			debug(ctx->rt, variable->file, variable->line, WARN_USING_DEF_FIELD_INITIALIZER, field, defInit);
-		} else {
-			debug(ctx->rt, variable->file, variable->line, WARN_USING_DEF_TYPE_INITIALIZER, field, defInit);
+			if (defInit == NULL) {
+				if (isFixedSizeArray(field->type)) {
+					warn(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
+					continue;
+				}
+				error(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_MEMBER, linkOf(variable, 0), field);
+				continue;
+			}
+
+			if (defInit == field->init) {
+				debug(ctx->rt, variable->file, variable->line, WARN_USING_DEF_FIELD_INITIALIZER, field, defInit);
+			} else {
+				debug(ctx->rt, variable->file, variable->line, WARN_USING_DEF_TYPE_INITIALIZER, field, defInit);
+			}
 		}
 
 		astn fld = opNode(ctx, NULL, OPER_dot, variable, lnkNode(ctx, field));
@@ -582,7 +1062,12 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 		init->file = fld->file = variable->file;
 		init->line = fld->line = variable->line;
 
-		addTail(list, expand2Statement(ctx, init, 0));
+		if (zeroUnion) {
+			// must run before the overrides of the union members
+			addHead(list, expand2Statement(ctx, init, 0));
+		} else {
+			addTail(list, expand2Statement(ctx, init, 0));
+		}
 
 		typeCheck(ctx, NULL, init, 1);
 		init->type = ctx->type_vid;
@@ -924,9 +1409,10 @@ static astn expression(ccContext ctx, int comma) {
 
 /** Parse initializer value, object, and array literals.
  * @param ctx Compiler context.
+ * @param variable The initialized variable (if known), for generator element types.
  * @return The initializer expression.
  */
-static astn initializer(ccContext ctx) {
+static astn initializer(ccContext ctx, symn variable) {
 	astn ast = peekToken(ctx, STMT_beg) ? NULL : expression(ctx, 1);
 	symn type = NULL;
 	if (ast != NULL) {
@@ -940,10 +1426,125 @@ static astn initializer(ccContext ctx) {
 		return ast;
 	}
 
+	astn spread = NULL;
 	if (skipToken(ctx, PNCT_dot3, 0)) {
-		skipToken(ctx, RIGHT_crl, 1);
-		// undefined initializer: {...}
-		return ctx->init_und;
+		// spread base: {...?}, {...0}, {...instance}, {...{element}}, {...(int i) {...}}
+		if (skipToken(ctx, OPER_sel, 0)) {
+			// undefined base: {...?} or {...?, overrides}
+			spread = newAstn(ctx, OPER_sel);
+			spread->type = ctx->type_vid;
+		}
+		else if (peekToken(ctx, STMT_beg)) {
+			// fill base: {...{element-init}, overrides}
+			spread = initializer(ctx, NULL);
+		}
+		else if (peekToken(ctx, OPER_fnc)) {
+			// generator base: {...(int i) { ... return element; }, overrides}
+			astn par = nextToken(ctx, OPER_fnc, 0);
+			astn typ = nextToken(ctx, TOKEN_var, 0);
+			astn nam = typ != NULL ? nextToken(ctx, TOKEN_var, 0) : NULL;
+			astn rpar = nam != NULL ? nextToken(ctx, RIGHT_par, 0) : NULL;
+			if (rpar == NULL || !peekToken(ctx, STMT_beg)) {
+				// not a generator: parse as a copy expression: {...(expr), overrides}
+				if (rpar != NULL) {
+					backToken(ctx, rpar);
+				}
+				if (nam != NULL) {
+					backToken(ctx, nam);
+				}
+				if (typ != NULL) {
+					backToken(ctx, typ);
+				}
+				backToken(ctx, par);
+				spread = expression(ctx, 1);
+			}
+			else {
+				symn elem = NULL;
+				if (variable != NULL && variable->type != NULL && isFixedSizeArray(variable->type)) {
+					elem = variable->type->type;
+				}
+				if (elem == NULL) {
+					error(ctx->rt, par->file, par->line, "generator initializer requires a fixed size array");
+					elem = ctx->type_int;
+				}
+
+				typ->type = typeCheck(ctx, NULL, typ, 1);
+				symn ptype = linkOf(typ, 1);
+				switch (ptype != NULL ? castOf(ptype) : CAST_any) {
+					default:
+						error(ctx->rt, typ->file, typ->line, "the generator index parameter must be an integer");
+						ptype = ctx->type_int;
+						break;
+
+					case CAST_i32:
+					case CAST_u32:
+					case CAST_i64:
+					case CAST_u64:
+						break;
+				}
+
+				enter(ctx, par, NULL);
+				symn res = install(ctx, ".result", KIND_var | ATTR_mut | refCast(elem), 0, elem, elem->init);
+				symn idx = install(ctx, nam->id.name, KIND_var | ATTR_mut | refCast(ptype), 0, ptype, NULL);
+				res->unit = idx->unit = ctx->unit;
+				res->file = idx->file = nam->file;
+				res->line = idx->line = nam->line;
+				symn params = leave(ctx, KIND_fun, vm_stk_align, 0, NULL, NULL);
+
+				// install into current scope like a nested static function declaration
+				symn def = install(ctx, ".generator", KIND_fun, 0, ctx->type_fun, NULL);
+				def->params = params;
+				def->fields = params;	// enable parameter lookup
+				def->unit = ctx->unit;
+				def->file = par->file;
+				def->line = par->line;
+				def->tag = lnkNode(ctx, def);
+
+				enter(ctx, par, def);
+				def->init = statement(ctx, NULL);
+				if (def->init == NULL) {
+					def->init = newAstn(ctx, STMT_beg);
+					def->init->type = ctx->type_vid;
+				}
+				leave(ctx, KIND_def, -1, 0, NULL, NULL);
+
+				// mark static immutable, disable parameter lookup (same as normal functions)
+				def->kind |= ATTR_stat;
+				def->kind &= ~ATTR_mut;
+				def->fields = NULL;
+
+				spread = newAstn(ctx, STMT_ret);
+				spread->type = ctx->type_vid;
+				spread->ret.func = def;
+				spread->ret.value = def->init;
+				spread->file = par->file;
+				spread->line = par->line;
+			}
+		}
+		else if (!peekToken(ctx, RIGHT_crl)) {
+			// zero or copy base: {...0, overrides} or {...instance, overrides}
+			spread = expression(ctx, 1);
+			if (spread == NULL) {
+				error(ctx->rt, ctx->file, ctx->line, ERR_INVALID_INITIALIZER, ast);
+			}
+		}
+
+		if (skipToken(ctx, RIGHT_crl, 0)) {
+			if (spread != NULL && spread->kind == OPER_sel) {
+				// undefined initializer: {...?}
+				return ctx->init_und;
+			}
+			if (spread == NULL) {
+				error(ctx->rt, variable->file, variable->line, ERR_UNDEFINED_INITIALIZER);
+				return ctx->init_und;
+			}
+			// base with no overrides: {...0}, {...instance}, {...{element}}
+			astn result = newAstn(ctx, STMT_beg);
+			result->stmt.init = spread;
+			result->type = type;
+			return result;
+		}
+		skipToken(ctx, OPER_com, 1);
 	}
 
 	if (ast != NULL && !isTypeExpr(ast)) {
@@ -951,7 +1552,6 @@ static astn initializer(ccContext ctx) {
 		error(ctx->rt, ast->file, ast->line, ERR_INVALID_BASE_TYPE, ast);
 	}
 
-	ccToken sep = STMT_end;
 	astn head = NULL, tail = NULL;
 	while ((ast = peekToken(ctx, TOKEN_any)) != NULL) {
 		switch (ast->kind) {
@@ -974,9 +1574,13 @@ static astn initializer(ccContext ctx) {
 
 		// try to read: `<property> ':' <initializer>`
 		ast = nextToken(ctx, TOKEN_var, 0);
+		if (ast == NULL) {
+			// constant indexed override for arrays: `2: value`
+			ast = nextToken(ctx, TOKEN_val, 0);
+		}
 		astn op = nextToken(ctx, OPER_cln, 0);
 		if (ast != NULL && op != NULL) {
-			astn init = initializer(ctx);
+			astn init = initializer(ctx, NULL);
 			op->kind = INIT_set;
 			op->op.lhso = ast;
 			op->op.rhso = init;
@@ -986,7 +1590,7 @@ static astn initializer(ccContext ctx) {
 			if (ast != NULL) {
 				backToken(ctx, ast);
 			}
-			ast = initializer(ctx);
+			ast = initializer(ctx, NULL);
 		}
 
 		if (ast == NULL) {
@@ -1002,29 +1606,26 @@ static astn initializer(ccContext ctx) {
 		}
 		tail = ast;
 
-		// allow ';' or ',' as delimiter
-		if (!skipToken(ctx, sep, 0)) {
-			if (sep == STMT_end) {
-				if (head == tail && skipToken(ctx, OPER_com, 0)) {
-					sep = OPER_com;
-				}
-				else {
-					astn next = peekToken(ctx, TOKEN_any);
-					if (head != tail && next != NULL) {
-						error(ctx->rt, next->file, next->line, ERR_UNMATCHED_SEPARATOR, next, STMT_end);
-					}
-					break;
-				}
+		// values are separated by comma, a trailing comma is allowed
+		if (!skipToken(ctx, OPER_com, 0)) {
+			astn semi = nextToken(ctx, STMT_end, 0);
+			if (semi != NULL) {
+				// enforced: values are separated by comma, statements by semicolon
+				error(ctx->rt, semi->file, semi->line, "use comma as value separator in initializers");
+				continue;
 			}
-			else {
-				break;
+			astn next = peekToken(ctx, TOKEN_any);
+			if (next != NULL && next->kind != RIGHT_crl) {
+				error(ctx->rt, next->file, next->line, ERR_UNMATCHED_SEPARATOR, next, OPER_com);
 			}
+			break;
 		}
 	}
 
 	skipToken(ctx, RIGHT_crl, 1);
 	ast = newAstn(ctx, STMT_beg);
 	ast->stmt.stmt = head;
+	ast->stmt.init = spread;
 	ast->type = type;
 	return ast;
 }
@@ -1310,11 +1911,48 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 
 	symn def = declare(ctx, (attr & MASK_attr) | KIND_var | cast, tag, type, params, doc);
 	if (skipToken(ctx, ASGN_set, 0)) {
-		astn init = initializer(ctx);
+		astn init = initializer(ctx, def);
 		if (init == NULL || init == ctx->init_und) {
-			// undefined initializer: {...}
+			// undefined initializer: {...?}
 			def->init = init;
 			return tag;
+		}
+
+		if (init->kind == TOKEN_val && init->type == ctx->type_str
+				&& isFixedSizeArray(type) && type->type == ctx->type_chr) {
+			// syntactic sugar: char buf[64] = "str" => {...0, 0: 's', 1: 't', 2: 'r'}
+			const char *str = init->id.name;
+			size_t strLen = strlen(str);
+			symn len = type->fields;
+			int64_t count = len != NULL && len->init != NULL ? intValue(len->init) : 0;
+			if ((int64_t) strLen >= count) {
+				error(ctx->rt, init->file, init->line, "string does not fit into the array (needs a zero terminator): %t", init);
+			}
+			else {
+				astn block = newAstn(ctx, STMT_beg);
+				astn zero = intNode(ctx, 0);
+				zero->file = init->file;
+				zero->line = init->line;
+				block->stmt.init = zero;
+				block->file = init->file;
+				block->line = init->line;
+				astn tail = NULL;
+				for (size_t i = 0; i < strLen; i += 1) {
+					astn key = intNode(ctx, (int64_t) i);
+					astn chr = intNode(ctx, str[i]);
+					chr->type = ctx->type_chr;
+					astn item = opNode(ctx, NULL, INIT_set, key, chr);
+					item->file = key->file = chr->file = init->file;
+					item->line = key->line = chr->line = init->line;
+					if (tail != NULL) {
+						tail->next = item;
+					} else {
+						block->stmt.stmt = item;
+					}
+					tail = item;
+				}
+				init = block;
+			}
 		}
 
 		if (init->kind == STMT_beg) {
@@ -1409,7 +2047,7 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 	}
 
 	skipToken(ctx, ASGN_set, 1);
-	astn init = initializer(ctx);
+	astn init = initializer(ctx, NULL);
 	symn params = leave(ctx, KIND_fun, vm_stk_align, 0, NULL, NULL);
 	if (init == NULL) {
 		dbgTraceAst(init);
@@ -1678,7 +2316,7 @@ static astn declare_enum(ccContext ctx, const char* doc) {
 	}
 
 	int64_t nextValue = 0;
-	astn ast = initializer(ctx);
+	astn ast = initializer(ctx, NULL);
 	for (astn prop = ast->stmt.stmt; prop != NULL; prop = prop->next) {
 		astn id = prop->kind == INIT_set ? prop->op.lhso : prop;
 		if (id == NULL || id->kind != TOKEN_var) {
@@ -2116,8 +2754,8 @@ static astn statement(ccContext ctx, const char *doc) {
 				break;
 			}
 
-			astn result = initializer(ctx);
 			symn function = ctx->owner;
+			astn result = initializer(ctx, function != NULL && isFunction(function) ? function->params : NULL);
 			skipToken(ctx, STMT_end, 1);
 
 			if (result == NULL || function == NULL || !isFunction(function)) {

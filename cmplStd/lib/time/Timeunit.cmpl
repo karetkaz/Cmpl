@@ -1,13 +1,13 @@
 /// enumeration of some known time unit, used for conversions and to specify the precision
 enum Timeunit: int64 {
 	// approximately 584 years of nanoseconds can be represented in uint64
-	Nanos: 1;
-	Micros: 1000 * Nanos;
-	Millis: 1000 * Micros;
-	Seconds: 1000 * Millis;
-	Minutes: 60 * Seconds;
-	Hours: 60 * Minutes;
-	Days: 24 * Hours;
+	Nanos: 1,
+	Micros: 1000 * Nanos,
+	Millis: 1000 * Micros,
+	Seconds: 1000 * Millis,
+	Minutes: 60 * Seconds,
+	Hours: 60 * Minutes,
+	Days: 24 * Hours,
 }
 
 /// Convert the given integer `value` from the `from` to `to` unit

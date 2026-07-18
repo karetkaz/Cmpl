@@ -14,9 +14,9 @@ vec4f rgb2hsl(vec4f rgb) {
 	if (delta == 0) {
 		//This is a gray, no chroma...
 		return {
-			x: 0;   // Hue
-			y: 0;   // Saturation
-			z: lum; // Luminance
+			x: 0,   // Hue
+			y: 0,   // Saturation
+			z: lum, // Luminance
 		};
 	}
 
@@ -51,9 +51,9 @@ vec4f rgb2hsl(vec4f rgb) {
 	}
 
 	return {
-		x: clamp(hue, 0, 1); // Hue
-		y: clamp(sat, 0, 1); // Saturation
-		z: clamp(lum, 0, 1); // Luminance
+		x: clamp(hue, 0, 1), // Hue
+		y: clamp(sat, 0, 1), // Saturation
+		z: clamp(lum, 0, 1), // Luminance
 	};
 }
 
@@ -93,8 +93,8 @@ float32 hue2rgb(float32 f1, float32 f2, float32 hue) {
 
 	float32 f1 = 2 * hsl.z - f2;
 	return {
-		x: hue2rgb(f1, f2, hsl.x + (1 / 3f));
-		y: hue2rgb(f1, f2, hsl.x);
-		z: hue2rgb(f1, f2, hsl.x - (1 / 3f));
+		x: hue2rgb(f1, f2, hsl.x + (1 / 3f)),
+		y: hue2rgb(f1, f2, hsl.x),
+		z: hue2rgb(f1, f2, hsl.x - (1 / 3f)),
 	};
 }

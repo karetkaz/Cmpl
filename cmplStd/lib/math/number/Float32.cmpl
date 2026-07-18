@@ -2,11 +2,11 @@
 static struct Float32 {
 	// Some useful mathematical constants
 	enum: float32 {
-		nan: 0 / 0.;
-		inf: 1 / 0.;
+		nan: 0 / 0.,
+		inf: 1 / 0.,
 
-		pi: Float64.pi;
-		e: Float64.e;
+		pi: Float64.pi,
+		e: Float64.e,
 	}
 
 	/// return the 32 bit floating point value as an integer

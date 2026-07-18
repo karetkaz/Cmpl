@@ -36,18 +36,18 @@ TreeView TreeView(char text[], View items...) {
 	TreeView result = {};
 
 	Switch root = {
-		text: text;
-		states: states;
-		onUpdate: onUpdate;
-		clickToFocus: false;
+		text: text,
+		states: states,
+		onUpdate: onUpdate,
+		clickToFocus: false,
 	};
 	result.addItems(Style.verticalTop, root);
 
 	if (items.length > 0) {
 		Layout children = {
-			onMeasure: onMeasure;
-			paddingLeft: 20;
-			data: root;
+			onMeasure: onMeasure,
+			paddingLeft: 20,
+			data: root,
 		};
 		children.addItems(Style.verticalTop, ...items);
 		result.addItems(Style.verticalTop, children);
@@ -60,22 +60,22 @@ View TextView(char text[]) {
 		trace("click", this.text);
 	}
 	return Button {
-		text: text;
-		onClick: click;
+		text: text,
+		onClick: click,
 	};
 }
 
 Slider Slider(char text[], int min, int max, int val) {
 	return {
-		text: text;
-		value: val;
-		minimum: min;
-		maximum: max;
+		text: text,
+		value: val,
+		minimum: min,
+		maximum: max,
 	};
 }
 
 Style style = {
-	align: Style.topLeft;
+	align: Style.topLeft,
 };
 
 Window.show(Widget(300, 500, style).addItems(Style.verticalTop,

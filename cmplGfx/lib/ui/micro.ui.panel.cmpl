@@ -93,28 +93,28 @@ struct TabPage: Layout {
 	static TabPage addItems(TabPage this&, char text[], int32 align, View views...) {
 		inline padding = 1;
 		Layout page = {
-			data: this;
+			data: this,
 			// fixme: orientation;
-			onDraw: onDrawPage;
-			onMeasure: onMeasurePage;
+			onDraw: onDrawPage,
+			onMeasure: onMeasurePage,
 		};
 		Button tab = {
-			text: text;
-			data: page;
-			focusable: false;
-			onDraw: onDrawTab;
-			onClick: onClickTab;
+			text: text,
+			data: page,
+			focusable: false,
+			onDraw: onDrawTab,
+			onClick: onClickTab,
 		};
 
 		if (this.tabs == null) {
 			Layout tabs = {
-				paddingTop: padding;
-				paddingLeft: padding;
-				paddingRight: padding;
-				paddingBottom: padding;
-				data: this;
-				onDraw: onDrawBar;
-				orientation: -this.orientation;
+				paddingTop: padding,
+				paddingLeft: padding,
+				paddingRight: padding,
+				paddingBottom: padding,
+				data: this,
+				onDraw: onDrawBar,
+				orientation: -this.orientation,
 			};
 
 			this.tabs = tabs;
@@ -126,11 +126,11 @@ struct TabPage: Layout {
 			// todo: replace separator with rowSpacing and colSpacing
 			if (tabs.separator == null) {
 				View separator = {
-					width: padding;
-					height: padding;
-					enabled: false;
-					focusable: false;
-					onDraw: onDrawSeparator;
+					width: padding,
+					height: padding,
+					enabled: false,
+					focusable: false,
+					onDraw: onDrawSeparator,
 				};
 				tabs.separator = separator;
 			}
@@ -210,10 +210,10 @@ struct Select: Layout {
 		}
 		if (this.itemCount == 0) {
 			Header header = {
-				text: this.text;
-				states: this.states;
-				clickToFocus: false;
-				select: this;
+				text: this.text,
+				states: this.states,
+				clickToFocus: false,
+				select: this,
 			};
 			Panel panel = {};
 
@@ -242,9 +242,9 @@ struct Select: Layout {
 			}
 		}
 		SelectItem item = {
-			select: this;
-			text: text;
-			data: data;
+			select: this,
+			text: text,
+			data: data,
 		};
 		Select.addItems(&this, Style.fill, item);
 		return this;

@@ -402,7 +402,7 @@ int format(Fixed32 value, char output&[], int out, char format[]) {
 /// extension method for backward compatibility
 int format(Datetime value!, char output&[], int out, char format[]) {
 	static DatetimeFormat fmt! = {
-		numberFormat: {};
+		numberFormat: {},
 	};
 	return fmt.format(&output, out, value, format);
 }

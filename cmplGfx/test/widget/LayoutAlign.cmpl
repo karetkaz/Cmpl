@@ -9,10 +9,10 @@ struct Rectangle: View {
 Rectangle Rectangle(int rgb) {
 	inline size = 20;
 	return {
-		background: argb(rgb);
-		width: size;
-		height: size;
-		enabled: false;
+		background: argb(rgb),
+		width: size,
+		height: size,
+		enabled: false,
 	};
 }
 

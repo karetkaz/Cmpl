@@ -11,8 +11,8 @@ static struct Window {
 				pointer data;
 				int32 onEvent(pointer data, int32 action, int32 button, int32 x, int32 y);
 				static int32 delegate(Data data!, int32 action, int32 button, int32 ex, int32 ey) {
-					Window.quit();
-					return data.onEvent(data.data, action, button, ex, ey);
+					data.onEvent(data.data, action, button, ex, ey);
+					return Window.quit();
 				}
 			}
 			Data d = {data: data, onEvent: onEvent};
@@ -70,10 +70,10 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 
 	Image offs = Image(width, height, image0.depth());
 	Data data = {
-		offs: offs;
-		image0: image0;
-		image1: image1;
-		image2: image2;
+		offs: offs,
+		image0: image0,
+		image1: image1,
+		image2: image2,
 	};
 	onEvent(data, Window.MOUSE_RELEASE, 0, 0, 0);
 	Window.show(offs, data, onEvent);
@@ -133,7 +133,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 			}
 		}
 		if (action == Window.WINDOW_INIT && !data.animate) {
-			char text[256] = {...};
+			char text[256] = {...?};
 			int64 now = System.millis();
 			float32 time = (now - start) / 1000f;
 			data.offs.eval(null, data.aspect, time, data.eval);
@@ -149,10 +149,10 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 		float32 time = (System.millis() - start) / 1000f;
 		if (data.downScale > 1) {
 			Rect r = {
-				x1: data.offs.width();
-				y1: data.offs.height();
-				x0: r.x1 - r.x1 / data.downScale;
-				y0: r.y1 - r.y1 / data.downScale;
+				x1: data.offs.width(),
+				y1: data.offs.height(),
+				x0: r.x1 - r.x1 / data.downScale,
+				y0: r.y1 - r.y1 / data.downScale,
 			};
 			// todo: with linear interpolation the row or column outside the roi might bleed into the scale
 			data.offs.eval(r, data.aspect, time, data.eval);
@@ -161,7 +161,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 			data.offs.eval(null, data.aspect, time, data.eval);
 		}
 		if (time > data.fpsTime) {
-			char text[256] = {...};
+			char text[256] = {...?};
 			data.fpsCount.format(&text, "Fps: %d");
 			Window.setTitle(text);
 			data.fpsTime = time + 1;
@@ -174,11 +174,11 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 	}
 
 	Data data = {
-		eval: eval;
-		offs: Image(width, height, 32);
-		animate: animationDownScale > 0;
-		downScale: animationDownScale;
-		aspect: width / float32(height);
+		eval: eval,
+		offs: Image(width, height, 32),
+		animate: animationDownScale > 0,
+		downScale: animationDownScale,
+		aspect: width / float32(height),
 	};
 	Window.show(data.offs, data, onEvent);
 	data.offs.destroy();
@@ -401,7 +401,7 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 
 		int rendered = data.offs.drawMesh(data.mesh, data.mode);
 
-		char text[256] = {...};
+		char text[256] = {...?};
 		int pos = 0;
 		pos = data.mesh.vertices.format(&text, pos, "Vertices: %d");
 		pos = data.mesh.triangles.format(&text, pos, ", Triangles: %d");
@@ -420,11 +420,11 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 	}
 
 	Data data = {
-		mode: Mesh.useLights | Mesh.cullBack | Mesh.drawFill;
-		offs: Image.create3d(w, h);
-		proj: Camera.projection(fovy, w / float32(h), 1, 100);
-		cam: {};
-		mesh: mesh;
+		mode: Mesh.useLights | Mesh.cullBack | Mesh.drawFill,
+		offs: Image.create3d(w, h),
+		proj: Camera.projection(fovy, w / float32(h), 1, 100),
+		cam: {},
+		mesh: mesh,
 	};
 	Window.show(data.offs, data, onEvent);
 	data.offs.destroy();

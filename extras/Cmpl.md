@@ -695,7 +695,7 @@ int a[2] = {42, 97};
   ```
 - [x] undefined initialization can be used when the array will be populated later:
   ```cmpl
-  int x[10] = {...};
+  int x[10] = {...?};
   ```
 - [ ] zero initialization can be used to initialize all the elements with zero:
   ```cmpl
@@ -1025,7 +1025,7 @@ struct TextReader: Closeable {
 
 	// static method
 	static int read(TextReader this) {
-		char chars[1] = {...};
+		char chars[1] = {...?};
 		result = this.read(chars);
 		if (result > 0) {
 			result = chars[0];

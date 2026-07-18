@@ -28,14 +28,14 @@ struct User {
 }
 
 char pets[*][] = {
-	"Rocco";
-	"Milo";
+	"Rocco",
+	"Milo",
 };
 User user = {
-	id: 19810228;
-	firstName: "John";
-	lastName: "Doe";
-	pets: pets;
+	id: 19810228,
+	firstName: "John",
+	lastName: "Doe",
+	pets: pets,
 };
 
 serialize(user);

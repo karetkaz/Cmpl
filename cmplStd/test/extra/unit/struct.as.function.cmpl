@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 73
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 int32 test(uint8 x) {
 	typename v = struct();

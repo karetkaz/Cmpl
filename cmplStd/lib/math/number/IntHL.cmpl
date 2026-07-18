@@ -25,8 +25,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned neg(Unsigned x) {
 		Word c = wZero;
 		return {
-			lo: x.lo.cmt().add(wOne, &c);
-			hi: x.hi.cmt().add(c);
+			lo: x.lo.cmt().add(wOne, &c),
+			hi: x.hi.cmt().add(c),
 		};
 	}
 
@@ -34,8 +34,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned add(Unsigned x, Unsigned y) {
 		Word c = wZero;
 		return {
-			lo: Word.add(x.lo, y.lo, &c);
-			hi: Word.add(x.hi, y.hi).add(c);
+			lo: Word.add(x.lo, y.lo, &c),
+			hi: Word.add(x.hi, y.hi).add(c),
 		};
 	}
 
@@ -43,22 +43,22 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned sub(Unsigned x, Unsigned y) {
 		Word c = wZero;
 		return {
-			lo: Word.sub(x.lo, y.lo, &c);
-			hi: Word.sub(x.hi, y.hi).sub(c);
+			lo: Word.sub(x.lo, y.lo, &c),
+			hi: Word.sub(x.hi, y.hi).sub(c),
 		};
 	}
 
 	static Unsigned add(Unsigned x, Word y) {
 		Word c = wZero;
 		return {
-			lo: Word.add(x.lo, y, &c);
-			hi: Word.add(x.hi, c);
+			lo: Word.add(x.lo, y, &c),
+			hi: Word.add(x.hi, c),
 		};
 	}
 
 	/// Multiplies two 32-bit unsigned integers
 	static Unsigned mul(Unsigned x, Unsigned y) {
-		Unsigned t0 = {...}; // xl * yl;
+		Unsigned t0 = {...?}; // xl * yl;
 		t0.lo = Word.mul(x.lo, y.lo, &t0.hi);
 		Word t1 = x.hi.mul(y.lo);
 		Word t2 = x.lo.mul(y.hi);
@@ -74,8 +74,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		overflow.lo = wOne; // always overflows
 		Word c = wZero;
 		return {
-			lo: x.lo.cmt().add(wOne, &c);
-			hi: x.hi.cmt().add(c);
+			lo: x.lo.cmt().add(wOne, &c),
+			hi: x.hi.cmt().add(c),
 		};
 	}
 
@@ -83,8 +83,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned add(Unsigned x, Unsigned y, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
-			lo: Word.add(x.lo, y.lo, &overflow.lo);
-			hi: Word.add(x.hi, y.hi, overflow.lo, &overflow.lo);
+			lo: Word.add(x.lo, y.lo, &overflow.lo),
+			hi: Word.add(x.hi, y.hi, overflow.lo, &overflow.lo),
 		};
 	}
 
@@ -92,8 +92,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned add(Unsigned x, Unsigned y, Unsigned c, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
-			lo: Word.add(x.lo, y.lo, c.lo, &c.lo);
-			hi: Word.add(x.hi, y.hi, c.lo, &overflow.lo);
+			lo: Word.add(x.lo, y.lo, c.lo, &c.lo),
+			hi: Word.add(x.hi, y.hi, c.lo, &overflow.lo),
 		};
 	}
 
@@ -101,8 +101,8 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned sub(Unsigned x, Unsigned y, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
-			lo: Word.sub(x.lo, y.lo, &overflow.lo);
-			hi: Word.sub(x.hi, y.hi, overflow.lo, &overflow.lo);
+			lo: Word.sub(x.lo, y.lo, &overflow.lo),
+			hi: Word.sub(x.hi, y.hi, overflow.lo, &overflow.lo),
 		};
 	}
 
@@ -110,17 +110,17 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	static Unsigned sub(Unsigned x, Unsigned y, Unsigned c, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
-			lo: Word.sub(x.lo, y.lo, c.lo, &c.lo);
-			hi: Word.sub(x.hi, y.hi, c.lo, &overflow.lo);
+			lo: Word.sub(x.lo, y.lo, c.lo, &c.lo),
+			hi: Word.sub(x.hi, y.hi, c.lo, &overflow.lo),
 		};
 	}
 
 	/// Multiplies two 32-bit unsigned integers with overflow out
 	static Unsigned mul(Unsigned x, Unsigned y, Unsigned overflow&) {
-		Unsigned t0 = {...}; // xl * yl;
-		Unsigned t1 = {...}; // xh * yl;
-		Unsigned t2 = {...}; // xl * yh;
-		Unsigned t3 = {...}; // xh * yh;
+		Unsigned t0 = {...?}; // xl * yl;
+		Unsigned t1 = {...?}; // xh * yl;
+		Unsigned t2 = {...?}; // xl * yh;
+		Unsigned t3 = {...?}; // xh * yh;
 		t0.lo = Word.mul(x.lo, y.lo, &t0.hi);
 		t1.lo = Word.mul(x.hi, y.lo, &t1.hi);
 		t2.lo = Word.mul(x.lo, y.hi, &t2.hi);
@@ -136,32 +136,32 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	/// Computes the bitwise NOT of an 32-bit unsigned value
 	static Unsigned cmt(Unsigned x) {
 		return {
-			lo: x.lo.cmt();
-			hi: x.hi.cmt();
+			lo: x.lo.cmt(),
+			hi: x.hi.cmt(),
 		};
 	}
 
 	/// Computes the bitwise OR of two 32-bit unsigned integers
 	static Unsigned or(Unsigned x, Unsigned y) {
 		return {
-			lo: x.lo.or(y.lo);
-			hi: x.hi.or(y.hi);
+			lo: x.lo.or(y.lo),
+			hi: x.hi.or(y.hi),
 		};
 	}
 
 	/// Computes the bitwise XOR of two 32-bit unsigned integers
 	static Unsigned xor(Unsigned x, Unsigned y) {
 		return {
-			lo: x.lo.xor(y.lo);
-			hi: x.hi.xor(y.hi);
+			lo: x.lo.xor(y.lo),
+			hi: x.hi.xor(y.hi),
 		};
 	}
 
 	/// Computes the bitwise AND of two 32-bit unsigned integers
 	static Unsigned and(Unsigned x, Unsigned y) {
 		return {
-			lo: x.lo.and(y.lo);
-			hi: x.hi.and(y.hi);
+			lo: x.lo.and(y.lo),
+			hi: x.hi.and(y.hi),
 		};
 	}
 
@@ -170,14 +170,14 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		if (n >= Word.bits) {
 			if (n >= bits) { n = bits; }
 			return {
-				hi: x.lo.shl(n - Word.bits);
-				lo: wZero;
+				hi: x.lo.shl(n - Word.bits),
+				lo: wZero,
 			};
 		}
 		return {
-			hi: x.hi.shl(n).or(x.lo.shr(Word.bits - n - 1).shr(1));
-			//todo: x.hi.shl(n).or(x.lo.shr(Word.bits - n));
-			lo: x.lo.shl(n);
+			hi: x.hi.shl(n).or(x.lo.shr(Word.bits - n - 1).shr(1)),
+			//todo: x.hi.shl(n).or(x.lo.shr(Word.bits - n)),
+			lo: x.lo.shl(n),
 		};
 	}
 
@@ -186,14 +186,14 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		if (n >= Word.bits) {
 			if (n >= bits) { n = bits; }
 			return {
-				lo: x.hi.shr(n - Word.bits);
-				hi: wZero;
+				lo: x.hi.shr(n - Word.bits),
+				hi: wZero,
 			};
 		}
 		return {
-			lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n - 1).shl(1));
-			//todo: x.lo.shr(n).or(x.hi.shl(Word.bits - n));
-			hi: x.hi.shr(n);
+			lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n - 1).shl(1)),
+			//todo: x.lo.shr(n).or(x.hi.shl(Word.bits - n)),
+			hi: x.hi.shr(n),
 		};
 	}
 
@@ -203,14 +203,14 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		if (n >= Word.bits) {
 			if (n >= bits) { n = bits; }
 			return {
-				lo: x.hi.sar(n - Word.bits);
-				hi: x.hi.sar(Word.bits - 1);
+				lo: x.hi.sar(n - Word.bits),
+				hi: x.hi.sar(Word.bits - 1),
 			};
 		}
 		return {
-			lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n - 1).shl(1));
-			//todo: lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n));
-			hi: x.hi.sar(n);
+			lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n - 1).shl(1)),
+			//todo: lo: x.lo.shr(n).or(x.hi.shl(Word.bits - n)),
+			hi: x.hi.sar(n),
 		};
 	}
 
@@ -270,16 +270,16 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	/// Returns the value of x with its bits in reversed order
 	static Unsigned reverseBits(Unsigned x) {
 		return {
-			lo: x.hi.reverseBits();
-			hi: x.lo.reverseBits();
+			lo: x.hi.reverseBits(),
+			hi: x.lo.reverseBits(),
 		};
 	}
 
 	/// Reverses the byte order of an 32-bit unsigned integer
 	static Unsigned reverseBytes(Unsigned x) {
 		return {
-			lo: x.hi.reverseBytes();
-			hi: x.lo.reverseBytes();
+			lo: x.hi.reverseBytes(),
+			hi: x.lo.reverseBytes(),
 		};
 	}
 
@@ -394,13 +394,13 @@ static if (struct(Unsigned) != null && struct(Signed) != null) {
 		overflow.hi = Word(0);
 		if (x.lo.test() == 0) {
 			return {
-				lo: x.lo;
-				hi: Word.neg(x.hi, &ovf);
+				lo: x.lo,
+				hi: Word.neg(x.hi, &ovf),
 			};
 		}
 		return {
-			lo: x.lo.cmt();
-			hi: Word.neg(x.hi, &ovf);
+			lo: x.lo.cmt(),
+			hi: Word.neg(x.hi, &ovf),
 		};
 	}
 

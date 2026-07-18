@@ -6,7 +6,7 @@ static Image offs = Image(800, 600, 32);
 
 static float64 magFactor = 3.4;
 inline magSize = 512;
-static vec2d mag[magSize * magSize] = {...};
+static vec2d mag[magSize * magSize] = {...?};
 
 void init() {
 	int32 r = magSize / 2;

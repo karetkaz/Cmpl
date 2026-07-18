@@ -3,9 +3,9 @@ struct Uint32: 4 {
 	uint32 value;
 
 	enum {
-		bits: 32;
-		min: 0x00000000U;
-		max: 0xffffffffU;
+		bits: 32,
+		min: 0x00000000U,
+		max: 0xffffffffU,
 	}
 
 	inline u32(Uint32 x) = uint32(x.value);
@@ -241,9 +241,9 @@ struct Int32: 4 {
 	int32 value;
 
 	enum {
-		bits: Uint32.bits;
-		max: 1 << bits - 1;
-		min: ~max;
+		bits: Uint32.bits,
+		max: 1 << bits - 1,
+		min: ~max,
 	}
 
 	inline i32(Int32 x) = int32(x.value);

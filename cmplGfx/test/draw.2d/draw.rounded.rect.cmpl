@@ -3,38 +3,38 @@
 static Image offs = Image(800, 600, 32);
 
 static Slider sldSx = {
-	text: "size.x";
-	maximum: offs.width() / 2;
-	value: offs.width() / 4;
-	stepSize: 1;
+	text: "size.x",
+	maximum: offs.width() / 2,
+	value: offs.width() / 4,
+	stepSize: 1,
 };
 static Slider sldSy = {
-	text: "size.y";
-	maximum: offs.height() / 2;
-	value: offs.height() / 4;
-	stepSize: 1;
+	text: "size.y",
+	maximum: offs.height() / 2,
+	value: offs.height() / 4,
+	stepSize: 1,
 };
 static Slider sldRx = {
-	text: "round.x";
-	maximum: sldSx.maximum;
-	value: 20;
-	stepSize: 1;
+	text: "round.x",
+	maximum: sldSx.maximum,
+	value: 20,
+	stepSize: 1,
 };
 static Slider sldRy = {
-	text: "round.y";
-	maximum: sldSy.maximum;
-	value: 20;
-	stepSize: 1;
+	text: "round.y",
+	maximum: sldSy.maximum,
+	value: 20,
+	stepSize: 1,
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 Button separator = {
-	text: null;
-	height: 1;
-	enabled: false;
+	text: null,
+	height: 1,
+	enabled: false,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

@@ -2,8 +2,8 @@
 struct Utf8Reader: TextReader {
 	// convert utf-8 bytes to unicode codepoints
 	int decode^(Utf8Reader this, unicode chars&[]) {
-		uint8 buff[1] = {...};
-		uint8 ext[3] = {...};
+		uint8 buff[1] = {...?};
+		uint8 ext[3] = {...?};
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
 			if (reader.read(&buff) <= 0) {
@@ -77,7 +77,7 @@ struct Utf8Writer: TextWriter {
 
 	// convert unicode codepoints to utf-8 bytes
 	void encode^(Utf8Writer this, unicode chars[]) {
-		uint8 bytes&[4] = {...};
+		uint8 bytes&[4] = {...?};
 		ByteWriter writer = this.writer;
 		for (int i = 0; i < chars.length; i += 1) {
 			int n = encode(&bytes, chars[i]);

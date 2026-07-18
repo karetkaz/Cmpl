@@ -9,7 +9,7 @@ static Image offs = Image(1440, 900, 32);
 static Image back = Image("../asset/image/forest.jpg", 32);
 static Image draw = Image("../asset/image/david.png", 32);
 
-static argb lut[256] = {...};
+static argb lut[256] = {...?};
 for (int idx = 0; idx < 256; idx += 1) {
 	int rgb = sat_s8(idx - 10);
 	lut[idx] = pack(idx, rgb, rgb, rgb);
@@ -18,10 +18,10 @@ for (int idx = 0; idx < 256; idx += 1) {
 int onEvent(int action, int button, int x, int y) {
 	static int64 millis = 0;
 	static Rect roi! = {
-		x0: 30;
-		y0: 30;
-		x1: 150;
-		y1: 150;
+		x0: 30,
+		y0: 30,
+		x1: 150,
+		y1: 150,
 	};
 	if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
 		if (button == 1 || action == Window.FINGER_MOTION) {
@@ -32,10 +32,10 @@ int onEvent(int action, int button, int x, int y) {
 		}
 		if (button == 3) {
 			Rect to = {
-				x0: 0;
-				y0: 0;
-				x1: x;
-				y1: y;
+				x0: 0,
+				y0: 0,
+				x1: x,
+				y1: y,
 			};
 			offs.resize(to, draw, null, 1);
 		}

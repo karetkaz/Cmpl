@@ -76,14 +76,14 @@ static struct Window {
 				}
 
 				TouchEvent event = {
-					release: false;
-					isShift: window.isShift;
-					isCtrl: window.isCtrl;
-					isAlt: window.isAlt;
-					clicks: window.clicks;
-					button: button;
-					x: x - window.rect.x0;
-					y: y - window.rect.y0;
+					release: false,
+					isShift: window.isShift,
+					isCtrl: window.isCtrl,
+					isAlt: window.isAlt,
+					clicks: window.clicks,
+					button: button,
+					x: x - window.rect.x0,
+					y: y - window.rect.y0,
 				};
 				return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 			}
@@ -100,16 +100,16 @@ static struct Window {
 					return false;
 				}
 				TouchEvent event = {
-					release: false;
-					isShift: window.isShift;
-					isCtrl: window.isCtrl;
-					isAlt: window.isAlt;
-					clicks: window.clicks;
-					button: button;
-					x: x - window.rect.x0;
-					y: y - window.rect.y0;
-					dx: x - lastX;
-					dy: y - lastY;
+					release: false,
+					isShift: window.isShift,
+					isCtrl: window.isCtrl,
+					isAlt: window.isAlt,
+					clicks: window.clicks,
+					button: button,
+					x: x - window.rect.x0,
+					y: y - window.rect.y0,
+					dx: x - lastX,
+					dy: y - lastY,
 				};
 				return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 			}
@@ -125,14 +125,14 @@ static struct Window {
 				}
 
 				TouchEvent event = {
-					release: true;
-					isShift: window.isShift;
-					isCtrl: window.isCtrl;
-					isAlt: window.isAlt;
-					clicks: window.clicks;
-					button: button;
-					x: x - window.rect.x0;
-					y: y - window.rect.y0;
+					release: true,
+					isShift: window.isShift,
+					isCtrl: window.isCtrl,
+					isAlt: window.isAlt,
+					clicks: window.clicks,
+					button: button,
+					x: x - window.rect.x0,
+					y: y - window.rect.y0,
 				};
 				return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 			}
@@ -149,13 +149,13 @@ static struct Window {
 				}
 
 				KeyEvent event = {
-					release: false;
-					isShift: window.isShift;
-					isCtrl: window.isCtrl;
-					isAlt: window.isAlt;
-					repeat: window.repeat;
-					key: button;
-					chr: x;
+					release: false,
+					isShift: window.isShift,
+					isCtrl: window.isCtrl,
+					isAlt: window.isAlt,
+					repeat: window.repeat,
+					key: button,
+					chr: x,
 				};
 				return widget.onKeyEvent(widget, event) != View.State.ignored;
 			}
@@ -164,13 +164,13 @@ static struct Window {
 				window.isCtrl = (y & Window.KEY_MASK_CTRL) != 0;
 				window.isAlt = (y & Window.KEY_MASK_ALT) != 0;
 				KeyEvent event = {
-					release: true;
-					isShift: window.isShift;
-					isCtrl: window.isCtrl;
-					isAlt: window.isAlt;
-					repeat: window.repeat;
-					key: button;
-					chr: x;
+					release: true,
+					isShift: window.isShift,
+					isCtrl: window.isCtrl,
+					isAlt: window.isAlt,
+					repeat: window.repeat,
+					key: button,
+					chr: x,
 				};
 				window.key = 0;
 				window.repeat = 0;
@@ -182,14 +182,14 @@ static struct Window {
 					window.releaseTimeout = Window.timeoutMax;
 
 					TouchEvent event = {
-						release: false;
-						isShift: window.isShift;
-						isCtrl: window.isCtrl;
-						isAlt: window.isAlt;
-						clicks: -1;
-						button: button;
-						x: x - window.rect.x0;
-						y: y - window.rect.y0;
+						release: false,
+						isShift: window.isShift,
+						isCtrl: window.isCtrl,
+						isAlt: window.isAlt,
+						clicks: -1,
+						button: button,
+						x: x - window.rect.x0,
+						y: y - window.rect.y0,
 					};
 					return widget.onTouchEvent(widget, window.rect, event) != View.State.ignored;
 				}
@@ -258,10 +258,10 @@ static struct Window {
 		}
 
 		WindowData window = {
-			offscreen: offscreen;
-			onEvent: onEvent;
-			widget: widget;
-			rect: {};
+			offscreen: offscreen,
+			onEvent: onEvent,
+			widget: widget,
+			rect: {},
 		};
 		return Window.show(offscreen, window, pointer(windowEvent));
 	}

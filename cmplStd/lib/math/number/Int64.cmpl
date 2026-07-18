@@ -3,9 +3,9 @@ struct Uint64: 8 {
 	uint64 value;
 
 	enum {
-		bits: 64;
-		min: 0x0000000000000000;
-		max: 0xffffffffffffffff;
+		bits: 64,
+		min: 0x0000000000000000,
+		max: 0xffffffffffffffff,
 	}
 
 	inline u64(Uint64 x) = x.value;
@@ -241,9 +241,9 @@ struct Int64: 8 {
 	int64 value;
 
 	enum {
-		bits: Uint64.bits;
-		max: 1U << bits - 1;
-		min: ~max;
+		bits: Uint64.bits,
+		max: 1U << bits - 1,
+		min: ~max,
 	}
 
 	inline i64(Int64 x) = int64(x.value);

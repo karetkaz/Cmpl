@@ -37,7 +37,7 @@ struct vec2d: 0 {
 /// Initialize with given x, y components
 vec2d vec2d(float64 x, float64 y) {
 	return {
-		x: x;
-		y: y;
+		x: x,
+		y: y,
 	};
 }

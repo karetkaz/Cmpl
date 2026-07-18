@@ -1,8 +1,8 @@
 // test floating point number formatting
 NumberFormat format = {
-//	positiveSymbol: '+'; // force sign
-	precision: 15;
-	trailingZeros: true;
+//	positiveSymbol: '+', // force sign
+	precision: 15,
+	trailingZeros: true,
 };
 
 int printFlags(NumberFormat format!) {
@@ -16,8 +16,8 @@ int printFlags(NumberFormat format!) {
 	return result;
 }
 
-char expect[512] = {...};
-char buff[expect.length] = {...};
+char expect[512] = {...?};
+char buff[expect.length] = {...?};
 int print_flags = format.printFlags();
 
 for (float64 i = 0; i < 40; i += .001) {
@@ -33,10 +33,10 @@ for (float64 i = 0; i < 40; i += .001) {
 			float64 value;
 		}
 		NotEquals err = {
-			expectedFull: {0};
-			expected: expect;
-			returned: buff;
-			value: value;
+			expectedFull: {0},
+			expected: expect,
+			returned: buff,
+			value: value,
 		};
 
 		float64.print(err.expectedFull, value, print_flags, format.width, err.expectedFull.length);
@@ -66,11 +66,11 @@ float64 extremes[] = {
 	Float64.fromBits(0x0008000000000000U),  // mid subnormal
 	1.7976931348623157e308,                 // near the maximum double
 };
-char wideExpect[1450] = {...};
-char wideBuff[1450] = {...};
+char wideExpect[1450] = {...?};
+char wideBuff[1450] = {...?};
 NumberFormat wide = {
-	precision: 1100;
-	trailingZeros: true;
+	precision: 1100,
+	trailingZeros: true,
 };
 for (int i = 0; i < extremes.length; i += 1) {
 	float64 v = extremes[i];
@@ -82,8 +82,8 @@ for (int i = 0; i < extremes.length; i += 1) {
 }
 
 // non-finite values must match the reference representation
-char special[16] = {...};
-char specialRef[16] = {...};
+char special[16] = {...?};
+char specialRef[16] = {...?};
 NumberFormat finite = {};
 float64 nonFinite[] = { +Float64.inf, -Float64.inf, Float64.nan };
 for (int i = 0; i < nonFinite.length; i += 1) {
@@ -99,11 +99,11 @@ for (int i = 0; i < nonFinite.length; i += 1) {
 // expansion ends in a lone `5` at the rounding position). For precision >= 1 the
 // digit before the cut sits at output[pos-1] and the formatter matches the
 // printf reference; this guards the tie handling against regressions.
-static char tieExpect[64] = {...};
-static char tieBuff[64] = {...};
+static char tieExpect[64] = {...?};
+static char tieBuff[64] = {...?};
 void checkTie(int32 p, float64 value) {
 	float64.print(tieExpect, value, 0, 0, p);
-	NumberFormat tie = { precision: p; trailingZeros: true; };
+	NumberFormat tie = { precision: p, trailingZeros: true };
 	tie.format(&tieBuff, 0, value);
 	if (strcmp(tieExpect, tieBuff) != 0) {
 		error("tie rounding mismatch", value, tieExpect, tieBuff);
@@ -119,9 +119,9 @@ checkTie(15, 77481518.8536529541015625);  // -> ...562 (the case from the fix)
 // round-half-to-even at precision 0: the digit whose parity decides the tie is
 // not at output[pos-1] (that is the fraction separator), so the formatter scans
 // back to the last real digit. Even integers round down: 0.5->0, 2.5->2, 4.5->4.
-char p0Expect[16] = {...};
-char p0Buff[16] = {...};
-NumberFormat tie0 = { precision: 0; trailingZeros: true; };
+char p0Expect[16] = {...?};
+char p0Buff[16] = {...?};
+NumberFormat tie0 = { precision: 0, trailingZeros: true };
 // 9.5 and 99.5 round up to a new digit (10, 100): exercises the carry path
 float64 halves[] = { 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 9.5, 99.5 };
 for (int i = 0; i < halves.length; i += 1) {

@@ -1,36 +1,36 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh -run 369
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh -run
 
 // test the Fixed32 point public functions
 struct Test {
 //	static float64 failError = Float64.exp2(-8); // 8 bits of precision required
 	static float64 initErr! = Float64.exp2(-32);
 	static float64 values![] = {
-		+Float64.nan;
-		+Float64.inf;
-//todo	float64(Fixed32.bits(Fixed32.nan - 1));
-		float64(Fixed32.bits(Fixed32.nan - 1 >> 4));
-		float64(Fixed32.bits(Fixed32.nan - 1 >> 8));
-		100;
-		10;
-		Float64.pi;
-		Float64.e;
-		1;
-		float64(Fixed32.bits(Fixed32.one >> 1));
-		float64(Fixed32.bits(Fixed32.one >> Fixed32.precision / 2));
-		float64(Fixed32.bits(1));
-		0;
-		-float64(Fixed32.bits(1));
-		-float64(Fixed32.bits(Fixed32.one >> Fixed32.precision / 2));
-		-float64(Fixed32.bits(Fixed32.one >> 1));
-		-1;
-		-Float64.e;
-		-Float64.pi;
-		-10;
-		-100;
-		-float64(Fixed32.bits(Fixed32.nan - 1 >> 8));
-		-float64(Fixed32.bits(Fixed32.nan - 1 >> 4));
-//todo	-float64(Fixed32.bits(Fixed32.nan - 1));
-		-Float64.inf;
+		+Float64.nan,
+		+Float64.inf,
+//todo	float64(Fixed32.bits(Fixed32.nan - 1)),
+		float64(Fixed32.bits(Fixed32.nan - 1 >> 4)),
+		float64(Fixed32.bits(Fixed32.nan - 1 >> 8)),
+		100,
+		10,
+		Float64.pi,
+		Float64.e,
+		1,
+		float64(Fixed32.bits(Fixed32.one >> 1)),
+		float64(Fixed32.bits(Fixed32.one >> Fixed32.precision / 2)),
+		float64(Fixed32.bits(1)),
+		0,
+		-float64(Fixed32.bits(1)),
+		-float64(Fixed32.bits(Fixed32.one >> Fixed32.precision / 2)),
+		-float64(Fixed32.bits(Fixed32.one >> 1)),
+		-1,
+		-Float64.e,
+		-Float64.pi,
+		-10,
+		-100,
+		-float64(Fixed32.bits(Fixed32.nan - 1 >> 8)),
+		-float64(Fixed32.bits(Fixed32.nan - 1 >> 4)),
+//todo	-float64(Fixed32.bits(Fixed32.nan - 1)),
+		-Float64.inf,
 	};
 
 	int32 steps = Int32.min(1 << 13, Fixed32.one);

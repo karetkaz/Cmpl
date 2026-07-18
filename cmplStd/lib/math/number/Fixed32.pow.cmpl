@@ -1,10 +1,10 @@
 enum: int32 {
-	lutInterpolation: 3; // lookup table interpolation: 0: none, 1: linear, 2: parabola, 3 cubic
+	lutInterpolation: 3, // lookup table interpolation: 0: none, 1: linear, 2: parabola, 3 cubic
 
-	l2e_30u: 0x5c551d95;                            // 1.442695040888963 : log2(e) = 1 / ln(2)
-	l2t_30u: 0xd49a784b;                            // 3.321928094887362 : log2(10) = 1 / lg(2)
-	ln2_30u: 0x2c5c85fd;                            // .6931471805599453 : natural logarithm (2)
-	lg2_30u: 0x13441350;                            // .3010299956639812 : decimal logarithm (2)
+	l2e_30u: 0x5c551d95,                            // 1.442695040888963 : log2(e) = 1 / ln(2)
+	l2t_30u: 0xd49a784b,                            // 3.321928094887362 : log2(10) = 1 / lg(2)
+	ln2_30u: 0x2c5c85fd,                            // .6931471805599453 : natural logarithm (2)
+	lg2_30u: 0x13441350,                            // .3010299956639812 : decimal logarithm (2)
 }
 
 static int32 mul_30u(int32 x, uint32 y) {

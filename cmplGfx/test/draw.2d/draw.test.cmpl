@@ -147,10 +147,10 @@ int32 onEvent(int32 action, int32 button, int32 ex, int32 ey) {
 	int32 y1 = y[1] / gridSize;
 	int32 roiPadding = 0;
 	Rect roi = {
-		x1: offscreen.width() - roiPadding;
-		y1: offscreen.height() - roiPadding;
-		x0: roi.x1 - offscreen.width() / gridSize;
-		y0: roi.y1 - offscreen.height() / gridSize;
+		x1: offscreen.width() - roiPadding,
+		y1: offscreen.height() - roiPadding,
+		x0: roi.x1 - offscreen.width() / gridSize,
+		y0: roi.y1 - offscreen.height() / gridSize,
 	};
 	if (mode < 0) {
 		offscreen.drawLine(roi.x0+x0, roi.y0+y0, roi.x0+x1, roi.y0+y1, fillColor >= 0, strokeColor);
@@ -174,7 +174,7 @@ int32 onEvent(int32 action, int32 button, int32 ex, int32 ey) {
 
 	if (textColor >= 0) {
 		NumberFormat fmt = {precision: 2};
-		char text[1024] = {...};
+		char text[1024] = {...?};
 		Rect rect = {};
 		int32 textSpacing = Window.font.height() + Window.font.height() / 2;
 

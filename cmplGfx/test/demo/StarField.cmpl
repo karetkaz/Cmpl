@@ -7,7 +7,7 @@ struct Star {
 	uint32 color;
 }
 
-static Star stars[1024] = {...};
+static Star stars[1024] = {...?};
 
 static int32 resolutionx = 1440;
 static int32 resolutiony = 900;

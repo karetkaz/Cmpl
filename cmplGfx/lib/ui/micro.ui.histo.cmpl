@@ -126,10 +126,10 @@ struct Histogram: View {
 
 	void onDraw^(Histogram this, Image offs, Rect rect) {
 		enum {
-			colB: 0x4371c6;
-			colG: 0x72d874;
-			colR: 0xfc6165;
-			colL: 0xdadada;
+			colB: 0x4371c6,
+			colG: 0x72d874,
+			colR: 0xfc6165,
+			colL: 0xdadada,
 		}
 		static argb cols[8] = {
 			/*0b000*/ argb(0),

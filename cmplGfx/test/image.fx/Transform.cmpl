@@ -51,18 +51,18 @@ static mat4f fitMatrix(Image src, int newWidth, int newHeight, bool fitWidth, bo
 	float64 dy = (newHeight - src.height() * scale) / 2;
 
 	return {
-		x: {x: 1 / scale, y: 0, z: 0, w: -dx / scale};
-		y: {x: 0, y: 1 / scale, z: 0, w: -dy / scale};
-		z: {x: 0, y: 0, z: 1 / scale, w: 0};
-		w: {x: 0, y: 0, z: 0, w: 1};
+		x: {x: 1 / scale, y: 0, z: 0, w: -dx / scale},
+		y: {x: 0, y: 1 / scale, z: 0, w: -dy / scale},
+		z: {x: 0, y: 0, z: 1 / scale, w: 0},
+		w: {x: 0, y: 0, z: 0, w: 1},
 	};
 }
 static mat4f skewMatrix(float64 sx, float64 sy) {
 	return {
-		x: {x: 1, y: Float64.tan(sx), z: 0, w: 0};
-		y: {x: Float64.tan(sy), y: 1, z: 0, w: 0};
-		z: {x: 0, y: 0, z: 1, w: 0};
-		w: {x: 0, y: 0, z: 0, w: 1};
+		x: {x: 1, y: Float64.tan(sx), z: 0, w: 0},
+		y: {x: Float64.tan(sy), y: 1, z: 0, w: 0},
+		z: {x: 0, y: 0, z: 1, w: 0},
+		w: {x: 0, y: 0, z: 0, w: 1},
 	};
 }
 
@@ -72,71 +72,71 @@ static char filtering[][] = {
 	// TODO: Hermite, Gaussian, Bell, BSpline, Mitchel, Lanczos, Hanning
 };
 static Switch quality = {
-	text: "filtering";
-	states: filtering;
-	selected: 1;
-	focusable: false;
+	text: "filtering",
+	states: filtering,
+	selected: 1,
+	focusable: false,
 };
 static Switch flipX = {
-	text: "flip x";
+	text: "flip x",
 };
 static Switch flipY = {
-	text: "flip y";
+	text: "flip y",
 };
 static Slider rotate = {
-	text: "rotate";
-	maximum: 360;
+	text: "rotate",
+	maximum: 360,
 };
 static Slider skewX = {
-	text: "skew x";
-	minimum: -45;
-	maximum: +45;
+	text: "skew x",
+	minimum: -45,
+	maximum: +45,
 };
 static Slider skewY = {
-	text: "skew y";
-	minimum: -45;
-	maximum: +45;
+	text: "skew y",
+	minimum: -45,
+	maximum: +45,
 };
 static Slider scaleX = {
-	text: "scale x";
-	value: 1;
-	minimum: .1;
-	maximum: 5;
+	text: "scale x",
+	value: 1,
+	minimum: .1,
+	maximum: 5,
 };
 static Slider scaleY = {
-	text: "scale y";
-	value: 1;
-	minimum: .1;
-	maximum: 5;
+	text: "scale y",
+	value: 1,
+	minimum: .1,
+	maximum: 5,
 };
 static Slider translateX = {
-	text: "translate x";
-	minimum: -offs.width();
-	maximum: +offs.width();
+	text: "translate x",
+	minimum: -offs.width(),
+	maximum: +offs.width(),
 };
 static Slider translateY = {
-	text: "translate y";
-	minimum: -offs.height();
-	maximum: +offs.height();
+	text: "translate y",
+	minimum: -offs.height(),
+	maximum: +offs.height(),
 };
 
 static Switch fitWidth = {
-	text: "fit width";
+	text: "fit width",
 };
 static Switch fitHeight = {
-	text: "fit height";
+	text: "fit height",
 };
 static Slider imgRatio = {
-	text: "ratio";
-	enabled: false;
-	onDrawSlider: null;
-	value: float64(back.width()) / back.height();
-	maximum: 1000;
+	text: "ratio",
+	enabled: false,
+	onDrawSlider: null,
+	value: float64(back.width()) / back.height(),
+	maximum: 1000,
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
@@ -152,10 +152,10 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	debug.startTimer();
 	int32 padding = 50;
 	Rect to = {
-		x0: padding;
-		y0: padding;
-		x1: offs.width() - padding;
-		y1: offs.height() - padding;
+		x0: padding,
+		y0: padding,
+		x1: offs.width() - padding,
+		y1: offs.height() - padding,
 	};
 	vec4f center = vec4f(back.width() / 2, back.height() / 2, 0, 0);
 	mat4f mat = translation(center, 1)

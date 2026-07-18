@@ -47,37 +47,37 @@ struct Body {
 }
 
 static Body planets[] = {
-	{name: "Sun",     color: 0xffff00, mass: 1.98892e30,  radius: 696340e3};
-	{name: "Mercury", color: 0x504e51, mass: 0.330e24,    radius: 4879e3/2,   x: 57.9e9,   vy: -47.4e3};
-	{name: "Venus",   color: 0xffffff, mass: 4.87e24,     radius: 12104e3/2,  x: 108.2e9,  vy: -35.0e3};
-	{name: "Earth",   color: 0x6495ed, mass: 5.97e24,     radius: 12756e3/2,  x: 149.6e9,  vy: -29.8e3};
+	{name: "Sun",     color: 0xffff00, mass: 1.98892e30,  radius: 696340e3},
+	{name: "Mercury", color: 0x504e51, mass: 0.330e24,    radius: 4879e3/2,   x: 57.9e9,   vy: -47.4e3},
+	{name: "Venus",   color: 0xffffff, mass: 4.87e24,     radius: 12104e3/2,  x: 108.2e9,  vy: -35.0e3},
+	{name: "Earth",   color: 0x6495ed, mass: 5.97e24,     radius: 12756e3/2,  x: 149.6e9,  vy: -29.8e3},
 //	{name: "Moon",    color: 0xdadada, mass: 0.073e24,    radius: 3475e3/2,   x: 0.384e9,  vy: -1.0e3};
-	{name: "Mars",    color: 0xbc2731, mass: 0.642e24,    radius: 6792e3/2,   x: 228.0e9,  vy: -24.1e3};
+	{name: "Mars",    color: 0xbc2731, mass: 0.642e24,    radius: 6792e3/2,   x: 228.0e9,  vy: -24.1e3},
 
-	{name: "Jupiter", color: 0xff00ff, mass: 1898e24,     radius: 142984e3/2, x: 778.5e9,  vy: -13.1e3};
-	{name: "Saturn",  color: 0xff00ff, mass: 568e24,      radius: 120536e3/2, x: 1432.0e9, vy: -9.7e3};
-	{name: "Uranus",  color: 0xff00ff, mass: 86.8e24,     radius: 51118e3/2,  x: 2867.0e9, vy: -6.8e3};
-	{name: "Neptune", color: 0xff00ff, mass: 102e24,      radius: 49528e3/2,  x: 4515.0e9, vy: -5.4e3};
-	{name: "Pluto",   color: 0xff00ff, mass: 0.0130e24,   radius: 2376e3/2,   x: 5906.4e9, vy: -4.7e3};
+	{name: "Jupiter", color: 0xff00ff, mass: 1898e24,     radius: 142984e3/2, x: 778.5e9,  vy: -13.1e3},
+	{name: "Saturn",  color: 0xff00ff, mass: 568e24,      radius: 120536e3/2, x: 1432.0e9, vy: -9.7e3},
+	{name: "Uranus",  color: 0xff00ff, mass: 86.8e24,     radius: 51118e3/2,  x: 2867.0e9, vy: -6.8e3},
+	{name: "Neptune", color: 0xff00ff, mass: 102e24,      radius: 49528e3/2,  x: 4515.0e9, vy: -5.4e3},
+	{name: "Pluto",   color: 0xff00ff, mass: 0.0130e24,   radius: 2376e3/2,   x: 5906.4e9, vy: -4.7e3},
 };
 
 static Image offs = Image(1600, 900, 32);
 static Switch chkShowAll = {
-	text: "Show all";
-	states: null;
-	clickToFocus: false;
+	text: "Show all",
+	states: null,
+	clickToFocus: false,
 };
 static Slider sldSpeed = {
-	text: "Idle fps";
-	minimum: 1e-10;
-	maximum: 60;
-	value: 60;
+	text: "Idle fps",
+	minimum: 1e-10,
+	maximum: 60,
+	value: 60,
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
-	width: 200;
+	focusable: false,
+	measures: -1,
+	draws: -1,
+	width: 200,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

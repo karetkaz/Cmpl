@@ -42,12 +42,12 @@ struct RecordMemberTest {
 }
 
 RecordMemberTest recordInitCustom = {
-	member: 10;
-	memberInit: 12;
+	member: 10,
+	memberInit: 12,
 
 	memberRec: {
-		member: 14;
-	};
+		member: 14,
+	},
 
 	/* static fields can not be initialized
 	global: 29;
@@ -67,14 +67,16 @@ recordInitCustom.globalInit = 79;
 recordInitCustom.globalConstant = 81;	// todo: error
 // */
 
-/// initializing with default member initializers: those declared in the struct
-//RecordMemberTest recordInitDefault = {};
-RecordMemberTest recordInitDefault = {memberRec: {}}; // todo: remove: automatically propagate the initializer to inner record values:
+/// initializing with default member initializers: those declared in the struct,
+/// the initializer propagates automatically to inner record values
+RecordMemberTest recordInitDefault = {};
+assert(recordInitDefault.memberInit == 2);
+assert(recordInitDefault.memberRec.memberInit == 2);
 
 /// initializing with zero initializer: make all the values 0
-// RecordMemberTest recordZeroInitialize = {0};
-RecordMemberTest recordInitZero = {...};
-pointer.fill(&recordInitZero, 0, sizeof(RecordMemberTest));
+RecordMemberTest recordInitZero = {...0};
+assert(recordInitZero.memberInit == 0);
+assert(recordInitZero.memberRec.memberInit == 0);
 
 /// initializing with undefined initializer: do not initialize
-RecordMemberTest recordUninitialized = {...};
+RecordMemberTest recordUninitialized = {...?};

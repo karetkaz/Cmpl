@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 44
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 void test(int a, int b, int c) {
 	void debug(char message[*]) {

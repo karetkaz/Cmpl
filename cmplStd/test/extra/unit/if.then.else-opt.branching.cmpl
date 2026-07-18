@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 42
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 int test(uint64 x) {
 	if (x == 0) {

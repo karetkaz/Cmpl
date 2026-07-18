@@ -5,8 +5,8 @@ char decoded[] = "out/base64.dec.png";
 if (ByteReader reader = FileReader(original)) {
 	ByteWriter writer = BufferedFileWriter(encoded, false);
 	ByteWriter encoder = Base64Encoder {
-		writer: writer;
-		wrap: 100;
+		writer: writer,
+		wrap: 100,
 	};
 
 	encoder.copy(reader);
@@ -18,7 +18,7 @@ if (ByteReader reader = FileReader(original)) {
 if (ByteReader reader = FileReader(encoded)) {
 	ByteWriter writer = BufferedFileWriter(decoded, false);
 	ByteReader decoder = Base64Decoder {
-		reader: reader;
+		reader: reader,
 	};
 
 	writer.copy(decoder);

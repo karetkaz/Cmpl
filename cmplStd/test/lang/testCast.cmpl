@@ -50,28 +50,28 @@ testAll(-90000);
 
 } else {
 Numbers y = {
-	s8: int8(x);
-	s16: int16(x);
-	s32: int32(x);
-	s64: int64(x);
-	u8: uint8(x);
-	u16: uint16(x);
-	u32: uint32(x);
-	u64: uint64(x);
-	f32: float32(x);
-	f64: float64(x);
+	s8: int8(x),
+	s16: int16(x),
+	s32: int32(x),
+	s64: int64(x),
+	u8: uint8(x),
+	u16: uint16(x),
+	u32: uint32(x),
+	u64: uint64(x),
+	f32: float32(x),
+	f64: float64(x),
 };
 Numbers z = {
-	s8: x;
-	s16: x;
-	s32: x;
-	s64: x;
-	u8: x;
-	u16: x;
-	u32: x;
-	u64: x;
-	f32: x;
-	f64: x;
+	s8: x,
+	s16: x,
+	s32: x,
+	s64: x,
+	u8: x,
+	u16: x,
+	u32: x,
+	u64: x,
+	f32: x,
+	f64: x,
 };
 /* todo: use alignment to read and write bytes efficiently, so gaps will be filled also
 if (pointer.compare(y, z, sizeof(Numbers)) != 0) {

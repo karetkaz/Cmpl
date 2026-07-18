@@ -71,42 +71,42 @@ static int onEvent(int action, int button, int x, int y) {
 		static char actionText[32] = {0};
 		static char keyText[32] = {0};
 		static Button btnAction = {
-			enabled: false;
-			text: actionText;
-			width: 192;
+			enabled: false,
+			text: actionText,
+			width: 192,
 		};
 		static Slider sldAction = {
-			onDrawSlider: null;
-			enabled: false;
-			text: "action";
-			stepSize: 1;
+			onDrawSlider: null,
+			enabled: false,
+			text: "action",
+			stepSize: 1,
 		};
 		static Slider sldButton = {
-			onDrawSlider: null;
-			enabled: false;
-			text: "button";
-			stepSize: 1;
+			onDrawSlider: null,
+			enabled: false,
+			text: "button",
+			stepSize: 1,
 		};
 		static Slider sldX = {
-			onDrawSlider: null;
-			enabled: false;
-			text: "x";
-			stepSize: 1;
+			onDrawSlider: null,
+			enabled: false,
+			text: "x",
+			stepSize: 1,
 		};
 		static Slider sldY = {
-			onDrawSlider: null;
-			enabled: false;
-			text: "y";
-			stepSize: 1;
+			onDrawSlider: null,
+			enabled: false,
+			text: "y",
+			stepSize: 1,
 		};
 		static Style style! = {
-			font: Image.openTtf("asset/font/NokiaPureText.ttf", 60);
-			align: Style.center;
+			font: Image.openTtf("asset/font/NokiaPureText.ttf", 60),
+			align: Style.center,
 		};
 		static Button btnKey = {
-			enabled: false;
-			text: keyText;
-			style: style;
+			enabled: false,
+			text: keyText,
+			style: style,
 		};
 		static FxWidget ui = FxWidget(
 			btnAction,
@@ -117,10 +117,10 @@ static int onEvent(int action, int button, int x, int y) {
 			btnKey
 		);
 		static Rect rect = {
-			x0: 0;
-			y0: 0;
-			x1: image.width();
-			y1: image.height();
+			x0: 0,
+			y0: 0,
+			x1: image.width(),
+			y1: image.height(),
 		};
 		if (ui.parent() == null) {
 			image.fill(0);

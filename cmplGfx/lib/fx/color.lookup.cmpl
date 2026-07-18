@@ -32,9 +32,9 @@ void colorMap(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256]
 		l = lut[sat_s8(l)].a;
 
 		return {
-			r: sat_s8((l * luv2rgb[0] + u * luv2rgb[1] + v * luv2rgb[2]) >> fxpBits);
-			g: sat_s8((l * luv2rgb[3] + u * luv2rgb[4] + v * luv2rgb[5]) >> fxpBits);
-			b: sat_s8((l * luv2rgb[6] + u * luv2rgb[7] + v * luv2rgb[8]) >> fxpBits);
+			r: sat_s8((l * luv2rgb[0] + u * luv2rgb[1] + v * luv2rgb[2]) >> fxpBits),
+			g: sat_s8((l * luv2rgb[3] + u * luv2rgb[4] + v * luv2rgb[5]) >> fxpBits),
+			b: sat_s8((l * luv2rgb[6] + u * luv2rgb[7] + v * luv2rgb[8]) >> fxpBits),
 		};
 	}
 	return image.copy(x, y, src, roi, lut, mapLuv);
@@ -47,9 +47,9 @@ void colorMapRgb(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[2
 	}
 	static argb mapRgb(argb lut[256], argb base, argb with) {
 		return {
-			r: lut[with.r].r;
-			g: lut[with.g].g;
-			b: lut[with.b].b;
+			r: lut[with.r].r,
+			g: lut[with.g].g,
+			b: lut[with.b].b,
 		};
 	}
 	return image.copy(x, y, src, roi, lut, mapRgb);

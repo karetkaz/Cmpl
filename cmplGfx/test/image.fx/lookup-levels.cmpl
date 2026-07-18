@@ -40,18 +40,18 @@ static bool syncInputOutput(Slider slider, float64 value);
 static bool showHideAdvanced(Slider slider, Rect rect&);
 
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 static Histogram lookup = {
-	lines: true;
-	enabled: false;
-	focusable: false;
+	lines: true,
+	enabled: false,
+	focusable: false,
 };
 
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 static Switch chkAdvanced = {
@@ -60,63 +60,63 @@ static Switch chkAdvanced = {
 		Switch.onClick(&switch, clicks);
 	}
 
-	text: "Advanced";
-	onClick: onClick;
+	text: "Advanced",
+	onClick: onClick,
 };
 
 static Slider sldBrightness = {
-	text: "Brightness";
-	minimum: -256;
-	maximum: 256;
-	stepSize: 1;
+	text: "Brightness",
+	minimum: -256,
+	maximum: 256,
+	stepSize: 1,
 };
 
 static Slider sldInput = {
-	text: "Input";
-	minimum: -255;
-	maximum: 255;
-	stepSize: 1;
-	onUpdate: syncInputOutput;
+	text: "Input",
+	minimum: -255,
+	maximum: 255,
+	stepSize: 1,
+	onUpdate: syncInputOutput,
 };
 static Slider sldInputMin = {
-	text: " Input.min";
-	maximum: sldInput.maximum;
-	value: 0;
-	stepSize: 1;
-	onUpdate: syncInputOutput;
-	onMeasure: showHideAdvanced;
+	text: " Input.min",
+	maximum: sldInput.maximum,
+	value: 0,
+	stepSize: 1,
+	onUpdate: syncInputOutput,
+	onMeasure: showHideAdvanced,
 };
 static Slider sldInputMax = {
-	text: " Input.max";
-	maximum: sldInput.maximum;
-	value: sldInput.maximum;
-	stepSize: 1;
-	onUpdate: syncInputOutput;
-	onMeasure: showHideAdvanced;
+	text: " Input.max",
+	maximum: sldInput.maximum,
+	value: sldInput.maximum,
+	stepSize: 1,
+	onUpdate: syncInputOutput,
+	onMeasure: showHideAdvanced,
 };
 
 static Slider sldOutput = {
-	text: "Output";
-	minimum: -255;
-	maximum: 255;
-	stepSize: 1;
-	onUpdate: syncInputOutput;
+	text: "Output",
+	minimum: -255,
+	maximum: 255,
+	stepSize: 1,
+	onUpdate: syncInputOutput,
 };
 static Slider sldOutputMin = {
-	text: " Output.min";
-	maximum: sldOutput.maximum;
-	value: 0;
-	stepSize: 1;
-	onUpdate: syncInputOutput;
-	onMeasure: showHideAdvanced;
+	text: " Output.min",
+	maximum: sldOutput.maximum,
+	value: 0,
+	stepSize: 1,
+	onUpdate: syncInputOutput,
+	onMeasure: showHideAdvanced,
 };
 static Slider sldOutputMax = {
-	text: " Output.max";
-	maximum: sldOutput.maximum;
-	value: sldOutput.maximum;
-	stepSize: 1;
-	onUpdate: syncInputOutput;
-	onMeasure: showHideAdvanced;
+	text: " Output.max",
+	maximum: sldOutput.maximum,
+	value: sldOutput.maximum,
+	stepSize: 1,
+	onUpdate: syncInputOutput,
+	onMeasure: showHideAdvanced,
 };
 
 static int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

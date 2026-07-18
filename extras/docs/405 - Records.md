@@ -56,7 +56,7 @@ struct TextReader: Closeable {
 
 	// static method
 	static int read(TextReader this) {
-		char chars[1] = {...};
+		char chars[1] = {...?};
 		result = this.read(chars);
 		if (result > 0) {
 			result = chars[0];

@@ -36,61 +36,61 @@ static char filtering[][] = {
 	"linear",
 };
 static Switch quality = {
-	text: "filtering";
-	states: filtering;
-	selected: 1;
-	focusable: false;
+	text: "filtering",
+	states: filtering,
+	selected: 1,
+	focusable: false,
 };
 static Switch showGrid = {
-	text: "show grid";
-	focusable: false;
+	text: "show grid",
+	focusable: false,
 };
 static Switch recenter = {
-	text: "recenter";
-	selected: 1;
-	focusable: false;
+	text: "recenter",
+	selected: 1,
+	focusable: false,
 };
 static Slider tiltX = {
-	text: "tilt x (pitch)";
-	minimum: -60;
-	maximum: +60;
+	text: "tilt x (pitch)",
+	minimum: -60,
+	maximum: +60,
 };
 static Slider tiltY = {
-	text: "tilt y (yaw)";
-	minimum: -60;
-	maximum: +60;
+	text: "tilt y (yaw)",
+	minimum: -60,
+	maximum: +60,
 };
 static Slider rotate = {
-	text: "rotate (roll)";
-	minimum: -180;
-	maximum: +180;
+	text: "rotate (roll)",
+	minimum: -180,
+	maximum: +180,
 };
 static Slider fov = {
-	text: "fov";
-	value: 60;
-	minimum: 20;
-	maximum: 120;
+	text: "fov",
+	value: 60,
+	minimum: 20,
+	maximum: 120,
 };
 static Slider zoom = {
-	text: "zoom";
-	value: 1;
-	minimum: .25;
-	maximum: 4;
+	text: "zoom",
+	value: 1,
+	minimum: .25,
+	maximum: 4,
 };
 static Slider translateX = {
-	text: "translate x";
-	minimum: -offs.width();
-	maximum: +offs.width();
+	text: "translate x",
+	minimum: -offs.width(),
+	maximum: +offs.width(),
 };
 static Slider translateY = {
-	text: "translate y";
-	minimum: -offs.height();
-	maximum: +offs.height();
+	text: "translate y",
+	minimum: -offs.height(),
+	maximum: +offs.height(),
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {

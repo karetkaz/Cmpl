@@ -68,10 +68,10 @@ int onEvent(int action, int button, int x, int y) {
 
 	if (Float64.abs(scrollSpeedX) >= scrollStop || Float64.abs(scrollSpeedY) >= scrollStop) {
 		Rect roi = {
-			x0: scrollX;
-			y0: scrollY;
-			x1: scrollX + offs.width();
-			y1: scrollY + offs.height();
+			x0: scrollX,
+			y0: scrollY,
+			x1: scrollX + offs.width(),
+			y1: scrollY + offs.height(),
 		};
 		offs.resize(null, image, roi, 0);
 		static if (struct(scrollSpeed) != null) {

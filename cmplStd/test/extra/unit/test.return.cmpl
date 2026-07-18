@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 10
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh
 
 int test() {
 	int x = 9;

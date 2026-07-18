@@ -116,10 +116,10 @@ struct FxWidget: Widget {
 		int32 margin = this.margin;
 		int32 align = this.align;
 		Rect rect = {
-			x0: margin;
-			y0: margin;
-			x1: measured.width() - margin;
-			y1: measured.height() - margin;
+			x0: margin,
+			y0: margin,
+			x1: measured.width() - margin,
+			y1: measured.height() - margin,
 		};
 
 		measured.x1 = measured.x0 = 0;
@@ -153,9 +153,9 @@ struct FxWidget: Widget {
 /// Create a widget with the given `width`, `height` and `style`
 Widget Widget(int32 width, int32 height, Style style!) {
 	Widget widget = {
-		width: width;
-		height: height;
-		style: style;
+		width: width,
+		height: height,
+		style: style,
 	};
 	return widget.focus(widget);	// focus first visible view
 }
@@ -167,15 +167,15 @@ Widget Widget(int32 width, int32 height) {
 /// Create a widget with the given `views` used in image processing demos
 FxWidget FxWidget(View views?...) {
 	FxWidget widget = {
-		radius: 5;
-		margin: 10;
-		align: Style.topRight;
-		style: Widget.defaultStyle;
+		radius: 5,
+		margin: 10,
+		align: Style.topRight,
+		style: Widget.defaultStyle,
 
-		paddingTop: 3;
-		paddingLeft: 3;
-		paddingRight: 3;
-		paddingBottom: 3;
+		paddingTop: 3,
+		paddingLeft: 3,
+		paddingRight: 3,
+		paddingBottom: 3,
 	};
 
 	return widget

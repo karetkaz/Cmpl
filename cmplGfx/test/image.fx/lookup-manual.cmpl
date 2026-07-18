@@ -17,46 +17,46 @@ static void onButtonClick(Button this&, int32 clicks);
 static bool onCurveUpdate(Histogram this&, int32 idx, argb value);
 
 static Histogram histogram = {
-	enabled: false;
+	enabled: false,
 };
 static Histogram curves = {
-	height: 256;
-	lines: true;
-	focusable: false;
-	onUpdate: onCurveUpdate;
+	height: 256,
+	lines: true,
+	focusable: false,
+	onUpdate: onCurveUpdate,
 };
 
 static Button btnLuminosity = {
-	onClick: onButtonClick;
-	text: "luminosity";
+	onClick: onButtonClick,
+	text: "luminosity",
 };
 static Button btnRgb = {
-	onClick: onButtonClick;
-	text: "rgb";
+	onClick: onButtonClick,
+	text: "rgb",
 };
 static Button btnRed = {
-	onClick: onButtonClick;
-	text: "red";
+	onClick: onButtonClick,
+	text: "red",
 };
 static Button btnGreen = {
-	onClick: onButtonClick;
-	text: "green";
+	onClick: onButtonClick,
+	text: "green",
 };
 static Button btnBlue = {
-	onClick: onButtonClick;
-	text: "blue";
+	onClick: onButtonClick,
+	text: "blue",
 };
 
 static Button btnDump = {
-	onClick: onButtonClick;
-	text: "dump";
-	focusable: false;
+	onClick: onButtonClick,
+	text: "dump",
+	focusable: false,
 };
 
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
+	focusable: false,
+	measures: -1,
+	draws: -1,
 };
 
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
@@ -122,7 +122,7 @@ bool onCurveUpdate(Histogram this&, int32 idx, argb value) {
 void onButtonClick(Button this&, int32 clicks) {
 	if (this == btnDump && clicks <= 1) {
 		static if (struct(File) != null) {
-			char str[32] = {...};
+			char str[32] = {...?};
 			File.out.write("\nint32_t lookup[256] = {\n");
 			for (int i = 0; i < curves.data.length; i += 1) {
 				if (i > 0) {

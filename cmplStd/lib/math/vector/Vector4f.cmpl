@@ -130,10 +130,10 @@ inline dp4(vec4f lhs, vec4f rhs) = float32(inline(inline(lhs), inline(rhs), p128
 /// Cross product of the first 3 elements
 static vec4f cross(vec4f a, vec4f b) {
 	return {
-		x: a.y * b.z - a.z * b.y;
-		y: a.z * b.x - a.x * b.z;
-		z: a.x * b.y - a.y * b.x;
-		w: 1;
+		x: a.y * b.z - a.z * b.y,
+		y: a.z * b.x - a.x * b.z,
+		z: a.x * b.y - a.y * b.x,
+		w: 1,
 	};
 }
 

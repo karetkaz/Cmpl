@@ -5,23 +5,23 @@ static Image offs = Image(1440, 900, 32);
 static bool primes[500000] = {false, false, true};
 
 static Slider sldScale = {
-	text: "scale";
-	minimum: 10;
-	maximum: 1000;
-	value: 100;
+	text: "scale",
+	minimum: 10,
+	maximum: 1000,
+	value: 100,
 };
 static Slider sldPrimes = {
-	text: "primes";
-	minimum: 100;
-	maximum: primes.length;
-	value: primes.length;
-	stepSize: 1;
+	text: "primes",
+	minimum: 100,
+	maximum: primes.length,
+	value: primes.length,
+	stepSize: 1,
 };
 static DebugView debug = {
-	focusable: false;
-	measures: -1;
-	draws: -1;
-	width: 200;
+	focusable: false,
+	measures: -1,
+	draws: -1,
+	width: 200,
 };
 int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
@@ -35,12 +35,12 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 
 	debug.startTimer();
 	Complex scale = {
-		re: 1. / sldScale.value;
-		im: 1. / sldScale.value;
+		re: 1. / sldScale.value,
+		im: 1. / sldScale.value,
 	};
 	Complex center = {
-		re: offs.width() / 2;
-		im: offs.height() / 2;
+		re: offs.width() / 2,
+		im: offs.height() / 2,
 	};
 
 	offs.fill(0);

@@ -5,7 +5,7 @@ void noError(pointer ptr) {
 
 void stackOverflow(pointer ptr) {
 	// speed up the overflow allocating 8 kb memory in each call
-	uint8 data[8 << 10] = {...};
+	uint8 data[8 << 10] = {...?};
 	stackOverflow(ptr);
 }
 
@@ -20,9 +20,9 @@ void abortExecution(pointer args) {
 		int returned;
 	}
 	NotEquals details = {
-		message: "assertion failed";
-		expected: 97;
-		returned: 77;
+		message: "assertion failed",
+		expected: 97,
+		returned: 77,
 	};
 	abort("fatal error", details);
 }

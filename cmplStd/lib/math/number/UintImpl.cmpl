@@ -1,7 +1,7 @@
 /// include this file from a UintXXX class, see UintBig.cmpl
 
 static BigUint make(uint64 value) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	for (int i = 0; i < result.words.length; i += 1) {
 		result.words[i] = value;
 		value >>= 32;
@@ -10,7 +10,7 @@ static BigUint make(uint64 value) {
 }
 
 static BigUint make(int64 value) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	for (int i = 0; i < result.words.length; i += 1) {
 		result.words[i] = value;
 		value >>= 32;
@@ -113,7 +113,7 @@ static uint32 mulOvf(BigUint this&, uint32 value) {
 
 /// complements all elements of `words`.
 static BigUint cmt(BigUint this!) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	for (int i = 0; i < this.words.length; i += 1) {
 		result.words[i] = ~this.words[i];
 	}
@@ -121,7 +121,7 @@ static BigUint cmt(BigUint this!) {
 }
 
 static BigUint and(BigUint a!, BigUint b!) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	for (int i = 0; i < result.words.length; i += 1) {
 		result.words[i] = a.words[i] & b.words[i];
 	}
@@ -129,7 +129,7 @@ static BigUint and(BigUint a!, BigUint b!) {
 }
 
 static BigUint or(BigUint a!, BigUint b!) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	for (int i = 0; i < result.words.length; i += 1) {
 		result.words[i] = a.words[i] | b.words[i];
 	}
@@ -137,7 +137,7 @@ static BigUint or(BigUint a!, BigUint b!) {
 }
 
 static BigUint xor(BigUint a!, BigUint b!) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	for (int i = 0; i < result.words.length; i += 1) {
 		result.words[i] = a.words[i] ^ b.words[i];
 	}
@@ -147,7 +147,7 @@ static BigUint xor(BigUint a!, BigUint b!) {
 /// returns the negation of the value.
 static BigUint neg(BigUint this!) {
 	// -value = ~value + 1
-	BigUint result = {...};
+	BigUint result = {...?};
 	uint64 carry = 1;
 	for (int i = 0; i < this.words.length; i += 1) {
 		carry += ~this.words[i];
@@ -159,7 +159,7 @@ static BigUint neg(BigUint this!) {
 
 /// returns the sum of the values.
 static BigUint add(BigUint a!, BigUint b!) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	uint64 carry = 0;
 	for (int i = 0; i < result.words.length; i += 1) {
 		carry += uint64(a.words[i]) + b.words[i];
@@ -171,7 +171,7 @@ static BigUint add(BigUint a!, BigUint b!) {
 
 /// returns the difference of the values.
 static BigUint sub(BigUint a!, BigUint b!) {
-	BigUint result = {...};
+	BigUint result = {...?};
 	uint64 borrow = 0;
 	for (int i = 0; i < result.words.length; i += 1) {
 		borrow += uint64(a.words[i]) - b.words[i];

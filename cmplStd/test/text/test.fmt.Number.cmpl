@@ -1,7 +1,7 @@
 // Number format test using format string
 
 float64 val = .1;
-char buff[1024] = {...};
+char buff[1024] = {...?};
 
 (3).format(&buff, "%d");
 debug(buff);

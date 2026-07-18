@@ -1,9 +1,9 @@
 static if(struct(FileWriter) == typename) {
 static TextWriter out = AsciiWriter {
 	writer: FileWriter {
-		file: File.log;
-		close: null;
-	};
+		file: File.log,
+		close: null,
+	}
 };
 } else {
 
@@ -48,7 +48,7 @@ struct DebugWriter: ByteWriter {
 }
 static TextWriter out = AsciiWriter {
 	writer: DebugWriter {
-	};
+	},
 };
 }
 

@@ -13,48 +13,38 @@ if [ ! -d "$CMPL_BIN" ]; then
 	exit 1
 fi
 
+MARKER="/* - expected output:"
 CMPL_FLAGS="-X-offsets-steps-warn"
 
-#this prints all arguments
-if [ $# -gt 2 ]; then
-	while test $# -gt 2
-	do
+if [ $# -eq 0 ]; then
+	echo "usage: $(basename "$0") [cmpl-flags...] <file>"
+	exit 1
+fi
+
+# no cmpl flags given (just the file): fall back to a plain run
+if [ $# -eq 1 ]; then
+	CMPL_FLAGS="$CMPL_FLAGS -asm/s/0 -run/g/t"
+else
+	while [ $# -gt 1 ]; do
 		CMPL_FLAGS="$CMPL_FLAGS $1"
 		shift
 	done
-
-	file=$(basename -- "$2")
-	lines="$1"
-else
-	CMPL_FLAGS="$CMPL_FLAGS -asm/s/0 -run/g"
-	if [ $# -gt 1 ]; then
-		file=$(basename -- "$2")
-		lines="$1"
-	else
-		file=$(basename -- "$1")
-		lines=0
-	fi
 fi
 
-if ! cd "$(dirname "$file")"; then
+file=$(basename -- "$1")
+if ! cd "$(dirname -- "$1")"; then
 	exit 1
 fi
 
-if [ "$lines" -lt 0 ]; then
-	diff>"$file.patch" -u -L "$file" -L "$file"  <(tail -"$((-lines+2))" "$file") <(echo "/* - expected output:" ; $CMPL_BIN/cmpl $CMPL_FLAGS "$file" ; echo "*/")
-	echo "patch file created: $file.patch"
+# locate the trailing `/* - expected output: ... */` comment: everything from
+# there to the end of the file is compared against a fresh run, so there is
+# no line count to keep in sync by hand anymore.
+markerLine=$(grep -n -F -x "$MARKER" "$file" | tail -1 | cut -d: -f1)
+if [ -z "$markerLine" ]; then
+	echo "no '$MARKER' block found in '$file'" >&2
+	echo "add one (even empty, terminated with '*/') and run CmplDiffPatch.sh to fill it in" >&2
 	exit 1
 fi
 
-if ! [ "$lines" -gt 0 ]; then
-	echo "/* - expected output:"
-	$CMPL_BIN/cmpl $CMPL_FLAGS "$file"
-	echo "*/"
-	exit 1
-fi
-
-diff -y -W 160 --suppress-common-lines <(tail -"$((lines+2))" "$file") <(echo "/* - expected output:" ; $CMPL_BIN/cmpl $CMPL_FLAGS "$file" ; echo "*/")
-#echo "expected:" && echo "/* - expected output:" ; $CMPL_BIN/Cmpl $CMPL_FLAGS "$file" ; echo "*/"
-#echo "returned:" && tail -"$((lines+2))" "$file"
-
+diff -y -W 160 --suppress-common-lines <(tail -n +"$markerLine" "$file") <(echo "$MARKER" ; $CMPL_BIN/cmpl $CMPL_FLAGS "$file" ; echo "*/")
 exit $?
