@@ -22,7 +22,7 @@ struct TextReader: Closeable {
 	/// Read a single character from the stream, a negative number is returned in case of error
 	static int decode(TextReader this) {
 		unicode chars[1] = {...};
-		if (this.decode(chars) <= 0) {
+		if (this.decode(&chars) <= 0) {
 			return -1;
 		}
 		return chars[0] & 0x00ffffff;
@@ -100,7 +100,7 @@ struct TextWriter: Closeable {
 	/// Write the value of the 64-bit integer parameter
 	static TextWriter write(TextWriter this, int64 value, NumberFormat format!) {
 		char buff[1024]= {...};
-		int n = format.format(buff, 0, value);
+		int n = format.format(&buff, 0, value);
 		return write(this, buff[ ... n]);
 	}
 
@@ -112,7 +112,7 @@ struct TextWriter: Closeable {
 	/// Write the value of the 64-bit unsigned integer parameter
 	static TextWriter write(TextWriter this, uint64 value, NumberFormat format!) {
 		char buff[1024]= {...};
-		int n = format.format(buff, 0, value);
+		int n = format.format(&buff, 0, value);
 		return write(this, buff[ ... n]);
 	}
 
@@ -124,7 +124,7 @@ struct TextWriter: Closeable {
 	/// Write the value of the 64-bit floating-point parameter
 	static TextWriter write(TextWriter this, float64 value, NumberFormat format!) {
 		char buff[1024]= {...};
-		int n = format.format(buff, 0, value);
+		int n = format.format(&buff, 0, value);
 		return write(this, buff[ ... n]);
 	}
 
@@ -163,7 +163,7 @@ struct TextWriter: Closeable {
 		unicode buffer[1024] = {...};
 		int result = 0;
 		for ( ; ; ) {
-			int n = reader.decode(buffer);
+			int n = reader.decode(&buffer);
 			if (n <= 0) {
 				return result;
 			}

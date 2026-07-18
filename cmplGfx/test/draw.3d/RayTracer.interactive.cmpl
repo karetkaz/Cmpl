@@ -330,7 +330,7 @@ int onEvent(int action, int button, int x, int y) {
 	image.eval(null, 0, 0, raytrace);
 	time = System.millis() - time;
 	char text[256] = {...};
-	time.format(text, "Frame time: %d ms");
+	time.format(&text, "Frame time: %d ms");
 	Window.setTitle(text);
 	return Window.timeoutMax;
 }

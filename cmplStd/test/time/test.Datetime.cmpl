@@ -6,7 +6,7 @@ static TextWriter out = AsciiWriter {
 };
 TextWriter write(TextWriter writer, char format[], Datetime datetime) {
 	char buffer[65536] = {...};
-	int n = datetime.format(buffer, format);
+	int n = datetime.format(&buffer, format);
 	writer.write(buffer[...n]);
 	return writer;
 }

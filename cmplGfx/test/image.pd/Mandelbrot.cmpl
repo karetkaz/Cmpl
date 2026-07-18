@@ -21,5 +21,5 @@ vec4f mandel(vec4f in) {
 	return vec4f(1, 1, 1);
 }
 
-lerpLut(colors, argb(0x000020), argb(0xffffff));
+lerpLut(&colors, argb(0x000020), argb(0xffffff));
 Window.show(512, 512, mandel);

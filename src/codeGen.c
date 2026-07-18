@@ -1008,7 +1008,13 @@ static ccKind genCall(ccContext ctx, astn ast, ccKind get) {
 			}
 			offsets[argc] = prm->offs;
 			values[argc] = prm->init;
-			prm->init = arg;
+			if (arg != NULL && arg->kind == OPER_adr && (isIndirect(prm) || isMutable(prm))) {
+				// drop `&`: the argument is passed by reference (validated by the type checker)
+				arg->op.rhso->next = arg->next;
+				prm->init = arg->op.rhso;
+			} else {
+				prm->init = arg;
+			}
 			argc += 1;
 
 			// advance
@@ -1224,10 +1230,6 @@ static ccKind genCall(ccContext ctx, astn ast, ccKind get) {
 		astn arg = prm->init;
 		if (arg && arg->kind == PNCT_dot3 && (prm->kind & ARGS_varg) != 0) {
 			// drop `...`
-			arg = arg->op.rhso;
-		}
-		if (arg && arg->kind == OPER_adr && isIndirect(prm)) {
-			// drop `&`
 			arg = arg->op.rhso;
 		}
 

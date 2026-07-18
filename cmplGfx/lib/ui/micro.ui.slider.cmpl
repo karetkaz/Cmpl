@@ -168,9 +168,9 @@ struct Slider: Button {
 		char value[64] = {...};
 		Style style! = this.style;
 		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
-			style.format.format(value, 0, int64(this.value));
+			style.format.format(&value, 0, int64(this.value));
 		} else {
-			style.format.format(value, 0, this.value);
+			style.format.format(&value, 0, this.value);
 		}
 		Rect valueRect = {};
 		style.measure(&valueRect, value);
@@ -205,9 +205,9 @@ struct Slider: Button {
 	void onDraw^(Slider this, Image offs, Rect rect) {
 		char value[64] = {...};
 		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
-			this.style.format.format(value, 0, int64(this.value));
+			this.style.format.format(&value, 0, int64(this.value));
 		} else {
-			this.style.format.format(value, 0, this.value);
+			this.style.format.format(&value, 0, this.value);
 		}
 		if (this.onDrawSlider != null) {
 			this.onDrawSlider(this, offs, rect);

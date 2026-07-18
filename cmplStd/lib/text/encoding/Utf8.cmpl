@@ -6,7 +6,7 @@ struct Utf8Reader: TextReader {
 		uint8 ext[3] = {...};
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
-			if (reader.read(buff) <= 0) {
+			if (reader.read(&buff) <= 0) {
 				// end of stream
 				return i;
 			}
@@ -15,7 +15,7 @@ struct Utf8Reader: TextReader {
 				chars[i] = buff[0];
 			}
 			else if ((buff[0] & 0xe0) == 0xc0) {
-				if (reader.read(ext[...1]) != 1) {
+				if (reader.read(&ext[...1]) != 1) {
 					error("invalid codepoint");
 					return i;
 				}
@@ -23,7 +23,7 @@ struct Utf8Reader: TextReader {
 				chars[i] = (buff[0] & 0x1f) << 6 | (ext[0] & 0x3f);
 			}
 			else if ((buff[0] & 0xf0) == 0xe0) {
-				if (reader.read(ext[...2]) != 2) {
+				if (reader.read(&ext[...2]) != 2) {
 					error("invalid codepoint");
 					return i;
 				}
@@ -32,7 +32,7 @@ struct Utf8Reader: TextReader {
 				chars[i] = (buff[0] & 0x0f) << 12 | (ext[0] & 0x3f) << 6 | (ext[1] & 0x3f);
 			}
 			else if ((buff[0] & 0xf8) == 0xf0) {
-				if (reader.read(ext[...3]) != 3) {
+				if (reader.read(&ext[...3]) != 3) {
 					error("invalid codepoint");
 					return i;
 				}

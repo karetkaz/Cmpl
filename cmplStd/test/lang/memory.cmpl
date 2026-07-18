@@ -10,8 +10,8 @@ pointer p3 = malloc(160);
 pointer p4 = malloc(820);
 
 // clear and copy memory
-pointer.fill(p1, 0, 1024);
-pointer.copy(p1, p3, 160);
+pointer.fill(&p1, 0, 1024);
+pointer.copy(&p1, p3, 160);
 
 // free memory
 free(p1);
@@ -26,8 +26,10 @@ int64 val2 = 96;
 debug("val1", val1);
 debug("val2", val2);
 
-pointer.move(pointer(val2), pointer(val1), sizeof(int64));
-pointer.fill(pointer(val1), 0, sizeof(int64));
+pointer pVal2 = pointer(val2);
+pointer pVal1 = pointer(val1);
+pointer.move(&pVal2, pVal1, sizeof(int64));
+pointer.fill(&pVal1, 0, sizeof(int64));
 
 debug("val1", val1);
 debug("val2", val2);

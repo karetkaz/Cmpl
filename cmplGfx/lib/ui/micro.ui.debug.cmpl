@@ -21,7 +21,7 @@ struct DebugView: View {
 	/// Start time measurement until this view is drawn on screen
 	static void startTimer(DebugView this&) {
 		if (this.started == 0) {
-			restartTimer(this);
+			restartTimer(&this);
 		}
 	}
 
@@ -31,14 +31,14 @@ struct DebugView: View {
 			if (pos > 0) {
 				pos = this.text.append(pos, ", ");
 			}
-			pos = this.measures.format(this.text, pos, "measures: %d");
+			pos = this.measures.format(&this.text, pos, "measures: %d");
 		}
 
 		if (this.draws > 0) {
 			if (pos > 0) {
 				pos = this.text.append(pos, ", ");
 			}
-			pos = this.draws.format(this.text, pos, "draws: %d");
+			pos = this.draws.format(&this.text, pos, "draws: %d");
 		}
 
 		int64 value = this.durations[this.position];
@@ -46,7 +46,7 @@ struct DebugView: View {
 			if (pos > 0) {
 				pos = this.text.append(pos, ", ");
 			}
-			pos = value.format(this.text, pos, "time: %d ms");
+			pos = value.format(&this.text, pos, "time: %d ms");
 		}
 	}
 
@@ -75,13 +75,13 @@ struct DebugView: View {
 			return State.ignored;
 		}
 
-		reset(this);
+		reset(&this);
 		return State.handled;
 	}
 
 	void onCreate^(DebugView this&, View parent) {
 		View.onCreate(this, parent);
-		reset(this);
+		reset(&this);
 	}
 
 	bool onMeasure^(DebugView this, Rect rect&) {

@@ -145,20 +145,20 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 			offs.fill(0xff0000);
 		}
 		if (btnReflect.isFocused()) {
-			alphaLut(colors, sldHardness.value, sldAlpha.value, true);
-			offs.gradient(&rect, gradient.MaskLinear, false, ...colors);
+			alphaLut(&colors, sldHardness.value, sldAlpha.value, true);
+			offs.gradient(rect, gradient.MaskLinear, false, ...colors);
 		}
 		else if (btnLinear.isFocused()) {
-			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
-			offs.gradient(&rect, gradient.MaskLinear, false, ...colors);
+			alphaLut(&colors, sldHardness.value, sldAlpha.value, false);
+			offs.gradient(rect, gradient.MaskLinear, false, ...colors);
 		}
 		else if (btnRadial.isFocused()) {
-			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
-			offs.gradient(&rect, gradient.MaskRadial, false, ...colors);
+			alphaLut(&colors, sldHardness.value, sldAlpha.value, false);
+			offs.gradient(rect, gradient.MaskRadial, false, ...colors);
 		}
 		else if (btnSquare.isFocused()) {
-			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
-			offs.gradient(&rect, gradient.MaskSquare, false, ...colors);
+			alphaLut(&colors, sldHardness.value, sldAlpha.value, false);
+			offs.gradient(rect, gradient.MaskSquare, false, ...colors);
 		}
 
 		offs.blendDstAlpha(0, 0, surf, null);

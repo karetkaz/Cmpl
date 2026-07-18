@@ -20,32 +20,32 @@ char buff[expect.length] = {...};
 //* testing the number formatter
 for (int i = 0; i < 1024; i += 1) {
 	Fixed32 value = Fixed32(Float64.log2(i));
-	format.format(expect, 0, float64(value));
-	format.format(buff, 0, value);
+	format.format(&expect, 0, float64(value));
+	format.format(&buff, 0, value);
 	if (strcmp(expect, buff) != 0) {
 		NotEquals.debug("not equals", NotEquals(expect, buff, null));
 	}
 }
 
-format.format(buff, 0, Fixed32(1024.1415));
+format.format(&buff, 0, Fixed32(1024.1415));
 debug(buff);
 
-Fixed32(0).div(Fixed32(0)).format(buff, "nan: %d = 0x%x");
+Fixed32(0).div(Fixed32(0)).format(&buff, "nan: %d = 0x%x");
 debug(buff);
 
-Fixed32(1).div(Fixed32(0)).format(buff, "inf: %d = 0x%x");
+Fixed32(1).div(Fixed32(0)).format(&buff, "inf: %d = 0x%x");
 debug(buff);
-Fixed32(-1).div(Fixed32(0)).format(buff, "inf: %d = 0x%x");
-debug(buff);
-
-Fixed32.bits(Fixed32.nan - 1).format(buff, "val: %d = 0x%x");
-debug(buff);
-Fixed32.bits(Fixed32.nan + 1).format(buff, "val: %d = 0x%x");
+Fixed32(-1).div(Fixed32(0)).format(&buff, "inf: %d = 0x%x");
 debug(buff);
 
-Fixed32.bits(Fixed32.nan - 2).format(buff, "val: %d = 0x%x");
+Fixed32.bits(Fixed32.nan - 1).format(&buff, "val: %d = 0x%x");
 debug(buff);
-Fixed32.bits(Fixed32.nan + 2).format(buff, "val: %d = 0x%x");
+Fixed32.bits(Fixed32.nan + 1).format(&buff, "val: %d = 0x%x");
+debug(buff);
+
+Fixed32.bits(Fixed32.nan - 2).format(&buff, "val: %d = 0x%x");
+debug(buff);
+Fixed32.bits(Fixed32.nan + 2).format(&buff, "val: %d = 0x%x");
 debug(buff);
 
 // round-half-to-even on exact ties (value = k / 2^n, exactly representable in
@@ -58,7 +58,7 @@ void checkTie(int32 p, float64 value) {
 	Fixed32 fx = Fixed32(value);
 	float64.print(tieExpect, float64(fx), 0, 0, p);
 	NumberFormat tie = { precision: p; trailingZeros: true; };
-	tie.format(tieBuff, 0, fx);
+	tie.format(&tieBuff, 0, fx);
 	if (strcmp(tieExpect, tieBuff) != 0) {
 		error("fixed32 tie rounding mismatch", value, tieExpect, tieBuff);
 	}
@@ -78,7 +78,7 @@ for (int i = 0; i < halves.length; i += 1) {
 	float64 dv = halves[i];
 	Fixed32 v = Fixed32(dv);
 	float64.print(p0Expect, float64(v), 0, 0, 0);
-	tie0.format(p0Buff, 0, v);
+	tie0.format(&p0Buff, 0, v);
 	if (strcmp(p0Expect, p0Buff) != 0) {
 		error("fixed32 precision-0 tie not rounded to even", dv, p0Expect, p0Buff);
 	}
@@ -93,7 +93,7 @@ void checkCarry(int32 p, float64 value) {
 	Fixed32 fx = Fixed32(value);
 	float64.print(carryExpect, float64(fx), 0, 0, p);
 	NumberFormat fmt = { precision: p; trailingZeros: true; };
-	fmt.format(carryBuff, 0, fx);
+	fmt.format(&carryBuff, 0, fx);
 	if (strcmp(carryExpect, carryBuff) != 0) {
 		error("fixed32 carry fractionPos mismatch", value, carryExpect, carryBuff);
 	}
@@ -104,7 +104,7 @@ checkCarry(2, 9.999);  // 9.99x -> 10.00
 
 // trailingZeros=false: separator + trailing zeros must be stripped after carry
 NumberFormat noTrail = { precision: 1; };
-noTrail.format(carryBuff, 0, Fixed32(9.99));
+noTrail.format(&carryBuff, 0, Fixed32(9.99));
 assert(strcmp(carryBuff, "10") == 0, "carry+noTrail: expected '10'", carryBuff);
-noTrail.format(carryBuff, 0, Fixed32(99.99));
+noTrail.format(&carryBuff, 0, Fixed32(99.99));
 assert(strcmp(carryBuff, "100") == 0, "carry+noTrail: expected '100'", carryBuff);

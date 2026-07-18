@@ -13,7 +13,7 @@
 static Image back = Image("../asset/image/forest.jpg", 32);
 static Image offs = Image(back);
 
-static void brightnessContrast(argb lut[256], int brightness, int contrast) {
+static void brightnessContrast(argb lut&[256], int brightness, int contrast) {
 	float64 cVal = (256 + contrast) / 256.;
 
 	float64 easing(float64 ratio) = Easing.expo;

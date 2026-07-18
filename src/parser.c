@@ -1327,7 +1327,12 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 			if (!canAssign(ctx, def, init, ATTR_mut | ATTR_opt)) {
 				if (!canAssign(ctx, def, init, 0)) {
 					error(ctx->rt, init->file, init->line, ERR_INVALID_INITIALIZER, init);
-				} else {
+				}
+				else if (!canAssign(ctx, def, init, ATTR_mut)) {
+					// mutable reference to an immutable value: `int a& = immutable_int;`
+					error(ctx->rt, init->file, init->line, ERR_INVALID_MUTABLE_REF, init);
+				}
+				else {
 					raise(ctx->rt, raiseWInit, init->file, init->line, ERR_INVALID_INITIALIZER, init);
 				}
 			}

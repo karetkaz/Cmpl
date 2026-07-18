@@ -357,9 +357,9 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		int p = 0;
 
 		p = text.append(0, "Center: (");
-		p = fmt.format(text, p, xStart);
+		p = fmt.format(&text, p, xStart);
 		p = text.append(p, ", ");
-		p = fmt.format(text, p, yStart);
+		p = fmt.format(&text, p, yStart);
 		p = text.append(p, ")");
 		Window.font.clipText(&rect, text);
 		rect.position(10, offs.height() - rect.height() - 10);
@@ -367,22 +367,22 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		offs.drawText(rect, Window.font, text, cText);
 
 		p = text.append(0, "y: (");
-		p = fmt.format(text, p, yStart - yScale);
+		p = fmt.format(&text, p, yStart - yScale);
 		p = text.append(p, ", ");
-		p = fmt.format(text, p, yStart + yScale);
+		p = fmt.format(&text, p, yStart + yScale);
 		p = text.append(p, "): 2 ** ");
-		p = fmt.format(text, p, Float64.log2(2 * yScale));
+		p = fmt.format(&text, p, Float64.log2(2 * yScale));
 		Window.font.clipText(&rect, text);
 		rect.position(10,  10);
 		offs.fillRect(rect, cBar1);
 		offs.drawText(rect, Window.font, text, cText);
 
 		p = text.append(0, "x: (");
-		p = fmt.format(text, p, xStart - xScale);
+		p = fmt.format(&text, p, xStart - xScale);
 		p = text.append(p, ", ");
-		p = fmt.format(text, p, xStart + xScale);
+		p = fmt.format(&text, p, xStart + xScale);
 		p = text.append(p, "): 2 ** ");
-		p = fmt.format(text, p, Float64.log2(2 * xScale));
+		p = fmt.format(&text, p, Float64.log2(2 * xScale));
 
 		Window.font.clipText(&rect, text);
 		rect.position(offs.width() - rect.width() - 10, offs.height() - rect.height() - 10);

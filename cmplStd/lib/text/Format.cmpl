@@ -1,7 +1,7 @@
 /// Append a string to the output at the given position
 int append(char output&[], int pos, char str[]) {
 	if (pointer(str) == null) {
-		return append(output, pos, "NULL");
+		return append(&output, pos, "NULL");
 	}
 	for (int i = 0; i < str.length; i += 1) {
 		if (pos >= output.length) {
@@ -109,7 +109,7 @@ int format(uint64 value, char output&[], int out, char format[]) {
 		chr = format[fmt];
 
 		if (chr == '%') {
-			out = append(output, out, '%');
+			out = append(&output, out, '%');
 			continue;
 		}
 		else if (chr == 'i') {
@@ -122,9 +122,9 @@ int format(uint64 value, char output&[], int out, char format[]) {
 		}
 
 		if (formatter.digitSymbols.length != 10) {
-			out = formatter.formatNoSign(output, out, value);
+			out = formatter.formatNoSign(&output, out, value);
 		} else {
-			out = formatter.format(output, out, value);
+			out = formatter.format(&output, out, value);
 		}
 	}
 
@@ -160,7 +160,7 @@ int format(int64 value, char output&[], int out, char format[]) {
 		chr = format[fmt];
 
 		if (chr == '%') {
-			out = append(output, out, '%');
+			out = append(&output, out, '%');
 			continue;
 		}
 		else if (chr == 'i') {
@@ -173,9 +173,9 @@ int format(int64 value, char output&[], int out, char format[]) {
 		}
 
 		if (formatter.digitSymbols.length != 10) {
-			out = formatter.formatNoSign(output, out, value);
+			out = formatter.formatNoSign(&output, out, value);
 		} else {
-			out = formatter.format(output, out, value);
+			out = formatter.format(&output, out, value);
 		}
 	}
 
@@ -211,7 +211,7 @@ int format(int32 value, char output&[], int out, char format[]) {
 		chr = format[fmt];
 
 		if (chr == '%') {
-			out = append(output, out, '%');
+			out = append(&output, out, '%');
 			continue;
 		}
 		else if (chr == 'i') {
@@ -224,9 +224,9 @@ int format(int32 value, char output&[], int out, char format[]) {
 		}
 
 		if (formatter.digitSymbols.length != 10) {
-			out = formatter.formatNoSign(output, out, uint32(value));
+			out = formatter.formatNoSign(&output, out, uint32(value));
 		} else {
-			out = formatter.format(output, out, int64(value));
+			out = formatter.format(&output, out, int64(value));
 		}
 	}
 
@@ -262,23 +262,23 @@ int format(float64 value, char output&[], int out, char format[]) {
 		chr = format[fmt];
 
 		if (chr == '%') {
-			out = append(output, out, '%');
+			out = append(&output, out, '%');
 			continue;
 		}
 		else if (chr == 'd') { // decimal: 3.1415
 			formatter.trailingZeros = false;
-			out = formatter.format(output, out, value);
+			out = formatter.format(&output, out, value);
 		}
 		else if (chr == 'f') { // fixed: 3.141500
 			formatter.trailingZeros = true;
-			out = formatter.format(output, out, value);
+			out = formatter.format(&output, out, value);
 		}
 		else if (chr == 'b' || chr == 'o' || chr == 'x') {
 			if (formatter.precision > 0) {
 				formatter.digitGrouping = formatter.precision;
 				formatter.groupingSymbol = '.';
 			}
-			out = formatter.formatNoSign(output, out, Float64.toBits(value));
+			out = formatter.formatNoSign(&output, out, Float64.toBits(value));
 		}
 		else {
 			abort("invalid format character", chr);
@@ -316,23 +316,23 @@ int format(float32 value, char output&[], int out, char format[]) {
 		chr = format[fmt];
 
 		if (chr == '%') {
-			out = append(output, out, '%');
+			out = append(&output, out, '%');
 			continue;
 		}
 		else if (chr == 'd') { // decimal: 3.1415
 			formatter.trailingZeros = false;
-			out = formatter.format(output, out, float64(value));
+			out = formatter.format(&output, out, float64(value));
 		}
 		else if (chr == 'f') { // fixed: 3.141500
 			formatter.trailingZeros = true;
-			out = formatter.format(output, out, float64(value));
+			out = formatter.format(&output, out, float64(value));
 		}
 		else if (chr == 'b' || chr == 'o' || chr == 'x') {
 			if (formatter.precision > 0) {
 				formatter.digitGrouping = formatter.precision;
 				formatter.groupingSymbol = '.';
 			}
-			out = formatter.formatNoSign(output, out, Float32.toBits(value));
+			out = formatter.formatNoSign(&output, out, Float32.toBits(value));
 		}
 		else {
 			abort("invalid format character", chr);
@@ -370,22 +370,22 @@ int format(Fixed32 value, char output&[], int out, char format[]) {
 		chr = format[fmt];
 
 		if (chr == '%') {
-			out = append(output, out, '%');
+			out = append(&output, out, '%');
 		}
 		else if (chr == 'd') { // decimal: 3.1415
 			formatter.trailingZeros = false;
-			out = formatter.format(output, out, value);
+			out = formatter.format(&output, out, value);
 		}
 		else if (chr == 'f') { // fixed: 3.141500
 			formatter.trailingZeros = true;
-			out = formatter.format(output, out, value);
+			out = formatter.format(&output, out, value);
 		}
 		else if (chr == 'b' || chr == 'o' || chr == 'x') {
 			if (formatter.precision > 0) {
 				formatter.digitGrouping = formatter.precision;
 				formatter.groupingSymbol = '.';
 			}
-			out = formatter.formatNoSign(output, out, uint32(value.bits()));
+			out = formatter.formatNoSign(&output, out, uint32(value.bits()));
 		}
 		else {
 			abort("invalid format character", chr);
@@ -404,30 +404,30 @@ int format(Datetime value!, char output&[], int out, char format[]) {
 	static DatetimeFormat fmt! = {
 		numberFormat: {};
 	};
-	return fmt.format(output, out, value, format);
+	return fmt.format(&output, out, value, format);
 }
 
 /// extension method for backward compatibility
-inline format(Datetime value!, char output&[], char format[]) = format(value, output, 0, format);
+inline format(Datetime value!, char output&[], char format[]) = format(value, &output, 0, format);
 
 /// extension method for debugging and testing
-inline format(float64 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(float64 value, char output&[], char format[]) = format(value, &output, 0, format);
 /// extension method for debugging and testing
-inline format(float32 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(float32 value, char output&[], char format[]) = format(value, &output, 0, format);
 /// extension method for debugging and testing
-inline format(Fixed32 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(Fixed32 value, char output&[], char format[]) = format(value, &output, 0, format);
 
 /// extension method for debugging and testing
-inline format(uint32 value, char output&[], int pos, char format[]) = format(uint64(value), output, pos, format);
+inline format(uint32 value, char output&[], int pos, char format[]) = format(uint64(value), &output, pos, format);
 // extension method for debugging and testing
 // inline format(int32 value, char output&[], int pos, char format[]) = format(int64(value), output, pos, format);
 
 /// extension method for debugging and testing
-inline format(uint64 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(uint64 value, char output&[], char format[]) = format(value, &output, 0, format);
 /// extension method for debugging and testing
-inline format(int64 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(int64 value, char output&[], char format[]) = format(value, &output, 0, format);
 
 /// extension method for debugging and testing
-inline format(uint32 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(uint32 value, char output&[], char format[]) = format(value, &output, 0, format);
 /// extension method for debugging and testing
-inline format(int32 value, char output&[], char format[]) = format(value, output, 0, format);
+inline format(int32 value, char output&[], char format[]) = format(value, &output, 0, format);

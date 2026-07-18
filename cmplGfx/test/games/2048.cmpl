@@ -156,7 +156,7 @@ int onEvent(int action, int button, int x, int y) {
 			if (c != 0) {
 				Rect r = {};
 				char text[8] = {...};
-				(1 << v).format(text, "%d");
+				(1 << v).format(&text, "%d");
 
 				font.clipText(&r, text);
 				r.positionX(rect.x0 + (rect.width() - r.width()) / 2);
@@ -168,7 +168,7 @@ int onEvent(int action, int button, int x, int y) {
 	return Window.timeoutMax;
 }
 
-lerpLut(colors, argb(0xecdfc7), argb(0xecc12d), argb(0xff1e1f), argb(0xff1e1f));
+lerpLut(&colors, argb(0xecdfc7), argb(0xecc12d), argb(0xff1e1f), argb(0xff1e1f));
 image.fill(uint32(argb(185, 173, 161)));
 
 Window.show(image, onEvent);

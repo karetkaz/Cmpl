@@ -1,6 +1,6 @@
 // Simple Calculator with no precedence to demonstrate `NumberFormat` and `Layout.Custom(4, ...)`
 
-static Style display! = {
+static Style display = {
 	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 48);
 	align: Style.right;
 	format: {
@@ -25,7 +25,7 @@ static Style display! = {
 		trailingZeros: false;       	// 6 != 6.00
 	};
 };
-static Style global! = {
+static Style global = {
 	font: Image.openTtf("../asset/font/NokiaPureText.ttf", 24);
 	align: Style.center;
 };
@@ -64,7 +64,7 @@ void onResult(Button this, int32 clicks) {
 	assert(operation == 0);
 	clear = true;
 
-	display.format.format(result, 0, value);
+	display.format.format(&result, 0, value);
 }
 void onClear(Button this, int32 clicks) {
 	result.append(0, "0");

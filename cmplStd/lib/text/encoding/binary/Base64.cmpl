@@ -167,7 +167,7 @@ struct Base64Decoder: ByteReader {
 		int bitsDecoded& = this.bitsDecoded;
 		int charDecoded& = this.charDecoded;
 		for (int i = 0; i < data.length;) {
-			if (reader.read(reader, in) <= 0) {
+			if (reader.read(reader, &in) <= 0) {
 				return i;
 			}
 			else if (in[0] == '=') {

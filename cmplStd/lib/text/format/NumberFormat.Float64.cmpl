@@ -1,17 +1,17 @@
 /// formated print a floating-point value to the given `output` buffer
 static int format(NumberFormat format!, char output&[], int pos, float64 value) {
 	if (value < 0) {
-		pos = append(output, pos, format.negativeSymbol);
+		pos = append(&output, pos, format.negativeSymbol);
 		value = -value;
 	} else {
-		pos = append(output, pos, format.positiveSymbol);
+		pos = append(&output, pos, format.positiveSymbol);
 	}
 
 	if (value - value != 0) {
 		if (value != value) {
-			return append(output, pos, format.undefinedSymbol);
+			return append(&output, pos, format.undefinedSymbol);
 		}
-		return append(output, pos, format.infinitySymbol);
+		return append(&output, pos, format.infinitySymbol);
 	}
 
 	struct BigUint {
@@ -53,28 +53,28 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 			pos -= 1;
 		}
 		if (pos == groupPosition) {
-			pos = append(output, pos, format.groupingSymbol);
+			pos = append(&output, pos, format.groupingSymbol);
 			groupPosition = format.digitGrouping(pos);
 			continue;
 		}
 		uint32 remainder = integerPart.divRem(digitSymbols.length);
-		pos = append(output, pos, digitSymbols[remainder]);
+		pos = append(&output, pos, digitSymbols[remainder]);
 	}
 	for (; width > 0; width -= 1) {
 		if (pos >= output.length) {
 			break;
 		}
 		if (pos == groupPosition) {
-			pos = append(output, pos, format.groupingSymbol);
+			pos = append(&output, pos, format.groupingSymbol);
 			groupPosition = format.digitGrouping(pos);
 			continue;
 		}
-		pos = append(output, pos, format.paddingSymbol);
+		pos = append(&output, pos, format.paddingSymbol);
 	}
 
 	// Put the digits in the correct order.
-	reverse(output, integerPos, pos);
-	pos = append(output, pos, format.fractionSymbol);
+	reverse(&output, integerPos, pos);
+	pos = append(&output, pos, format.fractionSymbol);
 
 	BigUint fractionPart = BigUint.make(mantissa);
 	int fractionShift = fractionPart.bits() - (52 - exponent);
@@ -92,12 +92,12 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 			break;
 		}
 		if (pos == groupPosition) {
-			pos = append(output, pos, format.groupingSymbol);
+			pos = append(&output, pos, format.groupingSymbol);
 			groupPosition = format.fractGrouping(pos);
 			continue;
 		}
 		uint32 overflow = fractionPart.mulOvf(digitSymbols.length);
-		pos = append(output, pos, digitSymbols[overflow]);
+		pos = append(&output, pos, digitSymbols[overflow]);
 		precision -= 1;
 	}
 
@@ -154,11 +154,11 @@ static int format(NumberFormat format!, char output&[], int pos, float64 value) 
 				break;
 			}
 			if (pos == groupPosition) {
-				pos = append(output, pos, format.groupingSymbol);
+				pos = append(&output, pos, format.groupingSymbol);
 				groupPosition = format.fractGrouping(pos);
 				continue;
 			}
-			pos = append(output, pos, digitSymbols[0]);
+			pos = append(&output, pos, digitSymbols[0]);
 			precision -= 1;
 		}
 	} else {

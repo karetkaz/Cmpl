@@ -1,9 +1,9 @@
-#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 10
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 12
 
 int argByMut(int mut&) { return mut += 1; }
 int argByVal(int value) { return argByMut(&value); }
-int argByRef(int ref!) { return argByMut(&ref); } // todo: error
-int argByOpt(int opt?) { return argByMut(&opt); } // todo: error
+int argByRef(int ref!) { return argByMut(&ref); }
+int argByOpt(int opt?) { return argByMut(&opt); }
 
 int test1(int value) = argByVal; // ok
 int test2(int value) = argByRef; // err: value vs ref
@@ -26,6 +26,8 @@ int test15(int value&) = argByOpt; // err: do not allow mutation
 int test16(int value&) = argByMut; // ok
 
 /* - expected output:
+decl.initialization.fun.cmpl:5: error: argument `&ref` is immutable, it can not be passed by mutable reference to `argByMut(mut: int32): int32`
+decl.initialization.fun.cmpl:6: error: argument `&opt` is immutable, it can not be passed by mutable reference to `argByMut(mut: int32): int32`
 decl.initialization.fun.cmpl:9: error: invalid initialization: `argByRef`
 decl.initialization.fun.cmpl:10: error: invalid initialization: `argByOpt`
 decl.initialization.fun.cmpl:11: error: invalid initialization: `argByMut`

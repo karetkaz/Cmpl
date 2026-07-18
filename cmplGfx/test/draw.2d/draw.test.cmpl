@@ -178,14 +178,14 @@ int32 onEvent(int32 action, int32 button, int32 ex, int32 ey) {
 		Rect rect = {};
 		int32 textSpacing = Window.font.height() + Window.font.height() / 2;
 
-		y0.format(text, x0.format(text, "0: (%d"), ", %d)");
+		y0.format(&text, x0.format(&text, "0: (%d"), ", %d)");
 		Window.font.clipText(&rect, text);
 		rect.positionX(Int32.min(Int32.max(x[0], 0), offscreen.width() - rect.width()));
 		rect.positionY(Int32.min(Int32.max(y[0] - textSpacing, 0), offscreen.height() - rect.height()));
 		offscreen.fillRect(rect, ~textColor);
 		offscreen.drawText(rect, Window.font, text, textColor);
 
-		y1.format(text, x1.format(text, "1: (%d"), ", %d)");
+		y1.format(&text, x1.format(&text, "1: (%d"), ", %d)");
 		Window.font.clipText(&rect, text);
 		rect.positionX(Int32.min(Int32.max(x[1], 0), offscreen.width() - rect.width()));
 		rect.positionY(Int32.min(Int32.max(y[1] + textSpacing, 0), offscreen.height() - rect.height()));

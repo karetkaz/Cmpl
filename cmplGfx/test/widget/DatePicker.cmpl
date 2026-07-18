@@ -8,7 +8,7 @@ struct IntButton: View {
 			return false;
 		}
 		this.value = value;
-		value.format(this.text, "%d");
+		value.format(&this.text, "%d");
 		return true;
 	}
 
@@ -322,7 +322,7 @@ struct DatePicker: Layout {
 		this.btnDay = btnDay;
 		this.btnDays = Layout.Custom(8, Style.fill, ...btnDays);
 		this.addItems(Style.fill, this.btnDays);
-		Layout.onCreate(this, parent);
+		Layout.onCreate(&this, parent);
 
 		Timestamp initValue = this.timestamp;
 		this.timestamp = Timestamp(0, Timestamp.precision);

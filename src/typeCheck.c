@@ -376,11 +376,41 @@ static symn typeCheckRef(ccContext ctx, symn loc, astn ref, astn args, ccKind fi
 			prm = prm->next;            // skip hidden param: file
 			prm = prm->next;            // skip hidden param: line
 		}
+		astn firstArg = arg;
 		while (arg != NULL && prm != NULL) {
-			// reference arguments must be given as: `&var`
-			if (arg->kind != OPER_adr && isIndirect(prm) && !isIndirect(prm->type) && isMutable(prm)) {
-				if (!(filter == ARGS_this && args->kind == OPER_com && arg == args->op.lhso)) {
+			// parameter is a value passed by reference: `int a&` / `int a!`
+			int refParam = isIndirect(prm) && !isIndirect(prm->type);
+			// parameter the function may change: `&` is the call site hint for these
+			int mutableRef = isMutable(prm) && (prm->kind & ARGS_varg) == 0
+				&& (refParam || isArrayType(prm->type) || isIndirect(prm->type));
+
+			if (arg->kind == OPER_adr) {
+				astn varg = arg->op.rhso;
+				symn ref = linkOf(arg, 1);
+				if (!mutableRef) {
+					error(ctx->rt, arg->file, arg->line, ERR_ARGUMENT_BY_REF, arg, sym);
+				}
+				else if (varg == NULL || (varg->kind != TOKEN_var && varg->kind != OPER_dot && varg->kind != OPER_idx)) {
+					// there is no variable behind the reference to be changed: `incr(&(x + 1))`
+					error(ctx->rt, arg->file, arg->line, ERR_ARGUMENT_NOT_VARIABLE, arg, sym);
+				}
+				else if (ref != NULL && !isMutable(ref) && !isArrayType(ref->type) && !isIndirect(ref->type)) {
+					// note: for arrays and objects the mutability of the variable
+					// does not cover the mutability of the elements or members
+					error(ctx->rt, arg->file, arg->line, ERR_ARGUMENT_NOT_MUTABLE, arg, sym);
+				}
+			}
+			else if (mutableRef) {
+				// mutable reference arguments must be given as: `&var` (except the receiver: `var.method()`)
+				if (!(filter == ARGS_this && arg == firstArg)) {
 					warn(ctx->rt, arg->file, arg->line, WARN_PASS_ARG_BY_REF, arg, sym);
+				}
+				symn ref = linkOf(arg, 1);
+				if (ref != NULL && isVariable(ref) && !isMutable(ref)
+						&& !isArrayType(ref->type) && !isIndirect(ref->type)) {
+					// note: for arrays and objects the mutability of the variable
+					// does not cover the mutability of the elements or members
+					error(ctx->rt, arg->file, arg->line, ERR_ARGUMENT_NOT_MUTABLE, arg, sym);
 				}
 			}
 

@@ -59,7 +59,7 @@ struct ColorPicker: View {
 }
 
 static void onPrintStyle(Button button, int32 clicks) {
-	Style style& = button.style;
+	Style style! = button.style;
 	debug("style", style);
 }
 static bool updateColor(ColorPicker this, argb value);

@@ -93,10 +93,10 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 			digitSymbols: NumberFormat.digits[...16];
 		};
 		char output[1024] = {...};
-		int p = append(output, 0, "edit pattern[");
-		p = fmtDec.format(output, p, int64(selected));
-		p = append(output, p, "]: 0x");
-		p = fmtHex.format(output, p, patterns[selected]);
+		int p = append(&output, 0, "edit pattern[");
+		p = fmtDec.format(&output, p, int64(selected));
+		p = append(&output, p, "]: 0x");
+		p = fmtHex.format(&output, p, patterns[selected]);
 		debug(output);
 	}
 	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_TAB) {

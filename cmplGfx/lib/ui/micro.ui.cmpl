@@ -502,7 +502,7 @@ struct Layout: View {
 		Item items[*] = this.items;
 		this.itemCapacity = capacity;
 		this.items = pointer.alloc(null, this.itemCapacity * sizeof(Item));
-		pointer.copy(this.items, items, this.itemCount * sizeof(Item));
+		pointer.copy(&this.items, items, this.itemCount * sizeof(Item));
 		pointer.alloc(items, 0);
 		return this;
 	}
@@ -538,7 +538,7 @@ struct Layout: View {
 			item.view = views[i];
 			item.align = alignment;
 			if (item.view == null) {
-				item.view = separator(this);
+				item.view = separator(&this);
 			}
 		}
 		this.itemCount = itemCount;
@@ -1131,13 +1131,13 @@ struct Widget: Layout {
 
 	/// Append the given `views` to `this` widget with the given `alignment`
 	static Widget addItems(Widget this, int32 align, View views?...) {
-		Layout.addItems(this, align, ...views);
+		Layout.addItems(&this, align, ...views);
 		return this;
 	}
 
 	/// Append the given `views` to `this` widget
 	static Widget addItems(Widget this&, View views?...) {
-		Layout.addItems(this, Style.fill, ...views);
+		Layout.addItems(&this, Style.fill, ...views);
 		return this;
 	}
 
@@ -1166,7 +1166,7 @@ struct Widget: Layout {
 	}
 
 	void onCreate^(Widget this&, View parent) {
-		Layout.onCreate(this, parent);
+		Layout.onCreate(&this, parent);
 		this.measure = true;
 
 		if (this.focus != null) {
@@ -1183,9 +1183,9 @@ struct Widget: Layout {
 		}
 
 		if (event.key == Window.KEY_CODE_TAB && !event.release && this == this.parent) {
-			if (!focusNext(this, event.isShift)) {
+			if (!focusNext(&this, event.isShift)) {
 				// focus run out of last focused item
-				if (!focusNext(this, event.isShift)) {
+				if (!focusNext(&this, event.isShift)) {
 					// there is no focusable view found
 					return State.ignored;
 				}
@@ -1235,7 +1235,7 @@ void focus(View view) {
 		layout.pressedIndex = -1;
 		layout.focusedIndex = -1;
 	}
-	Widget widget = getWidget(view);
+	Widget widget = getWidget(&view);
 
 	Layout layout = view.as(Layout);
 	if (layout == null) {
@@ -1263,7 +1263,7 @@ void focus(View view) {
 }
 /// Returns weather the given `view` is in focused state or not.
 bool isFocused(View view) {
-	Widget widget = getWidget(view);
+	Widget widget = getWidget(&view);
 	return view == widget.getFocused();
 }
 ///@public
@@ -1292,7 +1292,7 @@ bool hasFocused(Layout this, View items...) {
 
 /// Returns weather the given `view` is in pressed state or not.
 bool isPressed(View view) {
-	Widget widget = getWidget(view);
+	Widget widget = getWidget(&view);
 	return view == widget.getPressed();
 }
 ///@public
@@ -1321,7 +1321,7 @@ bool hasPressed(Layout this, View items...) {
 
 /// Invalidate the view, so the next frame it will be redrawn, and measured in case `layout` is set to true
 void invalidate(View view, bool layout) {
-	Widget widget = getWidget(view);
+	Widget widget = getWidget(&view);
 	widget.measure |= layout;
 	widget.redraw = true;
 }

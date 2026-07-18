@@ -3,7 +3,7 @@ struct FileReader: ByteReader {
 	File file;
 
 	int read^(FileReader this, uint8 bytes[]) {
-		return File.read(this.file, bytes);
+		return File.read(this.file, &bytes);
 	}
 
 	void close^(FileReader this) {
@@ -54,7 +54,7 @@ struct BufferedFileWriter: FileWriter {
 		}
 		// accumulate into buffer
 		pointer buffer = this.buffer.inc(this.bufferSize);
-		pointer.copy(buffer, bytes, bytes.length);
+		pointer.copy(&buffer, bytes, bytes.length);
 		this.bufferSize += bytes.length;
 	}
 

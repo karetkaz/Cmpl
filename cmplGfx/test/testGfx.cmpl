@@ -130,7 +130,7 @@ static int onEvent(int action, int button, int x, int y) {
 
 		if (action == Window.KEY_PRESS) {
 			uint8 bytes[*] = pointer(keyText);
-			int n = Utf8Writer.encode(bytes, x);
+			int n = Utf8Writer.encode(&bytes, x);
 			bytes[n] = 0;
 		} else {
 			keyText[0] = 0;

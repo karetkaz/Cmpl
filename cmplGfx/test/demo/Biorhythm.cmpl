@@ -87,7 +87,7 @@ void drawBiorhythm(Image dst, Timestamp birth, Timestamp time, int32 days, int32
 		textPosition += lineHeight;
 		int p = text.append(0, biorhythms[i].label);
 		p = text.append(p, ": ");
-		p = fmt.format(text, p, value);
+		p = fmt.format(&text, p, value);
 		p = text.append(p, "%");
 		dst.drawText(padding, textPosition, font, text, biorhythms[i].color);
 	}
@@ -96,10 +96,10 @@ void drawBiorhythm(Image dst, Timestamp birth, Timestamp time, int32 days, int32
 	drawLine(dst, 0, imgHeight / 2, imgWidth, imgHeight / 2, 0x989898);
 	drawLine(dst, imgWidth * first / days, 0, imgWidth * first / days, imgHeight, 0x989898);
 
-	Datetime(time).format(text, 0, "Target date: %Y.%m.%d / %A");
+	Datetime(time).format(&text, 0, "Target date: %Y.%m.%d / %A");
 	dst.drawText(padding, padding, font, text, 0x528252);
 
-	Datetime(birth).format(text, 0, "Birth date: %Y.%m.%d / %A");
+	Datetime(birth).format(&text, 0, "Birth date: %Y.%m.%d / %A");
 	dst.drawText(padding, lineHeight + padding, font, text, 0xffffff);
 }
 

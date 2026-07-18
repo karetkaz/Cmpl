@@ -74,7 +74,7 @@ RecordMemberTest recordInitDefault = {memberRec: {}}; // todo: remove: automatic
 /// initializing with zero initializer: make all the values 0
 // RecordMemberTest recordZeroInitialize = {0};
 RecordMemberTest recordInitZero = {...};
-pointer.fill(recordInitZero, 0, sizeof(RecordMemberTest));
+pointer.fill(&recordInitZero, 0, sizeof(RecordMemberTest));
 
 /// initializing with undefined initializer: do not initialize
 RecordMemberTest recordUninitialized = {...};

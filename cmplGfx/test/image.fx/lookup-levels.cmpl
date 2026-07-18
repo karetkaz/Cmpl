@@ -13,7 +13,7 @@
 static Image back = Image("../asset/image/forest.jpg", 32);
 static Image offs = Image(back);
 
-void levels(argb lut[256], int32 brightness, int32 x0, int32 x1, int32 y0, int32 y1) {
+void levels(argb lut&[256], int32 brightness, int32 x0, int32 x1, int32 y0, int32 y1) {
 	if (x1 == x0) {
 		x1 = x0 + 1;
 	}
@@ -28,7 +28,7 @@ void levels(argb lut[256], int32 brightness, int32 x0, int32 x1, int32 y0, int32
 		lut[idx].a = idx;
 	}
 }
-void levels(argb lut[256], int32 brightness, int32 output, int32 input) {
+void levels(argb lut&[256], int32 brightness, int32 output, int32 input) {
 	int32 x0 = input > 0 ? 0 : -input;
 	int32 x1 = input < 0 ? 255 : 255 - input;
 	int32 y0 = output < 0 ? 0 : output;
@@ -57,7 +57,7 @@ static DebugView debug = {
 static Switch chkAdvanced = {
 	static void onClick(Switch switch, int32 clicks) {
 		switch.invalidate();
-		Switch.onClick(switch, clicks);
+		Switch.onClick(&switch, clicks);
 	}
 
 	text: "Advanced";

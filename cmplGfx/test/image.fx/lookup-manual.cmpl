@@ -129,7 +129,7 @@ void onButtonClick(Button this&, int32 clicks) {
 					File.out.write(",\n");
 				}
 				uint32 col = curves.data[i].v;
-				int len = col.format(str, "\t0x%08x");
+				int len = col.format(&str, "\t0x%08x");
 				File.write(File.out, str[... len]);
 			}
 			File.out.write("\n};\n");

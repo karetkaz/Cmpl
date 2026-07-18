@@ -548,9 +548,9 @@ static vmError surf_blur(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_image_calcHueHist = "void calcHueHist(Image image, Rect roi?, uint32 lut[256])";
-static const char *const proto_image_calcLumHist = "void calcLumHist(Image image, Rect roi?, uint32 lut[256])";
-static const char *const proto_image_calcRgbHist = "void calcRgbHist(Image image, Rect roi?, uint32 lut[256])";
+static const char *const proto_image_calcHueHist = "void calcHueHist(Image image, Rect roi?, uint32 lut&[256])";
+static const char *const proto_image_calcLumHist = "void calcLumHist(Image image, Rect roi?, uint32 lut&[256])";
+static const char *const proto_image_calcRgbHist = "void calcRgbHist(Image image, Rect roi?, uint32 lut&[256])";
 static vmError surf_calcHist(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -820,7 +820,7 @@ static vmError mesh_save(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_mesh_normalize = "void normalize(Mesh mesh, float32 tolerance, float32 center[3], float32 resize[3])";
+static const char *const proto_mesh_normalize = "void normalize(Mesh mesh, float32 tolerance, float32 center&[3], float32 resize&[3])";
 static vmError mesh_normalize(nfcContext ctx) {
 	struct vector args[2];
 	rtContext rt = ctx->rt;

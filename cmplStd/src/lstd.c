@@ -420,10 +420,10 @@ static int ccLibSys(rtContext rt, ccContext cc) {
 		if (cc->libc_mal == NULL) {
 			err = 3;
 		}
-		err = err || 3 * !rt->api.ccAddCall(cc, sysMemFill, "pointer fill(pointer dst, uint8 value, int size)");
-		err = err || 3 * !rt->api.ccAddCall(cc, sysMemCopy, "pointer copy(pointer dst, pointer src, int size)");
-		err = err || 3 * !rt->api.ccAddCall(cc, sysMemSwap, "pointer swap(pointer dst, pointer src, int size)");
-		err = err || 3 * !rt->api.ccAddCall(cc, sysMemMove, "pointer move(pointer dst, pointer src, int size)");
+		err = err || 3 * !rt->api.ccAddCall(cc, sysMemFill, "pointer fill(pointer dst&, uint8 value, int size)");
+		err = err || 3 * !rt->api.ccAddCall(cc, sysMemCopy, "pointer copy(pointer dst&, pointer src, int size)");
+		err = err || 3 * !rt->api.ccAddCall(cc, sysMemSwap, "pointer swap(pointer dst&, pointer src&, int size)");
+		err = err || 3 * !rt->api.ccAddCall(cc, sysMemMove, "pointer move(pointer dst&, pointer src, int size)");
 		err = err || 3 * !rt->api.ccAddCall(cc, sysMemCmp, "int compare(pointer dst, pointer src, int size)");
 		rt->api.ccEnd(cc, cc->type_ptr);
 	}

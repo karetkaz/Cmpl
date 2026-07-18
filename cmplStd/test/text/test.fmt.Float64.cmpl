@@ -23,7 +23,7 @@ int print_flags = format.printFlags();
 for (float64 i = 0; i < 40; i += .001) {
 	float64 value = float64.exp(i);
 	float64.print(expect, value, print_flags, format.width, format.precision);
-	format.format(buff, 0, value);
+	format.format(&buff, 0, value);
 
 	if (strcmp(expect, buff) != 0) {
 		struct NotEquals {
@@ -48,7 +48,7 @@ for (float64 i = 0; i < 40; i += .001) {
 float64 value = 0;
 for (int i = 0; i < 22; i += 1) {
 	float64.print(expect, value, 0, 0, 100);
-	value.format(buff, 0, "%.100f");
+	value.format(&buff, 0, "%.100f");
 	if (strcmp(expect, buff) != 0) {
 		NotEquals.debug("not equals", NotEquals(expect, buff, null));
 	}
@@ -75,7 +75,7 @@ NumberFormat wide = {
 for (int i = 0; i < extremes.length; i += 1) {
 	float64 v = extremes[i];
 	float64.print(wideExpect, v, 0, 0, 1100);
-	wide.format(wideBuff, 0, v);
+	wide.format(&wideBuff, 0, v);
 	if (strcmp(wideExpect, wideBuff) != 0) {
 		error("extreme magnitude mismatch", v, wideExpect, wideBuff);
 	}
@@ -89,7 +89,7 @@ float64 nonFinite[] = { +Float64.inf, -Float64.inf, Float64.nan };
 for (int i = 0; i < nonFinite.length; i += 1) {
 	float64 v = nonFinite[i];
 	float64.print(specialRef, v, 0, 0, 0);
-	finite.format(special, 0, v);
+	finite.format(&special, 0, v);
 	if (strcmp(specialRef, special) != 0) {
 		error("non-finite mismatch", v, specialRef, special);
 	}
@@ -104,7 +104,7 @@ static char tieBuff[64] = {...};
 void checkTie(int32 p, float64 value) {
 	float64.print(tieExpect, value, 0, 0, p);
 	NumberFormat tie = { precision: p; trailingZeros: true; };
-	tie.format(tieBuff, 0, value);
+	tie.format(&tieBuff, 0, value);
 	if (strcmp(tieExpect, tieBuff) != 0) {
 		error("tie rounding mismatch", value, tieExpect, tieBuff);
 	}
@@ -127,7 +127,7 @@ float64 halves[] = { 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 9.5, 99.5 };
 for (int i = 0; i < halves.length; i += 1) {
 	float64 v = halves[i];
 	float64.print(p0Expect, v, 0, 0, 0);
-	tie0.format(p0Buff, 0, v);
+	tie0.format(&p0Buff, 0, v);
 	if (strcmp(p0Expect, p0Buff) != 0) {
 		error("precision-0 tie not rounded to even", v, p0Expect, p0Buff);
 	}

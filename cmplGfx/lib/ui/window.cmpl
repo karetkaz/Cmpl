@@ -137,7 +137,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 			int64 now = System.millis();
 			float32 time = (now - start) / 1000f;
 			data.offs.eval(null, data.aspect, time, data.eval);
-			(System.millis() - now).format(text, "Render time: %d ms");
+			(System.millis() - now).format(&text, "Render time: %d ms");
 			Window.setTitle(text);
 			return Window.timeoutMax;
 		}
@@ -162,7 +162,7 @@ void show(int32 width, int32 height, int32 animationDownScale, vec4f eval(vec4f 
 		}
 		if (time > data.fpsTime) {
 			char text[256] = {...};
-			data.fpsCount.format(text, "Fps: %d");
+			data.fpsCount.format(&text, "Fps: %d");
 			Window.setTitle(text);
 			data.fpsTime = time + 1;
 			data.fpsCount = 0;
@@ -287,7 +287,8 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 		}
 		else if (action == Window.KEY_PRESS) {
 			if (button == Window.KEY_CODE_ENTER) {
-				return onEvent(&data, Window.WINDOW_INIT, button, ex, ey);
+				// data is already a reference, no need to take its address
+				return onEvent(data, Window.WINDOW_INIT, button, ex, ey);
 			}
 
 			else if (button == 'w') {
@@ -402,10 +403,10 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 
 		char text[256] = {...};
 		int pos = 0;
-		pos = data.mesh.vertices.format(text, pos, "Vertices: %d");
-		pos = data.mesh.triangles.format(text, pos, ", Triangles: %d");
-		pos = int64(rendered).format(text, pos, " / %d");
-		pos = int64(data.fpsShow).format(text, pos, ", Fps: %d");
+		pos = data.mesh.vertices.format(&text, pos, "Vertices: %d");
+		pos = data.mesh.triangles.format(&text, pos, ", Triangles: %d");
+		pos = int64(rendered).format(&text, pos, " / %d");
+		pos = int64(data.fpsShow).format(&text, pos, ", Fps: %d");
 		Window.setTitle(text);
 
 		int64 time = System.millis();

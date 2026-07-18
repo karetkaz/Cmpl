@@ -128,7 +128,7 @@ struct ColorLut: Blender {
 		int xyz = 0;
 		int size = 1;
 		int points[256] = {0};
-		for (char buff[1024] = {...}; readLine(file, buff); ) {
+		for (char buff[1024] = {...}; readLine(file, &buff); ) {
 			int pos = 0;
 			if (buff[pos] == 0) {
 				// empty line
@@ -155,12 +155,12 @@ struct ColorLut: Blender {
 				continue;
 			}
 			if (buff.startsWith("DOMAIN_MIN")) {
-				vec4f min = parseVec4(buff, 10);
+				vec4f min = parseVec4(&buff, 10);
 				assert(min.x == 0 && min.y == 0 && min.z == 0, "DOMAIN_MIN expected to be 0", min);
 				continue;
 			}
 			if (buff.startsWith("DOMAIN_MAX")) {
-				vec4f max = parseVec4(buff, 10);
+				vec4f max = parseVec4(&buff, 10);
 				assert(max.x == 1 && max.y == 1 && max.z == 1, "DOMAIN_MAX expected to be 1", max);
 				continue;
 			}
@@ -176,7 +176,7 @@ struct ColorLut: Blender {
 			int y = points[(p /= size) % size];
 			int z = points[(p /= size) % size];
 
-			vec4f rgb = parseVec4(buff, pos);
+			vec4f rgb = parseVec4(&buff, pos);
 			this.set(x, y, z, argb(rgb));
 
 			xyz += 1;

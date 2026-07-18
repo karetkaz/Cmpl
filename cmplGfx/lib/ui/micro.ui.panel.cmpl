@@ -35,7 +35,7 @@ struct TabPage: Layout {
 	argb background = argb(0);
 
 	void onCreate^(TabPage this&, View parent) {
-		Layout.onCreate(this, parent);
+		Layout.onCreate(&this, parent);
 		this.active = this.items[1].view;
 		Style style! = this.style;
 		this.background = mix_rgb8(128, argb(style.backgroundColor), argb(style.hoveredColor));
@@ -118,7 +118,7 @@ struct TabPage: Layout {
 			};
 
 			this.tabs = tabs;
-			Layout.addItems(this, Style.center, tabs);
+			Layout.addItems(&this, Style.center, tabs);
 		}
 
 		Layout tabs& = pointer(this.tabs);
@@ -139,7 +139,7 @@ struct TabPage: Layout {
 
 		tabs.addItems(0, tab);
 		page.addItems(align, ...views);
-		Layout.addItems(this, Style.fill, page);
+		Layout.addItems(&this, Style.fill, page);
 		return this;
 	}
 }
@@ -204,7 +204,7 @@ struct Select: Layout {
 		struct Header: Switch {
 			Select select;
 			void onClick^(Header this, int32 clicks) {
-				Switch.onClick(this, clicks);
+				Switch.onClick(&this, clicks);
 				this.select.expand(this.selected != 0);
 			}
 		}
@@ -226,10 +226,10 @@ struct Select: Layout {
 			panel.orientation = type;
 			this.orientation = Int32.sign(type);
 
-			Layout.addItems(this, align, header, panel);
+			Layout.addItems(&this, align, header, panel);
 		}
 
-		Layout.addItems(this.panel, align, ...views);
+		Layout.addItems(&this.panel, align, ...views);
 		return this;
 	}
 
@@ -246,7 +246,7 @@ struct Select: Layout {
 			text: text;
 			data: data;
 		};
-		Select.addItems(this, Style.fill, item);
+		Select.addItems(&this, Style.fill, item);
 		return this;
 	}
 
