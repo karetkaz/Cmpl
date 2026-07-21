@@ -5,6 +5,8 @@
 #define CMPL_DEBUG_H
 
 #include <cmpl.h>
+#include <time.h>
+
 #include "util.h"
 
 /// Debugger context
@@ -13,7 +15,6 @@ struct dbgContextRec {
 	vmError (*debug)(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee);
 	void (*dbgAlloc)(dbgContext ctx, void *mem, size_t size, char *kind);
 
-	struct arrBuffer functions;
 	struct arrBuffer statements;
 	size_t freeMem, usedMem;
 };
@@ -30,30 +31,31 @@ typedef enum {
 
 /// Debug info node
 typedef struct dbgNode {
-	// the statement tree
-	astn stmt;
-
-	// the declaring function
-	symn func;
-
-	// the declared symbol
-	symn decl;
-
 	// position in source file
 	const char *file;
 	int line;
 
+	int group;
+
 	// position in byte code
 	size_t start, end;
 
+	// the declaring function
+	symn func;
+
+	// profiler data
+	size_t exec;   // number of executed instructions
+	size_t hits;   // function or statement hit count
+	size_t traps;   // unsuccessful function call returns
+	clock_t time;   // time spent executing function (self time)
+	clock_t total;  // total execution: function time
+
+	// the declared symbol to show the value in debugger
+	symn decl;
+	// the statement tree
+	astn stmt;
 	// break point
 	brkMode bp;
-
-	// profile data
-	int64_t hits;   // function or statement hit count
-	int64_t fails;  // failed function calls / instructions
-	int64_t total;  // total execution: function time / instruction count
-	int64_t time;   // time spent executing function (self time)
 } *dbgn;
 
 /**
@@ -71,8 +73,8 @@ dbgContext dbgInit(rtContext ctx, vmError (*debug)(dbgContext ctx, vmError, size
  * @param err Error why the function was invoked
  * @param ss Stack size
  * @param sp stack pointer(top of stack)
- * @param caller caller method offset
- * @param callee callee method offset
+ * @param caller program counter
+ * @param callee program counter a different value than caller means there is a call or return
  * @return the given @param err is returned
  */
 vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller, size_t callee);
@@ -91,15 +93,6 @@ int isChecked(rtContext ctx);
  * @return the error message for the given code
  */
 char* vmErrorMessage(vmError error);
-
-/**
- * Request debug information of a function.
- * @param ctx Runtime context
- * @param offset the memory offset to lookup
- * @return the debug information for the given position
- */
-dbgn mapDbgFunction(rtContext ctx, size_t offset);
-dbgn addDbgFunction(rtContext ctx, symn fun);
 
 dbgn mapDbgStatement(rtContext ctx, size_t position, dbgn prev);
 dbgn getDbgStatement(rtContext ctx, const char *file, int line);

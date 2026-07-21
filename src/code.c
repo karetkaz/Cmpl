@@ -22,7 +22,7 @@ static void rtRaise(nfcContext ctx, int level, const char *msg, ...) {
 	va_end(vaList);
 
 	// print stack trace including this function
-	traceCalls(rt->dbg, rt->logFile, 1, maxLogItems, 0);
+	traceCalls(rt, rt->logFile, 1, maxLogItems, 0);
 }
 
 /**
@@ -379,7 +379,6 @@ int rtClose(rtContext ctx) {
 
 	// release debugger memory
 	if (ctx->dbg != NULL) {
-		freeBuff(&ctx->dbg->functions);
 		freeBuff(&ctx->dbg->statements);
 	}
 
@@ -415,7 +414,13 @@ size_t vmInit(rtContext ctx, vmError onHalt(nfcContext)) {
 			// relocate native call offsets to be debuggable and traceable.
 			nfc->sym->offs = vmOffset(ctx, nfc);
 			nfc->sym->size = 0;
-			addDbgFunction(ctx, nfc->sym);
+
+			if (ctx->dbg != NULL) {
+				// add the native functions to the statement list only for lookup
+				dbgn d = addDbgStatement(ctx, nfc->sym->offs, nfc->sym->offs + 1, NULL);
+				d->func = nfc->sym;
+				d->group = 1;
+			}
 		}
 	}
 	else {

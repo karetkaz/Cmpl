@@ -141,6 +141,7 @@ typeOf(var: variant): typename: function {
 }
 assert(lhs: variant, rhs: variant, result: variant, promoted: typename): void: function {
 .instructions: (124 bytes)
+	test.operator.cmpl:46: (124 bytes): static assert(mutable optional lhs: variant, mutable optional rhs: variant, mutable optional result: variant, promoted: typename): void := {...}
 	test.operator.cmpl:47: (70 bytes): if (promoted == typeOf(result))
 	dup.x32 sp(1)
 	inc.sp(+4)
@@ -186,6 +187,7 @@ assert(lhs: variant, rhs: variant, result: variant, promoted: typename): void: f
 }
 test(_x: int32, _y: int32): void: function {
 .instructions: (53299 bytes)
+	test.operator.cmpl:54: (53299 bytes): static test(mutable _x: int32, mutable _y: int32): void := {...}
 	test.operator.cmpl:115: (5717 bytes): if (true)
 	test.operator.cmpl:115: (5 bytes): mutable x: int8 := int8(_x)
 	load.sp(+8)

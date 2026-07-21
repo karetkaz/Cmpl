@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 /// Get the size of a field from a struct
 #define sizeOf(__RECORD, __FIELD) sizeof(((__RECORD*)NULL)->__FIELD)
@@ -141,7 +142,24 @@ static inline void *getBuff(const struct arrBuffer *buff, size_t idx) {
 	}
 	return buff->ptr + pos;
 }
-void *insBuff(struct arrBuffer *buff, size_t idx, void *data);
+static inline void *topBuff(struct arrBuffer *buff) {
+	return getBuff(buff, buff->cnt - 1);
+}
+static inline void *popBuff(struct arrBuffer *buff, void *data) {
+	void *ptr = topBuff(buff);
+	if (ptr == NULL) {
+		return NULL;
+	}
+	buff->cnt -= 1;
+	if (data != NULL) {
+		memcpy(data, ptr, buff->esz);
+	}
+	return ptr;
+}
+void *insBuff(struct arrBuffer *buff, size_t idx, const void *data);
+static inline void *addBuff(struct arrBuffer *buff, const void *data) {
+	return insBuff(buff, buff->cnt, data);
+}
 void *setBuff(struct arrBuffer *buff, size_t idx, const void *data);
 void freeBuff(struct arrBuffer *buff);
 

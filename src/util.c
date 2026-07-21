@@ -32,7 +32,7 @@ void *setBuff(struct arrBuffer *buff, size_t idx, const void *data) {
 
 	return buff->ptr + pos;
 }
-void *insBuff(struct arrBuffer *buff, size_t idx, void *data) {
+void *insBuff(struct arrBuffer *buff, size_t idx, const void *data) {
 	if (idx >= buff->cnt) {
 		// insert at or after the end
 		return setBuff(buff, idx, data);

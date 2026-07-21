@@ -2736,6 +2736,7 @@ int ccGenCode(ccContext ctx, int debug) {
 
 			// function starts here
 			var->offs = emit(rt, markIP);
+			size_t dbgStmt = rt->dbg ? rt->dbg->statements.cnt : 0;
 
 			// reset the stack size and max jump
 			fixJump(rt, 0, var->offs, vm_ref_size + argsSize(var));
@@ -2761,6 +2762,9 @@ int ccGenCode(ccContext ctx, int debug) {
 				error(rt, var->file, var->line, ERR_EMIT_FUNCTION, var);
 				continue;
 			}
+
+			// mark the end of the generated function body
+			size_t endBody = emit(rt, markIP);
 
 			// remove the last (drop; ret) instructions if possible
 			if (testOcp(rt, rt->vm.pc, opc_spc, NULL)) {
@@ -2797,8 +2801,20 @@ int ccGenCode(ccContext ctx, int debug) {
 			var->size = emit(rt, markIP) - var->offs;
 			var->kind |= ATTR_stat;
 
+			if (rt->dbg != NULL) {
+				size_t end = emit(rt, markIP);
+				// no debug statement generated for this symbol, probably is an empty function
+				// or an extra return was generated at the end of a void function.
+				if (dbgStmt == rt->dbg->statements.cnt || endBody < end) {
+					addDbgStatement(rt, var->offs, end, var->tag);
+				}
+				for (size_t i = dbgStmt; i < rt->dbg->statements.cnt; i++) {
+					dbgn dbg = getBuff(&rt->dbg->statements, i);
+					dbg->func = var;
+				}
+			}
+
 			rt->vm.cs += var->size;
-			addDbgFunction(rt, var);
 		}
 		else if (isVariable(var)) {
 			dieif(var->size <= 0, "Error `%T` size: %d", var, var->size);    // instance of void ?
@@ -2821,6 +2837,7 @@ int ccGenCode(ccContext ctx, int debug) {
 		dbgInfo("Global `%T` offs: %d, size: %d", var, var->offs, var->size);
 	}
 
+	size_t dbgStmt = rt->dbg ? rt->dbg->statements.cnt : 0;
 	rt->main->offs = emit(rt, markIP);
 	if (ctx->root != NULL) {
 		// reset the stack
@@ -2870,7 +2887,14 @@ int ccGenCode(ccContext ctx, int debug) {
 	rt->main->unit = ctx->unit;
 
 	rt->vm.cs += rt->main->size;
-	addDbgFunction(rt, rt->main);
+
+	addDbgStatement(rt, rt->vm.px, emit(rt, markIP), NULL);
+	if (rt->dbg != NULL) {
+		for (size_t i = dbgStmt; i < rt->dbg->statements.cnt; i++) {
+			dbgn dbg = getBuff(&rt->dbg->statements, i);
+			dbg->func = rt->main;
+		}
+	}
 
 	if (rt->dbg != NULL) {
 		// TODO: replace bubble sort with qsort

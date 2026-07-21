@@ -39,6 +39,7 @@ typedef struct astNode *astn;                   // syntax tree
 typedef struct nfcArgs *nfcArgs;                // argument list iterator
 typedef struct rtContextRec *rtContext;         // Runtime context
 typedef struct ccContextRec *ccContext;         // Compiler context
+typedef struct vmContextRec *vmContext;         // virtual execution unit
 typedef struct dbgContextRec *dbgContext;       // Debugger context
 typedef struct nfcContextRec *nfcContext;       // Native call context
 typedef struct userContextRec *userContext;     // Custom user context
@@ -214,9 +215,9 @@ struct rtContextRec {
 
 	// virtual machine state
 	struct {
-		void *nfc;         // native call vector
-		void *cell;        // execution units
+		vmContext vm;      // execution unit
 		void *heap;        // heap memory
+		void *nfc;         // native functions
 
 		size_t pc;         // exec: entry point / gen: program counter
 		size_t px;         // exec: exit point / gen: max jump offset

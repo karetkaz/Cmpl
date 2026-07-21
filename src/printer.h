@@ -194,7 +194,7 @@ void dumpApi(rtContext ctx, userContext extra, void action(userContext, symn));
  * @param maxCalls limit the size of the stacktrace
  * @param skipCalls offset of the first call in the stacktrace
  */
-void traceCalls(dbgContext ctx, FILE *out, int indent, size_t maxCalls, size_t skipCalls);
+void traceCalls(rtContext ctx, FILE *out, int indent, size_t maxCalls, size_t skipCalls);
 
 const char **escapeStr();
 

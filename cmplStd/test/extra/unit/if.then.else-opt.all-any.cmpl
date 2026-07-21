@@ -20,6 +20,7 @@ test(42, 42, 42);
 /* - expected output:
 test(a: int32, b: int32, c: int32): void: function {
 .instructions: (103 bytes)
+	if.then.else-opt.all-any.cmpl:3: (103 bytes): static test(mutable a: int32, mutable b: int32, mutable c: int32): void := {...}
 	if.then.else-opt.all-any.cmpl:10: (51 bytes): if (a == 42 && b == 42 && c == 42)
 	dup.x32 sp(3)
 	load.c32 42

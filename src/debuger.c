@@ -14,7 +14,6 @@ dbgContext dbgInit(rtContext ctx, vmError onExec(dbgContext ctx, vmError, size_t
 
 	dbg->rt = ctx;
 	dbg->debug = onExec;
-	initBuff(&dbg->functions, 128, sizeof(struct dbgNode));
 	initBuff(&dbg->statements, 128, sizeof(struct dbgNode));
 	return dbg;
 }
@@ -47,57 +46,6 @@ char* vmErrorMessage(vmError error) {
 	}
 
 	return "Unknown error";
-}
-
-dbgn mapDbgFunction(rtContext ctx, size_t offset) {
-	dbgContext dbg = ctx->dbg;
-	if (dbg == NULL) {
-		return NULL;
-	}
-
-	dbgn result = (dbgn)dbg->functions.ptr;
-	size_t n = dbg->functions.cnt;
-	for (size_t i = 0; i < n; ++i) {
-		if (offset == result->start) {
-			return result;
-		}
-		if (offset >= result->start) {
-			if (offset < result->end) {
-				return result;
-			}
-		}
-		result++;
-	}
-	return NULL;
-}
-dbgn addDbgFunction(rtContext ctx, symn fun) {
-	dbgContext dbg = ctx->dbg;
-	if (dbg == NULL || fun == NULL) {
-		return NULL;
-	}
-
-	dbgn result = NULL;
-	size_t i = 0;
-	for ( ; i < dbg->functions.cnt; ++i) {
-		result = getBuff(&dbg->functions, i);
-		if (fun->offs <= result->start) {
-			break;
-		}
-	}
-
-	if (result == NULL || fun->offs != result->start) {
-		result = insBuff(&dbg->functions, i, NULL);
-	}
-
-	if (result != NULL) {
-		memset(result, 0, dbg->functions.esz);
-		result->func = fun;
-		result->file = fun->file;
-		result->line = fun->line;
-		result->start = fun->offs;
-		result->end = fun->offs + fun->size;
-	}
-	return result;
 }
 
 dbgn getDbgStatement(rtContext ctx, const char *file, int line) {

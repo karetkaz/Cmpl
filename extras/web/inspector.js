@@ -180,6 +180,11 @@ function Inspector(data, callback) {
             let tick = tickIndex < 0 ? undefined : data.callTree[i + tickIndex];
             let heap = heapIndex < 0 ? undefined : data.callTree[i + heapIndex];
 
+            if (i === 0 && offs === 0 && tick === 0 && heap === 0) {
+                // skip the first entry if all values are zero
+                continue;
+            }
+
             // if a function executes in zero time we are in trouble displaying, so correct it to 1 unit
             // this happens with old compilers, with low resolution `clock()` function
             if (tick <= lastTick) {
@@ -210,6 +215,7 @@ function Inspector(data, callback) {
     }
 
     let result = {
+        json: { functions, data },
         samples,
         ticks: samples && samples.leave - samples.enter,
         ticksPerSec: data && data.ticksPerSec,
@@ -425,6 +431,8 @@ function createTreeRow(node, data, depth) {
     func.style.paddingLeft = ((depth || 0) + .5) + 'em';
 
     let title = 'Function: ' + sample.func.name;
+
+    let fun = data?.json?.functions[node.func.offs];
     if (sample.func.file && sample.func.line) {
         title += '(' + sample.func.file + ':' + sample.func.line + ')';
     } else {
@@ -432,16 +440,38 @@ function createTreeRow(node, data, depth) {
     }
     if (sample !== node && sample.hits > 1) {
         title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;
+        if (fun != null && sample.hits !== fun.hits) {
+            title += '\n\tDiff: ' + (sample.hits - fun.hits) + ' / ' + fun.hits;
+        }
+
         title += '\nSelf Cost: ' + self.innerText + ' / ' + toCost(sample.self);
         title += '\nSelf Time: ' + toTime(node.self) + ' / ' + toTime(sample.self);
+        if (fun != null && sample.self !== fun.time) {
+            title += '\n\tDiff: ' + toTime(sample.self - fun.time) + ' / ' + toTime(fun.time);
+        }
+
         title += '\nTotal Cost: ' + total.innerText + ' / ' + toCost(sample.total);
         title += '\nTotal Time: ' + toTime(node.total) + ' / ' + toTime(sample.total);
+        if (fun != null && sample.total !== fun.total) {
+            title += '\n\tDiff: ' + toTime(sample.total - fun.total) + ' / ' + toTime(fun.total);
+        }
     } else {
         title += '\nHit Count: ' + sample.hits;
+        if (fun != null && sample.hits !== fun.hits) {
+            title += '\n\tDiff: ' + (sample.hits - fun.hits) + ' / ' + fun.hits;
+        }
+
         title += '\nSelf Cost: ' + toCost(sample.self);
         title += '\nSelf Time: ' + toTime(sample.self);
+        if (fun != null && sample.self !== fun.time) {
+            title += '\n\tDiff: ' + toTime(sample.self - fun.time) + ' / ' + toTime(fun.time);
+        }
+
         title += '\nTotal Cost: ' + toCost(sample.total);
         title += '\nTotal Time: ' + toTime(sample.total);
+        if (fun != null && sample.total !== fun.total) {
+            title += '\n\tDiff: ' + toTime(sample.total - fun.total) + ' / ' + toTime(fun.total);
+        }
     }
     if (sample !== node) {
         title += '\nExecution Time: ' + toTime(node.enter - samples.enter) + ' - ' + toTime(node.leave - samples.enter);

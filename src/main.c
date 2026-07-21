@@ -138,17 +138,46 @@ typedef enum {
 	dbgPrintInstruction = 'p',	// print current instruction
 } dbgMode;
 
+typedef struct callStackItem {
+	clock_t time;       // time when the function was invoked
+	size_t ss;          // Stack size
+	size_t pc;          // Program counter
+	symn fun;
+	dbgn dbg;
+} *callStackItem;
+
+typedef struct breakPointItem {
+	char *file;
+	int line;
+	int type;
+} *breakPointItem;
+
 struct userContextRec {
 	rtContext rt;
+
+	// override settings
+	const char *std;             // standard library unit
+	int warnLevel;               // compile log level
+	int raiseLevel;              // runtime log level
+	size_t memory;               // memory to use
+	clock_t rtTime;              // time of execution
+
+	// debug ...
+	FILE *in;                    // debugger input
+	dbgMode dbgCommand;          // last debugger command
+	brkMode dbgOnError;          // on uncaught exception
+	brkMode dbgOnCaught;         // on caught exception
+	size_t dbgNextBreak;         // offset of the next break (used for step in, out, over, instruction)
+	dbgn dbgNextValue;
+	struct arrBuffer callStack;
+	struct arrBuffer breakPoints;
+
+
+	// dump & output
 	FILE *out;                   // dump file
 	int indent;                  // dump indentation
 	const char **esc;            // escape characters
 	const char *steps;           // dump compilation steps
-	int warnLevel;               // compile log level
-	int raiseLevel;              // runtime log level
-
-	size_t memory;               // memory to use
-	clock_t rtTime;              // time of execution
 	dmpMode dmpMode;             // dump flags
 
 	unsigned closeOut:1;         // close `out` file.
@@ -185,14 +214,7 @@ struct userContextRec {
 	unsigned checkArrayBounds:1;
 	unsigned runsInTestMode:1;
 	unsigned preferNativeCalls:1;
-
-	// debugger
-	FILE *in;               // debugger input
-	dbgMode dbgCommand;     // last debugger command
-	brkMode dbgOnError;     // on uncaught exception
-	brkMode dbgOnCaught;    // on caught exception
-	size_t dbgNextBreak;    // offset of the next break (used for step in, out, over, instruction)
-	dbgn dbgNextValue;
+	unsigned genDebugInformation:1;
 };
 
 static void dumpAstXML(FILE *out, const char **esc, astn ast, dmpMode mode, int indent, const char *text) {
@@ -372,6 +394,44 @@ static inline int canDump(userContext ctx, symn sym) {
 
 	// include only symbols from the current compiled file
 	return strEquals(sym->file, ctx->rt->main->unit);
+}
+
+static callStackItem enterMethod(userContext usr, size_t ss, size_t pc, dbgn callee) {
+	callStackItem top = addBuff(&usr->callStack, NULL);
+
+	top->time = clock();
+	top->fun = callee->func;
+	top->dbg = callee;
+	top->ss = ss;
+	top->pc = pc;
+
+	if (callee->func->size == 0) {
+		callee->hits += 1;
+	}
+	return top;
+}
+static clock_t leaveMethod(userContext usr, dbgn caller, dbgn callee) {
+	callStackItem top = popBuff(&usr->callStack, NULL);
+
+	clock_t time = clock();
+	int recursive = 0;
+
+	callStackItem data = (callStackItem) usr->callStack.ptr;
+	for (size_t i = 0; i < usr->callStack.cnt; i++) {
+		if (data[i].fun == top->fun) {
+			recursive = 1;
+			break;
+		}
+	}
+
+	clock_t ticks = time - top->time;
+	if (!recursive) {
+		callee->total += ticks;
+	}
+
+	callee->time += ticks;
+	caller->time -= ticks;
+	return time;
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ json output
@@ -665,20 +725,51 @@ static void dumpApiJSON(userContext ctx, symn sym) {
 	}
 }
 
-static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *stack, size_t caller, size_t callee) {
-	if (error == noError && callee != 0) {
-		clock_t ticks = clock();
-		userContext usr = ctx->rt->usr;
-		FILE *out = usr->out;
-		const char **esc = usr->esc;
-		if ((ssize_t)callee < 0) {
-			printFmt(out, esc, "%d,%d,%d%s", ticks, ctx->usedMem, -1, ss > 0 ? "," : "");
-		} else {
-			printFmt(out, esc, "%d,%d,%d,", ticks, ctx->usedMem, (vmOffs) callee);
+static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
+	rtContext rt = ctx->rt;
+	userContext usr = rt->usr;
+
+	FILE *out = usr->out;
+	const char **esc = usr->esc;
+
+	dbgn dbg = mapDbgStatement(rt, caller, NULL);
+	dieif(dbg == NULL, ERR_INTERNAL_ERROR);
+
+	if (error != noError) {
+		callStackItem top = topBuff(&usr->callStack);
+		while (top != NULL && top->ss >= ss) {
+			printFmt(out, esc, ",%d,%d,%d\n", top->time, ctx->usedMem, -1);
+			leaveMethod(usr, dbg, top->dbg);
+			top = topBuff(&usr->callStack);
 		}
+
+		dbg->traps += 1;
+		return error;
 	}
-	(void)caller;
-	(void)stack;
+
+	if (callee == caller) {
+		if (caller == dbg->start) {
+			// we just started executing a statement
+			dbg->hits += 1;
+		}
+
+		dbg->exec += 1;
+		// just an instruction, not a call or return
+		return noError;
+	}
+	if (callee != 0) {
+		// function call
+		dbgn calleeDbg = mapDbgStatement(rt, callee, NULL);
+		callStackItem top = enterMethod(rt->usr, ss, caller, calleeDbg);
+		printFmt(out, esc, ",%d,%d,%d\n", top->time, ctx->usedMem, (vmOffs) callee);
+	} else {
+		// function return
+		callStackItem top = topBuff(&usr->callStack);
+		clock_t time = leaveMethod(usr, dbg, top->dbg);
+		printFmt(out, esc, ",%d,%d,%d\n", time, ctx->usedMem, -1);
+	}
+
+	(void) sp;
 	return error;
 }
 static void jsonPostProfile(dbgContext ctx) {
@@ -686,6 +777,7 @@ static void jsonPostProfile(dbgContext ctx) {
 	static const char *const JSON_KEY_STMT = "statements";
 	static const char *const JSON_KEY_TIME = "time";
 	static const char *const JSON_KEY_TOTAL = "total";
+	static const char *const JSON_KEY_EXEC = "exec";
 	static const char *const JSON_KEY_HITS = "hits";
 	static const char *const JSON_KEY_FAILS = "fails";
 
@@ -694,20 +786,28 @@ static void jsonPostProfile(dbgContext ctx) {
 	const int indent = usr->indent;
 	const char **esc = usr->esc;
 
-	size_t covFunc = 0, nFunc = ctx->functions.cnt;
-	size_t covStmt = 0, nStmt = ctx->statements.cnt;
-	dbgn dbg = (dbgn) ctx->functions.ptr;
+	size_t covFunc = 0, nFunc = 0;
+	size_t covStmt = 0, nStmt = 0;
 
+	// end of call-tree, leave `main` function
 	printFmt(out, esc, JSON_ARR_END, indent);
 
 	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_FUNC);
-	for (size_t i = 0; i < nFunc; ++i, dbg++) {
+	dbgn dbg = (dbgn) ctx->statements.ptr;
+	for (size_t i = 0; i < ctx->statements.cnt; ++i, dbg++) {
+		if (dbg->start != dbg->func->offs) {
+			// not a function
+			continue;
+		}
+		nFunc += 1;
+
 		symn sym = dbg->func;
 		if (dbg->hits == 0) {
 			// skip functions not invoked
-			continue;
+			//continue;
 		}
 		covFunc += 1;
+
 		if (sym == NULL) {
 			sym = rtLookup(ctx->rt, dbg->start, 0);
 		}
@@ -718,13 +818,14 @@ static void jsonPostProfile(dbgContext ctx) {
 		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_HITS, dbg->hits);
 		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TIME, dbg->time);
 		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TOTAL, dbg->total);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->fails);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->traps);
 	}
 	printFmt(out, esc, JSON_OBJ_ARR_END, indent);
 
 	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_STMT);
 	dbg = (dbgn) ctx->statements.ptr;
-	for (size_t i = 0; i < nStmt; ++i, dbg++) {
+	for (size_t i = 0; i < ctx->statements.cnt; ++i, dbg++) {
+		nStmt += 1;
 		size_t symOffs = 0;
 		symn sym = dbg->func;
 		if (dbg->hits == 0) {
@@ -742,9 +843,11 @@ static void jsonPostProfile(dbgContext ctx) {
 		}
 		printFmt(out, esc, "%I\"%s\": \"%?.T+%d\"\n", indent + 1, "", sym, symOffs);
 		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_OFFS, dbg->start);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_EXEC, dbg->exec);
 		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_HITS, dbg->hits);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TIME, dbg->time);
 		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TOTAL, dbg->total);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->fails);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->traps);
 		if (dbg->file != NULL && dbg->line > 0) {
 			printFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 1, JSON_KEY_FILE, dbg->file);
 			printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_LINE, dbg->line);
@@ -753,8 +856,8 @@ static void jsonPostProfile(dbgContext ctx) {
 	printFmt(out, esc, JSON_OBJ_ARR_END, indent);
 
 	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "ticksPerSec", CLOCKS_PER_SEC);
-	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "functionCount", ctx->functions.cnt);
-	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "statementCount", ctx->statements.cnt);
+	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "functionCount", nFunc);
+	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "statementCount", nStmt);
 }
 static void jsonPreProfile(dbgContext ctx) {
 	userContext usr = ctx->rt->usr;
@@ -768,7 +871,10 @@ static void jsonPreProfile(dbgContext ctx) {
 	);
 	printFmt(out, esc, JSON_ARR_END, indent);
 
+	// start of call-tree, enter `main` function
 	printFmt(out, esc, JSON_ARR_START, indent, "callTree");
+	// todo: remove hack and optionally add the first comma in jsonProfile
+	printFmt(out, esc, "0,0,0\n");
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ text output
@@ -862,7 +968,7 @@ static void printFields(FILE *out, const char **esc, symn sym, userContext ctx) 
 		}
 		else if (sym == rt->main) {
 			// HACK: local main variable.
-			value = (char *) rt->vm.cell - var->offs;
+			value = (char *) rt->_end + rt->vm.ss - var->offs;
 		}
 		else {
 			continue;
@@ -889,68 +995,118 @@ static void textPostProfile(userContext ctx) {
 		return;
 	}
 
-	if (dbg != NULL) {
-		if (ctx->profFunctions) {
-			size_t cov = 0, err = 0;
-			size_t cnt = dbg->functions.cnt;
-			for (size_t i = 0; i < cnt; ++i) {
-				dbgn ptrFunc = (dbgn) dbg->functions.ptr + i;
-				cov += ptrFunc->hits > 0;
-				err += ptrFunc->fails > 0;
+	if (dbg != NULL && (ctx->profFunctions || ctx->profStatements || ctx->profNotExecuted)) {
+		size_t funcCov = 0, funcCnt = 0;
+		size_t stmtCov = 0, stmtCnt = 0;
+		size_t trapCnt = 0;
+		size_t dataCnt = dbg->statements.cnt;
+		dbgn data = (dbgn) dbg->statements.ptr;
+		for (size_t i = 0; i < dataCnt; ++i) {
+			dbgn stmt = data + i;
+			size_t group = i;
+			while (group > 0) {
+				group -= 1;
+				dbgn d = data + group;
+				if (d->start == stmt->start) {
+					break;
+				}
+				if (d->start < stmt->start) {
+					group = i; // not a group
+					break;
+				}
+				if (d->end < stmt->start) {
+					group = i; // not a group
+					break;
+				}
 			}
 
-			printFmt(out, esc, "%?sProfile functions: %d/%d, coverage: %.2f%%, failures: %d\n",
-				prefix, cov, cnt, cov * 100. / (cnt ? cnt : 1), err
-			);
-			for (size_t i = 0; i < cnt; ++i) {
-				dbgn ptr = (dbgn) dbg->functions.ptr + i;
-				if (ptr->hits == 0 && !ctx->profNotExecuted) {
-					continue;
+			if (group != i) {
+				stmt->hits = data[group].hits;
+				stmt->group = group - i + data[group].group;
+				for (size_t j = group; j < i; ++j) {
+					dbgn d = data + j;
+					stmt->exec += d->exec;
+					stmt->traps += d->traps;
 				}
-				symn sym = ptr->func;
-				if (sym == NULL) {
-					sym = rtLookup(rt, ptr->start, 0);
-				}
-				if (sym == NULL || !canDump(ctx, sym)) {
-					continue;
-				}
-				double timeTotal = ptr->total / CLOCKS_PER_MILLIS;
-				double timeOther = (ptr->total - ptr->time) / CLOCKS_PER_MILLIS;
-				printFmt(out, esc, "%?s:%?u:[.%06x, .%06x): hits(%D%?+D), time(%.3F%?.3F ms): %?T\n",
-					ptr->file, ptr->line, ptr->start, ptr->end, ptr->hits, -ptr->fails, timeTotal, -timeOther, sym
-				);
+				continue;
+			}
+
+			stmtCnt += 1;
+			stmtCov += stmt->hits > 0;
+			trapCnt += stmt->traps > 0;
+
+			symn fun = stmt->func;
+			if (fun == NULL) {
+				fatal("can not be null");
+				continue;
+			}
+			if (stmt->start == fun->offs) {
+				funcCnt += 1;
+				funcCov += stmt->hits > 0;
 			}
 		}
-		if (ctx->profStatements) {
-			size_t cov = 0, err = 0;
-			size_t cnt = dbg->statements.cnt;
-			dbgn ptrStmt = (dbgn) dbg->statements.ptr;
-			for (size_t i = 0; i < cnt; ++i, ptrStmt++) {
-				cov += ptrStmt->hits > 0;
-				err += ptrStmt->fails > 0;
+
+		printFmt(out, esc, "%?sProfile functions: %d/%d, statements: %d/%d, coverage: %.2f%%, traps: %d\n",
+			prefix, funcCov, funcCnt, stmtCov, stmtCnt, stmtCov * 100. / (stmtCnt ? stmtCnt : 1), trapCnt
+		);
+
+		symn lastFun = NULL;
+		for (size_t i = 0; i < dataCnt; ++i) {
+			dbgn stmt = data + i;
+			if (stmt->hits == 0 && !ctx->profNotExecuted) {
+				continue;
 			}
-			printFmt(out, esc, "%?sProfile statements: %d/%d, coverage: %.2f%%, failures: %d\n",
-				prefix, cov, cnt, cov * 100. / (cnt ? cnt : 1), err
-			);
-			for (size_t i = 0; i < cnt; ++i) {
-				dbgn ptr = (dbgn) dbg->statements.ptr + i;
-				if (ptr->hits == 0 && !ctx->profNotExecuted) {
-					continue;
+
+			symn fun = stmt->func;
+			if (fun == NULL) {
+				fatal("can not be null");
+				continue;
+			}
+
+			if (!canDump(ctx, fun) && !ctx->profNotExecuted) {
+				continue;
+			}
+
+			if (ctx->profFunctions && fun != lastFun) {
+				size_t traps = 0;
+				dbgn firstStmt = stmt;
+				// function start might not be the first statement in the list, find it
+				for (size_t j = i; j < dataCnt; ++j) {
+					dbgn d = data + j;
+					if (d->func != fun) {
+						break;
+					}
+					if (d->group != 0) {
+						// ignore groups
+						continue;
+					}
+					if (d->start == fun->offs) {
+						firstStmt = d;
+					}
+					traps += d->traps;
 				}
-				symn sym = ptr->func;
-				if (sym == NULL) {
-					sym = rtLookup(rt, ptr->start, 0);
-				}
-				size_t symOffs = 0;
-				if (sym != NULL) {
-					symOffs = ptr->start - sym->offs;
-				}
-				if (sym != NULL && !canDump(ctx, sym)) {
-					continue;
-				}
-				printFmt(out, esc, "%?s:%?u:[.%06x, .%06x) hits(%D), instructions(%D%?+D): <%?.T+%d>\n",
-					ptr->file, ptr->line, ptr->start, ptr->end, ptr->hits, ptr->total, -ptr->fails, sym, symOffs
+				lastFun = fun;
+
+				double timeTotal = firstStmt->total / CLOCKS_PER_MILLIS;
+				double timeOther = (firstStmt->total - firstStmt->time) / CLOCKS_PER_MILLIS;
+
+				printFmt(out, esc, "%?s:%?u:[.%06x, .%06x): hits(%D%?+D), time(%.3F%?.3F ms): %?T\n",
+					fun->file, fun->line, fun->offs, fun->offs + fun->size, firstStmt->hits, -traps, timeTotal, -timeOther, fun
 				);
+			}
+
+			if (ctx->profStatements) {
+				size_t symOffs = stmt->start - fun->offs;
+				if (stmt->group == 0) {
+					printFmt(out, esc, "%?s:%?u:[.%06x, .%06x) hits(%D), instructions(%D%?+D): <%?.T+%d>\n",
+						stmt->file, stmt->line, stmt->start, stmt->end, stmt->hits, stmt->exec, -stmt->traps, fun, symOffs
+					);
+				}
+				else if (ctx->profNotExecuted) {
+					printFmt(out, esc, "%?s:%?u:[.%06x, .%06x) group[%d], instructions(%D%?+D): <%?.T+%d>\n",
+						stmt->file, stmt->line, stmt->start, stmt->end, stmt->group, stmt->exec, -stmt->traps, fun, symOffs
+					);
+				}
 			}
 		}
 	}
@@ -1181,27 +1337,31 @@ static void dumpApiSciTE(userContext ctx, symn sym) {
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ console debugger and profiler
-static void traceMethods(userContext ctx, size_t ss, size_t callee) {
+static void traceMethods(userContext ctx, size_t ss, size_t callee, symn fun) {
 	if (!ctx->traceMethods) {
 		return;
 	}
 
-	rtContext rt = ctx->rt;
 	const char **esc = ctx->esc;
 	FILE *out = ctx->out;
 
+	libc *nativeCalls = ctx->rt->vm.nfc;
+	if (fun == nativeCalls[0]->sym) {
+		// exclude halt()
+		return;
+	}
+
 	if (ctx->traceTime) {
 		double now = clock() * 1000. / CLOCKS_PER_SEC;
-		printFmt(out, esc, "[% 3.2F]", now);
+		printFmt(out, esc, "[% 3.2F] ", now);
 	}
-	if ((ssize_t) callee > 0) {
-		printFmt(out, esc, "% I > %T\n", ss, rtLookup(rt, callee, 0));
-	}
-	else {
-		printFmt(out, esc, "% I < return\n", ss);
+	if (callee != 0) {
+		printFmt(out, esc, "% I> %T\n", ctx->callStack.cnt, fun);
+	} else {
+		printFmt(out, esc, "% I< %T\n", ctx->callStack.cnt, fun);
 	}
 }
-static void traceOpcodes(userContext ctx, size_t ss, void *stack, size_t caller, dbgn dbg) {
+static void traceOpcodes(userContext ctx, size_t ss, void *stack, size_t pc, dbgn dbg) {
 	if (!ctx->traceOpcodes) {
 		return;
 	}
@@ -1210,7 +1370,7 @@ static void traceOpcodes(userContext ctx, size_t ss, void *stack, size_t caller,
 	const char **esc = ctx->esc;
 	FILE *out = ctx->out;
 
-	if (ctx->traceLocals && caller != rt->main->offs) {
+	if (ctx->traceLocals && pc != rt->main->offs) {
 		size_t i = 0;
 		printFmt(out, esc, "    stack: %7d: [", ss);
 		if (ss > maxLogItems) {
@@ -1242,90 +1402,77 @@ static void traceOpcodes(userContext ctx, size_t ss, void *stack, size_t caller,
 		printFmt(out, esc, "\n");
 	}
 
-	if (ctx->dmpAsmStmt && dbg && dbg->start == caller) {
+	if (ctx->dmpAsmStmt && dbg && dbg->start == pc) {
 		textDumpDbg(out, esc, ctx, NULL, dbg, 0);
 	}
 	if (ctx->traceTime) {
 		double now = clock() * 1000. / CLOCKS_PER_SEC;
 		printFmt(out, esc, "[% 3.2F]: ", now);
 	}
-	textDumpAsm(out, esc, caller, ctx, 0);
+	textDumpAsm(out, esc, pc, ctx, 0);
 }
 
 static vmError dbgProfile(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
-
 	dbgn dbg = mapDbgStatement(rt, caller, NULL);
+	dieif(dbg == NULL, ERR_INTERNAL_ERROR);
+
 	if (error != noError) {
-		if (dbg != NULL) {
-			dbg->fails += 1;
-		}
-		// abort the execution
-		return error;
-	}
-
-	// function call or return.
-	if (callee != 0) {
-		/* TODO: measure execution time here
-		clock_t now = clock();
-		if (callee < 0) {
-			dbgn calleeFunc = mapDbgFunction(ctx->rt, -callee);
-			if (calleeFunc != NULL) {
-				clock_t ticks = now - tp->func;
-				if (callee == -1) {
-					calleeFunc->fails += 1;
-				}
-				if (calleeFunc->hits > calleeFunc->returns) {
-					// we are inside a recursive function
-					calleeFunc->total += ticks;
-				}
-				calleeFunc->time += ticks;
-				calleeFunc->returns -= 1;
-			}
-
-			dbgn callerFunc = mapDbgFunction(ctx->rt, caller);
-			if (callerFunc != NULL) {
-				clock_t ticks = now - tp->func;
-				callerFunc->time -= ticks;
-			}
-			return dbg;
+		callStackItem top = topBuff(&usr->callStack);
+		while (top != NULL && top->ss >= ss) {
+			leaveMethod(usr, dbg, top->dbg);
+			top = topBuff(&usr->callStack);
 		}
 
-		dbgn calleeFunc = mapDbgFunction(ctx->rt, callee);
-		if (calleeFunc != NULL) {
-			calleeFunc->hits += 1;
-			calleeFunc->time = now;
-		}// */
-		traceMethods(usr, ss, callee);
-		return noError;
+		dbg->traps += 1;
+		if (isChecked(rt)) {
+			return error;
+		}
+
+		// abort the execution and print the stacktrace
+		return dbgError(ctx, error, ss, sp, caller, callee);
 	}
 
-	// statement / instruction execution.
-	if (dbg != NULL) {
+	if (caller == callee) {
 		if (caller == dbg->start) {
+			// we just started executing a statement
 			dbg->hits += 1;
 		}
-		dbg->total += 1;
-	}
 
-	traceOpcodes(usr, ss, sp, caller, dbg);
+		dbg->exec += 1;
+		traceOpcodes(usr, ss, sp, caller, dbg);
+		return noError;
+	}
+	if (callee != 0) {
+		dbgn calleeDbg = mapDbgStatement(rt, callee, NULL);
+		dieif(calleeDbg == NULL, ERR_INTERNAL_ERROR);
+
+		traceMethods(usr, ss, callee, calleeDbg->func);
+		enterMethod(rt->usr, ss, caller, calleeDbg);
+	} else {
+		callStackItem top = topBuff(&usr->callStack);
+		dieif(top == NULL, ERR_INTERNAL_ERROR);
+
+		leaveMethod(usr, dbg, top->dbg);
+		traceMethods(usr, ss, callee, top->fun);
+	}
 	return noError;
 }
 static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
-	if (callee != 0) {
+	if (caller != callee) {
 		// TODO: enter will break after executing call?
 		// TODO: leave will break after executing return?
-		if (usr->dbgCommand == dbgStepInto && (ssize_t) callee > 0) {
+		if (usr->dbgCommand == dbgStepInto && (ssize_t) callee != 0) {
 			usr->dbgNextBreak = (size_t) -1;
 		}
-		else if (usr->dbgCommand == dbgStepOut && (ssize_t) callee < 0) {
+		else if (usr->dbgCommand == dbgStepOut && (ssize_t) callee == 0) {
 			usr->dbgNextBreak = (size_t) -1;
 		}
-		traceMethods(usr, ss, callee);
+		traceMethods(usr, ss, callee, NULL);
 		return noError;
 	}
 
@@ -1416,7 +1563,7 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 		}
 	}
 	if (breakMode & brkTrace) {
-		traceCalls(ctx, out, 1, maxLogItems, 0);
+		traceCalls(rt, out, 1, maxLogItems, 0);
 	}
 
 	// pause execution in debugger
@@ -1463,7 +1610,7 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 				return noError;
 
 			case dbgPrintStackTrace:
-				traceCalls(ctx, con, 1, maxLogItems, 0);
+				traceCalls(rt, con, 1, maxLogItems, 0);
 				break;
 
 			case dbgPrintInstruction:
@@ -1527,7 +1674,7 @@ static vmError onHalt(nfcContext ctx) {
 	return noError;
 }
 
-static inline int cmplVersion() {
+static int cmplVersion() {
 	int month = (__DATE__[0] == 'J' && __DATE__[1] == 'a' && __DATE__[2] == 'n') ? 1 :
 				(__DATE__[0] == 'F' && __DATE__[1] == 'e' && __DATE__[2] == 'b') ? 2 :
 				(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r') ? 3 :
@@ -1551,9 +1698,10 @@ static int usage() {
 		"\n"
 		"\n<global options>:"
 		"\n"
-		"\n  -run[*]               run at full speed, but without: debug information, stacktrace, bounds checking, ..."
+		"\n  -run[*]               run at full speed, no debug information available"
 		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
 		"\n    /m /M               dump memory usage (/M includes heap allocations)"
+		"\n    /t                  add debug information for stack-traces"
 		"\n"
 		"\n  -debug[*]             run with attached debugger, pausing on uncaught errors and break points"
 		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
@@ -1694,22 +1842,22 @@ int main(int argc, char *argv[]) {
 	struct userContextRec extra = {0};
 	extra.in = stdin;
 	extra.out = stdout;
+	extra.std = cmplUnit;
 	extra.dmpSymbols = 0;  // by default print symbols from main file only
 	extra.dbgCommand = dbgResume;	// last command: resume
 	extra.dbgOnError = brkPause | brkPrint | brkTrace;
 	extra.dbgOnCaught = brkSkip;
 	extra.foldConstants = 1;
 	extra.foldInstruction = 1;
-	extra.genStaticGlobals = 0;
 	extra.errPrivateAccess = 1;
 	extra.errUninitialized = 1;
 	extra.checkArrayBounds = 1;
 	extra.preferNativeCalls = 1;
+	extra.genDebugInformation = 1;
 	extra.warnLevel = 5;
 	extra.raiseLevel = 15;
 	extra.memory = 128 << 20;// 128 Mb memory compiler + runtime
 
-	const char *stdlib = cmplUnit;
 
 	ccConfig install = install_def;
 	char *ccFile = NULL;			// compiled filename
@@ -1720,17 +1868,11 @@ int main(int argc, char *argv[]) {
 	char *dumpFileName = NULL;      // dump file
 	char *pathAstDumpXml = NULL;    // dump ast to xml file before code generation
 	void (*dumpFun)(userContext, symn) = NULL;
-	enum { run, trace, debug, profile, compile } run_code = compile;
+	enum { run, debug, profile, compile } run_code = compile;
 
-	// TODO: max 32 break points ?
-	brkMode bp_type[32];
-	char *bp_file[32];
-	int bp_line[32];
-	int bp_size = 0;
-
-	int i;
+	int i = 1;
 	// process global options
-	for (i = 1; i < argc; ++i) {
+	for (; i < argc; ++i) {
 		char *arg = argv[i];
 
 		// not an option
@@ -1746,6 +1888,7 @@ int main(int argc, char *argv[]) {
 				return -1;
 			}
 			run_code = run;
+			extra.genDebugInformation = 0;
 			while (*arg2 == '/') {
 				switch (arg2[1]) {
 					default:
@@ -1772,9 +1915,9 @@ int main(int argc, char *argv[]) {
 						break;
 
 					case 't':
-						// this slows down execution only 20 times,
-						// debug and profile are 200 times slower
-						run_code = trace;
+						// debug and profile are many times slower, generate debug information,
+						// and then search where the return address is on the stack when needed
+						extra.genDebugInformation = 1;
 						arg2 += 2;
 						break;
 				}
@@ -1892,7 +2035,6 @@ int main(int argc, char *argv[]) {
 
 					case 'P':
 						extra.profNotExecuted = 1;
-						extra.profFunctions = 1;
 						// fall through
 					case 'p':
 						extra.profStatements = 1;
@@ -1909,11 +2051,11 @@ int main(int argc, char *argv[]) {
 		// override stdlib file
 		else if (strncmp(arg, "-std", 4) == 0) {
 			if (arg[4] != 0) {
-				stdlib = arg + 4;
+				extra.std = arg + 4;
 			}
 			else {
 				// disable standard library
-				stdlib = NULL;
+				extra.std = NULL;
 			}
 		}
 		// override heap size
@@ -2383,6 +2525,8 @@ int main(int argc, char *argv[]) {
 	rt->foldAssign = extra.foldInstruction != 0;
 
 	rt->checkBounds = extra.checkArrayBounds != 0;
+	initBuff(&extra.callStack, 32, sizeof(struct callStackItem));
+	initBuff(&extra.breakPoints, 32, sizeof(struct breakPointItem));
 
 	// open the log file first (enabling dump appending)
 	if (logFileName != NULL) {
@@ -2417,6 +2561,8 @@ int main(int argc, char *argv[]) {
 	ccContext cc = ccInit(rt, install, onHalt);
 	if (cc == NULL) {
 		fatal("initializing compiler context");
+		freeBuff(&extra.breakPoints);
+		freeBuff(&extra.callStack);
 		logFILE(rt, NULL);
 		return -6;
 	}
@@ -2431,16 +2577,20 @@ int main(int argc, char *argv[]) {
 
 	if (install & installLibs) {
 		// install standard library.
-		if (extra.steps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.steps, stdlib);}
+		if (extra.steps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.steps, extra.std);}
 		if (cmplInit(rt, cc) != 0) {
 			error(rt, NULL, 0, "error registering standard library");
+			freeBuff(&extra.breakPoints);
+			freeBuff(&extra.callStack);
 			return -1;
 		}
-		if (stdlib != NULL) {
+		if (extra.std != NULL) {
 			char buffer[65536];
-			snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
-			if (!ccAddUnit(cc, stdlib, 0, buffer)) {
+			snprintf(buffer, sizeof(buffer), "inline \"%s\";", extra.std);
+			if (!ccAddUnit(cc, extra.std, 0, buffer)) {
 				error(rt, NULL, 0, "error registering standard library");
+				freeBuff(&extra.breakPoints);
+				freeBuff(&extra.callStack);
 				return -1;
 			}
 		}
@@ -2453,14 +2603,25 @@ int main(int argc, char *argv[]) {
 			if (ccFile != NULL) {
 				char *ext = strrchr(ccFile, '.');
 				if (ext && (strEquals(ext, ".so") || strEquals(ext, ".dll") || strEquals(ext, ".wasm") || strEquals(ext, ".dylib"))) {
-					if (extra.steps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sLibrary: `%?s`", extra.steps, ccFile);}
+					char *name = strrchr(ccFile, '/');
+					if (name == NULL) {
+						name = ccFile;
+					} else {
+						name += 1;
+					}
+					if (extra.steps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sLibrary: `%?s`", extra.steps, name);}
 					int resultCode = importLib(rt, cc, ccFile);
 					if (resultCode != 0) {
 						fatal("error(%d) importing library `%s`", resultCode, ccFile);
 					}
 				}
 				else {
-					if (extra.steps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.steps, ccFile);}
+					char *name = ccFile;
+					int homeLen = strlen(cc->home);
+					if (strncmp(ccFile, cc->home, homeLen) == 0) {
+						name += homeLen + 1;
+					}
+					if (extra.steps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sCompile: `%?s`", extra.steps, name);}
 					int errors = rt->errors;
 					if (!ccAddUnit(cc, ccFile, 1, NULL) && errors == rt->errors) {
 						// show the error in case it was not raised, but returned
@@ -2494,9 +2655,6 @@ int main(int argc, char *argv[]) {
 				int line = 0;
 				brkMode type = brkPause;
 				char *arg2 = arg + 2;
-				if (bp_size > (int)lengthOf(bp_file)) {
-					info(rt, NULL, 0, "can not add more than %d breakpoints.", lengthOf(bp_file));
-				}
 				while (*arg2 == '/') {
 					switch (arg2[1]) {
 						default:
@@ -2529,10 +2687,10 @@ int main(int argc, char *argv[]) {
 				if (*parseInt(arg2, &line, 10)) {
 					fatal("invalid line number `%s`", arg + 2);
 				}
-				bp_type[bp_size] = type;
-				bp_file[bp_size] = ccFile;
-				bp_line[bp_size] = line;
-				bp_size += 1;
+				breakPointItem bp = addBuff(&extra.breakPoints, NULL);
+				bp->file = ccFile;
+				bp->line = line;
+				bp->type = type;
 			}
 			else {
 				fatal("invalid option: `%s`", arg);
@@ -2544,6 +2702,8 @@ int main(int argc, char *argv[]) {
 		FILE *xmlFile = fopen(pathAstDumpXml, "w");
 		if (xmlFile == NULL) {
 			fatal(ERR_OPENING_FILE, pathAstDumpXml);
+			freeBuff(&extra.breakPoints);
+			freeBuff(&extra.callStack);
 			return -1;
 		}
 		dumpAstXML(xmlFile, escapeXML(), cc->root, prDbg, 0, "main");
@@ -2553,27 +2713,27 @@ int main(int argc, char *argv[]) {
 	// generate code only if there are no compilation errors
 	if (rt->errors == 0) {
 		if (extra.steps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, "%sGenerate: byte-code", extra.steps);}
-		if (ccGenCode(cc, run_code != run || extra.dmpAsmStmt) != 0) {
+		// debug metadata is always generated: it does not change the emitted
+		// code, and enables stack traces with source positions in run mode
+		if (ccGenCode(cc, extra.genDebugInformation) != 0) {
 			if (rt->errors == 0) {
 				error(rt, NULL, 0, "error generating code");
 			}
 			dbgTrace("error generating code");
 		}
 		// set breakpoints
-		for (i = 0; i < bp_size; ++i) {
-			char *file = bp_file[i];
-			int line = bp_line[i];
-			brkMode type = bp_type[i];
-			dbgn dbg = getDbgStatement(rt, file, line);
+		for (size_t i = 0; i < extra.breakPoints.cnt; ++i) {
+			breakPointItem bp = getBuff(&extra.breakPoints, i);
+			dbgn dbg = getDbgStatement(rt, bp->file, bp->line);
 			if (dbg == NULL) {
-				info(rt, file, line, "invalid breakpoint");
+				info(rt, bp->file, bp->line, "invalid breakpoint");
 				continue;
 			}
 
-			if (type & brkValue && dbg->stmt && dbg->stmt->kind == TOKEN_var) {
+			if (bp->type & brkValue && dbg->stmt && dbg->stmt->kind == TOKEN_var) {
 				dbg->decl = dbg->stmt->id.link;
 			}
-			dbg->bp = type;
+			dbg->bp = bp->type;
 		}
 	}
 
@@ -2605,25 +2765,36 @@ int main(int argc, char *argv[]) {
 		rt->logLevel = extra.raiseLevel;
 		if (dbg != NULL) {
 			// set debugger or profiler
-			if (run_code == trace) {
-				dbg->debug = &dbgError;
+			switch (run_code) {
+				case run:
+				case compile:
+					dbg->debug = NULL;
+					break;
+
+				case debug:
+					dbg->debug = &dbgDebug;
+					if (extra.dbgNextBreak != 0) {
+						// break on first instruction
+						extra.dbgNextBreak = rt->vm.pc;
+					}
+					break;
+
+				case profile:
+					// set call tree dump method
+					if (dumpFun == dumpApiJSON) {
+						dbg->debug = &jsonProfile;
+						jsonPreProfile(dbg);
+					} else {
+						dbg->debug = &dbgProfile;
+					}
+					break;
 			}
-			else if (run_code == debug) {
-				dbg->debug = &dbgDebug;
-				if (extra.dbgNextBreak != 0) {
-					// break on first instruction
-					extra.dbgNextBreak = rt->vm.pc;
-				}
-			}
-			else if (run_code == profile) {
-				// set call tree dump method
-				if (dumpFun == dumpApiJSON) {
-					dbg->debug = &jsonProfile;
-					jsonPreProfile(dbg);
-				}
-				else {
-					dbg->debug = &dbgProfile;
-				}
+
+			// update debug statement list, and remove statementts
+			size_t dataCnt = dbg->statements.cnt;
+			dbgn data = (dbgn) dbg->statements.ptr;
+			for (size_t j = 0; j < dataCnt; ++j) {
+				data[j].stmt = NULL;
 			}
 		}
 		if (!extra.dmpAsm && extra.traceOpcodes) {
@@ -2644,7 +2815,7 @@ int main(int argc, char *argv[]) {
 
 	if (rt->errors == 0) {
 		if (dumpFun == dumpApiJSON) {
-			if (rt->dbg != NULL) {
+		if (rt->dbg != NULL && run_code != run) {
 				jsonPostProfile(rt->dbg);
 			}
 			printFmt(extra.out, extra.esc, "}\n");
@@ -2666,5 +2837,7 @@ int main(int argc, char *argv[]) {
 		fclose(extra.out);
 	}
 
+	freeBuff(&extra.breakPoints);
+	freeBuff(&extra.callStack);
 	return rtClose(rt) != 0;
 }

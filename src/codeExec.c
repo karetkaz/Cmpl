@@ -11,16 +11,15 @@
 typedef uint32_t *stkptr;
 typedef uint8_t *memptr;
 
-// method tracing
-typedef struct trcptr {
-	size_t caller;      // Instruction pointer of caller
-	size_t callee;      // Instruction pointer of callee
-	clock_t func;       // time when the function was invoked
-	stkptr sp;          // Stack pointer
-} *trcptr;
-
-// execution unit
-typedef struct vmProcessor {
+/* Execution unit, and invoke() re-entry bridge.
+ * invoke() runs a nested exec() for a native callback, pushing `vm.px` (the halt
+ * stub) as a synthetic return address instead of a real call site. traceCalls()
+ * cannot resolve that address to a caller, so invoke() links a node recording the
+ * real (ip, sp) it is bridging over onto this chain, for traceCalls() to
+ * substitute in its place. Each node lives in the stack frame of the invoke()
+ * call that pushed it: no allocation, no fixed depth limit, unlinked on return.
+ */
+struct vmContextRec {
 	/* Stack pointers
 	 * the stacks are located at the end of the heap.
 	 * base pointer
@@ -36,15 +35,18 @@ typedef struct vmProcessor {
 	 */
 	memptr ip;		// Instruction pointer
 	memptr bp;		// Stack base
-	trcptr tp;		// Trace pointer
 	stkptr sp;		// Stack pointer
 	size_t ss;		// Stack size
-	unsigned try: 1; // flag: try exec: fatal error recoverable will not exit the process
-} *vmProcessor;
+
+	symn fun;
+	rtContext rt;
+	vmContext vm;        // invoke(): enclosing (outer) bridge that was bridged over, or NULL if there is none
+	nfcContext nfc;	     // invoke(): the native function that made this call, or NULL for the top level execution unit
+};
 
 /// Check for stack overflow.
-static inline int ovf(vmProcessor pu) {
-	return (memptr)pu->sp < (memptr)pu->tp;
+static inline int ovf(vmContext pu) {
+	return (memptr)pu->sp < pu->bp;
 }
 
 static inline int f32Bool(float value) {
@@ -52,95 +54,6 @@ static inline int f32Bool(float value) {
 }
 static inline int f64Bool(double value) {
 	return (value != 0) && !isnan(value);
-}
-
-/** Manage function call stack traces
- * @param ctx Runtime context
- * @param sp Stack pointer (for tracing arguments)
- * @param caller the address of the caller, NULL on start and end.
- * @param callee the called function address, -1 on leave.
- */
-static vmError vmTrace(rtContext ctx, void *sp, size_t caller, ssize_t callee) {
-	const dbgContext dbg = ctx->dbg;
-	clock_t now = clock();
-	if (dbg == NULL) {
-		return noError;
-	}
-
-	// trace statement
-	if (callee == 0) {
-		fatal(ERR_INTERNAL_ERROR);
-		return illegalState;
-	}
-
-	vmError (*debugger)(dbgContext, vmError, size_t, void*, size_t, size_t) = dbg->debug;
-	vmProcessor pu = ctx->vm.cell;
-	// trace return from function
-	if (callee < 0) {
-		if (pu->tp - (trcptr)pu->bp < 1) {
-			dbgTrace("stack underflow(tp: %d, sp: %d)", pu->tp - (trcptr)pu->bp, pu->sp - (stkptr)pu->bp);
-			return illegalState;
-		}
-		pu->tp -= 1;
-
-		if (debugger != NULL) {
-			const trcptr tp = pu->tp;
-			const trcptr bp = (trcptr) pu->bp;
-
-			//* TODO: measure times in debugger function
-			clock_t ticks = now - tp->func;
-			dbgn calleeFunc = mapDbgFunction(ctx, tp->callee);
-			if (calleeFunc != NULL) {
-				int recursive = 0;
-				for (trcptr p = bp; p < tp; p++) {
-					if (p->callee == tp->callee) {
-						recursive = 1;
-						break;
-					}
-				}
-				if (callee != -1) {
-					calleeFunc->fails += 1;
-				}
-				if (!recursive) {
-					calleeFunc->total += ticks;
-				}
-				calleeFunc->time += ticks;
-			}
-
-			dbgn callerFunc = mapDbgFunction(ctx, tp->caller);
-			if (callerFunc != NULL) {
-				callerFunc->time -= ticks;
-			}
-			// */
-			debugger(dbg, noError, tp - bp, NULL, caller, callee);
-		}
-		return noError;
-	}
-
-	// trace call function
-	if ((trcptr)pu->sp - pu->tp < 1) {
-		dbgTrace("stack overflow(tp: %d, sp: %d)", pu->tp - (trcptr)pu->bp, pu->sp - (stkptr)pu->bp);
-		return stackOverflow;
-	}
-
-	const trcptr tp = pu->tp;
-	pu->tp += 1;
-
-	tp->caller = caller;
-	tp->callee = callee;
-	tp->func = now;
-	tp->sp = sp;
-
-	if (debugger != NULL) {
-		//* TODO: measure times in debugger function
-		dbgn calleeFunc = mapDbgFunction(ctx, tp->callee);
-		if (calleeFunc != NULL) {
-			calleeFunc->hits += 1;
-		}
-		// */
-		debugger(dbg, noError, tp - (trcptr)pu->bp, NULL, caller, callee);
-	}
-	return noError;
 }
 
 vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller, size_t callee) {
@@ -177,7 +90,7 @@ vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller
 		error(rt, file, line, ERR_EXEC_INSTRUCTION, errMsg, caller, fun, offs, ip);
 	}
 	// print stack trace including this function
-	traceCalls(rt->dbg, rt->logFile, 1, maxLogItems, 0);
+	traceCalls(rt, rt->logFile, 1, maxLogItems, 0);
 	return err;
 	(void) callee;
 	(void) sp;
@@ -193,14 +106,16 @@ vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller
  * @param extra Extra data for native calls.
  * @return Error code of execution, noError on success.
  */
-static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) {
-	libc *nativeCalls = ctx->vm.nfc;
+static vmError exec(vmContext pu, const void *extra) {
+	rtContext ctx = pu->rt;
+	symn fun = pu->fun;
 
 	vmError execError = noError;
 	const size_t ms = ctx->_size;			// memory size
 	const size_t ro = ctx->vm.ro;			// read-only region
 	const memptr mp = (void*)ctx->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
+	libc *nativeCalls = ctx->vm.nfc;
 
 	if (fun == NULL || fun->offs == 0) {
 		error(ctx, NULL, 0, ERR_EXEC_FUNCTION, fun);
@@ -210,17 +125,19 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 	// run in debug or profile mode
 	const dbgContext dbg = ctx->dbg;
 	if (dbg != NULL && dbg->debug != NULL) {
-		const trcptr oldTP = pu->tp;
-		const stkptr spMin = (stkptr)(pu->bp);
+		const stkptr spMin = (stkptr) pu->bp;
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
+		const size_t ssReset = st - pu->sp;
+
 		const vmInstruction ipMin = (vmInstruction)(ctx->_mem + ctx->vm.ro);
 		const vmInstruction ipMax = (vmInstruction)(ctx->_mem + ctx->vm.px);
 
 		vmError (*debugger)(dbgContext, vmError, size_t, void*, size_t, size_t) = dbg->debug;
+
 		// invoked function(from external code) will return with a `ret` instruction, removing trace info
-		execError = vmTrace(ctx, pu->sp, 0, fun->offs);
+		execError = debugger(dbg, noError, st - pu->sp, pu->sp, ctx->vm.pc, fun->offs);
 		if (execError != noError) {
-			debugger(dbg, execError, 0, pu->sp, vmOffset(ctx, pu->ip), 0);
+			// leave the previously entered method
 			return execError;
 		}
 
@@ -230,33 +147,20 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 			const stkptr sp = pu->sp;
 
 			if (ip > ipMax || ip < ipMin) {
-				debugger(dbg, illegalState, st - sp, sp, pc, 0);
-				fatal(ERR_INTERNAL_ERROR": invalid instruction pointer");
-				return illegalState;
+				return debugger(dbg, illegalState, ssReset, sp, pc, pc);
 			}
 			if (sp > spMax || sp < spMin) {
-				debugger(dbg, illegalState, st - sp, sp, pc, 0);
-				fatal(ERR_INTERNAL_ERROR": invalid stack pointer");
-				return illegalState;
+				return debugger(dbg, illegalState, ssReset, sp, pc, pc);
 			}
 
-			vmError error = debugger(dbg, noError, st - sp, sp, pc, 0);
+			vmError error = debugger(dbg, noError, ssReset, sp, pc, pc);
 			if (error != noError) {
 				// abort execution from debugger
 				return error;
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
-					if (execError != noError) {
-						debugger(dbg, execError, st - sp, sp, pc, 0);
-						while (pu->tp != oldTP) {
-							vmTrace(ctx, NULL, 0, (size_t) -2);
-						}
-					}
-					while (pu->tp != oldTP) {
-						vmTrace(ctx, NULL, 0, (size_t) -1);
-					}
-					return execError;
+					return debugger(dbg, execError, ssReset, sp, pc, 0);
 
 				dbg_error_opc:
 					execError = illegalInstruction;
@@ -275,7 +179,7 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 					goto dbg_stop_vm;
 
 				dbg_error_div_flt:
-					debugger(dbg, divisionByZero, st - sp, sp, pc, 0);
+					debugger(dbg, divisionByZero, st - sp, sp, pc, pc);
 					// continue execution on floating point division by zero.
 					break;
 
@@ -289,11 +193,12 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK) do {if (__CHK) {goto dbg_##__ERR;}} while(0)
+				#define TRACE(__IP) do { if ((execError = debugger(dbg, noError, st - sp, sp, pc, __IP)) != noError) goto dbg_stop_vm; } while(0)
 				#define EXEC
-				#define TRACE(__IP) do { if ((execError = vmTrace(ctx, sp, pc, __IP)) != noError) goto dbg_stop_vm; } while(0)
 				#include "exec.i"
 			}
 		}
+		fatal(ERR_INTERNAL_ERROR);
 		return execError;
 	}
 
@@ -350,9 +255,9 @@ static vmError exec(rtContext ctx, vmProcessor pu, symn fun, const void *extra) 
 
 vmError invoke(nfcContext ctx, symn fun, void *res, void *args, const void *extra) {
 	rtContext rt = ctx->rt;
-	const vmProcessor pu = rt->vm.cell;
+	vmContext cell = rt->vm.vm;
 
-	if (pu == NULL) {
+	if (cell == NULL) {
 		fatal(ERR_INTERNAL_ERROR": can not invoke %?T without execute", fun);
 		return illegalState;
 	}
@@ -368,41 +273,41 @@ vmError invoke(nfcContext ctx, symn fun, void *res, void *args, const void *extr
 	// result is the last argument.
 	size_t argSize = argsSize(fun);
 	size_t resSize = fun->params->size;
-	void *ip = pu->ip;
-	void *sp = pu->sp;
-	void *tp = pu->tp;
-	int try = pu->try;
+
+
+	// create a new execution context, based on the previous one
+	struct vmContextRec link = {
+		.rt = ctx->rt,
+		.ip = vmPointer(rt, fun->offs),
+		.bp = cell->bp,
+		.sp = cell->sp,
+		.ss = cell->ss,
+		.fun = fun,
+		.nfc = ctx,
+		.vm = cell,
+	};
 
 	// make space for result and arguments
-	pu->sp -= argSize / vm_stk_align;
+	link.sp -= argSize / vm_stk_align;
 
 	if (args != NULL) {
-		memcpy((char *)pu->sp, args, argSize - resSize);
-	}
-	if (ctx->proto == sys_try_exec) {
-		pu->try = 1;
+		memcpy((char *)link.sp, args, argSize - resSize);
 	}
 
 	// return here: vm->px: program halt
-	*(pu->sp -= 1) = rt->vm.px;
+	*(link.sp -= 1) = rt->vm.px;
 
-	pu->ip = vmPointer(rt, fun->offs);
-	vmError result = exec(rt, pu, fun, extra);
+
+	rt->vm.vm = &link;
+	vmError result = exec(&link, extra);
+	rt->vm.vm = cell;
+
 	if (result == noError && res != NULL) {
-		memcpy(res, (memptr) sp - resSize, resSize);
+		memcpy(res, (memptr) cell->sp - resSize, resSize);
 	}
-
-	pu->ip = ip;
-	pu->sp = sp;
-	pu->tp = tp;	// abort during exec
-	pu->try = try;
-
 	return result;
 }
 vmError execute(rtContext ctx, const void *extra) {
-	// TODO: cells should be in runtime read only memory?
-	vmProcessor pu;
-
 	// invalidate compiler, release the malloc allocated buffers before losing them
 	if (ctx->cc != NULL) {
 		freeBuff(&ctx->cc->jumps);
@@ -414,9 +319,11 @@ vmError execute(rtContext ctx, const void *extra) {
 
 	// allocate processor(s)
 	ctx->_end = ctx->_mem + ctx->_size;
-	ctx->_end -= sizeof(struct vmProcessor);
-	ctx->vm.cell = pu = (void*)ctx->_end;
+	ctx->_end -= sizeof(struct vmContextRec);
+	vmContext vm = (void*)ctx->_end;
+	ctx->vm.vm = vm;
 
+	// all pointers must be aligned
 	logif(ctx->_size != padOffset(ctx->_size, vm_mem_align), ERR_INTERNAL_ERROR);
 	logif(ctx->_mem !=  padPointer(ctx->_mem, vm_mem_align), ERR_INTERNAL_ERROR);
 	logif(ctx->_end !=  padPointer(ctx->_end, vm_stk_align), ERR_INTERNAL_ERROR);
@@ -425,27 +332,48 @@ vmError execute(rtContext ctx, const void *extra) {
 		ctx->vm.ss = ctx->_size / 4;
 	}
 	ctx->_end -= ctx->vm.ss;
-
-	pu->ss = ctx->vm.ss;
-	pu->bp = ctx->_end;
-	pu->tp = (trcptr)ctx->_end;
-	pu->sp = (stkptr)(ctx->_end + ctx->vm.ss);
-	pu->ip = ctx->_mem + ctx->vm.pc;
-
 	if (ctx->_beg > ctx->_end) {
 		fatal(ERR_INTERNAL_ERROR": memory overrun");
 		return illegalState;
 	}
-	if (pu->bp > (memptr)pu->sp) {
+
+	vm->rt = ctx;
+	vm->ip = ctx->_mem + ctx->vm.pc;
+	vm->bp = ctx->_end;
+	vm->sp = (stkptr)(ctx->_end + ctx->vm.ss);
+	vm->ss = ctx->vm.ss;
+	vm->fun = ctx->main;
+	vm->nfc = NULL;
+	vm->vm = NULL;
+
+	if (vm->bp > (memptr)vm->sp) {
 		fatal(ERR_INTERNAL_ERROR": invalid stack size");
 		return illegalState;
 	}
 
-	return exec(ctx, pu, ctx->main, extra);
+	// todo: make this optional, and move it to exec: run in debug or profile mode
+	const dbgContext dbg = ctx->dbg;
+	if (dbg != NULL && dbg->debug != NULL) {
+		libc *nativeCalls = ctx->vm.nfc;
+		vmError (*debugger)(dbgContext, vmError, size_t, void*, size_t, size_t) = dbg->debug;
+		debugger(dbg, noError, 0, vm->sp, nativeCalls[0]->sym->offs, ctx->main->offs);
+		vmError error = exec(vm, extra);
+		debugger(dbg, noError, 0, vm->sp, ctx->main->offs, 0);
+		return error;
+	}
+
+	return exec(vm, extra);
 }
 
-int isChecked(rtContext rt) {
-	return ((vmProcessor) rt->vm.cell)->try;
+int isChecked(rtContext ctx) {
+	vmContext bridge = ctx->vm.vm->vm;
+	while (bridge != NULL) {
+		if (bridge->nfc != NULL && bridge->nfc->proto == sys_try_exec) {
+			return 1;
+		}
+		bridge = bridge->vm;
+	}
+	return 0;
 }
 
 int vmSelfTest(void cb(const char *, const struct opcodeRec *)) {
@@ -535,12 +463,6 @@ static void traceArgs(rtContext ctx, FILE *out, symn fun, const char *file, int 
 	int printFileLine = 0;
 	const char **esc = NULL;
 
-	if (out == NULL) {
-		out = ctx->logFile;
-	}
-	if (file == NULL) {
-		file = "native.code";
-	}
 	printFmt(out, esc, "%I%?s:%?u: %?.T", indent, file, line, fun);
 	if (indent < 0) {
 		printFileLine = 1;
@@ -597,51 +519,196 @@ static void traceArgs(rtContext ctx, FILE *out, symn fun, const char *file, int 
 		}
 	}
 }
-void traceCalls(dbgContext ctx, FILE *out, int indent, size_t maxCalls, size_t skipCalls) {
-	if (ctx == NULL) {
+
+/** Compute the static stack depth at a position inside a function.
+ * Walks the bytecode from the function entry following the branches,
+ * accumulating the stack effect of each instruction.
+ * @param ctx Runtime context
+ * @param fun the function containing the position
+ * @param target position of the instruction to be reached
+ * @return stack depth in bytes relative to the function entry, -1 if unreachable.
+ */
+static ssize_t stackDepth(rtContext ctx, symn fun, size_t target) {
+	const size_t beg = fun->offs;
+	const size_t size = fun->size;
+	if (target < beg || target >= beg + size) {
+		return -1;
+	}
+
+	ssize_t result = -1;
+	ssize_t *depths = malloc(size * sizeof(ssize_t));
+	size_t *worklist = malloc(size * sizeof(size_t));
+	if (depths == NULL || worklist == NULL) {
+		free(depths);
+		free(worklist);
+		return -1;
+	}
+	for (size_t i = 0; i < size; ++i) {
+		depths[i] = -1;
+	}
+
+	size_t tasks = 0;
+	depths[0] = 0;
+	worklist[tasks++] = beg;
+	while (tasks > 0) {
+		size_t pc = worklist[--tasks];
+		ssize_t depth = depths[pc - beg];
+		if (pc == target) {
+			result = depth;
+			break;
+		}
+
+		size_t next = pc;
+		vmInstruction ip = nextOpc(ctx, &next, &depth);
+		if (ip == NULL) {
+			// invalid instruction
+			continue;
+		}
+
+		size_t branches[2] = {next, 0};
+		switch (ip->opc) {
+			default: break;
+
+			case opc_jnz:
+			case opc_jz:
+				branches[1] = pc + ip->rel;
+				break;
+
+			case opc_jmp:
+				branches[0] = pc + ip->rel;
+				break;
+
+			case opc_jmpi:
+				// return from the function: no successor
+				branches[0] = 0;
+				break;
+
+			case opc_call:
+				// the callee returns dropping the return address
+				depth -= vm_stk_align;
+				break;
+		}
+
+		for (int i = 0; i < 2; ++i) {
+			size_t to = branches[i];
+			if (to < beg || to >= beg + size) {
+				continue;
+			}
+			if (depths[to - beg] >= 0) {
+				// already visited
+				continue;
+			}
+			depths[to - beg] = depth;
+			worklist[tasks++] = to;
+		}
+	}
+
+	free(depths);
+	free(worklist);
+	return result;
+}
+
+void traceCalls(rtContext ctx, FILE *out, int indent, size_t maxCalls, size_t skipCalls) {
+	vmContext pu = ctx->vm.vm;
+	if (pu == NULL) {
 		return;
 	}
-	rtContext rt = ctx->rt;
-	vmProcessor pu = rt->vm.cell;
-	trcptr trcBase = (trcptr)pu->bp;
-	size_t maxTrace = pu->tp - (trcptr)pu->bp;
-	size_t hasOutput = 0;
+
 	const char **esc = NULL;
-
+	size_t hasOutput = 0;
 	if (out == NULL) {
-		out = rt->logFile;
+		out = ctx->logFile;
 	}
 
-	maxCalls += skipCalls;
-	if (maxCalls > maxTrace) {
-		maxCalls = maxTrace;
-	}
+	const size_t pcMax = ctx->vm.px;
+	const size_t pcMin = ctx->vm.ro;
+	size_t pc = vmOffset(ctx, pu->ip);
 
-	for (size_t i = skipCalls; i < maxCalls; ++i) {
-		trcptr trace = &trcBase[maxTrace - i - 1];
-		dbgn trInfo = mapDbgStatement(rt, trace->caller, NULL);
-		symn fun = rtLookup(rt, trace->callee, 0);
-		stkptr sp = trace->sp;
-		const char *file = NULL;
-		int line = 0;
+	const stkptr spMin = (void*) pu->bp;
+	const stkptr spMax = spMin + pu->ss;
+	stkptr sp = pu->sp;
 
-		dieif(fun == NULL, ERR_INTERNAL_ERROR);
+	vmContext bridge = pu->vm;
 
+	for (size_t i = 0; i < maxCalls; ++i) {
+		symn fun = rtLookup(ctx, pc, 0);
+		if (fun == NULL || fun == ctx->main) {
+			// logif("WIP", "the `%T` function has no return address", fun);
+			pc = 0;
+			break;
+		}
+
+		ssize_t depth = stackDepth(ctx, fun, pc) / vm_stk_align;
+		if (depth < 0) {
+			// unreachable
+			break;
+		}
+
+		// position of the return address: the stack at the function entry
+		stkptr args = sp + depth;
+		sp = args + 1;
+		if (sp >= spMax || sp < spMin) {
+			fatal(ERR_INTERNAL_ERROR": invalid stack pointer unwinding the stack");
+			pc = 0;
+			break;
+		}
+
+		// continue in the caller, after the return address
+		pc = args[0];
+		vmContext nativeCall = NULL;
+		if (pc == ctx->vm.px) {
+			if (bridge == NULL) {
+				pc = 0;
+				break;
+			}
+			pc = vmOffset(ctx, bridge->ip);
+			nativeCall = bridge;
+			bridge = bridge->vm;
+		}
+		if (pc >= pcMax || pc < pcMin) {
+			fatal(ERR_INTERNAL_ERROR": invalid program counter unwinding the stack");
+			pc = 0;
+			break;
+		}
+
+		if (i < skipCalls) {
+			// do not print the n calls as requested byt the user
+			continue;
+		}
+
+		// the return address points after the call instruction
+		dbgn trInfo = mapDbgStatement(ctx, pc - 1, NULL);
+		const char *file = fun->file;
+		int line = fun->line;
+
+		if (hasOutput > 0) {
+			printFmt(out, esc, "\n");
+			hasOutput += 1;
+		}
+
+		if (nativeCall != NULL && i < maxCalls - 1) {
+			// native calls have no file and line position, use the function position
+			traceArgs(ctx, out, fun, file, line, args, indent, prArgs | prOneLine);
+			printFmt(out, esc, "\n");
+
+			fun = nativeCall->fun;
+			sp = nativeCall->sp;
+			args = sp;
+			i += 1;
+		}
+
+		// if no debug data is available, use the function position
 		if (trInfo != NULL) {
 			file = trInfo->file;
 			line = trInfo->line;
 		}
-		if (hasOutput > 0) {
-			printFmt(out, esc, "\n");
-		}
-		traceArgs(rt, out, fun, file, line, sp, indent, prArgs | prOneLine);
+
+		traceArgs(ctx, out, fun, file, line, args, indent, prArgs | prOneLine);
 		hasOutput += 1;
 	}
-	if (maxCalls < maxTrace) {
-		if (hasOutput > 0) {
-			printFmt(out, esc, "\n");
-		}
-		printFmt(out, esc, "%I... %d more", indent, maxTrace - maxCalls);
+
+	if (pc != 0 && pc != ctx->vm.px && maxCalls > 0) {
+		printFmt(out, esc, "\n%I... more", indent);
 		hasOutput += 1;
 	}
 

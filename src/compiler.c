@@ -286,10 +286,8 @@ static vmError sysRaise(nfcContext ctx) {
 		raiseStd(rt, logLevel, file, line, details, "%?s", message);
 	}
 
-	// print stack trace excluding this function
-	if (rt->dbg != NULL && maxTrace > 0) {
-		traceCalls(rt->dbg, rt->logFile, 1, maxTrace - 1, 1);
-	}
+	// print stack trace
+	traceCalls(rt, rt->logFile, 1, maxTrace, 0);
 
 	// abort the execution
 	if (abortExecution) {
@@ -302,22 +300,19 @@ static vmError sysRaise(nfcContext ctx) {
 // int tryExec(variant outError, pointer args, void action(pointer args));
 const char *const sys_try_exec = "int32 tryExec(pointer args, void action(pointer args))";
 static vmError sysTryExec(nfcContext ctx) {
-	vmError result;
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	size_t args = argRef(ctx, rt->api.nextArg(&al)->offset);
 	size_t actionOffs = argRef(ctx, rt->api.nextArg(&al)->offset);
 	symn action = rt->api.lookup(rt, actionOffs, KIND_fun);
 
+	vmError result = illegalState;
 	if (action != NULL && action->offs == actionOffs) {
 		#pragma pack(push, 4)
 		struct { vmOffs ptr; } cbArg;
 		cbArg.ptr = (vmOffs) args;
 		#pragma pack(pop)
 		result = rt->api.invoke(ctx, action, NULL, &cbArg, ctx->extra);
-	}
-	else {
-		result = illegalState;
 	}
 	retI32(ctx, result);
 	return noError;

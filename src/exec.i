@@ -17,7 +17,7 @@
 case opc_nop:  NEXT(1, 0, 0) {
 	break;
 }
-case opc_nfc:  NEXT(4, 0, 0) {
+case opc_nfc: {
 	libc nfc = nativeCalls[ip->rel];
 #ifdef EXEC
 	struct nfcContextRec args;
@@ -29,12 +29,11 @@ case opc_nfc:  NEXT(4, 0, 0) {
 	*((size_t*) &args.argc) = vm_stk_align * nfc->in;
 
 	TRACE(nfc->sym->offs);
-	vmError nfcError = nfc->call(&args);
-	STOP(error_libc, nfcError != noError);
-	TRACE((size_t)-1);
+	STOP(error_libc, nfc->call(&args));
 	STOP(stop_vm, ip->rel == 0);			// Halt();
+	TRACE(0);
 #endif
-	NEXT(0, nfc->out - nfc->in, nfc->in);
+	NEXT(4, nfc->out - nfc->in, nfc->in);
 	break;
 }
 case opc_call: NEXT(1, +0, 1) {
@@ -55,7 +54,7 @@ case opc_jmpi: NEXT(1, -1, 1) {
 	STOP(error_opc, jmp <= 0);
 	STOP(error_opc, jmp > ms);
 	pu->ip = mp + jmp;
-	TRACE((size_t)-1);
+	TRACE(0);
 #endif
 	break;
 }
