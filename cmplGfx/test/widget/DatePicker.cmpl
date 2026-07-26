@@ -122,7 +122,7 @@ struct DatePicker: Layout {
 			Datetime parts = Datetime(start);
 			View btn = this.btnDays.getView(i);
 			if (WeekButton button = btn.as(WeekButton)) {
-				button.update(parts.weekOfYear);
+				button.update(parts.isoWeek);
 			}
 			if (DayButton button = btn.as(DayButton)) {
 				if (this.btnMonth.value == parts.month) {

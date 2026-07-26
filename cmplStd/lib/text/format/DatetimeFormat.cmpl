@@ -52,9 +52,9 @@ struct DatetimeFormat {
 	char amPmUpper![][] = amPmUpperEn;
 	char amPmLower![][] = amPmLowerEn;
 	char dateLong![] = "%A %d %B %Y";
-	char timeLong![] = "%r";
-	char dateShort![] = "%x";
-	char timeShort![] = "%I:%M %p";
+	char timeLong![] = "%I:%M:%S %p";
+	char dateShort![] = "%m/%d/%y";
+	char timeShort![] = "%H:%M:%S";
 
 	/** Format date to text
 	 * @param formatter the formatter to be used
@@ -65,26 +65,96 @@ struct DatetimeFormat {
 	 *  	@null defaults to: "%Y.%m.%d"
 	 */
 	static int format(DatetimeFormat formatter!, char output&[], int end, Datetime value!, char format[]) {
-		static int append(DatetimeFormat formatter!, char output&[], int end, uint64 value, int width, int defaultWidth, int pad) {
-			// todo: this should be the same and as simple as: NumberFormat format = { *: formatter.numberFormat, width, paddingSymbol };
+		static int append(DatetimeFormat formatter!, char output&[], int end, uint64 value, int width, int defaultWidth, int pad, char positiveSymbol) {
 			NumberFormat format = {
-				digitSymbols: formatter.numberFormat.digitSymbols,
-				positiveSymbol: formatter.numberFormat.positiveSymbol,
-				negativeSymbol: formatter.numberFormat.negativeSymbol,
-				infinitySymbol: formatter.numberFormat.infinitySymbol,
-				undefinedSymbol: formatter.numberFormat.undefinedSymbol,
-				groupingSymbol: formatter.numberFormat.groupingSymbol,
-				digitGrouping: formatter.numberFormat.digitGrouping,
-				firstGrouping: formatter.numberFormat.firstGrouping,
-				fractGrouping: formatter.numberFormat.fractGrouping,
+				... formatter.numberFormat,
 				paddingSymbol: pad,
 				width: width > 0 ? width : defaultWidth,
-				fractionSymbol: formatter.numberFormat.fractionSymbol,
-				trailingSeparator: formatter.numberFormat.trailingSeparator,
-				precision: formatter.numberFormat.precision,
-				trailingZeros: formatter.numberFormat.trailingZeros,
+				positiveSymbol: positiveSymbol,
 			};
-			return format.format(&output, end, uint64(value));
+			return format.format(&output, end, value);
+		}
+		static int append(DatetimeFormat formatter!, char output&[], int end, uint64 value, int width, int defaultWidth, int pad) {
+			return append(formatter, &output, end, value, width, defaultWidth, pad, '');
+		}
+		static int appendText(char output&[], int end, char str[], int caseMode) {
+			// caseMode: 0 = as-is, 1 = upper (^), 2 = flip (#)
+			for (int i = 0; i < str.length; i += 1) {
+				if (end >= output.length) {
+					break;
+				}
+				char c = str[i];
+				if (c == 0) {
+					break;
+				}
+				if (caseMode == 1) {
+					if (c >= 'a' && c <= 'z') {
+						c -= 32;
+					}
+				}
+				else if (caseMode == 2) {
+					if (c >= 'a' && c <= 'z') {
+						c -= 32;
+					}
+					else if (c >= 'A' && c <= 'Z') {
+						c += 32;
+					}
+				}
+				output[end] = c;
+				end += 1;
+			}
+			return end;
+		}
+		static int appendZone(DatetimeFormat formatter!, char output&[], int end, Datetime value!, int colons, int width, int pad) {
+			// colons: -1 = %z (+hhmm), 0 = %:z, 1 = %::z, 2 = %:::z (necessary precision)
+			int64 totalSecs = 0;
+			if (pointer(value.timezone.offset) != null) {
+				Duration off = value.timezone.offset(Timestamp(value));
+				totalSecs = off.seconds();
+			}
+
+			char sign = '+';
+			if (totalSecs < 0) {
+				sign = '-';
+				totalSecs = -totalSecs;
+			}
+			int32 hh = int32(totalSecs / 3600);
+			int32 mm = int32((totalSecs / 60) % 60);
+			int32 ss = int32(totalSecs % 60);
+
+			end = append(&output, end, sign);
+
+			if (colons < 0) {
+				// %z => +hhmm
+				end = append(formatter, &output, end, hh, width, 2, pad);
+				end = append(formatter, &output, end, mm, 0, 2, '0');
+				return end;
+			}
+
+			// with colons
+			int mode = colons;
+			if (mode >= 2) {
+				// %:::z necessary precision
+				if (ss != 0) {
+					mode = 1;
+				}
+				else if (mm != 0) {
+					mode = 0;
+				}
+				else {
+					// hours only
+					return append(formatter, &output, end, hh, width, 2, pad);
+				}
+			}
+
+			end = append(formatter, &output, end, hh, width, 2, pad);
+			end = append(&output, end, ':');
+			end = append(formatter, &output, end, mm, 0, 2, '0');
+			if (mode >= 1) {
+				end = append(&output, end, ':');
+				end = append(formatter, &output, end, ss, 0, 2, '0');
+			}
+			return end;
 		}
 		inline hours24to12(int32 hour) = hour > 12 ? hour - 12 : hour == 0 ? 12 : hour;
 
@@ -107,6 +177,9 @@ struct DatetimeFormat {
 			}
 
 			pos += 1;
+			if (pos >= format.length) {
+				break;
+			}
 			chr = format[pos];
 
 			/* By default, date pads numeric fields with zeroes. The following optional flags may follow '%':
@@ -119,7 +192,9 @@ struct DatetimeFormat {
 			 */
 
 			char pad = '0';
-			if (chr == '-' || chr == '_' || chr == '0' || chr == '+' || chr == '^' || chr == '#') {
+			bool plusFlag = false;
+			int caseMode = 0;
+			for (chr == '-' || chr == '_' || chr == '0' || chr == '+' || chr == '^' || chr == '#') {
 				if (chr == '-') {
 					pad = 0;
 				}
@@ -129,10 +204,23 @@ struct DatetimeFormat {
 				else if (chr == '0') {
 					pad = '0';
 				}
+				else if (chr == '+') {
+					pad = '0';
+					plusFlag = true;
+				}
+				else if (chr == '^') {
+					caseMode = 1;
+				}
+				else if (chr == '#') {
+					caseMode = 2;
+				}
 				else {
 					abort("unimplemented format flag character [for padding]", chr);
 				}
 				pos += 1;
+				if (pos >= format.length) {
+					break;
+				}
 				chr = format[pos];
 			}
 
@@ -141,47 +229,50 @@ struct DatetimeFormat {
 			 locale's alternate representations if available, or O to use the
 			 locale's alternate numeric symbols if available.
 			 */
-
 			int32 width = 0;
 			for (chr >= '0' && chr <= '9') {
 				width = width * 10 + chr - '0';
 				pos += 1;
+				if (pos >= format.length) {
+					break;
+				}
 				chr = format[pos];
 			}
 
-			char formatLocale = '0';
 			if (chr == 'E' || chr == 'O') {
+				// locale alternate forms are not implemented
 				abort("unimplemented format flag character [for locale]", chr);
-				formatLocale = chr;
-				pos += 1;
-				chr = format[pos];
 			}
 
-			chr = format[pos];
+			// Monday-based day of week index and 0-based day of year (used by week numbers)
+			int32 dowMon0 = indexOf(value.dayOfWeek);
+			int32 doy0 = value.dayOfYear - 1;
 
 			if (chr == '%') {
 				end = append(&output, end, "%");
 			}
 			else if (chr == 'a') {
 				// %a     locale's abbreviated weekday name (e.g., en_US: [Sun, Mon, ..., Sat]; de_DE: [So, Mo, ..., Sa])
-				end = append(&output, end, formatter.weeksShort[indexOf(value.dayOfWeek)]);
+				end = appendText(&output, end, formatter.weeksShort[dowMon0], caseMode);
 			}
 			else if (chr == 'A') {
 				// %A     locale's full weekday name (e.g., en_US: [Sunday, ..., Saturday]; de_DE: [Sonntag, ..., Samstag])
-				end = append(&output, end, formatter.weeksLong[indexOf(value.dayOfWeek)]);
+				end = appendText(&output, end, formatter.weeksLong[dowMon0], caseMode);
 			}
 			else if (chr == 'b') {
 				// %b     locale's abbreviated month name (e.g., en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez])
-				end = append(&output, end, formatter.monthsShort[indexOf(value.month)]);
+				end = appendText(&output, end, formatter.monthsShort[indexOf(value.month)], caseMode);
 			}
 			else if (chr == 'B') {
 				// %B     locale's full month name (e.g., en_US: [January, ..., December];de_DE: [Januar, ..., Dezember])
-				end = append(&output, end, formatter.monthsLong[indexOf(value.month)]);
+				end = appendText(&output, end, formatter.monthsLong[indexOf(value.month)], caseMode);
 			}
 //			else if (chr == 'c') // todo: %c     locale's date and time (e.g., Thu Mar  3 23:05:25 2005)
 			else if (chr == 'C') {
 				// %C     century; like %Y, except omit last two digits (e.g., 20)
-				end = append(formatter, &output, end, value.year / 100, width, 2, pad);
+				int64 century = value.year / 100;
+				char posSym = (plusFlag && century > 99) ? '+' : '';
+				end = append(formatter, &output, end, century, width, 2, pad, posSym);
 			}
 			else if (chr == 'd') {
 				// %d     day of month (e.g., 01)
@@ -199,11 +290,19 @@ struct DatetimeFormat {
 				// %F     full date; like %+4Y-%m-%d
 				end = formatter.format(&output, end, value, "%04Y-%m-%d");
 			}
-//			else if (chr == 'g') // todo: %g     last two digits of year of ISO week number (see %G)
-//			else if (chr == 'G') // todo: %G     year of ISO week number (see %V); normally useful only with %V
+			else if (chr == 'g') {
+				// %g     last two digits of year of ISO week number (see %G)
+				int32 yy = Int32.abs(value.isoYear % 100);
+				end = append(formatter, &output, end, yy, width, 2, pad);
+			}
+			else if (chr == 'G') {
+				// %G     year of ISO week number (see %V); normally useful only with %V
+				char posSym = (plusFlag && value.isoYear > 9999) ? '+' : '';
+				end = append(formatter, &output, end, value.isoYear, width, 0, pad, posSym);
+			}
 			else if (chr == 'h') {
 				// %h     same as %b
-				end = append(&output, end, formatter.monthsShort[indexOf(value.month)]);
+				end = appendText(&output, end, formatter.monthsShort[indexOf(value.month)], caseMode);
 			}
 			else if (chr == 'H') {
 				// %H     hour (00..23)
@@ -238,27 +337,39 @@ struct DatetimeFormat {
 				end = append(&output, end, "\n");
 			}
 			else if (chr == 'N') {
-				// fixme: precision
 				// %N     nanoseconds (000000000..999999999)
-				end = append(formatter, &output, end, value.millis * 1000000, width, 9, pad);
+				// only milliseconds are available; scale and honour width as digit count (e.g. %3N => millis)
+				int nWidth = Int32.min(width > 0 ? width : 9, 9);
+				uint64 nanos = uint64(value.millis) * 1000000;
+				uint64 scale = 1;
+				for (int i = nWidth; i < 9; i += 1) {
+					scale *= 10;
+				}
+				end = append(formatter, &output, end, nanos / scale, width, nWidth, pad);
 			}
 			else if (chr == 'p') {
 				// %p     locale's equivalent of either AM or PM; blank if not known
-				end = append(&output, end, formatter.amPmUpper[int(value.hour < 12)]);
+				end = appendText(&output, end, formatter.amPmUpper[int(value.hour >= 12)], caseMode);
 			}
 			else if (chr == 'P') {
 				// %P     like %p, but lower case
-				end = append(&output, end, formatter.amPmLower[int(value.hour < 12)]);
+				end = appendText(&output, end, formatter.amPmLower[int(value.hour >= 12)], caseMode);
 			}
-//			else if (chr == 'q') // todo: %q     quarter of year (1..4)
-//			else if (chr == 'r') // todo: %r     locale's 12-hour clock time (e.g., 11:11:04 PM)
+			else if (chr == 'q') {
+				// %q     quarter of year (1..4)
+				end = append(formatter, &output, end, indexOf(value.month) / 3 + 1, width, 1, pad);
+			}
+			else if (chr == 'r') {
+				// %r     locale's 12-hour clock time (e.g., 11:11:04 PM)
+				end = formatter.format(&output, end, value, formatter.timeLong);
+			}
 			else if (chr == 'R') {
 				// %R     24-hour hour and minute; same as %H:%M
 				end = formatter.format(&output, end, value, "%H:%M");
 			}
 			else if (chr == 's') {
 				// %s     seconds since 1970-01-01 00:00:00 UTC
-				end = append(formatter, &output, end, Timestamp(value).value(Timeunit.Seconds), width, width, pad);
+				end = append(formatter, &output, end, Timestamp(value).value(Timeunit.Seconds), width, 1, pad);
 			}
 			else if (chr == 'S') {
 				// %S     second (00..60)
@@ -274,14 +385,26 @@ struct DatetimeFormat {
 			}
 			else if (chr == 'u') {
 				// %u     day of week (1..7); 1 is Monday
-				end = append(formatter, &output, end, indexOf(value.dayOfWeek) + 1, width, width, pad);
+				end = append(formatter, &output, end, dowMon0 + 1, width, 1, pad);
 			}
-//			else if (chr == 'U') // todo: %U     week number of year, with Sunday as first day of week (00..53)
-//			else if (chr == 'V') // todo: %V     ISO week number, with Monday as first day of week (01..53)
-//			else if (chr == 'w') // todo: %w     day of week (0..6); 0 is Sunday
+			else if (chr == 'U') {
+				// %U     week number of year, with Sunday as first day of week (00..53)
+				int32 sun0 = (dowMon0 + 1) % 7;
+				int32 weekU = (doy0 - sun0 + 7) / 7;
+				end = append(formatter, &output, end, weekU, width, 2, pad);
+			}
+			else if (chr == 'V') {
+				// %V     ISO week number, with Monday as first day of week (01..53)
+				end = append(formatter, &output, end, value.isoWeek, width, 2, pad);
+			}
+			else if (chr == 'w') {
+				// %w     day of week (0..6); 0 is Sunday
+				end = append(formatter, &output, end, (dowMon0 + 1) % 7, width, 1, pad);
+			}
 			else if (chr == 'W') {
 				// %W     week number of year, with Monday as first day of week (00..53)
-				end = append(formatter, &output, end, value.weekOfYear, width, 2, pad);
+				int32 weekW = (doy0 - dowMon0 + 7) / 7;
+				end = append(formatter, &output, end, weekW, width, 2, pad);
 			}
 			else if (chr == 'x') {
 				// %x     locale's date representation (e.g., 12/31/99)
@@ -293,17 +416,39 @@ struct DatetimeFormat {
 			}
 			else if (chr == 'y') {
 				// %y     last two digits of year (00..99)
-				end = append(formatter, &output, end, value.year % 100, width, 2, pad);
+				int32 yy = Int32.abs(value.year % 100);
+				end = append(formatter, &output, end, yy, width, 2, pad);
 			}
 			else if (chr == 'Y') {
 				// %Y     year
-				end = append(formatter, &output, end, value.year, width, width, pad);
+				char posSym = (plusFlag && value.year > 9999) ? '+' : '';
+				end = append(formatter, &output, end, value.year, width, 0, pad, posSym);
 			}
-//			else if (chr == 'z') // todo: %z     +hhmm numeric time zone (e.g., -0400)
-//			else if (chr == '?') // todo: %:z    +hh:mm numeric time zone (e.g., -04:00)
-//			else if (chr == '?') // todo: %::z   +hh:mm:ss numeric time zone (e.g., -04:00:00)
-//			else if (chr == '?') // todo: %:::z  numeric time zone with : to necessary precision (e.g., -04, +05:30)
-//			else if (chr == 'Z') // todo: %Z     alphabetic time zone abbreviation (e.g., EDT)
+			else if (chr == 'z') {
+				// %z     +hhmm numeric time zone (e.g., -0400)
+				end = appendZone(formatter, &output, end, value, -1, width, pad);
+			}
+			else if (chr == ':') {
+				// %:z / %::z / %:::z
+				int colons = 0;
+				for (chr == ':') {
+					colons += 1;
+					pos += 1;
+					if (pos >= format.length) {
+						break;
+					}
+					chr = format[pos];
+				}
+				assert(chr == 'z', "unimplemented or invalid format character", chr);
+				// colons 1 => %:z, 2 => %::z, 3 => %:::z
+				end = appendZone(formatter, &output, end, value, colons - 1, width, pad);
+			}
+			else if (chr == 'Z') {
+				// %Z     alphabetic time zone abbreviation (e.g., EDT)
+				if (pointer(value.timezone.name) != null) {
+					end = appendText(&output, end, value.timezone.name, caseMode);
+				}
+			}
 			else {
 				abort("unimplemented or invalid format character", chr);
 			}

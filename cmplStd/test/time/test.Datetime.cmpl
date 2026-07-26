@@ -26,15 +26,15 @@ Timestamp end = Timestamp(Datetime(now.year + 1, 1, 1))
 int lastWeek = -1;
 for (Timestamp day = start; day.compare(end) < 0; day = day.add(1, Timeunit.Days)) {
 	Datetime date = Datetime(day);
-	if (lastWeek == date.weekOfYear) {
+	if (lastWeek == date.isoWeek) {
 		out.write("  %d", date);
 	} else {
 		// new week
 		if (lastWeek != -1) {
 			out.writeln();
 		}
-		out.write("Week %W, starts on: %Y/%m/%d", date);
-		lastWeek = date.weekOfYear;
+		out.write("Week %V, starts on: %Y/%m/%d", date);
+		lastWeek = date.isoWeek;
 	}
 }
 

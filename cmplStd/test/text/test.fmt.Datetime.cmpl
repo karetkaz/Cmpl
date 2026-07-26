@@ -1,0 +1,121 @@
+// DatetimeFormat non-locale specs and bug fixes
+
+void expect(char label[], Datetime dt, char fmt[], char want[]) {
+	char buf[256] = {};
+	dt.format(&buf, fmt);
+	assert(strcmp(buf, want) == 0, label, buf, want);
+}
+
+void checkDate(char label[], int y, int m, int d, char fmt[], char want[]) {
+	Datetime dt = Datetime(Timestamp(Datetime(y, m, d)));
+	expect(label, dt, fmt, want);
+}
+
+void checkIso(char label[], int y, int m, int d, int wantYear, int wantWeek) {
+	Datetime dt = Datetime(Timestamp(Datetime(y, m, d)));
+	int32 isoYear = dt.isoYear;
+	int32 isoWeek = dt.isoWeek;
+	assert(isoYear == wantYear, label, isoYear, wantYear);
+	assert(isoWeek == wantWeek, label, isoWeek, wantWeek);
+}
+
+// --- AM/PM index ---
+Timestamp day = Timestamp(Datetime(2024, 6, 1));
+expect("am midnight", Datetime(day), "%H %I %p %P", "00 12 AM am");
+expect("am morning", Datetime(day.add(11, Timeunit.Hours)), "%H %I %p %P", "11 11 AM am");
+expect("pm noon", Datetime(day.add(12, Timeunit.Hours)), "%H %I %p %P", "12 12 PM pm");
+expect("pm afternoon", Datetime(day.add(13, Timeunit.Hours)), "%H %I %p %P", "13 01 PM pm");
+expect("pm evening", Datetime(day.add(23, Timeunit.Hours)), "%H %I %p %P", "23 11 PM pm");
+
+// --- quarter ---
+checkDate("q1 jan", 2024, 1, 15, "%q", "1");
+checkDate("q1 mar", 2024, 3, 31, "%q", "1");
+checkDate("q2 apr", 2024, 4, 1, "%q", "2");
+checkDate("q3 jul", 2024, 7, 1, "%q", "3");
+checkDate("q4 oct", 2024, 10, 1, "%q", "4");
+checkDate("q4 dec", 2024, 12, 31, "%q", "4");
+
+// --- day of week numbers ---
+checkDate("u mon", 2021, 1, 4, "%u", "1");
+checkDate("u sun", 2021, 1, 3, "%u", "7");
+checkDate("w sun", 2021, 1, 3, "%w", "0");
+checkDate("w mon", 2021, 1, 4, "%w", "1");
+checkDate("w fri", 2021, 1, 1, "%w", "5");
+
+// --- week numbers W/U/V and ISO year ---
+checkDate("W 2021-01-01", 2021, 1, 1, "%W", "00");
+checkDate("U 2021-01-01", 2021, 1, 1, "%U", "00");
+checkDate("V 2021-01-01", 2021, 1, 1, "%V", "53");
+checkDate("G 2021-01-01", 2021, 1, 1, "%G", "2020");
+checkDate("g 2021-01-01", 2021, 1, 1, "%g", "20");
+
+checkDate("W 2021-01-03", 2021, 1, 3, "%W", "00");
+checkDate("U 2021-01-03", 2021, 1, 3, "%U", "01");
+checkDate("V 2021-01-03", 2021, 1, 3, "%V", "53");
+
+checkDate("W 2021-01-04", 2021, 1, 4, "%W", "01");
+checkDate("U 2021-01-04", 2021, 1, 4, "%U", "01");
+checkDate("V 2021-01-04", 2021, 1, 4, "%V", "01");
+checkDate("G 2021-01-04", 2021, 1, 4, "%G", "2021");
+
+checkDate("V 2019-12-30", 2019, 12, 30, "%V", "01");
+checkDate("G 2019-12-30", 2019, 12, 30, "%G", "2020");
+checkDate("W 2019-12-30", 2019, 12, 30, "%W", "52");
+checkDate("U 2019-12-30", 2019, 12, 30, "%U", "52");
+
+checkDate("V 2024-12-31", 2024, 12, 31, "%V", "01");
+checkDate("G 2024-12-31", 2024, 12, 31, "%G", "2025");
+checkDate("W 2024-12-31", 2024, 12, 31, "%W", "53");
+checkDate("U 2024-12-31", 2024, 12, 31, "%U", "52");
+
+checkDate("V 2023-01-01", 2023, 1, 1, "%V", "52");
+checkDate("G 2023-01-01", 2023, 1, 1, "%G", "2022");
+checkDate("U 2023-01-01", 2023, 1, 1, "%U", "01");
+checkDate("W 2023-01-01", 2023, 1, 1, "%W", "00");
+
+checkDate("V 2020-12-31", 2020, 12, 31, "%V", "53");
+checkDate("G 2020-12-31", 2020, 12, 31, "%G", "2020");
+
+// --- compounds / defaults ---
+checkDate("D", 2024, 3, 5, "%D", "03/05/24");
+checkDate("F", 2024, 3, 5, "%F", "2024-03-05");
+checkDate("x default", 1999, 12, 31, "%x", "12/31/99");
+
+Datetime ts = Datetime(Timestamp(Datetime(2024, 6, 1)).add(14, Timeunit.Hours).add(30, Timeunit.Minutes).add(45, Timeunit.Seconds));
+expect("T", ts, "%T", "14:30:45");
+expect("R", ts, "%R", "14:30");
+expect("r", ts, "%r", "02:30:45 PM");
+expect("X default", ts, "%X", "14:30:45");
+
+// --- nanos width ---
+Datetime ms = Datetime(Timestamp(Datetime(2024, 1, 1)).add(123, Timeunit.Millis));
+// reconstruct with millis through timestamp roundtrip
+ms = Datetime(Timestamp(Datetime(2024, 1, 1)).add(123, Timeunit.Millis));
+expect("N full", ms, "%N", "123000000");
+expect("N milli", ms, "%3N", "123");
+expect("N micro", ms, "%6N", "123000");
+
+// --- timezone UTC ---
+expect("z utc", Datetime(day), "%z", "+0000");
+expect(":z utc", Datetime(day), "%:z", "+00:00");
+expect("::z utc", Datetime(day), "%::z", "+00:00:00");
+expect(":::z utc", Datetime(day), "%:::z", "+00");
+expect("Z utc", Datetime(day), "%Z", "UTC");
+
+// --- case flags ---
+checkDate("upper A", 2021, 1, 4, "%^A", "MONDAY");
+checkDate("flip a", 2021, 1, 4, "%#a", "mON");
+
+// --- names ---
+checkDate("a A", 2021, 1, 1, "%a %A", "Fri Friday");
+checkDate("b B", 2024, 2, 29, "%b %B", "Feb February");
+
+// --- Datetime.isoWeek / isoYear fields ---
+checkIso("iso 2021-01-01", 2021, 1, 1, 2020, 53);
+checkIso("iso 2021-01-04", 2021, 1, 4, 2021, 1);
+checkIso("iso 2019-12-30", 2019, 12, 30, 2020, 1);
+checkIso("iso 2024-12-31", 2024, 12, 31, 2025, 1);
+checkIso("iso 2020-12-31", 2020, 12, 31, 2020, 53);
+checkIso("iso 2023-01-01", 2023, 1, 1, 2022, 52);
+
+File.out.write("DatetimeFormat tests passed\n");

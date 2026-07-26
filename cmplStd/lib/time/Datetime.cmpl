@@ -82,8 +82,11 @@ struct Datetime {
 	// uint8 weekOfMonth!;	// 1 ... 4
 	//dayOfWeekInMonth;		// example: 1..4, may be specified as -1
 
-	/// Nth week of the year: 1 ... 53
-	uint8 weekOfYear;
+	/// ISO-8601 week number: 1 ... 53
+	uint8 isoWeek;
+
+	/// ISO-8601 week-numbering year (may differ near year boundaries)
+	int32 isoYear;
 
 	/// Nth day of the year: 1 ... 365
 	uint16 dayOfYear;
@@ -137,7 +140,8 @@ struct Datetime {
 			second: cal.second,
 			millis: cal.millis,
 			timezone: cal.timezone,
-			weekOfYear: cal.weekOfYear,
+			isoWeek: cal.isoWeek,
+			isoYear: cal.isoYear,
 			dayOfYear: cal.dayOfYear,
 			dayOfWeek: cal.dayOfWeek,
 			leapYear: isLeapYear(year),
@@ -245,6 +249,21 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 		m += 1;
 	}
 
+	// ISO week date via Thursday of the containing week (Mon=0..Sun=6)
+	int32 dayOfYear = n + 1;
+	int32 thuDoy = dayOfYear - dayOfWeek + 3;
+	int32 yearLen = DaysToMonth[12];
+	int32 isoYear = year;
+	if (thuDoy < 1) {
+		isoYear -= 1;
+		thuDoy += Datetime.isLeapYear(isoYear) ? 366 : 365;
+	}
+	else if (thuDoy > yearLen) {
+		isoYear += 1;
+		thuDoy -= yearLen;
+	}
+	int32 isoWeek = (thuDoy + 6) / 7;
+
 	return {
 		// date
 		year: year,
@@ -261,9 +280,10 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 		timezone: timezone,
 
 		// extra
-		dayOfYear: n + 1,
+		dayOfYear: dayOfYear,
 		dayOfWeek: Weekday(dayOfWeek),
-		weekOfYear: (n - dayOfWeek + indexOf(Weekday.Thursday)) / 7 + 1,
+		isoWeek: isoWeek,
+		isoYear: isoYear,
 		leapYear: DaysToMonth == Datetime.DaysToMonth366,
 	};
 }
@@ -282,7 +302,8 @@ Datetime Datetime(int32 year, int32 month, int32 day, int32 hour, int32 minute, 
 		second: second,
 		millis: millis,
 		timezone: zone,
-		weekOfYear: 0,
+		isoWeek: 0,
+		isoYear: year,
 		dayOfYear: 0,
 		dayOfWeek: Weekday.Monday,
 		leapYear: Datetime.isLeapYear(year),
