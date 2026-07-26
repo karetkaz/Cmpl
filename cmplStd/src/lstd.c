@@ -281,6 +281,36 @@ static vmError sysMSleep(nfcContext ctx) {
 	return noError;
 }
 
+// Fill local timezone name once (abbreviation / id at "now").
+static vmError sysLocalZoneName(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	struct nfcArgArr name = rt->api.nextArg(&al)->arr;
+
+	if (name.ref == NULL || name.length <= 0) {
+		return noError;
+	}
+	localZoneName((char *) name.ref, (size_t) name.length);
+	return noError;
+}
+
+// Local timezone offset (ms east of UTC) + DST for UTC epoch milliseconds.
+// Hot path: called for every local wall-time conversion.
+static vmError sysLocalZoneOffset(nfcContext ctx) {
+	rtContext rt = ctx->rt;
+	struct nfcArgs al = rt->api.nfcArgs(ctx);
+	int64_t timeMs = rt->api.nextArg(&al)->i64;
+	int8_t *daylight = rt->api.nextArg(&al)->ref;
+
+	int isDst = 0;
+	int64_t offsetMs = localZoneOffset(timeMs, &isDst);
+	if (daylight != NULL) {
+		*daylight = isDst ? 1 : 0;
+	}
+	retI64(ctx, offsetMs);
+	return noError;
+}
+
 // pointer alloc(pointer ptr, int32 size);
 static vmError sysMemMgr(nfcContext ctx) {
 	rtContext rt = ctx->rt;
@@ -412,6 +442,12 @@ static int ccLibSys(rtContext rt, ccContext cc) {
 		{sysTime,   "int32 time()"},
 		{sysMillis, "int64 millis()"},
 		{sysMSleep, "void sleep(int64 millis)"},
+		// name: buffer filled with zone abbreviation (e.g. "EET"); query once
+		{sysLocalZoneName, "void localZoneName(char name[])"},
+		// timeMillis: UTC epoch milliseconds
+		// returns: milliseconds east of UTC
+		// daylight: true when daylight saving is active
+		{sysLocalZoneOffset, "int64 localZoneOffset(int64 timeMillis, bool daylight&)"},
 	};
 
 	// alloc, free, memset, memcpy, memcmp

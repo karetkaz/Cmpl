@@ -58,22 +58,22 @@ struct Datetime {
 	// Date parts
 
 	/// Year: 1970
-	int32 year = 1970;
+	int32 year;
 	/// Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
-	Month month = Month.January;
+	Month month;
 	/// Day of month: 1 ... 30
-	uint8 day = 1;
+	uint8 day;
 
 	// Time parts
 
 	/// Hour of day: 0 ... 23
-	uint8 hour = 0;
+	uint8 hour;
 	/// Minute of hour: 0 ... 59
-	uint8 minute = 0;
+	uint8 minute;
 	/// Second of minute: 0 ... 59
-	uint8 second = 0;
+	uint8 second;
 	/// Milliseconds of second: 0 ... 999
-	uint16 millis = 0;
+	uint16 millis;
 
 	/// timezone
 	Timezone timezone;
@@ -149,7 +149,7 @@ struct Datetime {
 	}
 }
 
-/// Convert the given Datetime `value` to a timestamp (milliseconds since 1970)
+/// Convert the given Datetime `value` to a timestamp (milliseconds since 1970 UTC)
 Timestamp Timestamp(Datetime value) {
 	int32 year = value.year;
 	if (year < 0 || year > 9999) {
@@ -177,8 +177,21 @@ Timestamp Timestamp(Datetime value) {
 
 	int32 y = year - 1;
 	int64 d = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1 - Datetime.DaysTil1970;
+	// Interpret wall-clock fields as local to value.timezone, then convert to UTC.
 	int64 t = (((d * 24 + value.hour) * 60 + value.minute) * 60 + value.second) * 1000 + value.millis;
-	return Timestamp(t, Timeunit.Millis);
+	Timestamp ts = Timestamp(t, Timeunit.Millis);
+	if (pointer(value.timezone.offset) != null) {
+		// First pass: offset at "as-if-UTC" instant (good for fixed zones).
+		Duration off = value.timezone.offset(ts);
+		Timestamp utc = ts.add(-off.value, Duration.precision);
+		// Second pass: re-evaluate offset at estimated UTC (handles DST edges better).
+		Duration off2 = value.timezone.offset(utc);
+		if (off2.value != off.value) {
+			utc = ts.add(-off2.value, Duration.precision);
+		}
+		return utc;
+	}
+	return ts;
 }
 
 /// Convert the given `timestamp` to a datetime(year, month, day, ...) using the given `calendar` and `timezone`
@@ -288,8 +301,11 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 	};
 }
 
-/// Convert the given timestamp to a datetime
+/// Convert the given timestamp to a datetime in UTC
 inline Datetime(Timestamp timestamp) = Datetime(timestamp, Calendar.Gregorian, Timezone.utc());
+
+/// Convert the given timestamp to a datetime in the given timezone
+inline Datetime(Timestamp timestamp, Timezone timezone) = Datetime(timestamp, Calendar.Gregorian, timezone);
 
 /// Construct the Datetime from the given parts
 Datetime Datetime(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millis, Timezone zone) {

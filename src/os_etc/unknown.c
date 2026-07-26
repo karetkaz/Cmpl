@@ -7,6 +7,22 @@ uint64_t timeMillis() {
 }
 
 void sleepMillis(int64_t millis) {
+	(void) millis;
+}
+
+int localZoneName(char *dst, size_t dstSize) {
+	if (dst != NULL && dstSize > 0) {
+		dst[0] = 0;
+	}
+	return 0;
+}
+
+int64_t localZoneOffset(int64_t timeMs, int *daylight) {
+	(void) timeMs;
+	if (daylight != NULL) {
+		*daylight = 0;
+	}
+	return 0;
 }
 
 

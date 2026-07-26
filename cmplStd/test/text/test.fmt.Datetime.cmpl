@@ -118,4 +118,4 @@ checkIso("iso 2024-12-31", 2024, 12, 31, 2025, 1);
 checkIso("iso 2020-12-31", 2020, 12, 31, 2020, 53);
 checkIso("iso 2023-01-01", 2023, 1, 1, 2022, 52);
 
-File.out.write("DatetimeFormat tests passed\n");
+debug("DatetimeFormat tests passed");

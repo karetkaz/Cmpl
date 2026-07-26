@@ -1,0 +1,104 @@
+// Computer timezone export + timestamp/datetime conversion
+
+void expect(char label[], Datetime dt, char fmt[], char want[]) {
+	char buf[256] = {};
+	dt.format(&buf, fmt);
+	assert(strcmp(buf, want) == 0, label, buf, want);
+}
+
+// --- System.localZoneName / localZoneOffset expose host zone ---
+char zoneName[64] = {};
+System.localZoneName(zoneName);
+assert(zoneName[0] != 0, "localZoneName", zoneName);
+
+bool daylight = false;
+// 2024-06-15 12:00:00 UTC (summer in northern hemisphere)
+int64 summerMs = 1718452800000D;
+int64 zoneOffset = System.localZoneOffset(summerMs, &daylight);
+// offset is whole minutes in millis
+assert(zoneOffset % 60000 == 0, "localZoneOffset minute aligned", zoneOffset);
+
+// winter sample: 2024-01-15 12:00:00 UTC
+bool daylightW = false;
+int64 winterMs = 1705320000000D;
+int64 zoneOffsetW = System.localZoneOffset(winterMs, &daylightW);
+
+// --- Timezone.local() ---
+Timezone local = Timezone.local();
+assert(local.name[0] != 0, "local name non-empty", local.name);
+assert(pointer(local.offset) != null, "local offset fn");
+
+bool isDst = false;
+Duration offSummer = local.offset(local, Timestamp(summerMs, Timeunit.Millis), &isDst);
+int64 offSummerMs = offSummer.millis();
+assert(offSummerMs == zoneOffset, "local offset summer", offSummerMs, zoneOffset);
+
+bool isDstW = false;
+Duration offWinter = local.offset(local, Timestamp(winterMs, Timeunit.Millis), &isDstW);
+int64 offWinterMs = offWinter.millis();
+assert(offWinterMs == zoneOffsetW, "local offset winter", offWinterMs, zoneOffsetW);
+
+// --- UTC still zero ---
+Timezone utc = Timezone.utc();
+int64 utcOff = utc.offset(Timestamp.now()).millis();
+assert(utcOff == 0, "utc offset", utcOff);
+expect("utc z", Datetime(Timestamp(Datetime(2024, 6, 1))), "%z", "+0000");
+expect("utc Z", Datetime(Timestamp(Datetime(2024, 6, 1))), "%Z", "UTC");
+
+// --- Datetime(timestamp, timezone) uses local offset ---
+Timestamp noonUtc = Timestamp(summerMs, Timeunit.Millis);
+Datetime asUtc = Datetime(noonUtc);
+Datetime asLocal = Datetime(noonUtc, local);
+
+// local wall clock = UTC + offset
+int64 localMs = summerMs + zoneOffset;
+Datetime wantLocal = Datetime(Timestamp(localMs, Timeunit.Millis)); // interpret shifted instant as UTC fields
+assert(asLocal.year == wantLocal.year, "local year", asLocal.year, wantLocal.year);
+assert(asLocal.month == wantLocal.month, "local month", asLocal.month, wantLocal.month);
+assert(asLocal.day == wantLocal.day, "local day", asLocal.day, wantLocal.day);
+assert(asLocal.hour == wantLocal.hour, "local hour", asLocal.hour, wantLocal.hour);
+assert(asLocal.minute == wantLocal.minute, "local minute", asLocal.minute, wantLocal.minute);
+assert(asLocal.second == wantLocal.second, "local second", asLocal.second, wantLocal.second);
+
+// UTC conversion unchanged
+assert(asUtc.hour == 12, "utc hour", asUtc.hour);
+assert(asUtc.minute == 0, "utc minute", asUtc.minute);
+
+// timezone stored on datetime
+assert(pointer(asLocal.timezone.offset) != null, "asLocal keeps zone");
+
+// --- round-trip local wall time -> timestamp -> local ---
+Datetime wall = Datetime(2024, 6, 15, 15, 0, 0, 0, local);
+Timestamp wallTs = Timestamp(wall);
+Datetime back = Datetime(wallTs, local);
+assert(back.year == wall.year, "rt year", back.year, wall.year);
+assert(back.month == wall.month, "rt month", back.month, wall.month);
+assert(back.day == wall.day, "rt day", back.day, wall.day);
+assert(back.hour == wall.hour, "rt hour", back.hour, wall.hour);
+assert(back.minute == wall.minute, "rt minute", back.minute, wall.minute);
+assert(back.second == wall.second, "rt second", back.second, wall.second);
+
+// wall timestamp should be UTC instant = local wall - offset at that instant
+Duration offAt = local.offset(wallTs);
+int64 offAtMs = offAt.millis();
+Datetime wallUtcParts = Datetime(2024, 6, 15, 15, 0, 0, 0);
+Timestamp wallAsUtc = Timestamp(wallUtcParts);
+Timestamp expectTs = wallAsUtc.add(-offAtMs, Timeunit.Millis);
+int64 wallVal = wallTs.value(Timeunit.Millis);
+int64 expectVal = expectTs.value(Timeunit.Millis);
+assert(wallVal == expectVal, "wall to utc", wallVal, expectVal);
+
+// --- format %z with local zone ---
+char zbuf[32] = {};
+asLocal.format(&zbuf, "%z");
+if (zoneOffset >= 0) {
+	assert(zbuf[0] == '+', "local %z sign+", zbuf);
+} else {
+	assert(zbuf[0] == '-', "local %z sign-", zbuf);
+}
+
+char localFmt[64] = {};
+int n = asLocal.format(&localFmt, "%Y-%m-%d %H:%M:%S %z %Z");
+debug("Timezone tests passed");
+debug("  local name", local.name);
+debug("  noon UTC as local", localFmt);

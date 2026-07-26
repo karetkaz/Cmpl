@@ -175,4 +175,13 @@ uint64_t timeMillis();
 /// Go to sleep for a while
 void sleepMillis(int64_t millis);
 
+/// Fill buffer with local timezone name (abbreviation at "now").
+/// Returns non-zero on success.
+int localZoneName(char *dst, size_t dstSize);
+
+/// Local timezone offset in milliseconds east of UTC for the given
+/// UTC epoch milliseconds. Sets *daylight when non-NULL. On failure
+/// returns 0 and clears *daylight.
+int64_t localZoneOffset(int64_t timeMs, int *daylight);
+
 #endif

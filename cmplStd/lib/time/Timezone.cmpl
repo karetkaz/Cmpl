@@ -1,13 +1,18 @@
-// todo: unfinished implementation
+/// Computer / named timezone helpers.
 struct Timezone {
-	char name![];		// "UTC", "America/New_York", "Europe/Brussels"
+	/// Zone abbreviation or id: "UTC", "EET", "America/New_York", ...
+	char name![];
+
+	/// Offset east of UTC at `timestamp`; sets `isDaylightSaving` when DST applies.
 	Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&);
 
+	/// Offset east of UTC at `timestamp` (ignores DST flag).
 	static Duration offset(Timezone zone!, Timestamp timestamp) {
 		bool isDaylightSaving;
 		return zone.offset(zone, timestamp, &isDaylightSaving);
 	}
 
+	/// UTC timezone (offset always zero)
 	static Timezone utc() {
 		static Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&) {
 			isDaylightSaving = false;
@@ -19,6 +24,27 @@ struct Timezone {
 		};
 	}
 
+	/// Host computer local timezone (offset follows system DST rules)
+	static Timezone local() {
+		// Name queried once on first local() call; offset stays per-timestamp.
+		static char localName[64] = {};
+		static int32 nameLen = -1;
+		if (nameLen < 0) {
+			System.localZoneName(localName);
+			nameLen = 0;
+			for (; nameLen < localName.length && localName[nameLen] != 0; nameLen += 1) {}
+		}
+
+		static Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&) {
+			return Duration.millis(System.localZoneOffset(timestamp.value(Timeunit.Millis), &isDaylightSaving));
+		}
+		return {
+			offset: offset,
+			name: localName[...nameLen],
+		};
+	}
+
+	/// Lookup timezone by IANA / Windows name (not implemented yet)
 	static Timezone lookup(char name[]) {
 		abort("todo");
 		return {
@@ -26,21 +52,4 @@ struct Timezone {
 			name: name,
 		};
 	}
-
-	static Timezone local() {
-		warn("using fake timezone");	// fixme: fake timezone, needs to be read or lookup from the system
-		//static void System.timeInfo(char timezoneName[*], int64 timeMillis, int64 zoneOffset&, int daylight&) {}
-		Duration offset(Timezone zone!, Timestamp timestamp, bool isDaylightSaving&) {
-			isDaylightSaving = false;
-			return Duration(3, Timeunit.Hours);
-		}
-		return {
-			offset: offset,
-			name: "GMT+3",
-		};
-	}
 }
-
-// Timezone Timezone() {return Timezone.local();}
-
-// Timezone Timezone(char name[]) { return Timezone.lookup(name);}

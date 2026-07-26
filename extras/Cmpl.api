@@ -242,6 +242,8 @@ System.srand(seed: int32): void # @builtin
 System.time(): int32 # @builtin
 System.millis(): int64 # @builtin
 System.sleep(millis: int64): void # @builtin
+System.localZoneName(name: char[]): void # @builtin
+System.localZoneOffset(timeMillis: int64, daylight: bool): int64 # @builtin
 System.rand(): int32 # @builtin
 System.rand.max # @builtin
 System.clock(): int32 # @builtin
@@ -1163,13 +1165,13 @@ Timestamp.distribute(this: Timestamp, unit: Timeunit, duration: uint64): Timesta
 Timestamp.distribute(this: Timestamp, unit: Timeunit, start: int32, end: int32): Timestamp # Distribute randomly between start and end at the given time-unit resolution.\nFor example, if you have the timestamp of 2002-03-28 13:46:01.231,\nusing distribute(Timeunit.Hours, 15, 17) as start and end, it will return a date between 2002-03-28 15:46:01.231 and 2002-03-28 17:46:01.231.\nin case you need a timestamp between 15:00:00.000 and 17:00:00.000 yo will need to use the floor method before or after this operation.\n\t * @param unit  Resolution of the operation.\n@param start The beginning of the distribution time frame.\n@param end   The end of the distribution time frame.
 Timestamp.now(): Timestamp # get the current utc time as timestamp from the system
 Timestamp(value: int64, precision: Timeunit): Timestamp # Create a timestamp from the given `value` at the given `precision`
-Timezone
-Timezone.name
-Timezone.offset(zone: Timezone, timestamp: Timestamp, isDaylightSaving: bool): Duration
-Timezone.offset(zone: Timezone, timestamp: Timestamp): Duration
-Timezone.utc(): Timezone
-Timezone.lookup(name: char[]): Timezone
-Timezone.local(): Timezone
+Timezone # Computer / named timezone helpers.
+Timezone.name # Zone abbreviation or id: "UTC", "EET", "America/New_York", ...
+Timezone.offset(zone: Timezone, timestamp: Timestamp, isDaylightSaving: bool): Duration # Offset east of UTC at `timestamp`; sets `isDaylightSaving` when DST applies.
+Timezone.offset(zone: Timezone, timestamp: Timestamp): Duration # Offset east of UTC at `timestamp` (ignores DST flag).
+Timezone.utc(): Timezone # UTC timezone (offset always zero)
+Timezone.local(): Timezone # Host computer local timezone (offset follows system DST rules)
+Timezone.lookup(name: char[]): Timezone # Lookup timezone by IANA / Windows name (not implemented yet)
 Month # Month of year, January is 1, February is 2, ...
 Month.January
 Month.February
@@ -1206,7 +1208,8 @@ Datetime.minute # Minute of hour: 0 ... 59
 Datetime.second # Second of minute: 0 ... 59
 Datetime.millis # Milliseconds of second: 0 ... 999
 Datetime.timezone
-Datetime.weekOfYear # Nth week of the year: 1 ... 53
+Datetime.isoWeek # ISO-8601 week number: 1 ... 53
+Datetime.isoYear # ISO-8601 week-numbering year (may differ near year boundaries)
 Datetime.dayOfYear # Nth day of the year: 1 ... 365
 Datetime.dayOfWeek # Day of week: 1 ... 7 / [Mon, Tue, ...]
 Datetime.leapYear # this is a leap year
@@ -1215,9 +1218,10 @@ Datetime.DaysToMonth366
 Datetime.DaysTil1970
 Datetime.isLeapYear(year: int32): bool # Checks weather the given year is a leap year or not
 Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime # Add the amount of `years`, `months` and `days` to the datetime
-Timestamp(value: Datetime): Timestamp # Convert the given Datetime `value` to a timestamp (milliseconds since 1970)
+Timestamp(value: Datetime): Timestamp # Convert the given Datetime `value` to a timestamp (milliseconds since 1970 UTC)
 Datetime(timestamp: Timestamp, calendar: Calendar, timezone: Timezone): Datetime # Convert the given `timestamp` to a datetime(year, month, day, ...) using the given `calendar` and `timezone`
-Datetime(timestamp: Timestamp): Datetime # Convert the given timestamp to a datetime
+Datetime(timestamp: Timestamp): Datetime # Convert the given timestamp to a datetime in UTC
+Datetime(timestamp: Timestamp, timezone: Timezone): Datetime # Convert the given timestamp to a datetime in the given timezone
 Datetime(year: int32, month: int32, day: int32, hour: int32, minute: int32, second: int32, millis: int32, zone: Timezone): Datetime # Construct the Datetime from the given parts
 Datetime(year: int32, month: int32, day: int32, hour: int32, minute: int32, second: int32, millis: int32): Datetime # Construct the Datetime from the given parts
 Datetime(year: int32, month: int32, day: int32, hour: int32, minute: int32, second: int32, zone: Timezone): Datetime # Construct the Datetime from the given parts
