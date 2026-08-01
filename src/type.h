@@ -134,9 +134,20 @@ int ccGenCode(ccContext ctx, int debug);
  */
 symn ccLookup(ccContext ctx, symn scope, char *name);
 
+static symn staticBaseType(symn type) {
+	while (type != NULL && isTypename(type) && castOf(type) == CAST_vid) {
+		symn base = type->type;
+		if (base->size != type->size) {
+			break;
+		}
+		type = base;
+	}
+	return type;
+}
+
 /// same as castOf forcing arrays to cast as reference
 static inline ccKind refCast(symn sym) {
-	ccKind got = castOf(sym);
+	ccKind got = castOf(staticBaseType(sym));
 	if (got == CAST_arr && isArrayType(sym)) {
 		symn len = sym->fields;
 		if (len == NULL || isStatic(len)) {

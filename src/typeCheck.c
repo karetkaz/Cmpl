@@ -110,7 +110,7 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 		return CAST_any;
 	}
 
-	symn valueTyp = value->type;
+	symn valType = value->type;
 	symn valueRef = NULL;
 	switch (value->kind) {
 		default:
@@ -123,10 +123,10 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 			break;
 	}
 
-	symn type = variable->type;
+	symn varType = variable->type;
 	if (isTypename(variable)) {
 		// canAssign(ctx, int32, 0, strict)
-		type = variable;
+		varType = variable;
 	}
 
 	if (mode & ATTR_mut) {
@@ -134,7 +134,7 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 			// disable writing to an immutable var through a mutable reference: `int a& = immutable_int;`
 			return CAST_any;
 		}
-		if (valueRef == NULL && isMutable(variable) && isIndirect(variable) && !isObjectType(variable->type) && !isArrayType(variable->type) && valueTyp != ctx->type_ptr && valueTyp != variable->type) {
+		if (valueRef == NULL && isMutable(variable) && isIndirect(variable) && !isObjectType(variable->type) && !isArrayType(variable->type) && valType != ctx->type_ptr && valType != variable->type) {
 			// the assigned value is not a variable: `int a& = 3 + 5;`
 			return CAST_any;
 		}
@@ -149,16 +149,16 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 		mode &= ~ATTR_opt;
 	}
 
-	dieif(type == NULL, ERR_INTERNAL_ERROR);
+	dieif(varType == NULL, ERR_INTERNAL_ERROR);
 
 	ccKind varCast = castOf(variable);
-	if (mode == 0 && type != variable && (varCast == CAST_ptr || varCast == CAST_obj)) {
+	if (mode == 0 && varType != variable && (varCast == CAST_ptr || varCast == CAST_obj)) {
 		mode = CAST_ptr;
 	}
 
-	if (isIndirect(variable) && (valueTyp == ctx->type_ptr || valueTyp == ctx->type_var)) {
+	if (isIndirect(variable) && (valType == ctx->type_ptr || valType == ctx->type_var)) {
 		// FIXME: pointers and variants can be assigned to any reference
-		return refCast(type);
+		return refCast(varType);
 	}
 
 	// functions can be assigned only if the parameter types matches
@@ -173,7 +173,7 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 		struct astNode temp = {0};
 
 		temp.kind = TOKEN_var;
-		temp.type = type;
+		temp.type = varType;
 		temp.id.link = variable;
 
 		while (arg1 != NULL && arg2 != NULL) {
@@ -211,9 +211,9 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 	}
 
 	// assigning a value to an object or base type
-	if (castOf(type) == CAST_obj) {
-		for (symn sym = valueTyp; sym != NULL; sym = sym->type) {
-			if (sym == type) {
+	if (castOf(varType) == CAST_obj) {
+		for (symn sym = valType; sym != NULL; sym = sym->type) {
+			if (sym == varType) {
 				return varCast;
 			}
 			// TODO: there should be a check if object is in the type hierarchy
@@ -235,40 +235,40 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 	}
 
 	// Assign enum
-	if (castOf(type) == CAST_enm) {
+	if (castOf(varType) == CAST_enm) {
 		if (valueRef != NULL) {
 			// Enum eVal = Enum.value;
 			// Enum eVar = eVal;
-			if (type != valueRef->type && type != valueRef->owner) {
+			if (varType != valueRef->type && varType != valueRef->owner) {
 				return CAST_any;
 			}
 			// value type might be the base type of the enum.
-			if (type == valueRef->type) {
-				valueTyp = valueRef->type;
+			if (varType == valueRef->type) {
+				valType = valueRef->type;
 			}
 		}
 		mode = CAST_enm;
 	}
 
 	// Assign array
-	if (castOf(type) == CAST_arr) {
+	if (castOf(varType) == CAST_arr) {
 		if (valueRef == ctx->null_ref) {
 			// todo: do not allow assigning null to array
-			return castOf(type);
+			return castOf(varType);
 		}
 		struct astNode temp = {0};
 		temp.kind = TOKEN_var;
-		temp.type = valueTyp->type;
+		temp.type = valType->type;
 		temp.id.link = NULL;
 		temp.id.name = ".generated token";
 
 		//~ check if subtypes are assignable
-		if (canAssign(ctx, type->type, &temp, mode)) {
+		if (canAssign(ctx, varType->type, &temp, mode)) {
 			// assign to dynamic array
-			if (type->init == NULL) {
+			if (varType->init == NULL) {
 				return CAST_arr;
 			}
-			if (type->size == valueTyp->size) {
+			if (varType->size == valType->size) {
 				// TODO: return <?>
 				return KIND_var;
 			}
@@ -279,34 +279,43 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 		}
 	}
 
-	if (mode == 0 && valueTyp == ctx->emit_opc) {
+	if (mode == 0 && valType == ctx->emit_opc) {
 		// can assign with result of inline expression, only if is the same size (checked at code generation)
 		// vec4f x = inline(f32(0), f32(1), f32(2), f32(0));
-		return refCast(type);
+		return refCast(varType);
 	}
 
-	if (mode == 0 && valueTyp == ctx->type_vid && value->kind == STMT_beg) {
+	if (mode == 0 && valType == ctx->type_vid && value->kind == STMT_beg) {
 		// can assign with initializer: `Complex x = {re: 2, im: 0};`
-		return refCast(type);
+		return refCast(varType);
 	}
 
-	if (valueRef != NULL && (type == ctx->type_ptr || type == ctx->type_var)) {
+	if (valueRef != NULL && (varType == ctx->type_ptr || varType == ctx->type_var)) {
 		// assigning a variable to a pointer or variant:
 		// pointer x = value
 		// variant x = value
-		return refCast(type);
+		return refCast(varType);
 	}
 
-	if (type == valueTyp) {
-		return refCast(type);
+	if (varType == valType) {
+		return refCast(varType);
 	}
 
-	if (mode == 0 && (type = promote(ctx, type, valueTyp)) != NULL) {
+	// one of the type is an static extension over a base type
+	if (valType->size == varType->size) {
+		symn valBase = staticBaseType(valType);
+		symn varBase = staticBaseType(varType);
+		if (valBase != NULL && valBase == varBase) {
+			return refCast(valBase);
+		}
+	}
+
+	if (mode == 0 && (varType = promote(ctx, varType, valType)) != NULL) {
 		// TODO: remove promotion, check implicit casts: `inline float32?(int32 value) = ...`
-		return refCast(type);
+		return refCast(varType);
 	}
 
-	dbgInfo("%?s:%?u: %T := %T(%t)", value->file, value->line, variable, valueTyp, value);
+	dbgInfo("%?s:%?u: %T := %T(%t)", value->file, value->line, variable, valType, value);
 	return CAST_any;
 }
 

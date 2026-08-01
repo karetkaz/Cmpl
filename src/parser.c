@@ -2191,8 +2191,9 @@ static astn declare_record(ccContext ctx, ccKind attr, const char* doc) {
 
 	if (attr & ATTR_stat) {
 		// make not instantiable
-		if (typeCheck(ctx, NULL, tag, 0) != NULL) {
+		if (typeCheck(ctx, NULL, tag, 0) != NULL && isTypename(tag->id.link)) {
 			partial = tag->id.link;
+			baseSize = partial->size;
 		}
 		cast = CAST_vid;
 	}
@@ -2210,18 +2211,18 @@ static astn declare_record(ccContext ctx, ccKind attr, const char* doc) {
 			if (isTypeExpr(tok)) {
 				// ':' extended type
 				extends = linkOf(tok, 1);
-				if (extends == NULL || !isObjectType(extends)) {
-					// : nonsense
-					error(ctx->rt, tok->file, tok->line, ERR_INVALID_INHERITANCE, tok);
+				baseSize = extends->size;
+				align = vm_ref_size;
+				if (extends != NULL && isObjectType(extends)) {
+					cast = CAST_obj;
 				}
-				else if (partial != NULL && extends != partial) {
-					// partial type extending a different type: `static struct Float64: Array { ... }`
-					error(ctx->rt, tok->file, tok->line, ERR_INVALID_INHERITANCE, tok);
+				else if (partial != NULL && extends == partial) {
+					// partial type extending itself: `static struct Float64: Float64 { ... }`
+					warn(ctx->rt, tok->file, tok->line, ERR_STATIC_INHERITANCE, tok);
 				}
 				else {
-					baseSize = extends->size;
-					align = vm_stk_align;
-					cast = CAST_obj;
+					// : nonsense
+					error(ctx->rt, tok->file, tok->line, ERR_INVALID_INHERITANCE, tok);
 				}
 			} else {
 				// ':' packed type
@@ -2250,11 +2251,21 @@ static astn declare_record(ccContext ctx, ccKind attr, const char* doc) {
 
 	skipToken(ctx, STMT_beg, 1);	// '{'
 
-	symn type = extends == NULL ? ctx->type_rec : extends;
-	type = declare(ctx, KIND_typ | attr | cast, tag, type, NULL, doc);
+	dieif(partial != NULL && cast != CAST_vid, ERR_INTERNAL_ERROR);
+	dieif(partial == NULL && extends != NULL && cast != CAST_obj, ERR_INTERNAL_ERROR);
+
+	symn type = partial != NULL ? partial : extends != NULL ? extends : ctx->type_rec;
+	if (partial != NULL && partial->nest == ctx->nest) {
+		// todo: type = partial; // update previously defined type with new fields
+		type = declare(ctx, KIND_typ | attr | cast, tag, type, NULL, doc);
+		dbgInfo("update previously defined type with new fields");
+	} else {
+		type = declare(ctx, KIND_typ | attr | cast, tag, type, NULL, doc);
+	}
 
 	symn fields = extends ? extends->fields : type->fields;
 	type->fields = fields; // allow lookup of fields from base type
+	type->size = baseSize;
 
 	enter(ctx, tag, type);
 	statement_list(ctx);
