@@ -418,7 +418,7 @@ size_t vmInit(rtContext ctx, vmError onHalt(nfcContext)) {
 			if (ctx->dbg != NULL) {
 				// add the native functions to the statement list only for lookup
 				dbgn d = addDbgStatement(ctx, nfc->sym->offs, nfc->sym->offs + 1, NULL);
-				d->func = nfc->sym;
+				d->fun = nfc->sym;
 				d->group = 1;
 			}
 		}

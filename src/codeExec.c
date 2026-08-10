@@ -56,43 +56,43 @@ static inline int f64Bool(double value) {
 	return (value != 0) && !isnan(value);
 }
 
-vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller, size_t callee) {
-	if (err == noError) {
+vmError dbgError(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode) {
+	if (error == noError) {
 		return noError;
 	}
 
 	const rtContext rt = ctx->rt;
-	const char *errMsg = vmErrorMessage(err);
-	vmInstruction ip = vmPointer(rt, caller);
+	const char *errMsg = vmErrorMessage(error);
+	vmInstruction ip = vmPointer(rt, pc);
 
 	// source code position
 	const char *file = NULL;
 	int line = 0;
-	dbgn dbg = mapDbgStatement(rt, caller, NULL);
+	dbgn dbg = mapDbgStatement(rt, pc, NULL);
 	if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
 		file = dbg->file;
 		line = dbg->line;
 	}
 
 	// current function
-	symn fun = rtLookup(rt, caller, 0);
-	size_t offs = caller;
+	symn fun = rtLookup(rt, pc, 0);
+	size_t offs = pc;
 	if (fun != NULL) {
 		offs -= fun->offs;
 	}
 
-	if (err == nativeCallError) {
+	if (error == nativeCallError) {
 		libc *nativeCalls = rt->vm.nfc;
 		symn nc = nativeCalls[ip->rel]->sym;
-		error(rt, file, line, ERR_EXEC_NATIVE_CALL, errMsg, caller, fun, offs, nc);
+		error(rt, file, line, ERR_EXEC_NATIVE_CALL, errMsg, pc, fun, offs, nc);
 	}
 	else {
-		error(rt, file, line, ERR_EXEC_INSTRUCTION, errMsg, caller, fun, offs, ip);
+		error(rt, file, line, ERR_EXEC_INSTRUCTION, errMsg, pc, fun, offs, ip);
 	}
 	// print stack trace including this function
 	traceCalls(rt, rt->logFile, 1, maxLogItems, 0);
-	return err;
-	(void) callee;
+	return error;
+	(void) mode;
 	(void) sp;
 	(void) ss;
 }
@@ -125,17 +125,17 @@ static vmError exec(vmContext pu, const void *extra) {
 	// run in debug or profile mode
 	const dbgContext dbg = ctx->dbg;
 	if (dbg != NULL && dbg->debug != NULL) {
-		const stkptr spMin = (stkptr) pu->bp;
+		const stkptr spMin = (stkptr)pu->bp;
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
 		const size_t ssReset = st - pu->sp;
 
 		const vmInstruction ipMin = (vmInstruction)(ctx->_mem + ctx->vm.ro);
 		const vmInstruction ipMax = (vmInstruction)(ctx->_mem + ctx->vm.px);
 
-		vmError (*debugger)(dbgContext, vmError, size_t, void*, size_t, size_t) = dbg->debug;
+		vmError (*debugger)(dbgContext, vmError, size_t, size_t, void*, int) = dbg->debug;
 
 		// invoked function(from external code) will return with a `ret` instruction, removing trace info
-		execError = debugger(dbg, noError, st - pu->sp, pu->sp, ctx->vm.pc, fun->offs);
+		execError = debugger(dbg, noError, fun->offs, st - pu->sp, pu->sp, 1);
 		if (execError != noError) {
 			// leave the previously entered method
 			return execError;
@@ -147,20 +147,23 @@ static vmError exec(vmContext pu, const void *extra) {
 			const stkptr sp = pu->sp;
 
 			if (ip > ipMax || ip < ipMin) {
-				return debugger(dbg, illegalState, ssReset, sp, pc, pc);
+				return debugger(dbg, illegalState, pc, ssReset, sp, -1);
 			}
 			if (sp > spMax || sp < spMin) {
-				return debugger(dbg, illegalState, ssReset, sp, pc, pc);
+				return debugger(dbg, illegalState, pc, ssReset, sp, -1);
 			}
 
-			vmError error = debugger(dbg, noError, ssReset, sp, pc, pc);
+			vmError error = debugger(dbg, noError, pc, ssReset, sp, 0);
 			if (error != noError) {
 				// abort execution from debugger
 				return error;
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
-					return debugger(dbg, execError, ssReset, sp, pc, 0);
+				if (execError != noError || pu->vm == NULL) {
+					return debugger(dbg, execError, pc, ssReset, sp, -1);
+				}
+				return noError;
 
 				dbg_error_opc:
 					execError = illegalInstruction;
@@ -179,7 +182,7 @@ static vmError exec(vmContext pu, const void *extra) {
 					goto dbg_stop_vm;
 
 				dbg_error_div_flt:
-					debugger(dbg, divisionByZero, st - sp, sp, pc, pc);
+					debugger(dbg, divisionByZero, pc, st - sp, sp, 0);
 					// continue execution on floating point division by zero.
 					break;
 
@@ -193,12 +196,11 @@ static vmError exec(vmContext pu, const void *extra) {
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK) do {if (__CHK) {goto dbg_##__ERR;}} while(0)
-				#define TRACE(__IP) do { if ((execError = debugger(dbg, noError, st - sp, sp, pc, __IP)) != noError) goto dbg_stop_vm; } while(0)
+				#define TRACE(__PC, __MODE) do { if ((execError = debugger(dbg, noError, __PC, st - sp, sp, __MODE)) != noError) goto dbg_stop_vm; } while(0)
 				#define EXEC
 				#include "exec.i"
 			}
 		}
-		fatal(ERR_INTERNAL_ERROR);
 		return execError;
 	}
 
@@ -211,7 +213,7 @@ static vmError exec(vmContext pu, const void *extra) {
 				if (execError != noError && fun == ctx->main) {
 					struct dbgContextRec dbgRec = {0};
 					dbgRec.rt = ctx;
-					dbgError(&dbgRec, execError, st - sp, sp, vmOffset(ctx, ip), 0);
+					dbgError(&dbgRec, execError, vmOffset(ctx, ip), st - sp, sp, 0);
 				}
 				return execError;
 
@@ -245,7 +247,7 @@ static vmError exec(vmContext pu, const void *extra) {
 
 			#define NEXT(__IP, __SP, __CHK) { pu->sp -= (__SP); pu->ip += (__IP); }
 			#define STOP(__ERR, __CHK) do {if (__CHK) {goto __ERR;}} while(0)
-			#define TRACE(__IP)
+			#define TRACE(__PC, __MODE)
 			#define EXEC
 			#include "exec.i"
 		}
@@ -273,7 +275,6 @@ vmError invoke(nfcContext ctx, symn fun, void *res, void *args, const void *extr
 	// result is the last argument.
 	size_t argSize = argsSize(fun);
 	size_t resSize = fun->params->size;
-
 
 	// create a new execution context, based on the previous one
 	struct vmContextRec link = {
@@ -351,22 +352,11 @@ vmError execute(rtContext ctx, const void *extra) {
 		return illegalState;
 	}
 
-	// todo: make this optional, and move it to exec: run in debug or profile mode
-	const dbgContext dbg = ctx->dbg;
-	if (dbg != NULL && dbg->debug != NULL) {
-		libc *nativeCalls = ctx->vm.nfc;
-		vmError (*debugger)(dbgContext, vmError, size_t, void*, size_t, size_t) = dbg->debug;
-		debugger(dbg, noError, 0, vm->sp, nativeCalls[0]->sym->offs, ctx->main->offs);
-		vmError error = exec(vm, extra);
-		debugger(dbg, noError, 0, vm->sp, ctx->main->offs, 0);
-		return error;
-	}
-
 	return exec(vm, extra);
 }
 
 int isChecked(rtContext ctx) {
-	vmContext bridge = ctx->vm.vm->vm;
+	vmContext bridge = ctx->vm.vm;
 	while (bridge != NULL) {
 		if (bridge->nfc != NULL && bridge->nfc->proto == sys_try_exec) {
 			return 1;

@@ -2810,7 +2810,7 @@ int ccGenCode(ccContext ctx, int debug) {
 				}
 				for (size_t i = dbgStmt; i < rt->dbg->statements.cnt; i++) {
 					dbgn dbg = getBuff(&rt->dbg->statements, i);
-					dbg->func = var;
+					dbg->fun = var;
 				}
 			}
 
@@ -2892,7 +2892,7 @@ int ccGenCode(ccContext ctx, int debug) {
 	if (rt->dbg != NULL) {
 		for (size_t i = dbgStmt; i < rt->dbg->statements.cnt; i++) {
 			dbgn dbg = getBuff(&rt->dbg->statements, i);
-			dbg->func = rt->main;
+			dbg->fun = rt->main;
 		}
 	}
 

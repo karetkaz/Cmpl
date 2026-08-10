@@ -141,7 +141,6 @@ typedef enum {
 typedef struct callStackItem {
 	clock_t time;       // time when the function was invoked
 	size_t ss;          // Stack size
-	size_t pc;          // Program counter
 	symn fun;
 	dbgn dbg;
 } *callStackItem;
@@ -169,9 +168,18 @@ struct userContextRec {
 	brkMode dbgOnCaught;         // on caught exception
 	size_t dbgNextBreak;         // offset of the next break (used for step in, out, over, instruction)
 	dbgn dbgNextValue;
+
+	dbgn cachedDebugNode;
+
 	struct arrBuffer callStack;
 	struct arrBuffer breakPoints;
 
+	// profile ...
+	size_t funcCov;
+	size_t funcCnt;
+	size_t stmtCov;
+	size_t stmtCnt;
+	size_t trapCnt;
 
 	// dump & output
 	FILE *out;                   // dump file
@@ -396,29 +404,30 @@ static inline int canDump(userContext ctx, symn sym) {
 	return strEquals(sym->file, ctx->rt->main->unit);
 }
 
-static callStackItem enterMethod(userContext usr, size_t ss, size_t pc, dbgn callee) {
+static callStackItem enterMethod(userContext usr, size_t ss, dbgn callee) {
 	callStackItem top = addBuff(&usr->callStack, NULL);
-
 	top->time = clock();
-	top->fun = callee->func;
+	top->fun = callee->fun;
 	top->dbg = callee;
 	top->ss = ss;
-	top->pc = pc;
 
-	if (callee->func->size == 0) {
+	if (callee->group) {
+		// offset of native function calls are never executed
+		// increment hit count (call count) here
 		callee->hits += 1;
 	}
 	return top;
 }
-static clock_t leaveMethod(userContext usr, dbgn caller, dbgn callee) {
+static clock_t leaveMethod(userContext usr) {
 	callStackItem top = popBuff(&usr->callStack, NULL);
+	dbgn callee = top->dbg;
 
 	clock_t time = clock();
 	int recursive = 0;
 
 	callStackItem data = (callStackItem) usr->callStack.ptr;
 	for (size_t i = 0; i < usr->callStack.cnt; i++) {
-		if (data[i].fun == top->fun) {
+		if (data[i].fun == callee->fun) {
 			recursive = 1;
 			break;
 		}
@@ -430,7 +439,12 @@ static clock_t leaveMethod(userContext usr, dbgn caller, dbgn callee) {
 	}
 
 	callee->time += ticks;
-	caller->time -= ticks;
+
+	callStackItem caller = topBuff(&usr->callStack);
+	if (caller != NULL) {
+		caller->dbg->time -= ticks;
+	}
+
 	return time;
 }
 
@@ -725,21 +739,50 @@ static void dumpApiJSON(userContext ctx, symn sym) {
 	}
 }
 
-static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
+static dbgn nextDbgNode(dbgContext ctx, size_t pc, dbgn hint) {
+	dbgn base = (void *)ctx->statements.ptr;
+	size_t size = ctx->statements.cnt;
+
+	// still on the same leftmost node (statement with multiple instructions).
+	if (hint > base && pc >= hint->start && pc < hint->end && hint[-1].end <= pc) {
+		return hint;
+	}
+
+	// cold path: full binary search on [0, size).
+	size_t lo = 0;
+	size_t hi = size;
+	while (lo < hi) {
+		size_t mid = lo + (hi - lo) / 2;
+		if (base[mid].end > pc) {
+			hi = mid;
+		} else {
+			lo = mid + 1;
+		}
+	}
+	while (lo < size && base[lo].end > pc) {
+		if (base[lo].start <= pc) {
+			return base + lo;
+		}
+		lo += 1;
+	}
+	return NULL;
+}
+
+static vmError jsonProfile(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
 	FILE *out = usr->out;
 	const char **esc = usr->esc;
 
-	dbgn dbg = mapDbgStatement(rt, caller, NULL);
-	dieif(dbg == NULL, ERR_INTERNAL_ERROR);
+	dbgn dbg = nextDbgNode(ctx, pc, usr->cachedDebugNode);
+	usr->cachedDebugNode = dbg;
 
 	if (error != noError) {
 		callStackItem top = topBuff(&usr->callStack);
 		while (top != NULL && top->ss >= ss) {
-			printFmt(out, esc, ",%d,%d,%d\n", top->time, ctx->usedMem, -1);
-			leaveMethod(usr, dbg, top->dbg);
+			printFmt(out, esc, ",%d,%d,%d", top->time, ctx->usedMem, -1);
+			leaveMethod(usr);
 			top = topBuff(&usr->callStack);
 		}
 
@@ -747,8 +790,8 @@ static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *sp, s
 		return error;
 	}
 
-	if (callee == caller) {
-		if (caller == dbg->start) {
+	if (mode == 0) {
+		if (pc == dbg->start) {
 			// we just started executing a statement
 			dbg->hits += 1;
 		}
@@ -757,20 +800,16 @@ static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *sp, s
 		// just an instruction, not a call or return
 		return noError;
 	}
-	if (callee != 0) {
-		// function call
-		dbgn calleeDbg = mapDbgStatement(rt, callee, NULL);
-		callStackItem top = enterMethod(rt->usr, ss, caller, calleeDbg);
-		printFmt(out, esc, ",%d,%d,%d\n", top->time, ctx->usedMem, (vmOffs) callee);
+	if (mode > 0) {
+		callStackItem top = enterMethod(rt->usr, ss, dbg);
+		printFmt(out, esc, ",%d,%d,%d", top->time, ctx->usedMem, pc);
 	} else {
-		// function return
-		callStackItem top = topBuff(&usr->callStack);
-		clock_t time = leaveMethod(usr, dbg, top->dbg);
-		printFmt(out, esc, ",%d,%d,%d\n", time, ctx->usedMem, -1);
+		clock_t time = leaveMethod(usr);
+		printFmt(out, esc, ",%d,%d,%d", time, ctx->usedMem, -1);
 	}
 
 	(void) sp;
-	return error;
+	return noError;
 }
 static void jsonPostProfile(dbgContext ctx) {
 	static const char *const JSON_KEY_FUNC = "functions";
@@ -793,41 +832,62 @@ static void jsonPostProfile(dbgContext ctx) {
 	printFmt(out, esc, JSON_ARR_END, indent);
 
 	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_FUNC);
-	dbgn dbg = (dbgn) ctx->statements.ptr;
-	for (size_t i = 0; i < ctx->statements.cnt; ++i, dbg++) {
-		if (dbg->start != dbg->func->offs) {
+	symn lastFun = NULL;
+	size_t dataCnt = ctx->statements.cnt;
+	dbgn data = (dbgn) ctx->statements.ptr;
+	for (size_t i = 0; i < ctx->statements.cnt; ++i) {
+		dbgn dbg = data + i;
+		if (dbg->start != dbg->fun->offs) {
 			// not a function
 			continue;
 		}
 		nFunc += 1;
 
-		symn sym = dbg->func;
+		symn fun = dbg->fun;
 		if (dbg->hits == 0) {
 			// skip functions not invoked
-			//continue;
+			continue;
+		}
+		if (fun == lastFun) {
+			// skip functions not invoked
+			continue;
 		}
 		covFunc += 1;
 
-		if (sym == NULL) {
-			sym = rtLookup(ctx->rt, dbg->start, 0);
+		dbgn firstStmt = dbg;
+		// function start might not be the first statement in the list, find it
+		for (size_t j = i; j < dataCnt; ++j) {
+			dbgn d = data + j;
+			if (d->fun != fun) {
+				break;
+			}
+			if (d->group != 0) {
+				// ignore groups
+				continue;
+			}
+			if (d->start == fun->offs) {
+				firstStmt = d;
+			}
 		}
+		lastFun = fun;
+
 		if (covFunc > 1) {
 			printFmt(out, esc, JSON_OBJ_NEXT, indent);
 		}
-		jsonDumpSym(out, esc, sym, NULL, indent + 1);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_HITS, dbg->hits);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TIME, dbg->time);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TOTAL, dbg->total);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->traps);
+		jsonDumpSym(out, esc, fun, NULL, indent + 1);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_HITS, firstStmt->hits);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TIME, firstStmt->time);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TOTAL, firstStmt->total);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, firstStmt->traps);
 	}
 	printFmt(out, esc, JSON_OBJ_ARR_END, indent);
 
 	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_STMT);
-	dbg = (dbgn) ctx->statements.ptr;
-	for (size_t i = 0; i < ctx->statements.cnt; ++i, dbg++) {
+	for (size_t i = 0; i < dataCnt; ++i) {
+		dbgn dbg = data + i;
 		nStmt += 1;
 		size_t symOffs = 0;
-		symn sym = dbg->func;
+		symn sym = dbg->fun;
 		if (dbg->hits == 0) {
 			continue;
 		}
@@ -990,64 +1050,14 @@ static void textPostProfile(userContext ctx) {
 	dbgContext dbg = rt->dbg;
 	const char *prefix = ctx->steps ? ctx->steps : "\n---------- ";
 
-	if (ctx != rt->usr) {
-		fatal(ERR_INTERNAL_ERROR);
-		return;
-	}
-
 	if (dbg != NULL && (ctx->profFunctions || ctx->profStatements || ctx->profNotExecuted)) {
-		size_t funcCov = 0, funcCnt = 0;
-		size_t stmtCov = 0, stmtCnt = 0;
-		size_t trapCnt = 0;
 		size_t dataCnt = dbg->statements.cnt;
 		dbgn data = (dbgn) dbg->statements.ptr;
-		for (size_t i = 0; i < dataCnt; ++i) {
-			dbgn stmt = data + i;
-			size_t group = i;
-			while (group > 0) {
-				group -= 1;
-				dbgn d = data + group;
-				if (d->start == stmt->start) {
-					break;
-				}
-				if (d->start < stmt->start) {
-					group = i; // not a group
-					break;
-				}
-				if (d->end < stmt->start) {
-					group = i; // not a group
-					break;
-				}
-			}
-
-			if (group != i) {
-				stmt->hits = data[group].hits;
-				stmt->group = group - i + data[group].group;
-				for (size_t j = group; j < i; ++j) {
-					dbgn d = data + j;
-					stmt->exec += d->exec;
-					stmt->traps += d->traps;
-				}
-				continue;
-			}
-
-			stmtCnt += 1;
-			stmtCov += stmt->hits > 0;
-			trapCnt += stmt->traps > 0;
-
-			symn fun = stmt->func;
-			if (fun == NULL) {
-				fatal("can not be null");
-				continue;
-			}
-			if (stmt->start == fun->offs) {
-				funcCnt += 1;
-				funcCov += stmt->hits > 0;
-			}
-		}
 
 		printFmt(out, esc, "%?sProfile functions: %d/%d, statements: %d/%d, coverage: %.2f%%, traps: %d\n",
-			prefix, funcCov, funcCnt, stmtCov, stmtCnt, stmtCov * 100. / (stmtCnt ? stmtCnt : 1), trapCnt
+			prefix, ctx->funcCov, ctx->funcCnt, ctx->stmtCov, ctx->stmtCnt,
+			ctx->stmtCov * 100. / (ctx->stmtCnt ? ctx->stmtCnt : 1),
+			ctx->trapCnt
 		);
 
 		symn lastFun = NULL;
@@ -1057,13 +1067,9 @@ static void textPostProfile(userContext ctx) {
 				continue;
 			}
 
-			symn fun = stmt->func;
+			symn fun = stmt->fun;
 			if (fun == NULL) {
 				fatal("can not be null");
-				continue;
-			}
-
-			if (!canDump(ctx, fun) && !ctx->profNotExecuted) {
 				continue;
 			}
 
@@ -1073,7 +1079,7 @@ static void textPostProfile(userContext ctx) {
 				// function start might not be the first statement in the list, find it
 				for (size_t j = i; j < dataCnt; ++j) {
 					dbgn d = data + j;
-					if (d->func != fun) {
+					if (d->fun != fun) {
 						break;
 					}
 					if (d->group != 0) {
@@ -1337,7 +1343,7 @@ static void dumpApiSciTE(userContext ctx, symn sym) {
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ console debugger and profiler
-static void traceMethods(userContext ctx, size_t ss, size_t callee, symn fun) {
+static void traceMethods(userContext ctx, int mode, symn fun) {
 	if (!ctx->traceMethods) {
 		return;
 	}
@@ -1355,7 +1361,7 @@ static void traceMethods(userContext ctx, size_t ss, size_t callee, symn fun) {
 		double now = clock() * 1000. / CLOCKS_PER_SEC;
 		printFmt(out, esc, "[% 3.2F] ", now);
 	}
-	if (callee != 0) {
+	if (mode > 0) {
 		printFmt(out, esc, "% I> %T\n", ctx->callStack.cnt, fun);
 	} else {
 		printFmt(out, esc, "% I< %T\n", ctx->callStack.cnt, fun);
@@ -1412,80 +1418,89 @@ static void traceOpcodes(userContext ctx, size_t ss, void *stack, size_t pc, dbg
 	textDumpAsm(out, esc, pc, ctx, 0);
 }
 
-static vmError dbgProfile(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
+static vmError dbgProfile(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
-	dbgn dbg = mapDbgStatement(rt, caller, NULL);
-	dieif(dbg == NULL, ERR_INTERNAL_ERROR);
+
+	dbgn dbg = nextDbgNode(ctx, pc, usr->cachedDebugNode);
+	usr->cachedDebugNode = dbg;
+
+	// dieif(dbg == NULL, ERR_INTERNAL_ERROR);
+	// dieif(dbg != nextDbgNode(ctx, pc, NULL), "Not the same (leftmost) debug node returned");
+	// dieif(dbg != mapDbgStatement(rt, pc, NULL), "nextDbgNode disagrees with mapDbgStatement");
+	//if (mode == 0) { debug(rt, dbg->file, dbg->line, "%a: %A", pc, vmPointer(rt, pc)); }
 
 	if (error != noError) {
 		callStackItem top = topBuff(&usr->callStack);
 		while (top != NULL && top->ss >= ss) {
-			leaveMethod(usr, dbg, top->dbg);
+			leaveMethod(usr);
 			top = topBuff(&usr->callStack);
 		}
 
 		dbg->traps += 1;
 		if (isChecked(rt)) {
-			return error;
+			return noError;
 		}
 
 		// abort the execution and print the stacktrace
-		return dbgError(ctx, error, ss, sp, caller, callee);
+		return dbgError(ctx, error, pc, ss, sp, mode);
 	}
 
-	if (caller == callee) {
-		if (caller == dbg->start) {
+	if (mode == 0) {
+		if (pc == dbg->start) {
 			// we just started executing a statement
 			dbg->hits += 1;
 		}
 
 		dbg->exec += 1;
-		traceOpcodes(usr, ss, sp, caller, dbg);
+		// just an instruction, not a call or return
+		traceOpcodes(usr, ss, sp, pc, dbg);
+
 		return noError;
 	}
-	if (callee != 0) {
-		dbgn calleeDbg = mapDbgStatement(rt, callee, NULL);
-		dieif(calleeDbg == NULL, ERR_INTERNAL_ERROR);
-
-		traceMethods(usr, ss, callee, calleeDbg->func);
-		enterMethod(rt->usr, ss, caller, calleeDbg);
+	if (mode > 0) {
+		traceMethods(usr, mode, dbg->fun);
+		enterMethod(rt->usr, ss, dbg);
 	} else {
 		callStackItem top = topBuff(&usr->callStack);
 		dieif(top == NULL, ERR_INTERNAL_ERROR);
+		dieif(top->fun != dbg->fun, ERR_INTERNAL_ERROR);
 
-		leaveMethod(usr, dbg, top->dbg);
-		traceMethods(usr, ss, callee, top->fun);
+		leaveMethod(usr);
+		traceMethods(usr, mode, top->fun);
 	}
+
+	(void) sp;
 	return noError;
 }
-static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
+static vmError dbgDebug(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
-	if (caller != callee) {
+	if (mode != 0) {
 		// TODO: enter will break after executing call?
 		// TODO: leave will break after executing return?
-		if (usr->dbgCommand == dbgStepInto && (ssize_t) callee != 0) {
+		if (usr->dbgCommand == dbgStepInto && mode > 0) {
 			usr->dbgNextBreak = (size_t) -1;
 		}
-		else if (usr->dbgCommand == dbgStepOut && (ssize_t) callee == 0) {
+		else if (usr->dbgCommand == dbgStepOut && mode < 0) {
 			usr->dbgNextBreak = (size_t) -1;
 		}
-		traceMethods(usr, ss, callee, NULL);
+		traceMethods(usr, mode, NULL);
 		return noError;
 	}
 
-	dbgn dbg = mapDbgStatement(rt, caller, NULL);
+	dbgn dbg = nextDbgNode(ctx, pc, usr->cachedDebugNode);
+	usr->cachedDebugNode = dbg;
 	brkMode breakMode = brkSkip;
 	char *breakCause = NULL;
 
 	if (error == divisionByZero) {
 		// keep quiet performing floating point division by zero
-		if (testOcp(rt, caller, f64_div, NULL)) {
+		if (testOcp(rt, pc, f64_div, NULL)) {
 			error = noError;
 		}
-		if (testOcp(rt, caller, f32_div, NULL)) {
+		if (testOcp(rt, pc, f32_div, NULL)) {
 			error = noError;
 		}
 	}
@@ -1501,12 +1516,12 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 		breakMode = brkPause;
 		breakCause = "Break";
 	}
-	else if (usr->dbgNextBreak == caller) {
+	else if (usr->dbgNextBreak == pc) {
 		breakMode = brkPause;
 		breakCause = "Break";
 	}
 	else if (dbg != NULL) {
-		if (caller == dbg->start) {
+		if (pc == dbg->start) {
 			breakMode = dbg->bp;
 			if (breakMode & (brkPause | brkPrint | brkTrace)) {
 				breakCause = "Break point";
@@ -1528,7 +1543,7 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 	// TODO: this might not work on `if`, `for`, `return` and other jump statements,
 	//  or if the initializer is a function call having also `value type breakpoints`.
 	dbgn valPrint = usr->dbgNextValue;
-	if (valPrint && valPrint->end == caller) {
+	if (valPrint && valPrint->end == pc) {
 		// print current file position
 		printFmt(out, esc, "%s:%u: ", valPrint->file, valPrint->line);
 		if (valPrint->decl != NULL) {
@@ -1540,12 +1555,12 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 		printFmt(out, esc, "\n");
 		usr->dbgNextValue = NULL;
 	}
-	traceOpcodes(usr, ss, sp, caller, dbg);
+	traceOpcodes(usr, ss, sp, pc, dbg);
 
 	// print error type
 	if (breakMode & brkPrint) {
-		symn fun = rtLookup(rt, caller, 0);
-		size_t funOffs = caller;
+		symn fun = rtLookup(rt, pc, 0);
+		size_t funOffs = pc;
 		if (fun != NULL) {
 			funOffs -= fun->offs;
 		}
@@ -1553,13 +1568,13 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 		if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
 			printFmt(out, esc, "%s:%u: ", dbg->file, dbg->line);
 		}
-		printFmt(out, esc, ERR_EXEC_INSTRUCTION"\n", breakCause, caller, fun, funOffs, vmPointer(rt, caller));
+		printFmt(out, esc, ERR_EXEC_INSTRUCTION"\n", breakCause, pc, fun, funOffs, vmPointer(rt, pc));
 		if (out != stdout && out != stderr) {
 			// print the error message also to the console
 			if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
 				printFmt(con, esc, "%s:%u: ", dbg->file, dbg->line);
 			}
-			printFmt(con, esc, ERR_EXEC_INSTRUCTION"\n", breakCause, caller, fun, funOffs, vmPointer(rt, caller));
+			printFmt(con, esc, ERR_EXEC_INSTRUCTION"\n", breakCause, pc, fun, funOffs, vmPointer(rt, pc));
 		}
 	}
 	if (breakMode & brkTrace) {
@@ -1571,7 +1586,7 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 		dbgMode cmd = usr->dbgCommand;
 		char buff[1024], *arg = NULL;
 
-		printFmt(con, esc, ">dbg[%?c] %.A: ", cmd, vmPointer(rt, caller));
+		printFmt(con, esc, ">dbg[%?c] %.A: ", cmd, vmPointer(rt, pc));
 		if (usr->in == NULL || fgets(buff, sizeof(buff), usr->in) == NULL) {
 			printFmt(con, esc, "can not read from standard input, aborting\n");
 			return illegalState;
@@ -1614,7 +1629,7 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size
 				break;
 
 			case dbgPrintInstruction:
-				textDumpAsm(con, esc, caller, usr, 0);
+				textDumpAsm(con, esc, pc, usr, 0);
 				break;
 
 			case dbgPrintStackValues:
@@ -2537,6 +2552,7 @@ int main(int argc, char *argv[]) {
 			info(rt, NULL, 0, ERR_OPENING_FILE, logFileName);
 		}
 	}
+
 	// dump to log file (global option)
 	if (dumpFileName && strEquals(dumpFileName, logFileName)) {
 		// enable logging only as text to the log file
@@ -2809,6 +2825,54 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			rt->errors = 1;
+		}
+		if (dbg != NULL) {
+			size_t dataCnt = dbg->statements.cnt;
+			dbgn data = (dbgn) dbg->statements.ptr;
+			for (size_t j = 0; j < dataCnt; ++j) {
+				dbgn stmt = data + j;
+				size_t group = j;
+				while (group > 0) {
+					group -= 1;
+					dbgn d = data + group;
+					if (d->start == stmt->start) {
+						break;
+					}
+					if (d->start < stmt->start) {
+						group = j; // not a group
+						break;
+					}
+					if (d->end < stmt->start) {
+						group = j; // not a group
+						break;
+					}
+				}
+
+				if (group != j) {
+					stmt->hits = data[group].hits;
+					stmt->group = group - j + data[group].group;
+					for (size_t k = group; k < j; ++k) {
+						dbgn d = data + k;
+						stmt->exec += d->exec;
+						stmt->traps += d->traps;
+					}
+					continue;
+				}
+
+				extra.stmtCnt += 1;
+				extra.stmtCov += stmt->hits > 0;
+				extra.trapCnt += stmt->traps > 0;
+
+				symn fun = stmt->fun;
+				if (fun == NULL) {
+					fatal("can not be null");
+					continue;
+				}
+				if (stmt->start == fun->offs) {
+					extra.funcCnt += 1;
+					extra.funcCov += stmt->hits > 0;
+				}
+			}
 		}
 		extra.rtTime = clock() - start;
 	}

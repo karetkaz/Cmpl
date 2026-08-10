@@ -215,7 +215,7 @@ function Inspector(data, callback) {
     }
 
     let result = {
-        json: { functions, data },
+        // json: { functions, data },
         samples,
         ticks: samples && samples.leave - samples.enter,
         ticksPerSec: data && data.ticksPerSec,
@@ -441,35 +441,41 @@ function createTreeRow(node, data, depth) {
     if (sample !== node && sample.hits > 1) {
         title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;
         if (fun != null && sample.hits !== fun.hits) {
+            console.log("hits", sample.hits, fun.hits, sample.func.proto);
             title += '\n\tDiff: ' + (sample.hits - fun.hits) + ' / ' + fun.hits;
         }
 
         title += '\nSelf Cost: ' + self.innerText + ' / ' + toCost(sample.self);
         title += '\nSelf Time: ' + toTime(node.self) + ' / ' + toTime(sample.self);
         if (fun != null && sample.self !== fun.time) {
+            console.log("time.self", sample.self, fun.time, sample.func.proto);
             title += '\n\tDiff: ' + toTime(sample.self - fun.time) + ' / ' + toTime(fun.time);
         }
 
         title += '\nTotal Cost: ' + total.innerText + ' / ' + toCost(sample.total);
         title += '\nTotal Time: ' + toTime(node.total) + ' / ' + toTime(sample.total);
         if (fun != null && sample.total !== fun.total) {
+            console.log("time.total", sample.total, fun.total, sample.func.proto);
             title += '\n\tDiff: ' + toTime(sample.total - fun.total) + ' / ' + toTime(fun.total);
         }
     } else {
         title += '\nHit Count: ' + sample.hits;
         if (fun != null && sample.hits !== fun.hits) {
+            console.log("hits", sample.hits, fun.hits, sample.func.proto);
             title += '\n\tDiff: ' + (sample.hits - fun.hits) + ' / ' + fun.hits;
         }
 
         title += '\nSelf Cost: ' + toCost(sample.self);
         title += '\nSelf Time: ' + toTime(sample.self);
         if (fun != null && sample.self !== fun.time) {
+            console.log("time.self", sample.self, fun.time, sample.func.proto);
             title += '\n\tDiff: ' + toTime(sample.self - fun.time) + ' / ' + toTime(fun.time);
         }
 
         title += '\nTotal Cost: ' + toCost(sample.total);
         title += '\nTotal Time: ' + toTime(sample.total);
         if (fun != null && sample.total !== fun.total) {
+            console.log("time.total", sample.total, fun.total, sample.func.proto);
             title += '\n\tDiff: ' + toTime(sample.total - fun.total) + ' / ' + toTime(fun.total);
         }
     }
@@ -477,7 +483,7 @@ function createTreeRow(node, data, depth) {
         title += '\nExecution Time: ' + toTime(node.enter - samples.enter) + ' - ' + toTime(node.leave - samples.enter);
         title += '\nMemory Usage: ' + node.memory;
     }
-    row.title = title + '\n' + sample.func.proto;
+    row.title = title;
 
     let expand = func.appendChild(document.createElement('span'));
     expand.setAttribute('class', 'expander');

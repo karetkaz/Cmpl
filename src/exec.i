@@ -28,10 +28,10 @@ case opc_nfc: {
 	*((void const **) &args.argv) = sp;
 	*((size_t*) &args.argc) = vm_stk_align * nfc->in;
 
-	TRACE(nfc->sym->offs);
+	TRACE(nfc->sym->offs, 1);
 	STOP(error_libc, nfc->call(&args));
+	TRACE(nfc->sym->offs, -1);
 	STOP(stop_vm, ip->rel == 0);			// Halt();
-	TRACE(0);
 #endif
 	NEXT(4, nfc->out - nfc->in, nfc->in);
 	break;
@@ -44,7 +44,7 @@ case opc_call: NEXT(1, +0, 1) {
 	STOP(error_opc, jmp > ms);
 	pu->ip = mp + jmp;
 	SP(0, u32) = ret;
-	TRACE(jmp);
+	TRACE(jmp, 1);
 #endif
 	break;
 }
@@ -54,7 +54,7 @@ case opc_jmpi: NEXT(1, -1, 1) {
 	STOP(error_opc, jmp <= 0);
 	STOP(error_opc, jmp > ms);
 	pu->ip = mp + jmp;
-	TRACE(0);
+	TRACE(pc, -1);
 #endif
 	break;
 }

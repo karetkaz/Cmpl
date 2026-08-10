@@ -4,7 +4,7 @@
 #include "compiler.h"
 #include "printer.h"
 
-dbgContext dbgInit(rtContext ctx, vmError onExec(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee)) {
+dbgContext dbgInit(rtContext ctx, vmError onExec(dbgContext ctx, vmError, size_t pc, size_t ss, void *sp, int mode)) {
 	dbgContext dbg = (dbgContext)(ctx->_beg = padPointer(ctx->_beg, vm_mem_align));
 	ctx->_beg += sizeof(struct dbgContextRec);
 	ctx->dbg = dbg;

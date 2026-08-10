@@ -12,7 +12,7 @@
 /// Debugger context
 struct dbgContextRec {
 	rtContext rt;
-	vmError (*debug)(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee);
+	vmError (*debug)(dbgContext ctx, vmError, size_t pc, size_t ss, void *sp, int mode);
 	void (*dbgAlloc)(dbgContext ctx, void *mem, size_t size, char *kind);
 
 	struct arrBuffer statements;
@@ -41,7 +41,7 @@ typedef struct dbgNode {
 	size_t start, end;
 
 	// the declaring function
-	symn func;
+	symn fun;
 
 	// profiler data
 	size_t exec;   // number of executed instructions
@@ -65,19 +65,19 @@ typedef struct dbgNode {
  * @param debug function to be executed when an error occurs.
  * @return debugger context.
  */
-dbgContext dbgInit(rtContext ctx, vmError (*debug)(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee));
+dbgContext dbgInit(rtContext ctx, vmError (*debug)(dbgContext ctx, vmError, size_t pc, size_t ss, void *sp, int mode));
 
 /**
  * Debugger function that prints runtime errors with stacktrace when available
  * @param ctx Debug context
- * @param err Error why the function was invoked
+ * @param error Error why the function was invoked
  * @param ss Stack size
  * @param sp stack pointer(top of stack)
- * @param caller program counter
- * @param callee program counter a different value than caller means there is a call or return
- * @return the given @param err is returned
+ * @param pc program counter
+ * @param mode 0: exec instruction, 1 call, -1 return
+ * @return the given @param error is returned
  */
-vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller, size_t callee);
+vmError dbgError(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode);
 
 /**
  * Check if the current stacktrace contains tryExec, if an error can terminate the execution of the vm.
