@@ -70,13 +70,13 @@ static void print_fmt(FILE *out, const char **esc, const char *fmt, va_list ap) 
 			pad = *fmt++;
 		}
 
-		int len = 0;     // [0-9]* length / mode
+		int len = 0;     // [0-9]* length / indent
 		while (*fmt >= '0' && *fmt <= '9') {
 			len = (len * 10) + (*fmt - '0');
 			fmt++;
 		}
 
-		int prc = 0;     // (\.\*|[0-9]*)? precision / indent
+		int prc = 0;     // (\.\*|[0-9]*)? precision / mode
 		int noPrc = 1;   // format string has no precision
 		if (*fmt == '.') {
 			fmt++;
@@ -645,7 +645,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 			symn type = vmPointer(ctx, var->type);
 			vmValue *ref = vmPointer(ctx, var->ref);
 			if (isDynamicSizeArray(type)) {
-				// arrays compressed into variant loose the length property, they became `type[*]`
+				// arrays compressed into variant lose the length property, they become `type[*]`
 				struct symNode typeArr = *type;	// make a copy of the array type
 				// remove the length property
 				typeArr.fields = NULL;
@@ -1286,7 +1286,7 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 	}
 }
 
-/// print-ams.c ////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// print-asm.c ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void printOpc(FILE *out, const char **esc, int opc, int64_t args) {
 	struct vmInstruction instruction;
@@ -1431,25 +1431,25 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 			}
 			break;
 
-		case u32_bit: switch (ip->idx & 0xc0) {
+		case u32_bit: switch (ip->idx & 0xe0) {
 				default:
 					fatal(ERR_INTERNAL_ERROR);
 					return;
 
-				case u32_bit_and:
-					printFmt(out, esc, "%s 0x%02x", "and", (1 << (ip->idx & 0x3f)) - 1);
+				case u32_ext_and:
+					printFmt(out, esc, "%s 0x%02x", "and", (1 << (ip->idx & u32_ext_mask)) - 1);
 					break;
 
-				case u32_bit_shl:
-					printFmt(out, esc, "%s 0x%02x", "shl", ip->idx & 0x3f);
+				case u32_ext_shl:
+					printFmt(out, esc, "%s 0x%02x", "shl", ip->idx & u32_ext_mask);
 					break;
 
-				case u32_bit_shr:
-					printFmt(out, esc, "%s 0x%02x", "shr", ip->idx & 0x3f);
+				case u32_ext_shr:
+					printFmt(out, esc, "%s 0x%02x", "shr", ip->idx & u32_ext_mask);
 					break;
 
-				case u32_bit_sar:
-					printFmt(out, esc, "%s 0x%02x", "sar", ip->idx & 0x3f);
+				case u32_ext_sar:
+					printFmt(out, esc, "%s 0x%02x", "sar", ip->idx & u32_ext_mask);
 					break;
 			}
 			break;

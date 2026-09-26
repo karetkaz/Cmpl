@@ -1,12 +1,12 @@
 /// Simple camera for 3d transformations and projection.
 struct Camera {
-	///@public
+	/// Position of the camera
 	vec4f position = vec4f(0, 0, 0, 1);
-	///@public
+	/// Direction the camera is looking at
 	vec4f forward = vec4f(0, 0, 0, 1);
-	///@public
+	/// Direction to the right of the camera
 	vec4f right = vec4f(0, 0, 0, 1);
-	///@public
+	/// Direction above the camera
 	vec4f up = vec4f(0, 1, 0, 1);
 
 	/// Create an orthographic(`fov` == 0) or perspective projection matrix
@@ -69,10 +69,11 @@ struct Camera {
 		};
 	}
 
-	/// Create an orthographic(`fov` == 0) or perspective projection matrix in pixel space,
-	/// mapping camera rays to pixels: (x, y, z) -> (cx + focal * x / z, cy + focal * y / z).
-	/// `fov` is the full horizontal field of view in degrees; the w row holds the z divisor,
-	/// so homogeneous consumers (Image.transform) apply the perspective divide.
+	/** Create an orthographic(`fov` == 0) or perspective projection matrix in pixel space,
+	 * mapping camera rays to pixels: (x, y, z) -> (cx + focal * x / z, cy + focal * y / z).
+	 * `fov` is the full horizontal field of view in degrees; the w row holds the z divisor,
+	 * so homogeneous consumers (Image.transform) apply the perspective divide.
+	 */
 	static mat4f projection(float32 fov, float32 width, float32 height) {
 		if (fov == 0) {
 			// orthographic: pixels map to pixels
@@ -106,7 +107,7 @@ struct Camera {
 		};
 	}
 
-	/// get the matrix of the camera, which can be multiplied with the projection matrix
+	/// Get the matrix of the camera, which can be multiplied with the projection matrix
 	static mat4f matrix(Camera camera!) {
 		return {
 			x: vec4f(camera.right, -camera.right.dp3(camera.position)),
@@ -116,7 +117,7 @@ struct Camera {
 		};
 	}
 
-	/// get the matrix of the camera multiplied with the projection matrix
+	/// Get the matrix of the camera multiplied with the projection matrix
 	static mat4f matrix(Camera camera!, float32 fov, float32 asp, float32 n, float32 f) {
 		return projection(fov, asp, n, f).mul(camera.matrix());
 	}

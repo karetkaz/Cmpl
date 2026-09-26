@@ -2,10 +2,10 @@
 
 inline zero(int a, int b) = 0;	// params not used at all
 inline last(int a, int b) = b;	// only one param used
-inline sum(int a, int b) = a + b;	// both param used once
+inline sum(int a, int b) = a + b;	// both params used once
 inline any(int a, int b) = a ? a : b;	// one param used 2x, the other once
-inline min(int a, int b) = a < b ? a : b;	// both param used 2x
-inline max(int a, int b) = a > b ? a : b;	// both param used 2x
+inline min(int a, int b) = a < b ? a : b;	// both params used 2x
+inline max(int a, int b) = a > b ? a : b;	// both params used 2x
 
 int i3 = 3;
 int i6 = 6;

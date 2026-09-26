@@ -21,7 +21,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		return x.lo.compare(y.lo);
 	}
 
-	/// Negates an 32-bit unsigned value
+	/// Negates an unsigned value
 	static Unsigned neg(Unsigned x) {
 		Word c = wZero;
 		return {
@@ -30,7 +30,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Adds two 32-bit unsigned integers
+	/// Adds two unsigned integers
 	static Unsigned add(Unsigned x, Unsigned y) {
 		Word c = wZero;
 		return {
@@ -39,7 +39,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Subtracts two 32-bit unsigned integers
+	/// Subtracts two unsigned integers
 	static Unsigned sub(Unsigned x, Unsigned y) {
 		Word c = wZero;
 		return {
@@ -56,7 +56,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Multiplies two 32-bit unsigned integers
+	/// Multiplies two unsigned integers
 	static Unsigned mul(Unsigned x, Unsigned y) {
 		Unsigned t0 = {...?}; // xl * yl;
 		t0.lo = Word.mul(x.lo, y.lo, &t0.hi);
@@ -68,7 +68,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Negates an 32-bit unsigned value
+	/// Negates an unsigned value
 	static Unsigned neg(Unsigned x, Unsigned overflow&) {
 		overflow.hi = wZero; // always overflows
 		overflow.lo = wOne; // always overflows
@@ -79,7 +79,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Adds two 32-bit unsigned integers with carry out
+	/// Adds two unsigned integers with carry out
 	static Unsigned add(Unsigned x, Unsigned y, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
@@ -88,7 +88,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Adds two 32-bit unsigned integers with carry in and out
+	/// Adds two unsigned integers with carry in and out
 	static Unsigned add(Unsigned x, Unsigned y, Unsigned c, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
@@ -97,7 +97,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Subtracts two 32-bit unsigned integers with borrow out
+	/// Subtracts two unsigned integers with borrow out
 	static Unsigned sub(Unsigned x, Unsigned y, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
@@ -106,7 +106,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Adds two 32-bit unsigned integers with carry in and out
+	/// Subtracts two unsigned integers with borrow in and out
 	static Unsigned sub(Unsigned x, Unsigned y, Unsigned c, Unsigned overflow&) {
 		overflow.hi = wZero;
 		return {
@@ -115,7 +115,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Multiplies two 32-bit unsigned integers with overflow out
+	/// Multiplies two unsigned integers with overflow out
 	static Unsigned mul(Unsigned x, Unsigned y, Unsigned overflow&) {
 		Unsigned t0 = {...?}; // xl * yl;
 		Unsigned t1 = {...?}; // xh * yl;
@@ -133,7 +133,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		return { hi: u2.lo, lo: t0.lo };
 	}
 
-	/// Computes the bitwise NOT of an 32-bit unsigned value
+	/// Computes the bitwise NOT of an unsigned value
 	static Unsigned cmt(Unsigned x) {
 		return {
 			lo: x.lo.cmt(),
@@ -141,7 +141,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Computes the bitwise OR of two 32-bit unsigned integers
+	/// Computes the bitwise OR of two unsigned integers
 	static Unsigned or(Unsigned x, Unsigned y) {
 		return {
 			lo: x.lo.or(y.lo),
@@ -149,7 +149,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Computes the bitwise XOR of two 32-bit unsigned integers
+	/// Computes the bitwise XOR of two unsigned integers
 	static Unsigned xor(Unsigned x, Unsigned y) {
 		return {
 			lo: x.lo.xor(y.lo),
@@ -157,7 +157,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Computes the bitwise AND of two 32-bit unsigned integers
+	/// Computes the bitwise AND of two unsigned integers
 	static Unsigned and(Unsigned x, Unsigned y) {
 		return {
 			lo: x.lo.and(y.lo),
@@ -165,7 +165,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Performs a logical left shift of x by n bits for an 32-bit unsigned integer
+	/// Performs a logical left shift of x by n bits for an unsigned integer
 	static Unsigned shl(Unsigned x, uint32 n) {
 		if (n >= Word.bits) {
 			if (n >= bits) { n = bits; }
@@ -181,7 +181,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Performs a logical right shift of x by n bits for an 32-bit unsigned integer
+	/// Performs a logical right shift of x by n bits for an unsigned integer
 	static Unsigned shr(Unsigned x, uint32 n) {
 		if (n >= Word.bits) {
 			if (n >= bits) { n = bits; }
@@ -197,7 +197,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Performs an arithmetic right shift of x by n bits for an 32-bit unsigned integer
+	/// Performs an arithmetic right shift of x by n bits for an unsigned integer
 	static Unsigned sar(Unsigned x, uint32 n) {
 //		assert(n < bits);
 		if (n >= Word.bits) {
@@ -275,7 +275,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 		};
 	}
 
-	/// Reverses the byte order of an 32-bit unsigned integer
+	/// Reverses the byte order of an unsigned integer
 	static Unsigned reverseBytes(Unsigned x) {
 		return {
 			lo: x.hi.reverseBytes(),
@@ -322,7 +322,7 @@ static if (struct(Unsigned) != null && struct(Signed) == null) {
 	/// Returns the greater of two values
 	static Unsigned max(Unsigned a, Unsigned b) { return compare(a, b) > 0 ? a : b; }
 
-	/// Returns the `value` clamped between the provided `min` and `max`
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Unsigned clamp(Unsigned value, Unsigned lo, Unsigned hi) { return min(max(value, lo), hi); }
 }
 
@@ -388,7 +388,7 @@ static if (struct(Unsigned) != null && struct(Signed) != null) {
 		return sx < 0 ? r.neg().toSigned() : r.toSigned();
 	}
 
-	/// Computes the arithmetic negation of an 32-bit signed integer
+	/// Computes the arithmetic negation of a signed integer
 	static Signed neg(Signed x, Signed overflow&) {
 		Word ovf& = pointer(overflow.lo);
 		overflow.hi = Word(0);
@@ -404,7 +404,7 @@ static if (struct(Unsigned) != null && struct(Signed) != null) {
 		};
 	}
 
-	/// Adds two 32-bit signed integers with carry out
+	/// Adds two signed integers with carry out
 	static Signed add(Signed x, Signed y, Signed overflow&) {
 		Unsigned ux = Unsigned(x);
 		Unsigned uy = Unsigned(y);
@@ -414,7 +414,7 @@ static if (struct(Unsigned) != null && struct(Signed) != null) {
 		return res.toSigned();
 	}
 
-	/// Subtracts two 32-bit signed integers with borrow out
+	/// Subtracts two signed integers with borrow out
 	static Signed sub(Signed x, Signed y, Signed overflow&) {
 		Unsigned ux = Unsigned(x);
 		Unsigned uy = Unsigned(y);
@@ -446,7 +446,7 @@ static if (struct(Unsigned) != null && struct(Signed) != null) {
 		return r.toSigned();
 	}
 
-	/// Returns the absolute value (identity for unsigned)
+	/// Returns the absolute value
 	static Signed abs(Signed x) { return sign(x) < 0 ? x.neg() : x; }
 
 	/// Returns the smaller of two values
@@ -455,6 +455,6 @@ static if (struct(Unsigned) != null && struct(Signed) != null) {
 	/// Returns the greater of two values
 	static Signed max(Signed a, Signed b) { return compare(a, b) > 0 ? a : b; }
 
-	/// Clamps value between min and max
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Signed clamp(Signed value, Signed lo, Signed hi) { return min(max(value, lo), hi); }
 }

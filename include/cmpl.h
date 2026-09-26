@@ -2,10 +2,10 @@
  * Cmpl - A very "simple" C like language.
  *
  * Extension libraries should use only this header file as the main interface
- * for integrating with the Cmpl language into a dynamically linked library:
- *    - Windows: .dll   (example: cmplFile.dll)
- *    - Linux:   .so    (example: cmplFile.so)
- *    - macOS:   .dylib (example: cmplFile.dylib)
+ * for integrating with the Cmpl language from a dynamically linked library:
+ *    - Windows: .dll   (example: libFile.dll)
+ *    - Linux:   .so    (example: libFile.so)
+ *    - macOS:   .dylib (example: libFile.dylib)
  * exported functions and symbols by extensions can be:
  *    - cmplInit
  *    - cmplUnit
@@ -55,7 +55,6 @@ extern const char cmplUnit[];
  * The main entry point of the module plugin.
  *
  * @param ctx Runtime context.
- * @param cc Compiler context.
  * @param cc The compiler context to which libraries and extensions are added.
  * @return An integer indicating success (0) or failure (non-zero) to initialize the contexts.
  */
@@ -444,7 +443,7 @@ static inline size_t vmOffset(rtContext ctx, const void *ptr) {
  *
  * @param ctx Execution context.
  * @param offset Relative offset of argument.
- * @return Pointer where the result is located.
+ * @return Pointer where the argument is located.
  * @note Getting an argument must be used with padded offset.
  */
 static inline void *getArg(const nfcContext ctx, size_t offset) {

@@ -1,0 +1,19 @@
+/** ### Functions with special names
+If a function's name is a type name, by convention it is considered to be a constructor for that type,
+so it should return an instance of the type its name represents.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+struct DeclFunPoint {
+	int32 x;
+	int32 y;
+}
+
+DeclFunPoint DeclFunPoint(int32 x, int32 y) {
+	return { x: x, y: y };
+}
+
+DeclFunPoint declFunP = DeclFunPoint(3, 4);
+assertEq(3, declFunP.x);

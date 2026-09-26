@@ -4,7 +4,7 @@ bool empty(Rect rectangle!) {
 	return rectangle.x0 >= rectangle.x1 || rectangle.y0 >= rectangle.y1;
 }
 
-/// Checks whether the given `rectangle` contains the point (`x`, `y`).
+/// Checks whether the given `rect` contains the point (`x`, `y`).
 bool contains(Rect rect!, int32 x, int32 y) {
 	return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
 }
@@ -46,7 +46,7 @@ void position(Rect rectangle&, int32 x, int32 y) {
 	rectangle.positionY(y);
 }
 
-///@public
+/// Moves each edge of the given `rect` by the given deltas: `x0` by `dx0`, `y0` by `dy0`, `x1` by `dx1` and `y1` by `dy1`.
 void adjust(Rect rect&, int32 dx0, int32 dy0, int32 dx1, int32 dy1) {
 	rect.x0 += dx0;
 	rect.y0 += dy0;
@@ -54,7 +54,7 @@ void adjust(Rect rect&, int32 dx0, int32 dy0, int32 dx1, int32 dy1) {
 	rect.y1 += dy1;
 }
 
-///@public
+/// Grows the given `rect` by `padding` on each side, a negative `padding` shrinks it.
 void padded(Rect rect&, int32 padding) {
 	rect.x0 -= padding;
 	rect.y0 -= padding;

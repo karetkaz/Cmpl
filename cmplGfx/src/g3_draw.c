@@ -17,7 +17,7 @@ void getFrustum(struct vector planes[6], matrix mat) {
 
 static vector boundSphere(vector s, vector p1, vector p2, vector p3) {
 	vecadd(s, vecadd(s, p1, p2), p3);
-	vecsca(s, s, (scalar) (1. / 3));                                    // set s to Baricentrum
+	vecsca(s, s, (scalar) (1. / 3));                                    // set s to barycenter
 
 	struct vector tmp[1];
 	scalar len = vecdp3(tmp, vecsub(tmp, s, p1));
@@ -648,7 +648,7 @@ int drawMesh(GxImage dst, GxMesh msh, camera cam, GxLight lights, int mode) {
 		lights = NULL;
 	}
 
-	// prepare and pre-calculate lightning
+	// prepare and pre-calculate lighting
 	size_t lightCnt = 0;
 	MtlLight light[32];
 	for (GxLight l = lights; l != NULL; l = l->next) {
@@ -690,7 +690,7 @@ int drawMesh(GxImage dst, GxMesh msh, camera cam, GxLight lights, int mode) {
 	// apply viewport after extracting the frustum
 	matmul(proj, viewport, proj);
 
-	// calculate positions, lightning, colors
+	// calculate positions, lighting, colors
 	for (size_t i = 0; i < msh->vtxcnt; i += 1) {
 		GxMeshVtx v = msh->vtxptr + i;
 		mapVertex(pos + i, proj, &v->p);
@@ -723,7 +723,7 @@ int drawMesh(GxImage dst, GxMesh msh, camera cam, GxLight lights, int mode) {
 				continue;
 			}
 
-			// drop degenerated triangles
+			// drop degenerate triangles
 			float fA = (pos[i2].x - pos[i1].x) * (pos[i3].y - pos[i1].y);
 			float fB = (pos[i2].y - pos[i1].y) * (pos[i3].x - pos[i1].x);
 			switch (mode & cull_mode) {
@@ -754,7 +754,7 @@ int drawMesh(GxImage dst, GxMesh msh, camera cam, GxLight lights, int mode) {
 				continue;
 			}
 
-			// drop degenerated triangles
+			// drop degenerate triangles
 			float fA = (pos[i2].x - pos[i1].x) * (pos[i3].y - pos[i1].y);
 			float fB = (pos[i2].y - pos[i1].y) * (pos[i3].x - pos[i1].x);
 			switch (mode & cull_mode) {

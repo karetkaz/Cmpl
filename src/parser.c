@@ -84,30 +84,40 @@ static inline symn tagType(ccContext ctx, astn tag) {
 	return NULL;
 }
 
+static inline const char * docText(astn ast) {
+	dieif(ast != NULL && !(ast->kind == TOKEN_doc || ast->kind == TOKEN_var), ERR_INTERNAL_ERROR": %+t", ast);
+	return ast == NULL ? NULL : ast->id.name;
+}
+
 astn tagNode(ccContext ctx, const char *name) {
-	astn ast = NULL;
-	if (ctx != NULL && name != NULL) {
-		ast = newAstn(ctx, TOKEN_var);
-		if (ast != NULL) {
-			size_t len = strlen(name);
-			ast->file = ctx->file;
-			ast->line = ctx->line;
-			ast->type = NULL;
-			ast->id.link = NULL;
-			ast->id.hash = rehash(name, len + 1);
-			ast->id.name = ccUniqueStr(ctx, name, len + 1, ast->id.hash);
-		}
+	if (ctx == NULL || name == NULL) {
+		return NULL;
 	}
+	astn ast = newAstn(ctx, TOKEN_var);
+	if (ast == NULL) {
+		return NULL;
+	}
+	size_t len = strlen(name);
+	ast->file = ctx->file;
+	ast->line = ctx->line;
+	ast->type = NULL;
+	ast->id.link = NULL;
+	ast->id.hash = rehash(name, len + 1);
+	ast->id.name = ccUniqueStr(ctx, name, len + 1, ast->id.hash);
 	return ast;
 }
 
 /**
- * Inline the content of a file relative to the path of the file inlines it.
+ * Inline the content of a file relative to the path of the file that inlines it.
  * @param ctx Compiler context.
  * @param tag The ast node containing which file to inline.
  */
 static int ccInline(ccContext ctx, astn tag) {
 	if (tag->type != ctx->type_str) {
+		return 0;
+	}
+	if (*tag->id.name == '*') {
+		// `inline "*directive";` is a documentation placeholder, nothing to inline
 		return 0;
 	}
 
@@ -158,7 +168,7 @@ static int ccInline(ccContext ctx, astn tag) {
 /**
  * Install a new symbol: alias, type, variable or function.
  *
- * @param kind Kind of symbol: (KIND_def, KIND_var, KIND_typ, CAST_arr)
+ * @param kind Kind of symbol: (KIND_def, KIND_typ, KIND_fun, KIND_var)
  * @param tag Parsed tree node representing the symbol.
  * @param type Type of symbol.
  * @return The symbol.
@@ -286,6 +296,48 @@ static symn declare(ccContext ctx, ccKind kind, astn tag, symn type, symn params
 	}
 
 	return def;
+}
+
+const char *const doc_tag_inline = ".doc-inline";
+const char *const doc_tag_statement = ".doc-statement";
+
+/**
+ * Preserve a doc-comment that has no declaration to attach to (a heading
+ * stacked before another heading, or a doc-comment sitting in front of an
+ * `inline` statement or an ordinary, non-declaring statement) as a synthetic,
+ * void-typed placeholder symbol, mirroring the existing `.result` convention
+ * (a plain KIND_var installed under a fixed, dot-prefixed name). Only does
+ * anything when the compiler was asked to retain documentation; otherwise
+ * this is a no-op and the caller is expected to keep warning as it does today.
+ *
+ * @param ctx Compiler context.
+ * @param doc Documentation node; nothing happens if NULL, unless `init` is a documentation placeholder.
+ * @param init the file to be included.
+ * @param name One of doc_tag_inline/doc_tag_statement.
+ * @return The placeholder's tag node, or NULL if nothing was declared.
+ */
+static astn declareDocSymbol(ccContext ctx, astn doc, astn init, const char *name) {
+	if (!ctx->genDocumentation) {
+		return NULL;
+	}
+	// documentation placeholders (`inline "*directive";`) are preserved even without a doc comment
+	int placeholder = init != NULL && init->type == ctx->type_str && *init->id.name == '*';
+	if (doc == NULL && !placeholder) {
+		return NULL;
+	}
+
+	dieif(doc != NULL && doc->kind != TOKEN_doc, ERR_INTERNAL_ERROR);
+	astn tag = tagNode(ctx, name);
+	tag->file = doc != NULL ? doc->file : init->file;
+	tag->line = doc != NULL ? doc->line : init->line;
+
+	symn def = declare(ctx, KIND_def, tag, ctx->type_vid, NULL, doc != NULL ? doc->id.name : "");
+	if (def == NULL) {
+		return NULL;
+	}
+
+	def->init = init;
+	return tag;
 }
 
 /// expand compound assignment expressions like `a += 1` into `a = a + 1`
@@ -925,6 +977,7 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 
 	// add default initializer of uninitialized fields
 	int unionZeroed = 0;
+	int unionFields = 0;
 	size_t unionInitSize = type->size;
 	for (symn field = type->fields; field; field = field->next) {
 		if (isStatic(field)) {
@@ -935,6 +988,11 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 			break;
 		}
 		dieif(unionInitSize != 0 && unionInitSize < field->size, ERR_INTERNAL_ERROR);
+		unionFields += 1;
+	}
+	if (unionFields < 2) {
+		// a record with a single member is not a union, even if its member is at offset 0
+		unionInitSize = 0;
 	}
 	for (symn field = type->fields; field; field = field->next) {
 		if (isStatic(field)) {
@@ -952,7 +1010,7 @@ static astn expandInitializerObj(ccContext ctx, astn variable, astn initializer,
 		int zeroUnion = 0;
 		if (initialized || unionInitSize > 0) {
 			if (initialized && field->size < unionInitSize) {
-				warn(ctx->rt, variable->file, variable->line, ERR_PARTIAL_INITIALIZE_UNION, linkOf(variable, 0), field);
+				warn(ctx->rt, variable->file, variable->line, ERR_UNINITIALIZED_PARTIAL, linkOf(variable, 0), field);
 			}
 			if (!spreadZero || initialized || unionZeroed || field->size != unionInitSize) {
 				continue;
@@ -1107,7 +1165,7 @@ static astn expandInitializer(ccContext ctx, symn variable, astn initializer) {
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Parser
 static astn statement_list(ccContext ctx);
-static astn statement(ccContext ctx, const char *doc);
+static astn statement(ccContext ctx, astn docNode);
 static astn declaration(ccContext ctx, ccKind attr, astn *args, const char *doc);
 
 /** Parse qualifiers.
@@ -1824,20 +1882,22 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 		error(ctx->rt, tag->file, tag->line, ERR_VARIABLE_OVERRIDE, tag);
 	}
 
-	// parse array dimensions
+	// parse array dimensions in C order: `int a[2][3]` is an array of 2 elements of type `int[3]`
 	ccKind cast = refCast(type);
+	symn dimensions = NULL;	// parsed dimensions in reverse order, chained using the type field
 	while (skipToken(ctx, OPER_idx, 0)) {		// int a[...][][]...
 		symn arr = newSymn(ctx, KIND_typ);
+		ccKind arrCast;
 		if (peekToken(ctx, RIGHT_sqr) != NULL) {
 			// dynamic-size array: `int a[]`
 			addLength(ctx, arr, NULL);
 			arr->size = 2 * vm_ref_size;
-			cast = CAST_arr;
+			arrCast = CAST_arr;
 		}
 		else if (skipToken(ctx, OPER_mul, 0)) {
 			// unknown-size array: `int a[*]`
 			arr->size = vm_ref_size;
-			cast = CAST_ptr;
+			arrCast = CAST_ptr;
 		}
 		else {
 			// TODO: dynamic allocated array: `int a[n]`
@@ -1860,13 +1920,30 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 				error(ctx->rt, file, line, ERR_INVALID_ARRAY_LENGTH, len);
 			}
 			addLength(ctx, arr, len);
-			arr->size = length * type->size;
-			cast = CAST_val;
+			// the size is known only after the element type is linked
+			arr->size = length;
+			arrCast = CAST_val;
 		}
 		skipToken(ctx, RIGHT_sqr, 1);
 
+		if (dimensions == NULL) {
+			// the first dimension is the outermost
+			cast = arrCast;
+		}
+
 		arr->kind = ATTR_stat | KIND_typ | CAST_arr;
 		arr->offs = vmOffset(ctx->rt, arr);
+		arr->type = dimensions;
+		dimensions = arr;
+	}
+
+	// link the dimensions starting with the innermost: `int a[2][3]` => `(int[3])[2]`
+	while (dimensions != NULL) {
+		symn arr = dimensions;
+		dimensions = arr->type;
+		if (isFixedSizeArray(arr)) {
+			arr->size *= type->size;
+		}
 		arr->type = type;
 		type = arr;
 	}
@@ -1984,10 +2061,10 @@ static astn declaration(ccContext ctx, ccKind attr, astn *args, const char* doc)
 /** Parse the declaration of an alias/inline expression.
  * @param ctx Compiler context.
  * @param attr Extra attributes, like `static`.
- * @param doc Documentation string.
+ * @param doc Documentation node.
  * @return Root of declaration.
  */
-static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
+static astn declare_alias(ccContext ctx, ccKind attr, astn doc) {
 	symn type = NULL;
 	astn tag;
 
@@ -2007,15 +2084,16 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 			} else {
 				error(ctx->rt, tag->file, tag->line, ERR_OPENING_FILE, tag->id.name);
 			}
-			return NULL;
 		}
-		return NULL;
+		// `inline "file.cmpl"` declares no symbol of its own; preserve any
+		// pending doc-comment as a placeholder so it survives into the dump
+		// instead of silently tripping ERR_INVALID_DOC_COMMENT.
+		return declareDocSymbol(ctx, doc, tag, doc_tag_inline);
 	}
 
 	int isOptional = 0;
-	tag = nextToken(ctx, TOKEN_any, 0);
+	tag = nextToken(ctx, TOKEN_any, 1);
 	if (tag == NULL) {
-		skipToken(ctx, STMT_end, 1);
 		return NULL;
 	}
 
@@ -2026,6 +2104,7 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 	} else {
 		const char *op = token_tbl[tag->kind].op;
 		if (op == NULL) {
+			error(ctx->rt, tag->file, tag->line, ERR_UNEXPECTED_TOKEN, tag);
 			skipToken(ctx, STMT_end, 1);
 			return NULL;
 		}
@@ -2035,7 +2114,7 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 		tag->id.hash = rehash(op, len + 1);
 		tag->id.name = ccUniqueStr(ctx, op, len + 1, tag->id.hash);
 		if (doc == NULL) {
-			doc = op;
+			doc = tag;
 		}
 	}
 
@@ -2154,7 +2233,7 @@ static astn declare_alias(ccContext ctx, ccKind attr, const char* doc) {
 	}
 	skipToken(ctx, STMT_end, 1);
 
-	symn def = declare(ctx, (attr & MASK_attr) | KIND_def | ATTR_stat, tag, type, params, doc);
+	symn def = declare(ctx, (attr & MASK_attr) | KIND_def | ATTR_stat, tag, type, params, docText(doc));
 	if (def != NULL) {
 		def->params = params;
 		def->init = init;
@@ -2571,13 +2650,13 @@ static astn statement_for(ccContext ctx) {
  * @return The parsed statements chained by ->next, NULL if no statements parsed.
  */
 static astn statement_list(ccContext ctx) {
-	astn ast, head = NULL, tail = NULL;
-
-	const char *doc = NULL;
+	astn head = NULL, tail = NULL;
+	astn ast, doc = NULL;
 	while ((ast = ctx->nextToken) != NULL) {
 		if (ast->kind == TOKEN_doc) {
 			ctx->nextToken = ctx->nextToken->next;
-			doc = ast->id.name;
+			declareDocSymbol(ctx, doc, NULL, doc_tag_statement);
+			doc = ast;
 			continue;
 		}
 
@@ -2605,6 +2684,8 @@ static astn statement_list(ccContext ctx) {
 		doc = NULL;
 	}
 
+	// process trailing doc comments
+	declareDocSymbol(ctx, doc, NULL, doc_tag_statement);
 	return head;
 }
 
@@ -2612,10 +2693,11 @@ static astn statement_list(ccContext ctx) {
  * Parse statement.
  *
  * @param ctx Compiler context.
- * @param doc Documentation string.
+ * @param docNode Documentation tree node.
  * @return parsed syntax tree.
  */
-static astn statement(ccContext ctx, const char *doc) {
+static astn statement(ccContext ctx, astn docNode) {
+	const char *doc = docText(docNode);
 	const char *file = ctx->file;
 	int line = ctx->line;
 	int validStart = 1;
@@ -2715,7 +2797,6 @@ static astn statement(ccContext ctx, const char *doc) {
 				ast->type = ctx->type_vid;
 				if (attr & ATTR_stat) {
 					ast->kind = STMT_sfor;
-					attr &= ~ATTR_stat;
 				}
 			}
 			break;
@@ -2783,7 +2864,9 @@ static astn statement(ccContext ctx, const char *doc) {
 			}
 
 			ast->ret.func = function;
-			ast->ret.value = opNode(ctx, result->type, ASGN_set, lnkNode(ctx, function->params), result);
+			// leave the type of the assignment unset, so the returned value is checked against the result
+			symn retType = result->kind == STMT_beg ? result->type : NULL;
+			ast->ret.value = opNode(ctx, retType, ASGN_set, lnkNode(ctx, function->params), result);
 			ast->ret.value->file = result->file;
 			ast->ret.value->line = result->line;
 			ast->type = ctx->type_vid;
@@ -2795,8 +2878,13 @@ static astn statement(ccContext ctx, const char *doc) {
 			if (peekToken(ctx, OPER_fnc)) {
 				goto expr;
 			}
+			if (peekToken(ctx, TOKEN_val)) {
+				// `inline "file.cmpl";` may be documented (see doc_tag_inline),
+				// even if the documentation is not retained, do not warn about it.
+				doc = NULL;
+			}
 			backToken(ctx, ast);
-			ast = declare_alias(ctx, attr, doc);
+			ast = declare_alias(ctx, attr, docNode);
 			if (ast != NULL) {
 				dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
 				dieif(doc && ast->id.link->doc != doc, ERR_INTERNAL_ERROR);
@@ -2907,6 +2995,10 @@ static astn statement(ccContext ctx, const char *doc) {
 		line = ast->line;
 	}
 	if (doc != NULL) {
+		// preserve the text (when documentation is being collected) instead
+		// of just losing it, but still flag the pattern: a doc-comment right
+		// before an ordinary, non-declaring statement is unusual.
+		declareDocSymbol(ctx, docNode, NULL, doc_tag_statement);
 		warn(ctx->rt, file, line, ERR_INVALID_DOC_COMMENT);
 	}
 	if (attr != 0) {
@@ -2917,7 +3009,6 @@ static astn statement(ccContext ctx, const char *doc) {
 }
 
 astn ccAddUnit(ccContext ctx, const char *file, int line, char *text) {
-	ctx->unit = file;
 	int nest = ctx->nest;
 	if (ccParse(ctx, file, line, text) != 0) {
 		error(ctx->rt, NULL, 0, ERR_OPENING_FILE, file);
@@ -3011,8 +3102,6 @@ symn ccAddCall(ccContext ctx, vmError call(nfcContext), const char *proto) {
 
 	sym->kind = ATTR_stat | KIND_def;
 	sym->init = init;
-	// native calls are undocumented public symbols
-	sym->unit = NULL;
 
 	// update the native call
 	nfc->proto = proto;
@@ -3029,7 +3118,7 @@ symn ccAddCall(ccContext ctx, vmError call(nfcContext), const char *proto) {
 			// TODO: param->kind = (param->kind & MASK_attr) | KIND_def;
 			param->tag = NULL;
 
-			// the result of a native functions is not pushed to the stack
+			// the result of a native function is not pushed to the stack
 			param->offs -= sym->params->size;
 
 			// input is the highest parameter offset

@@ -34,7 +34,7 @@ typedef struct GxLight {
 		L_on   = 0x0001,		// light is on
 		//~ L_attn = 0x0002,		// attenuate
 		//~ L_dir  = 0x0004,		// is directional
-		//~ L_spot = 0x0008,		// is directional
+		//~ L_spot = 0x0008,		// is spotlight
 	} attr;
 } *GxLight;
 
@@ -184,6 +184,6 @@ int drawMesh(GxImage dst, GxMesh msh, camera cam, GxLight lights, int mode);
 // extract the planes (near, far, left, right, top, bottom) from the projection matrix
 void getFrustum(struct vector planes[6], matrix mat);
 
-// test if a sphere or triangle is inside or outside the frustum (to test a point use a sphere wit 0 radius)
+// test if a sphere or triangle is inside or outside the frustum (to test a point use a sphere with 0 radius)
 int testSphere(struct vector planes[6], vector p, scalar r);
 int testTriangle(struct vector planes[6], vector p1, vector p2, vector p3);

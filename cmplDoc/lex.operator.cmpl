@@ -1,0 +1,7 @@
+/** ## Operators
+Operator symbols: `!`, `~`, `-`, `+`, `&`, `()`, `[]`, `.`, `*`, `/`, `%`, `|`, `^`, `<<`, `>>`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `||`, `&&`, `?:`, `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`, `...`, `,`.
+The `?`, `!` and `&` symbols are also used as reference suffixes in declarations (`int32 x& = y;`),
+and `^` marks a method that overrides a base method (`int32 read^(...)`).
+The `:` separates members from their values in literals (`{x: 1}`) and the base type of a record or enumeration (`struct Point: object`).
+See the Expressions chapter for their meaning and precedence.
+*/

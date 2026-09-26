@@ -1,0 +1,53 @@
+/** ## Binary expressions
+Binary expressions are composed of a binary operator and two operands.
+
+### Arithmetic expressions
+Used to compute a new value from the two operands.
+- `+`, `-`: additive operators.
+- `*`, `/`, `%`: multiplicative operators.
+
+### Bitwise expressions
+May be used on integer types only.
+- `&`, `|`, `^`: bitwise operators.
+- `<<`, `>>`: bit shift operators.
+
+### Relational expressions
+Compare two operands, checking if one is less or greater than the other.
+The result is a boolean value (`true` or `false`).
+
+### Equality expressions
+Check if the left and right operands are equal or not.
+The result is a boolean value (`true` or `false`).
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// binary expressions: arithmetic, bitwise, relational and equality
+
+int32 exprBinaryI = 7;
+int32 exprBinaryJ = 2;
+
+// arithmetic
+assertEq(9, exprBinaryI + exprBinaryJ);
+assertEq(5, exprBinaryI - exprBinaryJ);
+assertEq(14, exprBinaryI * exprBinaryJ);
+assertEq(3, exprBinaryI / exprBinaryJ);
+assertEq(1, exprBinaryI % exprBinaryJ);
+
+// bitwise: valid on integer types only
+assertEq(2, exprBinaryI & exprBinaryJ);
+assertEq(7, exprBinaryI | exprBinaryJ);
+assertEq(5, exprBinaryI ^ exprBinaryJ);
+assertEq(28, exprBinaryI << exprBinaryJ);
+assertEq(1, exprBinaryI >> exprBinaryJ);
+
+// relational
+assert(exprBinaryJ < exprBinaryI);
+assert(exprBinaryJ <= exprBinaryI);
+assert(exprBinaryI > exprBinaryJ);
+assert(exprBinaryI >= exprBinaryJ);
+
+// equality
+assert(exprBinaryI == 7);
+assert(exprBinaryI != exprBinaryJ);

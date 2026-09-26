@@ -6,7 +6,7 @@ inline unicode = uint32;
 /// TextReader can be used to read decoded text from a stream, including basic parsing
 struct TextReader: Closeable {
 
-	///@public
+	/// The underlying byte stream the text is read and decoded from
 	ByteReader reader;
 
 	/** This abstract method must be implemented in subclasses containing the proper implementation
@@ -46,13 +46,13 @@ struct TextReader: Closeable {
 struct TextWriter: Closeable {
 	static NumberFormat defaultFormat! = {};
 
-	///@public
+	/// Interface of objects that can write themselves to a `TextWriter`
 	struct Writeable: object {
 		// abstract
 		void write(Writeable this, TextWriter writer);
 	}
 
-	///@public
+	/// The underlying byte stream the encoded text is written to
 	ByteWriter writer;
 
 	/// default formatter
@@ -141,7 +141,7 @@ struct TextWriter: Closeable {
 		return this;
 	}
 
-	///@public
+	/// Write the value of the writeable parameter followed by a newline character
 	static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
 
 	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
@@ -157,7 +157,7 @@ struct TextWriter: Closeable {
 	 * example: convert utf-8 encoded file to ascii
 	 * TextWriter output = AsciiWriter("out.txt");
 	 * TextReader input = Utf8Reader("in.txt");
-	 * output.write(input);
+	 * output.copy(input);
 	 */
 	static int copy(TextWriter writer, TextReader reader) {
 		unicode buffer[1024] = {...?};

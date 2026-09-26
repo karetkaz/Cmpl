@@ -1,0 +1,350 @@
+/** ### Instruction `load.c32`
+
+Pushes a 32-bit constant, stored in the instruction, onto the stack.
+
+```
+push(imm.x32)
+```
+*/
+inline "*opcode:load.c32";
+/**
+* Immediate operand: `imm.x32`: 32-bit constant
+* Stack effect: `[…] → […, imm]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slot.
+
+Notes:
+* the constant is type-agnostic, it is used for any 32-bit value: `i32`, `u32`, `f32`, references, ...
+*/
+
+/** ### Instruction `load.c64`
+
+Pushes a 64-bit constant, stored in the instruction, onto the stack.
+
+```
+push(imm.x64)
+```
+*/
+inline "*opcode:load.c64";
+/**
+* Immediate operand: `imm.x64`: 64-bit constant
+* Stack effect: `[…] → […, imm]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slots.
+
+Notes:
+* the 8 immediate bytes are copied verbatim: the top slot receives bytes `0‥3`, the slot below it receives bytes `4‥7`.
+* the constant is type-agnostic, it is used for any 64-bit value: `i64`, `u64`, `f64`, ...
+*/
+
+/** ### Instruction `load.z32`
+
+Pushes a 32-bit zero onto the stack.
+
+```
+push(0)
+```
+*/
+inline "*opcode:load.z32";
+/**
+* Immediate operand: none
+* Stack effect: `[…] → […, 0]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slot.
+*/
+
+/** ### Instruction `load.z64`
+
+Pushes a 64-bit zero (two zero slots) onto the stack.
+
+```
+push(0)
+push(0)
+```
+*/
+inline "*opcode:load.z64";
+/**
+* Immediate operand: none
+* Stack effect: `[…] → […, 0, 0]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slots.
+*/
+
+/** ### Instruction `load.z128`
+
+Pushes a 128-bit zero (four zero slots) onto the stack.
+
+```
+push(0)
+push(0)
+push(0)
+push(0)
+```
+*/
+inline "*opcode:load.z128";
+/**
+* Immediate operand: none
+* Stack effect: `[…] → […, 0, 0, 0, 0]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slots.
+*/
+
+/** ### Instruction `dup.x32`
+
+Pushes a copy of the 32-bit stack slot at the given position.
+
+```
+a = sp(imm.u8)
+push(a)
+```
+*/
+inline "*opcode:dup.x32";
+/**
+* Immediate operand: `imm.u8`: position of the slot to copy, `0` being the top of the stack
+* Stack effect: `[…, a, …] → […, a, …, a]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slot.
+
+Notes:
+* the position is measured before the push, `dup.x32 0` duplicates the top slot: `[…, a] → […, a, a]`.
+* the position is not validated at runtime.
+*/
+
+/** ### Instruction `dup.x64`
+
+Pushes a copy of the two 32-bit stack slots starting at the given position.
+
+```
+a2 = sp(imm.u8 + 0)
+a1 = sp(imm.u8 + 1)
+push(a1)
+push(a2)
+```
+*/
+inline "*opcode:dup.x64";
+/**
+* Immediate operand: `imm.u8`: position of the upper slot to copy, `0` being the top of the stack
+* Stack effect: `[…, a1, a2, …] → […, a1, a2, …, a1, a2]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slots.
+
+Notes:
+* the position is measured before the push, e.g. `dup.x64 1`: `[…, a1, a2, b] → […, a1, a2, b, a1, a2]`.
+* the slots are copied verbatim, keeping their order.
+* the position is not validated at runtime.
+*/
+
+/** ### Instruction `dup.x128`
+
+Pushes a copy of the four 32-bit stack slots starting at the given position.
+
+```
+a4 = sp(imm.u8 + 0)
+a3 = sp(imm.u8 + 1)
+a2 = sp(imm.u8 + 2)
+a1 = sp(imm.u8 + 3)
+push(a1)
+push(a2)
+push(a3)
+push(a4)
+```
+*/
+inline "*opcode:dup.x128";
+/**
+* Immediate operand: `imm.u8`: position of the upper slot to copy, `0` being the top of the stack
+* Stack effect: `[…, a1, a2, a3, a4, …] → […, a1, a2, a3, a4, …, a1, a2, a3, a4]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slots.
+
+Notes:
+* the position is measured before the push, e.g. `dup.x128 0`: `[…, a1, a2, a3, a4] → […, a1, a2, a3, a4, a1, a2, a3, a4]`.
+* the slots are copied verbatim, keeping their order.
+* the position is not validated at runtime.
+*/
+
+/** ### Instruction `set.x32`
+
+Overwrites the 32-bit stack slot at the given position with the top slot, then drops the top slot.
+
+```
+a = sp(0)
+sp(imm.u8) = a
+drop(min(imm.u8, 1))
+```
+*/
+inline "*opcode:set.x32";
+/**
+* Immediate operand: `imm.u8`: position of the slot to overwrite, `0` being the top of the stack
+* Stack effect: `[…, b, …, a] → […, a, …]`
+
+Notes:
+* the position is measured before the drop, e.g. `set.x32 1`: `[…, b, a] → […, a]`.
+* `set.x32 0` leaves the stack unchanged.
+* the position is not validated at runtime.
+*/
+
+/** ### Instruction `set.x64`
+
+Overwrites the two 32-bit stack slots at the given position with the two top slots, then drops the top slots.
+
+```
+a2 = sp(0)
+a1 = sp(1)
+sp(imm.u8 + 0) = a2
+sp(imm.u8 + 1) = a1
+drop(min(imm.u8, 2))
+```
+*/
+inline "*opcode:set.x64";
+/**
+* Immediate operand: `imm.u8`: position of the upper slot to overwrite, `0` being the top of the stack
+* Stack effect: `[…, b1, b2, …, a1, a2] → […, a1, a2, …]`
+
+Notes:
+* the position is measured before the drop, e.g. `set.x64 3`: `[…, c, b, a, a1, a2] → […, a1, a2, a]`.
+* when the position is less than `2` the destination overlaps the source: the value is moved `imm.u8` slots down and only `imm.u8` slots are dropped, `set.x64 0` leaves the stack unchanged.
+* the position is not validated at runtime.
+*/
+
+/** ### Instruction `set.x128`
+
+Overwrites the four 32-bit stack slots at the given position with the four top slots, then drops the top slots.
+
+```
+a4 = sp(0)
+a3 = sp(1)
+a2 = sp(2)
+a1 = sp(3)
+sp(imm.u8 + 0) = a4
+sp(imm.u8 + 1) = a3
+sp(imm.u8 + 2) = a2
+sp(imm.u8 + 3) = a1
+drop(min(imm.u8, 4))
+```
+*/
+inline "*opcode:set.x128";
+/**
+* Immediate operand: `imm.u8`: position of the upper slot to overwrite, `0` being the top of the stack
+* Stack effect: `[…, b1, b2, b3, b4, …, a1, a2, a3, a4] → […, a1, a2, a3, a4, …]`
+
+Notes:
+* the position is measured before the drop, e.g. `set.x128 4`: `[…, b1, b2, b3, b4, a1, a2, a3, a4] → […, a1, a2, a3, a4]`.
+* when the position is less than `4` the destination overlaps the source: the value is moved `imm.u8` slots down and only `imm.u8` slots are dropped, `set.x128 0` leaves the stack unchanged.
+* the position is not validated at runtime.
+*/
+
+/** ### Instruction `mov.x32`
+
+Copies a 32-bit stack slot from the source position to the destination position.
+
+```
+a = sp(imm.src)
+sp(imm.dst) = a
+```
+*/
+inline "*opcode:mov.x32";
+/**
+* Immediate operand: `imm.dst`, `imm.src`: positions of the destination and source slots, `0` being the top of the stack
+* Stack effect: `[…] → […]`, the slot at `imm.dst` is overwritten
+
+Notes:
+* e.g. `mov.x32 3, 1`: `[…, a, b, c, d] → […, c, b, c, d]`.
+* the positions are not validated at runtime.
+*/
+
+/** ### Instruction `mov.x64`
+
+Copies two 32-bit stack slots from the source position to the destination position.
+
+```
+a2 = sp(imm.src + 0)
+a1 = sp(imm.src + 1)
+sp(imm.dst + 0) = a2
+sp(imm.dst + 1) = a1
+```
+*/
+inline "*opcode:mov.x64";
+/**
+* Immediate operand: `imm.dst`, `imm.src`: positions of the upper destination and source slots, `0` being the top of the stack
+* Stack effect: `[…] → […]`, the slots at `imm.dst` and `imm.dst + 1` are overwritten
+
+Notes:
+* e.g. `mov.x64 4, 0`: `[…, a1, a2, b1, b2, c1, c2] → […, c1, c2, b1, b2, c1, c2]`.
+* the positions are not validated at runtime.
+*/
+
+/** ### Instruction `mov.x128`
+
+Copies four 32-bit stack slots from the source position to the destination position.
+
+```
+a4 = sp(imm.src + 0)
+a3 = sp(imm.src + 1)
+a2 = sp(imm.src + 2)
+a1 = sp(imm.src + 3)
+sp(imm.dst + 0) = a4
+sp(imm.dst + 1) = a3
+sp(imm.dst + 2) = a2
+sp(imm.dst + 3) = a1
+```
+*/
+inline "*opcode:mov.x128";
+/**
+* Immediate operand: `imm.dst`, `imm.src`: positions of the upper destination and source slots, `0` being the top of the stack
+* Stack effect: `[…] → […]`, the slots from `imm.dst` to `imm.dst + 3` are overwritten
+
+Notes:
+* e.g. `mov.x128 0, 4`: `[…, a1, a2, a3, a4, b1, b2, b3, b4] → […, a1, a2, a3, a4, a1, a2, a3, a4]`.
+* overlapping source and destination ranges are handled correctly.
+* the positions are not validated at runtime.
+*/
+
+/** ### Instruction `load.sp`
+
+Pushes the address of a stack location, used to take the address of local variables.
+
+```
+ref = SP + imm.i24
+push(ref)
+```
+*/
+inline "*opcode:load.sp";
+/**
+* Immediate operand: `imm.i24`: signed 24-bit byte offset relative to the stack pointer
+* Stack effect: `[…] → […, ref]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slot.
+
+Notes:
+* `SP` is the address of the top slot before the push.
+* the result is a vm memory address, usable with the indirect memory instructions (`load.i32`, `store.i32`, ...).
+*/
+
+/** ### Instruction `load.ref`
+
+Pushes a 32-bit reference constant, stored in the instruction, onto the stack.
+
+```
+push(imm.x32)
+```
+*/
+inline "*opcode:load.ref";
+/**
+* Immediate operand: `imm.x32`: 32-bit reference (vm memory address)
+* Stack effect: `[…] → […, ref]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the new slot.
+
+Notes:
+* temporary instruction, executed exactly like `load.c32`; it is expected to be replaced by `load.c32` or `load.c64`.
+*/

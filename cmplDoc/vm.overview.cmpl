@@ -1,0 +1,90 @@
+/** # Virtual machine
+The virtual machine is a very simple stack based one, with a minimal set of registers.
+
+## Memory layout
+The memory is organized in 4 segments:
+
+- meta\[r--]:
+	- identifiers and string constants (are emitted in the compilation phase).
+	- typename and variable metadata (are emitted in the compilation phase).
+	- enumeration values and initializer literals.
+
+- code\[r-x]:
+	- functions implementations.
+
+- data\[rw-]:
+	- static variables.
+
+- heap\[rw-]:
+	- heap memory
+	- stack(s).
+
+In the compilation phase the lower part of the memory is filled with persistent data which remains available for code execution,
+while the upper part is filled with token structures and other temporary data, that will be overwritten on code execution.
+
+## Registers
+The virtual machine registers:
+- ip: Instruction pointer
+- sp: Stack pointer
+- tp: Trace pointer (used only when debugging/profiling)
+- bp: Base pointer constant (to detect stack overflow)
+- ss: Stack size constant
+
+## Instruction set
+
+The instructions of the vm are grouped by type:
+* `0x00 ... 0x0f` system instructions
+* `0x10 ... 0x1f` stack manipulation
+* `0x20 ... 0x2f` memory manipulation
+* `0x30 ... 0x3f` unsigned 32-bit
+* `0x40 ... 0x4f` unsigned 64-bit
+* `0x50 ... 0x5f` signed 32-bit
+* `0x60 ... 0x6f` signed 64-bit
+* `0x70 ... 0x7f` float 32-bit
+* `0x80 ... 0x8f` float 64-bit
+* `0x90 ... 0x9f` packed128: float32x4
+* `0xa0 ... 0xaf` packed128: float64x2, float32x4, int64x2, int32x4, int16x8, int8x16
+* `0xb0 ... 0xbf` packed256: float64x4, float32x8, int64x4, int32x8, int16x16, int8x32
+* `0xc0 ... 0xcf` u32u64ext: todo
+* `0xd0 ... 0xdf` i32i64ext: todo
+* `0xe0 ... 0xef` f32f64ext: todo
+* `0xf0 ... 0xff` reserved
+
+### Instruction matrix
+
+|        | 0        | 1        | 2         | 3         | 4         | 5        | 6         | 7        | 8         | 9         | a         | b          | c         | d         | e         | f          |
+|:------:|:---------|:---------|:----------|:----------|:----------|:---------|:----------|:---------|:----------|:----------|:----------|:-----------|:----------|:----------|:----------|:-----------|
+| 0:sys  | nop      | nfc      | call      | ret       | jmp       | jnz      | jz        | -        | -         | not.u32   | inc.i32   | mad.u32    | chk.idx   | chk.len   | inc.sp    | copy.mem   |
+| 1:stk  | load.c32 | load.c64 | load.z32  | load.z64  | load.z128 | dup.x32  | dup.x64   | dup.x128 | set.x32   | set.x64   | set.x128  | mov.x32    | mov.x64   | mov.x128  | load.sp   | load.ref   |
+| 2:mem  | load.is8 | load.iu8 | load.is16 | load.iu16 | load.i32  | load.i64 | load.i128 | store.i8 | store.i16 | store.i32 | store.i64 | store.i128 | load.m32  | load.m64  | store.m32 | store.m64  |
+| 3:u32  | cmt.u32  | and.u32  | or.u32    | mul.u32   | div.u32   | rem.u32  | -         | -        | clt.u32   | cgt.u32   | shl.u32   | shr.u32    | sar.u32   | xor.u32   | u32.2i64  | u32.       |
+| 4:u64  | cmt.u64  | and.u64  | or.u64    | mul.u64   | div.u64   | rem.u64  | -         | -        | clt.u64   | cgt.u64   | shl.u64   | shr.u64    | sar.u64   | xor.u64   | -         | -          |
+| 5:i32  | neg.i32  | add.i32  | sub.i32   | mul.i32   | div.i32   | rem.i32  | -         | ceq.i32  | clt.i32   | cgt.i32   | i32.2bool | i32.2i64   | i32.2f32  | i32.2f64  | -         | -          |
+| 6:i64  | neg.i64  | add.i64  | sub.i64   | mul.i64   | div.i64   | rem.i64  | -         | ceq.i64  | clt.i64   | cgt.i64   | i64.2i32  | i64.2bool  | i64.2f32  | i64.2f64  | -         | -          |
+| 7:f32  | neg.f32  | add.f32  | sub.f32   | mul.f32   | div.f32   | rem.f32  | -         | ceq.f32  | clt.f32   | cgt.f32   | f32.2i32  | f32.2i64   | f32.2bool | f32.2f64  | -         | load.f32   |
+| 8:f64  | neg.f64  | add.f64  | sub.f64   | mul.f64   | div.f64   | rem.f64  | -         | ceq.f64  | clt.f64   | cgt.f64   | f64.2i32  | f64.2i64   | f64.2f32  | f64.2bool | -         | load.f64   |
+| 9:p128 | neg.v4f  | add.v4f  | sub.v4f   | mul.v4f   | div.v4f   | -        | -         | ceq.v4f  | min.v4f   | max.v4f   | dp3.v4f   | dp4.v4f    | dph.v4f   | swz.p4x   | load.m128 | store.m128 |
+| a:p128 | neg.v2d  | add.v2d  | sub.v2d   | mul.v2d   | div.v2d   | -        | -         | ceq.v2d  | min.v2d   | max.v2d   | -         | -          | -         | -         | -         | -          |
+| b:p256 | -        | -        | -         | -         | -         | -        | -         | -        | -         | -         | -         | -          | -         | -         | -         | -          |
+| c:p512 | -        | -        | -         | -         | -         | -        | -         | -        | -         | -         | -         | -          | -         | -         | -         | -          |
+| d:extU | -        | -        | -         | -         | -         | -        | -         | -        | -         | -         | -         | -          | -         | -         | -         | -          |
+| e:extI | -        | -        | -         | -         | -         | -        | -         | -        | -         | -         | -         | -          | -         | -         | -         | -          |
+| f:extF | -        | -        | -         | -         | -         | -        | -         | -        | -         | -         | -         | -          | -         | -         | -         | -          |
+
+### Notation
+
+Each instruction is described by a short summary, its operation in pseudocode, its details, the traps it can raise, and additional notes.
+
+* a stack slot is 32 bits wide; 64-bit values occupy 2 slots, 128-bit values occupy 4 slots.
+* the stack grows downwards: the slot pushed last is on top and has the lowest address.
+* `pop()` and `push(x)` remove and add as many slots as the type of the value requires, e.g. `int64 a = pop()` removes 2 slots.
+* `sp(n)` is the slot at position `n` from the top of the stack without removing it, `sp(0)` being the top; `drop(n)` removes `n` slots.
+* `mem[addr].t` is the value of type `t` stored at memory address `addr`; `x32` denotes a raw 32-bit value with no particular type.
+* `imm.t` is the immediate operand encoded in the instruction after the opcode: `imm.u8`, `imm.i24`, `imm.u24`, `imm.x32`, `imm.x64`.
+* `IP` is the instruction pointer, `SP` is the stack pointer.
+* `trap(error)` aborts the execution with the given error, `halt()` stops the execution of the virtual machine.
+* Stack effect: `[…, a, b] → […, c]` shows the top of the stack before and after the instruction, the rightmost element being the top.
+  A typed value is named once, regardless of how many slots it occupies; the slot counts are given by the stack inputs and outputs.
+* vector lane `x` (lane `0`) is stored at the lowest address, so it is the top slot when the vector is on the stack.
+* Traps lists the errors the instruction can raise; instructions without a Traps section never abort the execution.
+*/

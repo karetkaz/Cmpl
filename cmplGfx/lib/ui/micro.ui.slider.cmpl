@@ -1,22 +1,22 @@
-///@public
+/// Slider is a button with a numeric value, adjusted by dragging, or with the `+`, `-` and digit keys
 struct Slider: Button {
-	///@public
+	/// The current value
 	float64 value = 0;
 	float64 _value = 0;
-	///@public
+	/// The lowest value
 	float64 minimum = 0;
-	///@public
+	/// The highest value
 	float64 maximum = 1;
-	///@public
+	/// Values are rounded to multiples of this step, `0` disables rounding
 	float64 stepSize = 0;
-	///@public
-	float64 shiftFactor = 1. / 20; // holding the shift key slide twenty times slower
+	/// Multiplier applied to the change of the value while holding the shift key, for finer adjustments
+	float64 shiftFactor = 1. / 20; // holding the shift key slides twenty times slower
 	float64 resetValue = 0;
 
 	/// clicking on a non focused view will not update the value, it will just focus it.
 	bool clickToFocus = true;
 
-	///@public
+	/// Callback function executed when the value changes, clamps and rounds the value, returns true if it changed
 	bool onUpdate(Slider this, float64 value) {
 		if (value > this.maximum) {
 			value = this.maximum;
@@ -44,6 +44,7 @@ struct Slider: Button {
 		// clamp to initial value and force update with a reset
 		Slider.onUpdate(this, this.value);
 		this.resetValue = this.value;
+		this.value = Float64.nan;
 		this.onUpdate(this, this.resetValue);
 	}
 
@@ -179,7 +180,7 @@ struct Slider: Button {
 		return View.onMeasure(this, &rect);
 	}
 
-	///@public
+	/// Draw the value indicator bar of the slider
 	void onDrawSlider(Slider this, Image offs, Rect rect) {
 		if (!Float64.isFinite(this.maximum) || !Float64.isFinite(this.minimum)) {
 			// no slider for infinite or undefined bounds

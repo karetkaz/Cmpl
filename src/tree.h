@@ -25,7 +25,7 @@ extern const struct tokenRec token_tbl[256];
 struct astNode {
 	ccToken		kind;				// token kind: operator, statement, ...
 	int32_t		line;				// line position of token
-	const char* file;				// file name of the token belongs to
+	const char* file;				// file name the token belongs to
 	symn		type;				// token type: return
 	astn		next;				// next token / next argument / next statement
 	union {

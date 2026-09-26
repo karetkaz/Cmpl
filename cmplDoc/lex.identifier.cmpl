@@ -1,0 +1,19 @@
+/** ## Identifiers
+Identifiers are named references of types, variables, and functions.
+
+An identifier starts with a letter or underscore,
+followed by any number of letters, digits, or underscores.
+
+## Keywords
+Keywords are reserved words, which cannot be used as identifiers:
+- break
+- continue
+- else
+- enum
+- for
+- if
+- inline
+- return
+- static
+- struct
+*/

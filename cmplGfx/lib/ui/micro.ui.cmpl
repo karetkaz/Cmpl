@@ -41,16 +41,16 @@ struct Style {
 	/// Formatting to be used printing numbers, dates, etc
 	NumberFormat format = defaultFormat;
 
-	///@public
+	/// Background color of views
 	uint32 backgroundColor = uint32(theme);
 	// uint32 disabledColor = TODO;
-	///@public
+	/// Background color of hovered views
 	uint32 hoveredColor = uint32(mix_rgb8(16, theme, accent));
-	///@public
+	/// Background color of focused views
 	uint32 focusedColor = uint32(mix_rgb8(64, theme, accent));
-	///@public
+	/// Color used to draw values, and the border of pressed views
 	uint32 valueColor = uint32(accent);
-	///@public
+	/// Color used to draw text
 	uint32 textColor = uint32(lum(theme) > 127 ? dark : light);
 
 	enum: int32 {
@@ -109,14 +109,14 @@ struct Style {
 		}
 	}
 
-	/// Measure the given `text` whit `this` style.
+	/// Measure the given `text` with `this` style.
 	static void measure(Style this!, Rect rect&, char text[]) {
 		this.font.clipText(&rect, text);
 		rect.x1 += 2 * this.padding;
 		rect.y1 += 2 * this.padding;
 	}
 
-	/// Measure and align the given `text` whit `this` style.
+	/// Measure and align the given `value` with `this` style.
 	static void align(Style this!, Rect parent, Rect rect&, char value[], int32 align) {
 		parent.padded(-this.padding);
 		this.font.clipText(&rect, value);
@@ -131,7 +131,7 @@ struct Style {
 		align(parent, &rect, align);
 	}
 
-	/// Measure and align the given `text` whit `this` style.
+	/// Measure and align the given `value` with `this` style.
 	static void align(Style this!, Rect parent, Rect rect&, char value[]) {
 		return align(this, parent, &rect, value, this.align);
 	}
@@ -159,7 +159,7 @@ struct KeyEvent {
 	bool isCtrl;
 	/// Alt key is pressed when this event is generated.
 	bool isAlt;
-	/// Number of times the key was repeated holding down the key.
+	/// Number of times the key was repeated while holding it down.
 	int32 repeat;
 	/// Virtual key code.
 	int32 key;
@@ -179,7 +179,7 @@ struct TouchEvent {
 	bool isAlt;
 	/// Number of times the click or tap event was repeated.
 	int32 clicks;
-	/// The mouse-button was pressed or finger was placed on the screen.
+	/// The mouse-button that was pressed or the finger that was placed on the screen.
 	int32 button;
 
 	/// Horizontal coordinate of the event
@@ -195,7 +195,7 @@ struct TouchEvent {
 //	/// Vertical change between the last-press and current event.
 //	int32 dpy = 0;
 
-	///@public
+	/// Checks whether the event is inside the given `rect`
 	static bool test(TouchEvent event!, Rect rect!) {
 		if (event.x < rect.x0 || event.x >= rect.x1) {
 			return false;
@@ -206,22 +206,22 @@ struct TouchEvent {
 		return true;
 	}
 
-	///@public
+	/// Checks whether the event is a motion event
 	static bool isMotion(TouchEvent event!) {
 		return event.dx || event.dy;
 	}
 
-	///@public
+	/// Checks whether the event is a press event
 	static bool isPress(TouchEvent event!) {
 		return !(event.release || event.dx || event.dy);
 	}
 
-	///@public
+	/// Checks whether the event is a long press event
 	static bool isLongPress(TouchEvent event!) {
 		return event.release && event.clicks < 0;
 	}
 
-	///@public
+	/// Checks whether the event is a press event of the given `button`
 	static bool isPress(TouchEvent event!, int32 button) {
 		if (event.release || event.dx || event.dy) {
 			return false;
@@ -232,7 +232,7 @@ struct TouchEvent {
 
 /** View is the base class of all user interface elements.
  * it has width and height, forming a rectangular shape on screen.
- * by it's own a view has no position, it must be positioned in a layout.
+ * on its own a view has no position, it must be positioned in a layout.
  */
 struct View: object {
 	/// State of the view used for drawing, and returned from event handlers
@@ -323,7 +323,7 @@ struct View: object {
 	/// Callback function executed when the view needs to be drawn
 	void onDraw(View this, Image offs, Rect rect);
 
-	///@public
+	/// Draw the background of the view based on its `state`, then the view itself
 	static void onDraw(View this, Image offs, Rect rect, int32 state) {
 		Style style! = this.style;
 		if (state & State.focused) {
@@ -341,7 +341,7 @@ struct View: object {
 		}
 	}
 
-	///@public
+	/// Draw the `text` of the view, and the `value` aligned to the right
 	static void onDraw(View this, Image offs, Rect rect, char text[], char value[]) {
 		Style style! = this.style;
 		if (text.length == 0) {
@@ -395,8 +395,8 @@ struct Layout: View {
 
 	/** Vertical, horizontal or other orientation of the layout
 	 * zero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)
-	 * negative value represents a column layout, specifying the number of columns to be used
-	 * positive value represents a row layout, specifying the number of rows to be used
+	 * negative value represents a horizontal layout, specifying the number of rows to be used
+	 * positive value represents a vertical layout, specifying the number of columns to be used
 	 */
 	int32 orientation = 1;
 
@@ -545,18 +545,18 @@ struct Layout: View {
 		return this;
 	}
 
-	///@public
+	/// Returns the number of views in this layout
 	static int size(Layout this) {
 		return this.itemCount;
 	}
 
-	///@public
+	/// Returns the view at the given index
 	static View getView(Layout this, int idx) {
 		assert(idx >= 0 && idx < this.itemCount);
 		return this.items[idx].view;
 	}
 
-	///@public
+	/// Set the alignment of the view at the given index
 	static void setAlignment(Layout this, int idx, int32 alignment) {
 		assert(idx >= 0 && idx < this.itemCount);
 		this.items[idx].align = alignment;
@@ -1045,12 +1045,12 @@ struct Layout: View {
 		return layout;
 	}
 
-	/// Create a Row-layout containing the given `items` arranged vertically in a single row
+	/// Create a Row-layout containing the given `items` arranged horizontally in a single row
 	static Layout Row(View items?...) {
 		return Custom(-1, Style.fill, ...items);
 	}
 
-	/// Create a Column-layout containing the given `items` arranged horizontally in a single column
+	/// Create a Column-layout containing the given `items` arranged vertically in a single column
 	static Layout Column(View items?...) {
 		return Custom(1, Style.fill, ...items);
 	}
@@ -1141,7 +1141,7 @@ struct Widget: Layout {
 		return this;
 	}
 
-	/// Set the initial focused wie in the widget
+	/// Set the initial focused view in the widget
 	static Widget focus(Widget this&, View value) {
 		this.focus = value;
 		return this;
@@ -1184,7 +1184,7 @@ struct Widget: Layout {
 
 		if (event.key == Window.KEY_CODE_TAB && !event.release && this == this.parent) {
 			if (!focusNext(&this, event.isShift)) {
-				// focus run out of last focused item
+				// focus ran out of last focused item
 				if (!focusNext(&this, event.isShift)) {
 					// there is no focusable view found
 					return State.ignored;
@@ -1210,7 +1210,7 @@ struct Widget: Layout {
 	}
 }
 
-/// Return the root widget of the given `view`
+/// Return the nearest widget containing the given `view`
 Widget getWidget(View view&) {
 	for (View v&? = view; v != null; v = v.parent) {
 		if (Widget w = v.as(Widget)) {
@@ -1261,12 +1261,12 @@ void focus(View view) {
 	widget.focusNext(false);
 	widget.measure = true;
 }
-/// Returns weather the given `view` is in focused state or not.
+/// Returns whether the given `view` is in focused state or not.
 bool isFocused(View view) {
 	Widget widget = getWidget(&view);
 	return view == widget.getFocused();
 }
-///@public
+/// Returns whether the focused view is one of the given `items`, searching in nested layouts; with no `items`, whether any view is focused
 bool hasFocused(Layout this, View items...) {
 	if (this.focusedIndex < 0) {
 		// nothing is focused.
@@ -1290,12 +1290,12 @@ bool hasFocused(Layout this, View items...) {
 	return false;
 }
 
-/// Returns weather the given `view` is in pressed state or not.
+/// Returns whether the given `view` is in pressed state or not.
 bool isPressed(View view) {
 	Widget widget = getWidget(&view);
 	return view == widget.getPressed();
 }
-///@public
+/// Returns whether the pressed view is one of the given `items`, searching in nested layouts; with no `items`, whether any view is pressed
 bool hasPressed(Layout this, View items...) {
 	if (this.pressedIndex < 0) {
 		// nothing is pressed.

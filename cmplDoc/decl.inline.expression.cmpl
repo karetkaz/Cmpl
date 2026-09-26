@@ -1,0 +1,28 @@
+/** ### Property/Extension operators
+An ordinary named `inline` function can be called with [Uniform Function Call Syntax](https://en.wikipedia.org/wiki/Uniform_Function_Call_Syntax)
+as if it were a property or method of its first argument's type.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// property/extension operators: an ordinary `inline` function used via UFCS as if it were a method
+
+struct DeclOpExtComplex {
+	float64 re;
+	float64 im;
+}
+DeclOpExtComplex DeclOpExtComplex(float64 re, float64 im) {
+	return { re: re, im: im };
+}
+
+DeclOpExtComplex declOpExtA = DeclOpExtComplex(3, 0);
+DeclOpExtComplex declOpExtB = DeclOpExtComplex(5, 1);
+
+inline declOpExtAbs(DeclOpExtComplex a) = Float64.sqrt(a.re * a.re + a.im * a.im);
+float64 declOpExtX = declOpExtA.declOpExtAbs();
+assertEq(3, declOpExtX);
+
+inline declOpExtAdd(DeclOpExtComplex a, DeclOpExtComplex b) = DeclOpExtComplex(a.re + b.re, a.im + b.im);
+DeclOpExtComplex declOpExtSum = declOpExtA.declOpExtAdd(declOpExtB);
+assertEq(8, declOpExtSum.re);

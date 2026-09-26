@@ -113,7 +113,7 @@ void clipText(GxRect rect, GxImage font, const uint32_t *codepage, const char *t
 				// fall through
 			case '\n':
 				if (text[i] == '\0') {
-					// new line at end ot text
+					// new line at end of text
 					break;
 				}
 				y += font->height;

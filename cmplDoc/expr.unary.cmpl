@@ -1,0 +1,28 @@
+/** ## Unary expressions
+Unary expressions are composed of a unary operator and one operand.
+- `+`: unary plus. Returns the operand promoted to its default type.
+- `-`: unary minus. Changes the sign of a number.
+- `~`: complement. Valid for integer types.
+- `!`: logical not. Results in `true` or `false`.
+- `&`: explicitly passes the operand by reference, matching a parameter declared with a trailing `&`.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// unary expressions
+
+int32 exprUnaryA = 5;
+assertEq(5, +exprUnaryA);   // unary plus: promotes to the operand's default type
+assertEq(-5, -exprUnaryA);  // unary minus: changes the sign
+assertEq(~5, ~exprUnaryA);  // complement: valid for integer types
+assert(!false);             // logical not
+
+// `&` in front of a call argument explicitly passes it by reference,
+// matching a parameter declared with a trailing `&`
+void exprUnarySet(int32 out&) {
+	out = 42;
+}
+int32 exprUnaryTarget = 0;
+exprUnarySet(&exprUnaryTarget);
+assertEq(42, exprUnaryTarget);

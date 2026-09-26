@@ -10,7 +10,7 @@ vec4f hsv2rgb(vec4f hsv) {
 
 	h *= 360 / 60;
 
-	int i = int(h);		// round
+	int i = int(h);		// truncate
 	float32 f = h - i;	// fraction
 
 	float32 u = v;

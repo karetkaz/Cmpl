@@ -40,6 +40,9 @@ void transform(Image image, Rect rect?, Image src, mat4f mat!, int32 interpolate
 		.mul(translation(vec4f(-0.5), 1))
 		.mul(mat);
 
+	// half a source pixel in texture coordinates
+	float32 halfX = .5 / src.width();
+	float32 halfY = .5 / src.height();
 	for (int32 y = 0; y < height; y += 1) {
 		int32 yDst = y + dRec.y0;
 		for (int32 x = 0; x < width; x += 1) {
@@ -49,14 +52,17 @@ void transform(Image image, Rect rect?, Image src, mat4f mat!, int32 interpolate
 				image.set(x + dRec.x0, yDst, 0);
 				continue;
 			}
-			t.x *= float32(t.x > 0 || t.x <= 1);
-			t.y *= float32(t.y > 0 || t.y <= 1);
-			image.set(x + dRec.x0, yDst, argb(src.tex(t.x / t.w, t.y / t.w)));
+			float32 u = t.x / t.w;
+			float32 v = t.y / t.w;
+			// snap the half pixel rounding offset at the left and top edges to 0, as the native implementation does
+			u *= float32(!(u < 0 && u > -halfX));
+			v *= float32(!(v < 0 && v > -halfY));
+			image.set(x + dRec.x0, yDst, argb(src.tex(u, v)));
 		}
 	}
 }
 
-/// Resize the given `region` of the `source` image into the `destination` image using the `interpolation`.
+/// Resize the `roi` region of the `src` image into the `rect` region of the destination `image` using the given `interpolate` mode.
 void resize(Image image, Rect rect?, Image src, Rect roi?, int32 interpolate) {
 	int32 srcX0 = roi != null ? roi.x0 : 0;
 	int32 srcY0 = roi != null ? roi.y0 : 0;

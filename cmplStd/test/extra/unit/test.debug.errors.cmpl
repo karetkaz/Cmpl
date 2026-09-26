@@ -1,0 +1,24 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh -X-stdin-offsets -debug
+
+// errors in debug mode: an error caught by `recover` is returned as its error code,
+// an uncaught error is reported and stops the execution
+
+void divideByZero(pointer args) {
+	int32 zero = 0;
+	int32 value = 1 / zero;
+}
+
+// caught by recover: the error code is returned, and the execution continues
+int32 caught = recover(null, divideByZero);
+debug("caught error", caught);
+assert(caught == recover.divisionByZero);
+
+// uncaught: the error is reported, and the execution stops
+int32 zero = 0;
+int32 value = 1 / zero;
+debug("not reached", value);
+
+/* - expected output:
+test.debug.errors.cmpl:13: debug: caught error: int32(3)
+test.debug.errors.cmpl:18: Division by Zero at .0de108 in function: <.main+8602> executing instruction: div.i32
+*/

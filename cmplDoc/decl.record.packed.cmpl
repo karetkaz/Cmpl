@@ -1,0 +1,77 @@
+/** ### Memory layout
+The members of a record are laid out in memory in declaration order, using the same rules as C:
+- Every member is aligned to its natural alignment, so padding may be inserted before it:
+  - numbers, `bool`, `char` and enumerations: their size (`int16` is aligned to 2, `float64` to 8).
+  - references, pointers, slices, unknown-size arrays, variants and objects: the size of a reference.
+  - fixed-size arrays: the alignment of their elements.
+  - records: the largest alignment of their members.
+- The size of the record is padded to the largest alignment of its members,
+  so the members of every element of an array of records stay aligned.
+- A record with a single member has the size of that member.
+- Alignments are limited to the size of a pointer on the host platform,
+  and for records extending `object` to the size of a reference.
+
+This makes it possible to declare records with the same memory layout as the structures
+of native (C) code, without any annotation.
+
+### Packed records
+A record can be packed with a small power-of-2 integer (`0, 1, 2, 4, 8, 16, 32`):
+the alignment of every member is limited to the given value, reducing the gaps between the members
+(same as `#pragma pack(n)` in C).
+- Packed with `0`: a C-like union — every member starts at the same memory location,
+  the size is the size of the largest member, padded to the largest alignment of the members.
+- Packed with `1`: tightly packed, no gap between members (may make member access expensive).
+- Packed with a value larger than the alignment of the members: same as not packed.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// memory layout: members are aligned to their natural alignment, like in C
+struct DeclRecLayout {
+	int8 a;      // offset 0, followed by 3 bytes of padding
+	int32 b;     // offset 4
+	int16 c;     // offset 8, followed by 2 bytes of padding
+}
+assertEq(12, sizeof(DeclRecLayout));   // padded to the alignment of `b`
+
+// a record with a single member has the size of that member
+struct DeclRecWrapper {
+	int32 value;
+}
+assertEq(4, sizeof(DeclRecWrapper));
+
+// nested records are aligned to the largest alignment of their members
+struct DeclRecNested {
+	int8 tag;               // offset 0, followed by 3 bytes of padding
+	DeclRecLayout layout;   // offset 4, the alignment of `DeclRecLayout` is 4
+}
+assertEq(16, sizeof(DeclRecNested));
+
+// packed records: control the memory layout of the members
+
+// packed with 0: a C-like union -- every member starts at the same offset
+struct DeclRecUnion32: 0 {
+	int32 i32;
+	float32 f32;
+}
+DeclRecUnion32 declRecU = { i32: 0x3F800000 };
+assertEq(1.0, declRecU.f32);   // both members share the same memory location
+assertEq(4, sizeof(DeclRecUnion32));
+
+// packed with 1: tightly packed, no gaps between members
+struct DeclRecInstruction: 1 {
+	uint8 opc;
+	int32 arg;
+}
+DeclRecInstruction declRecI = { opc: 1, arg: 2 };
+assertEq(1, declRecI.opc);
+assertEq(2, declRecI.arg);
+assertEq(5, sizeof(DeclRecInstruction));
+
+// packed with 2: the alignment of the members is limited to 2
+struct DeclRecPacked2: 2 {
+	uint8 opc;   // offset 0, followed by 1 byte of padding
+	int32 arg;   // offset 2
+}
+assertEq(6, sizeof(DeclRecPacked2));

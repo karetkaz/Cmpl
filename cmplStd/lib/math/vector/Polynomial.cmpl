@@ -1,6 +1,6 @@
 inline scalar = float64;  // fixme: declare inside Polynomial
 
-///@public
+/// Polynomial with `float64` coefficients, the coefficient at index `i` belongs to the term of degree `i`
 struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	scalar coefficients[*];
 	int capacity;
@@ -76,7 +76,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	}
 
 	/// Compute the degree of the polynomial
-	static int degree(Polynomial this&) {
+	static int degree(Polynomial this) {
 		for (int i = this.capacity - 1; i > 0; i -= 1) {
 			if (this.coefficients[i] != c_zero) {
 				return i;
@@ -104,7 +104,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	/// Negate the polynomial
 	static Polynomial neg(Polynomial a!) {
-		Polynomial result& = create(degree(&a), null);
+		Polynomial result& = create(degree(a), null);
 		for (int i = 0; i < result.capacity; i += 1) {
 			result.coefficients[i] = -a.get(i);
 		}
@@ -113,7 +113,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	/// Add two polynomials
 	static Polynomial add(Polynomial a!, Polynomial b!) {
-		Polynomial result& = create(Int.max(degree(&a), degree(&b)), null);
+		Polynomial result& = create(Int.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
 			result.coefficients[i] = a.get(i) + b.get(i);
 		}
@@ -122,7 +122,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	/// Subtract two polynomials
 	static Polynomial sub(Polynomial a!, Polynomial b!) {
-		Polynomial result& = create(Int.max(degree(&a), degree(&b)), null);
+		Polynomial result& = create(Int.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
 			result.coefficients[i] = a.get(i) - b.get(i);
 		}
@@ -131,8 +131,8 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	/// Multiply two polynomials
 	static Polynomial mul(Polynomial a!, Polynomial b!) {
-		int degreeA = degree(&a);
-		int degreeB = degree(&b);
+		int degreeA = degree(a);
+		int degreeB = degree(b);
 		Polynomial result& = create(degreeA + degreeB, null);
 		for (int i = 0; i <= degreeA; i += 1) {
 			for (int j = 0; j <= degreeB; j += 1) {
@@ -145,7 +145,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	/// Evaluate the polynomial using Horner's method
 	static scalar evaluate(Polynomial this!, scalar value) {
 		scalar result = c_zero;
-		for (int i = degree(&this); i >= 0; i -= 1) {
+		for (int i = degree(this); i >= 0; i -= 1) {
 			result = result * value + this.coefficients[i];
 		}
 		return result;
@@ -153,7 +153,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	/// Compute the derivative of the polynomial
 	static Polynomial derivative(Polynomial this!) {
-		Polynomial result& = create(this.degree() - 1, null);
+		Polynomial result& = create(degree(this) - 1, null);
 		for (int i = 0; i < result.capacity; i += 1) {
 			result.coefficients[i] = (i + 1) * this.coefficients[i + 1];
 		}
@@ -162,7 +162,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	/// Compute the integral of the polynomial
 	static Polynomial integral(Polynomial this!, scalar c) {
-		Polynomial result& = create(this.degree() + 1, null);
+		Polynomial result& = create(degree(this) + 1, null);
 		result.coefficients[0] = c;
 		for (int i = 1; i < result.capacity; i += 1) {
 			result.coefficients[i] = this.coefficients[i - 1] / i;

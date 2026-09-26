@@ -1,0 +1,85 @@
+/** ## Enumerations
+An enumeration declares a list of named constants, all of a given type.
+- It may also add a new type, the enumeration type, if the enumeration name is specified.
+- The enumeration type is a reference type; its variables may be initialized, assigned or returned
+  only with one of the values listed inside the enumeration, or with another variable of the same enumeration type.
+- A value of the base type can be converted to the enumeration type only explicitly,
+  using an [inline low level operation](#inline-low-level-operations): `inline(int32(value))`.
+- The type of the enumerated values can be specified. If not specified, it defaults to `int`.
+- Every enumeration variable declaration must be initialized.
+
+### Enumeration values
+- A value can be given explicitly with `name: value`; the value can be any constant expression
+  of the enumeration's base type (`1 << 2`, `3.14`, ...).
+- A value without an initializer is numbered automatically: the first value is 0,
+  every other value is the previous integer value plus one.
+
+### Anonymous enumeration
+An anonymous enumeration does not create an enumeration type; it exposes its values directly
+to the declaring scope.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// enumerations: named constants, optionally forming their own reference type
+
+enum DeclEnumColor: int32 {
+	Red,
+	Green,
+	Blue,
+}
+
+DeclEnumColor declEnumC1 = DeclEnumColor.Red;
+assert(declEnumC1 == DeclEnumColor.Red);   // ok: assigned from a value of the enumeration
+
+DeclEnumColor declEnumC2 = declEnumC1;
+assert(declEnumC2 == declEnumC1);          // ok: assigned from a variable of the same enum type
+
+int32 declEnumRaw = DeclEnumColor.Green;
+assertEq(1, declEnumRaw);                  // ok: enum variables can be assigned to variables of their base type
+
+// DeclEnumColor declEnumBad = 2;           // error: enum variable can be assigned only from a value of the enumeration
+// DeclEnumColor declEnumNull = null;       // error: enum variable can not be null
+// DeclEnumColor declEnumUninit;            // error: enum variable must be initialized
+// declEnumC1 = 2;                          // error: enum variable can be assigned only from a value of the enumeration
+
+// explicit conversion from the base type, the value is not validated
+int32 declEnumIndex = 2;
+DeclEnumColor declEnumC3 = inline(int32(declEnumIndex));
+assert(declEnumC3 == DeclEnumColor.Blue);
+
+// explicit values: any constant expression of the base type
+enum DeclEnumFlags: int32 {
+	Read: 1 << 0,
+	Write: 1 << 1,
+	Execute: 1 << 2,
+}
+int32 declEnumFlagsRw = DeclEnumFlags.Read | DeclEnumFlags.Write;
+assertEq(3, declEnumFlagsRw);
+
+// automatic numbering continues from the previous explicit value
+enum DeclEnumStatus: int32 {
+	Ok,              // 0
+	NotFound: 404,
+	Gone,            // 405
+}
+int32 declEnumGone = DeclEnumStatus.Gone;
+assertEq(405, declEnumGone);
+
+// the base type is not limited to integers
+enum DeclEnumConstant: float64 {
+	Pi: 3.14159265358979,
+	E: 2.71828182845905,
+}
+float64 declEnumPi = DeclEnumConstant.Pi;
+assert(declEnumPi > 3.14 && declEnumPi < 3.15);
+
+// an anonymous enumeration exposes its values to the declaring scope directly,
+// without creating a new enumeration type
+enum: int32 {
+	DeclEnumAnonA,
+	DeclEnumAnonB,
+}
+assertEq(0, DeclEnumAnonA);
+assertEq(1, DeclEnumAnonB);

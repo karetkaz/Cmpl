@@ -73,10 +73,10 @@ struct NotEquals {
 	/// Extra argument to identify what happened
 	variant details![];
 
-	/// abort execution displaying the expected and returned values
+	/// report the expected and returned values at `debug` logging level
 	inline debug(char message[*], NotEquals detail!) = raise(raise.debug, raise.noTrace, message, detail);
 
-	/// abort execution displaying the expected and returned values
+	/// report the expected and returned values at `error` logging level
 	inline error(char message[*], NotEquals detail!) = raise(raise.error, raise.noTrace, message, detail);
 
 	/// abort execution displaying the expected and returned values

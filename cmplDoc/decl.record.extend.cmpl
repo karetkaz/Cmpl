@@ -1,0 +1,17 @@
+/** ### Extended records
+Extended records are usually allocated on the heap. The compiler should allocate on the heap only
+variables that escape their scope. The base type of every extended record is the builtin type `object`.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// extended records: their base type is the builtin type `object`
+
+struct DeclRecComplex: object {
+	float64 re;
+	float64 im = 0;
+}
+DeclRecComplex declRecC1 = { re: 8 };
+assertEq(8, declRecC1.re);
+assertEq(0, declRecC1.im);

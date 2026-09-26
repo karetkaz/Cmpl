@@ -1,0 +1,259 @@
+/** ### Instruction `cmt.u32`
+
+Inverts each bit of the 32-bit integer on top of the stack (bitwise complement).
+
+```
+u32 a = pop()
+push(~a)
+```
+*/
+inline "*opcode:cmt.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, ~a]`
+*/
+
+/** ### Instruction `and.u32`
+
+Computes the bitwise and of the two 32-bit integers on top of the stack.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a & b)
+```
+*/
+inline "*opcode:and.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a & b]`
+*/
+
+/** ### Instruction `or.u32`
+
+Computes the bitwise or of the two 32-bit integers on top of the stack.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a | b)
+```
+*/
+inline "*opcode:or.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a | b]`
+*/
+
+/** ### Instruction `mul.u32`
+
+Multiplies the two unsigned 32-bit integers on top of the stack.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a * b)
+```
+*/
+inline "*opcode:mul.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+
+Notes:
+* the result wraps around modulo 2^32.
+*/
+
+/** ### Instruction `div.u32`
+
+Divides the two unsigned 32-bit integers on top of the stack.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a / b)
+```
+*/
+inline "*opcode:div.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero.
+*/
+
+/** ### Instruction `rem.u32`
+
+Computes the remainder of the unsigned division of the two 32-bit integers on top of the stack.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a % b)
+```
+*/
+inline "*opcode:rem.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a % b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero.
+*/
+
+/** ### Instruction `clt.u32`
+
+Compares the two unsigned 32-bit integers on top of the stack, and pushes `1` if the first is less than the second, `0` otherwise.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a < b)
+```
+*/
+inline "*opcode:clt.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a < b]`
+*/
+
+/** ### Instruction `cgt.u32`
+
+Compares the two unsigned 32-bit integers on top of the stack, and pushes `1` if the first is greater than the second, `0` otherwise.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a > b)
+```
+*/
+inline "*opcode:cgt.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a > b]`
+*/
+
+/** ### Instruction `shl.u32`
+
+Shifts the 32-bit integer left by the given number of bits, filling with zeros.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a << b)
+```
+*/
+inline "*opcode:shl.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a << b]`
+
+Notes:
+* the shift count is not masked at runtime: a count of `32` or more is undefined behavior in C (x86 hosts typically use only the low 5 bits of the count).
+*/
+
+/** ### Instruction `shr.u32`
+
+Shifts the unsigned 32-bit integer right by the given number of bits, filling with zeros (logical shift).
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a >> b)
+```
+*/
+inline "*opcode:shr.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a >> b]`
+
+Notes:
+* the shift count is not masked at runtime: a count of `32` or more is undefined behavior in C (x86 hosts typically use only the low 5 bits of the count).
+*/
+
+/** ### Instruction `sar.u32`
+
+Shifts the signed 32-bit integer right by the given number of bits, replicating the sign bit (arithmetic shift).
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a >> b)
+```
+*/
+inline "*opcode:sar.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a >> b]`
+
+Notes:
+* both operands are treated as signed 32-bit integers.
+* the shift count is not masked at runtime: a count of `32` or more, or a negative count, is undefined behavior in C (x86 hosts typically use only the low 5 bits of the count).
+*/
+
+/** ### Instruction `xor.u32`
+
+Computes the bitwise exclusive or of the two 32-bit integers on top of the stack.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a ^ b)
+```
+*/
+inline "*opcode:xor.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a ^ b]`
+*/
+
+/** ### Instruction `u32.2i64`
+
+Converts the unsigned 32-bit integer on top of the stack to a 64-bit integer, using zero extension.
+
+```
+u32 a = pop()
+push(i64(a))
+```
+*/
+inline "*opcode:u32.2i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, i64(a)]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the extra slot.
+
+Notes:
+* the high 32 bits of the result are always zero.
+*/
+
+/** ### Instruction `u32.ext`
+
+Applies a bitwise operation with an immediate operand to the 32-bit integer on top of the stack: masks the low bits, or shifts left, right or arithmetic right.
+
+```
+u32 a = pop()
+u32 n = imm.u8 & 0x1f
+switch (imm.u8 >> 5) {
+    case 0: push(a & ((1 << n) - 1))    // and: keep the low n bits
+    case 1: push(a << n)                // shl
+    case 2: push(a >> n)                // shr: logical
+    case 3: push(i32(a) >> n)         // sar: arithmetic
+    default: illegalInstruction
+}
+```
+*/
+inline "*opcode:u32.";
+/**
+* Immediate operand: `imm.u8`: bits `7‥5` select the operation (`0`: and, `1`: shl, `2`: shr, `3`: sar), bits `4‥0` hold the bit count `n`
+* Stack effect: `[…, a] → […, a op n]`
+
+Traps:
+* `illegalInstruction`: the operation selector (bits `7‥5` of `imm.u8`) is greater than `3`.
+
+Notes:
+* when instruction folding is enabled, the compiler emits this instruction in place of `load.c32` followed by `shl.u32`, `shr.u32`, `sar.u32` (constant shift count, masked to its low 5 bits) or `and.u32` (constant mask of the form `2^n - 1`).
+* with the extended folding enabled, it also replaces the multiplication (`mul.u32`, `mul.i32`), division (`div.u32`) and remainder (`rem.u32`) by a constant power of two with `shl`, `shr` and `and`.
+*/

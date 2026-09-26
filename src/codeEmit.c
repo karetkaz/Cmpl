@@ -7,7 +7,7 @@ static vmInstruction lastIp(rtContext ctx) {
 	return (vmInstruction) (ctx->_mem + ctx->vm.pc);
 }
 
-/// Determines whether a given offset con be converted to a shorter form, like: `dup`, `set`, `mov`
+/// Determines whether a given offset can be converted to a shorter form, like: `dup`, `set`, `mov`
 static int fitStackReg(size_t offs) {
 	return ((offs & (vm_stk_align - 1)) == 0) && ((offs / vm_stk_align) <= vm_regs);
 }
@@ -86,7 +86,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 				break;
 
 			default: // we have dst on the stack
-				// push dst
+				// push src
 				if (!emitInt(ctx, opc_ldsp, vm_ref_size)) {
 					dbgTrace(ERR_INTERNAL_ERROR);
 					return 0;
@@ -170,7 +170,8 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			else if (ip->opc == opc_lref) {
 				arg.i64 = ip->arg.u32;
-				if (arg.i64 == arg.i24 && rollbackPc(ctx)) {
+				// fold only aligned addresses, members of records may be unaligned
+				if (arg.i64 == arg.i24 && (arg.i64 & 3) == 0 && rollbackPc(ctx)) {
 					opc = opc_ld32;
 				}
 			}
@@ -193,7 +194,8 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			else if (ip->opc == opc_lref) {
 				arg.i64 = ip->arg.u32;
-				if (arg.i64 == arg.i24 && rollbackPc(ctx)) {
+				// fold only aligned addresses, members of records may be unaligned
+				if (arg.i64 == arg.i24 && (arg.i64 & 3) == 0 && rollbackPc(ctx)) {
 					opc = opc_st32;
 				}
 			}
@@ -216,7 +218,8 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			else if (ip->opc == opc_lref) {
 				arg.i64 = ip->arg.u32;
-				if (arg.i64 == arg.i24 && rollbackPc(ctx)) {
+				// fold only aligned addresses, members of records may be unaligned
+				if (arg.i64 == arg.i24 && (arg.i64 & (vm_mem_align - 1)) == 0 && rollbackPc(ctx)) {
 					opc = opc_ld64;
 				}
 			}
@@ -239,7 +242,8 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			else if (ip->opc == opc_lref) {
 				arg.i64 = ip->arg.u32;
-				if (arg.i64 == arg.i24 && rollbackPc(ctx)) {
+				// fold only aligned addresses, members of records may be unaligned
+				if (arg.i64 == arg.i24 && (arg.i64 & (vm_mem_align - 1)) == 0 && rollbackPc(ctx)) {
 					opc = opc_st64;
 				}
 			}
@@ -262,7 +266,8 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			else if (ip->opc == opc_lref) {
 				arg.i64 = ip->arg.u32;
-				if (arg.i64 == arg.i24 && rollbackPc(ctx)) {
+				// fold only aligned addresses, members of records may be unaligned
+				if (arg.i64 == arg.i24 && (arg.i64 & (vm_mem_align - 1)) == 0 && rollbackPc(ctx)) {
 					opc = opc_ld128;
 				}
 			}
@@ -285,7 +290,8 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			else if (ip->opc == opc_lref) {
 				arg.i64 = ip->arg.u32;
-				if (arg.i64 == arg.i24 && rollbackPc(ctx)) {
+				// fold only aligned addresses, members of records may be unaligned
+				if (arg.i64 == arg.i24 && (arg.i64 & (vm_mem_align - 1)) == 0 && rollbackPc(ctx)) {
 					opc = opc_st128;
 				}
 			}
@@ -298,7 +304,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			ip = lastIp(ctx);
 			if (ip->opc == opc_lc32 && rollbackPc(ctx)) {
-				arg.i32 = u32_bit_shl | (ip->arg.i32 & 0x3f);
+				arg.i32 = u32_ext_shl | (ip->arg.i32 & u32_ext_mask);
 				opc = u32_bit;
 			}
 			break;
@@ -309,7 +315,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			ip = lastIp(ctx);
 			if (ip->opc == opc_lc32 && rollbackPc(ctx)) {
-				arg.i32 = u32_bit_shr | (ip->arg.i32 & 0x3f);
+				arg.i32 = u32_ext_shr | (ip->arg.i32 & u32_ext_mask);
 				opc = u32_bit;
 			}
 			break;
@@ -320,7 +326,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 			}
 			ip = lastIp(ctx);
 			if (ip->opc == opc_lc32 && rollbackPc(ctx)) {
-				arg.i32 = u32_bit_sar | (ip->arg.i32 & 0x3f);
+				arg.i32 = u32_ext_sar | (ip->arg.i32 & u32_ext_mask);
 				opc = u32_bit;
 			}
 			break;
@@ -338,7 +344,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 				if (!rollbackPc(ctx)) {
 					break;
 				}
-				arg.i32 = u32_bit_and | (bitsf(ip->arg.u32 + 1) & 0x3f);
+				arg.i32 = u32_ext_and | (bitsf(ip->arg.u32 + 1) & u32_ext_mask);
 				opc = u32_bit;
 			}
 			break;
@@ -1031,9 +1037,9 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 						break;
 					}
 					if (opc == u32_div) {
-						arg.i32 = u32_bit_shr | bitLen32(ip->arg.u32 - 1);
+						arg.i32 = u32_ext_shr | bitLen32(ip->arg.u32 - 1);
 					} else {
-						arg.i32 = u32_bit_shl | bitLen32(ip->arg.u32 - 1);
+						arg.i32 = u32_ext_shl | bitLen32(ip->arg.u32 - 1);
 					}
 					opc = u32_bit;
 					break;
@@ -1063,7 +1069,7 @@ size_t emitOpc(rtContext ctx, vmOpcode opc, vmValue arg) {
 						break;
 					}
 
-					arg.i32 = u32_bit_and | bitLen32(ip->arg.u32 - 1);
+					arg.i32 = u32_ext_and | bitLen32(ip->arg.u32 - 1);
 					opc = u32_bit;
 					break;
 			}

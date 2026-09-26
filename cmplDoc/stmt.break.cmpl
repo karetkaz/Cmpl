@@ -1,0 +1,17 @@
+/** ## Break statement
+The break statement terminates the execution of the innermost enclosing loop.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// break statement: terminates the innermost enclosing loop
+
+int stmtBreakLastSeen = -1;
+for (int i = 0; i < 7; i += 1) {
+	if (i > 2) {
+		break;
+	}
+	stmtBreakLastSeen = i;
+}
+assertEq(2, stmtBreakLastSeen);

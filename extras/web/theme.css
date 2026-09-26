@@ -50,36 +50,36 @@ body.dark { color-scheme: dark; }
 ::-webkit-scrollbar-corner { background: var(--scrollbar-bg); }
 
 .overlay { background-color: var(--overlay-bg); }
-#output * { background-color: transparent; }
 
 body { background-color: var(--toolbar-bg); }
 .toolbar { background-color: var(--toolbar-bg); color: var(--toolbar-color); }
 .toolbar>span:hover { background-color: var(--toolbar-hover-bg); }
 
 .sidebar { background-color: var(--sidebar-bg); color: var(--sidebar-color); }
-.sidebar * { background-color: var(--sidebar-bg); color: var(--sidebar-color); }
+.sidebar .sticky { background-color: var(--sidebar-bg); }
+.sidebar button { color: var(--sidebar-color); }
 .sidebar hr { background-color: var(--sidebar-hover-bg); }
 .sidebar li:hover { background-color: var(--sidebar-hover-bg); }
 .sidebar li:hover * { background-color: var(--sidebar-hover-bg); }
 .sidebar button { background-color: var(--sidebar-hover-bg); border: solid 1px var(--toolbar-bg); }
 .sidebar button:hover { background-color: var(--sidebar-bg); }
 select { background-color: var(--sidebar-bg); color: var(--sidebar-color); }
-#fileList > .active { background-color: var(--sidebar-hover-bg); }
+#fileList .active { background-color: var(--sidebar-hover-bg); }
 
-#editor-panel .CodeMirror { background: var(--editor-bg); color: var(--editor-color); }
-#editor-panel .CodeMirror-gutters { background: var(--editor-gutter-bg); border-right: 1px solid var(--editor-gutter-border); }
-#editor-panel .CodeMirror-matchingbracket { background: var(--editor-matching-bracket-bg); }
-#editor-panel .CodeMirror-activeline-background { background: var(--editor-active-line-bg); }
-#editor-panel span.cm-number { color: var(--syntax-number); }
-#editor-panel span.cm-builtin { color: var(--syntax-builtin); }
-#editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: var(--syntax-keyword); }
-#editor-panel span.cm-operator { color: var(--syntax-operator); }
-#editor-panel span.cm-string-2,
-#editor-panel span.cm-string { color: var(--syntax-string); }
-#editor-panel span.cm-variable-2,
-#editor-panel span.cm-variable-3,
-#editor-panel span.cm-variable { color: var(--syntax-variable); }
-#editor-panel span.cm-comment { color: var(--syntax-comment); }
+.CodeMirror { background: var(--editor-bg); color: var(--editor-color); }
+.CodeMirror-gutters { background: var(--editor-gutter-bg); border-right: 1px solid var(--editor-gutter-border); }
+.CodeMirror-matchingbracket { background: var(--editor-matching-bracket-bg); }
+.CodeMirror-activeline-background { background: var(--editor-active-line-bg); }
+.CodeMirror span.cm-number { color: var(--syntax-number); }
+.CodeMirror span.cm-builtin { color: var(--syntax-builtin); }
+.CodeMirror span.cm-keyword { line-height: 1em; font-weight: bold; color: var(--syntax-keyword); }
+.CodeMirror span.cm-operator { color: var(--syntax-operator); }
+.CodeMirror span.cm-string-2,
+.CodeMirror span.cm-string { color: var(--syntax-string); }
+.CodeMirror span.cm-variable-2,
+.CodeMirror span.cm-variable-3,
+.CodeMirror span.cm-variable { color: var(--syntax-variable); }
+.CodeMirror span.cm-comment { color: var(--syntax-comment); }
 
 #output { background-color: var(--output-bg); }
 #output-panel { background-color: var(--panel-bg); color: var(--sidebar-color); }

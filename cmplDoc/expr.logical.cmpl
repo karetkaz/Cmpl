@@ -1,0 +1,43 @@
+/** ## Logical expressions
+Logical operators evaluate their operands from left to right and return a boolean value.
+The evaluation stops as soon as the result is known.
+- `||`: logical or. Returns `true` if **any** of its operands is `true`; stops at the first `true`.
+- `&&`: logical and. Returns `true` if **all** of its operands are `true`; stops at the first `false`.
+
+## Ternary expression
+The `?:` (conditional) operator is the only ternary operator, with 3 operands:
+- test operand: based on its value, the second or the third operand is evaluated.
+- true operand: evaluated and returned only if the test operand is `true`.
+- false operand: evaluated and returned only if the test operand is `false`.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// logical expressions: evaluated left to right, stopping as soon as the result is known
+
+static int exprLogicalCalls = 0;
+bool exprLogicalTrue() {
+	exprLogicalCalls += 1;
+	return true;
+}
+bool exprLogicalFalse() {
+	exprLogicalCalls += 1;
+	return false;
+}
+
+// `||` returns true if any operand is true; evaluation stops at the first `true`
+exprLogicalCalls = 0;
+bool exprLogicalOr = exprLogicalFalse() || exprLogicalTrue() || exprLogicalTrue();
+assert(exprLogicalOr);
+assertEq(2, exprLogicalCalls);   // the third operand is never evaluated
+
+// `&&` returns true only if all operands are true; evaluation stops at the first `false`
+exprLogicalCalls = 0;
+bool exprLogicalAnd = exprLogicalTrue() && exprLogicalFalse() && exprLogicalTrue();
+assert(!exprLogicalAnd);
+assertEq(2, exprLogicalCalls);   // the third operand is never evaluated
+
+// ternary (conditional) expression: `test ? whenTrue : whenFalse`
+int32 exprTernaryResult = exprLogicalTrue() ? 1 : 2;
+assertEq(1, exprTernaryResult);

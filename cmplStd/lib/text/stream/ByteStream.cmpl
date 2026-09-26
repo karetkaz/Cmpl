@@ -1,7 +1,7 @@
 /// Represents the base class of closeable objects like files, streams, etc
 struct Closeable: object {
 
-	/// Release the resources hold by this object.
+	/// Release the resources held by this object.
 	void close(Closeable this);
 
 	static void closeSafe(Closeable this) {
@@ -149,14 +149,14 @@ struct ByteBuffer {
 		if (size >= this.capacity) {
 			// try to double the current size
 			this.capacity *= 2;
-			if (size > 2 * this.capacity) {
+			if (size >= this.capacity) {
 				// double the calculated size
 				this.capacity = size * 2;
 			}
 
 			// copy old bytes
 			uint8 new[*] = pointer.alloc(null, this.capacity);
-			for (int i = 0; i < this.position; i += 1) {
+			for (int i = 0; i < this.length; i += 1) {
 				new[i] = this.buffer[i];
 			}
 			pointer.alloc(this.buffer, 0);
@@ -167,6 +167,9 @@ struct ByteBuffer {
 		for (int i = 0; i < bytes.length; i += 1) {
 			this.buffer[this.position] = bytes[i];
 			this.position += 1;
+		}
+		if (this.length < this.position) {
+			this.length = this.position;
 		}
 	}
 

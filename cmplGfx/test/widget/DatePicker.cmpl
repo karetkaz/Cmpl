@@ -110,7 +110,7 @@ struct DatePicker: Layout {
 		Timestamp start = Timestamp(Datetime(cNow.year, cNow.month, 1));
 		Datetime cStart = Datetime(start);
 
-		// calculate first monday
+		// calculate first Monday
 		start = start.add(Weekday.Monday - cStart.dayOfWeek, Timeunit.Days);
 
 		int year = this.btnYear.value;

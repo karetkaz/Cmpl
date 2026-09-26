@@ -57,7 +57,7 @@ typedef enum {			// color block transfer
 	//blt_cvt_02 = 2,
 	//blt_cvt_01 = 1,
 
-	// 24 - 32 custom conversions methods
+	// 24 - 32 custom conversion methods
 	blt_cvt_bgra = 31,
 	blt_cvt_bgr = 30,
 	// to add: hsv, yuv, 16bit gray, 16bit rgb, r10g10b10

@@ -138,7 +138,7 @@ static int readChar(lexContext ctx) {
 
 	chr = *(unsigned char *) ctx->ptr;
 	if (chr == '\n' || chr == '\r') {
-		// threat 'cr', 'lf' and 'cr + lf' as new line (lf: '\n')
+		// treat 'cr', 'lf' and 'cr + lf' as new line (lf: '\n')
 		if (chr == '\r' && ctx->ptr[1] == '\n') {
 			ctx->cnt -= 1;
 			ctx->ptr += 1;
@@ -355,7 +355,7 @@ static ccToken readNumber(lexContext ctx, astn tok, int chr) {
 				return tok->kind = TOKEN_any;;
 			}
 
-			// todo: do not ignoring errors
+			// todo: do not ignore errors
 			switch (*suffix) {
 				default:
 					break;
@@ -679,7 +679,6 @@ static ccToken readToken(lexContext ctx, astn tok) {
 			const int next = peekChar(ctx);       // comment begin char
 			char *doc = NULL;
 			char *ptr = beg;
-			int newLine = INT_MAX;
 
 			// line comment
 			if (next == '/') {
@@ -695,12 +694,7 @@ static ccToken readToken(lexContext ctx, astn tok) {
 						break;
 					}
 					chr = readChar(ctx);
-					if (newLine && !(chr_map[chr & 0xff] & SPACE)) {
-						newLine = 0;
-					}
-					if (!newLine) {
-						*ptr++ = (char) chr;
-					}
+					*ptr++ = (char) chr;
 				}
 				if (chr == -1) {
 					warn(ctx->rt, ctx->cc->file, line, WARN_NO_NEW_LINE_AT_END);
@@ -731,6 +725,7 @@ static ccToken readToken(lexContext ctx, astn tok) {
 						level -= 1;
 						if (level == 0) {
 							chr = ' ';
+							ptr--;
 							break;
 						}
 					}
@@ -743,24 +738,7 @@ static ccToken readToken(lexContext ctx, astn tok) {
 						chr = 0; // disable reading as valid comment: /*/
 					}
 
-					if (newLine > 0 && !(chr_map[chr & 0xff] & SPACE)) {
-						if (chr != next) {
-							newLine = 0;
-						}
-					}
-
-					if (newLine == 0) {
-						*ptr++ = (char) chr;
-						if (chr == '\n') {
-							newLine = INT_MAX;
-						}
-					}
-					else if (chr == next) {
-						newLine = 1;
-					}
-					else {
-						newLine -= 1;
-					}
+					*ptr++ = (char) chr;
 				}
 
 				if (chr == -1) {
@@ -778,6 +756,23 @@ static ccToken readToken(lexContext ctx, astn tok) {
 				} else {
 					if (ptr == doc) {
 						ptr = beg + 1;
+					}
+					// trim documentation start
+					while (doc < ptr) {
+						int typ = chr_map[doc[0] & 0xff];
+						if (typ != SPACE && typ != SCTRL) {
+							break;
+						}
+						doc++;
+					}
+					// trim documentation end
+					while (doc < ptr) {
+						int typ = chr_map[ptr[-1] & 0xff];
+						if (typ != SPACE && typ != SCTRL) {
+							ptr++;
+							break;
+						}
+						ptr--;
 					}
 					ptr[-1] = 0;
 				}

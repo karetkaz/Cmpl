@@ -1,0 +1,58 @@
+/** ## Operator precedence
+
+Operator precedence determines grouping, when parentheses are omitted: multiplication binds tighter than addition,
+so `2 + 3 * 4` groups as `2 + (3 * 4)`, not `(2 + 3) * 4`.
+
+| Operator                               | Title                    | Example                   | Associates    |
+|----------------------------------------|--------------------------|---------------------------|---------------|
+| 15: Primary                            |                          |                           | left to right |
+| ( )                                    | Function call            | sqrt(x)                   |               |
+| [ ]                                    | Array subscript          | values[10]                |               |
+| .                                      | Member access            | child.name                |               |
+| 14: Unary                              |                          |                           | right to left |
+| +                                      | Unary plus               | +a                        |               |
+| -                                      | Unary minus              | -a                        |               |
+| ~                                      | Complement               | ~0o77                     |               |
+| !                                      | Logical not              | !ready                    |               |
+| &                                      | Pass to mutate           | update(&value)            |               |
+| 13: Multiplicative                     |                          |                           | left to right |
+| *                                      | Multiplication           | i * j                     |               |
+| /                                      | Division                 | i / j                     |               |
+| %                                      | Modulus                  | i % j                     |               |
+| 12: Additive                           |                          |                           | left to right |
+| +                                      | Addition                 | value + i                 |               |
+| -                                      | Subtraction              | x - 10                    |               |
+| 11: Bit shift                          |                          |                           | left to right |
+| <<                                     | Left shift               | byte << 4                 |               |
+| \>>                                    | Right shift              | i >> 2                    |               |
+| 10: Relational                         |                          |                           | left to right |
+| <                                      | Less than                | i < 10                    |               |
+| <=                                     | Less than or equal to    | i <= j                    |               |
+| \>                                     | Greater than             | i > 0                     |               |
+| \>=                                    | Greater than or equal to | count >= 90               |               |
+| 9: Equality                            |                          |                           | left to right |
+| ==                                     | Equal to                 | result == 0               |               |
+| !=                                     | Not equal to             | c != EOF                  |               |
+| 8: Bitwise AND                         |                          |                           | left to right |
+| &                                      | Bitwise AND              | word & 0o77               |               |
+| 7: Bitwise XOR                         |                          |                           | left to right |
+| ^                                      | Bitwise XOR              | word1 ^ word2             |               |
+| 6: Bitwise OR                          |                          |                           | left to right |
+| &#124;                                 | Bitwise OR               | word &#124; bits          |               |
+| 5: Logical AND                         |                          |                           | left to right |
+| &&                                     | Logical AND              | j > 0 && j < 10           |               |
+| 4: Logical OR                          |                          |                           | left to right |
+| &#124;&#124;                           | Logical OR               | i > 80 &#124;&#124; ready |               |
+| 3: Conditional                         |                          |                           | right to left |
+| ?:                                     | Conditional operator     | a > b ? a : b             |               |
+| 2: Assignment                          |                          |                           | right to left |
+| = *= /= %= += -= &= ^= &#124;= <<= >>= | Assignment operators     |                           |               |
+| ...                                    | Slice range / spread     | a[1 ... 3], f(...args)    |               |
+| 1: Collection                          |                          |                           | left to right |
+| ,                                      | Comma operator           | i = 10, j = 0             |               |
+*/
+
+/// **Example**
+inline "*example:tail";
+
+assert(2 + 3 * 4 == 14);

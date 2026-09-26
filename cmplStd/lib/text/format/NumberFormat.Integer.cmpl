@@ -1,4 +1,4 @@
-// formated print an integer value to the given `output` buffer, sign symbol is ignored
+// formatted print an integer value to the given `output` buffer, sign symbol is ignored
 static int formatNoSign(NumberFormat format!, char output&[], int pos, uint64 value) {
 	char digitSymbols![] = format.digitSymbols;
 	assert(digitSymbols.length > 1, "radix is too small");
@@ -44,9 +44,9 @@ static int formatNoSign(NumberFormat format!, char output&[], int pos, uint64 va
 	return pos;
 }
 
-/// formated print an integer value to the given `output` buffer
+/// formatted print an integer value to the given `output` buffer
 static int format(NumberFormat format!, char output&[], int pos, int64 value) {
-	// Add on the sign and the decimal point.
+	// Add on the sign.
 	if (value < 0) {
 		pos = append(&output, pos, format.negativeSymbol);
 		value = -value;
@@ -56,7 +56,7 @@ static int format(NumberFormat format!, char output&[], int pos, int64 value) {
 	return formatNoSign(format, &output, pos, uint64(value));
 }
 
-/// formated print an integer value to the given `output` buffer
+/// formatted print an integer value to the given `output` buffer
 static int format(NumberFormat format!, char output&[], int pos, uint64 value) {
 	pos = append(&output, pos, format.positiveSymbol);
 	return formatNoSign(format, &output, pos, value);

@@ -228,7 +228,7 @@ int copyImage(GxImage image, int x, int y, GxImage src, const GxRect roi, void *
 	}
 	char *sptr = clipRect(src, &rect);
 	if (sptr == NULL) {
-		// there is noting to copy
+		// there is nothing to copy
 		return 0;
 	}
 

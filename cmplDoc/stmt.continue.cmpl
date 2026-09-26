@@ -1,0 +1,17 @@
+/** ## Continue statement
+The continue statement terminates the current and begins the next iteration of the innermost enclosing loop.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// continue statement: skips to the next iteration of the innermost enclosing loop
+
+int stmtContinueSeen = 0;
+for (int i = 0; i < 7; i += 1) {
+	if (i < 2) {
+		continue;
+	}
+	stmtContinueSeen += 1;
+}
+assertEq(5, stmtContinueSeen);

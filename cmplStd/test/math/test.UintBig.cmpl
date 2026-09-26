@@ -1,0 +1,296 @@
+// test big unsigned integers (UintImpl.cmpl, included by Uint128, Uint256 and Uint512)
+// a Uint128 is stored as 4 x 32-bit words, least significant word first:
+// value = words[0] + words[1] * 2^32 + words[2] * 2^64 + words[3] * 2^96
+// expected values were computed with arbitrary precision integers (python)
+inline "cmplStd/lib/math/number/UintBig.cmpl";
+
+/// construct a Uint128 from its words, most significant word first
+Uint128 u128(uint32 w3, uint32 w2, uint32 w1, uint32 w0) {
+	Uint128 result = Uint128(0);
+	result.words[0] = w0;
+	result.words[1] = w1;
+	result.words[2] = w2;
+	result.words[3] = w3;
+	return result;
+}
+
+/// assert the words of a Uint128, most significant word first
+void assertWords(char message[*], Uint128 value, uint32 w3, uint32 w2, uint32 w1, uint32 w0) {
+	uint32 v3 = value.words[3];
+	uint32 v2 = value.words[2];
+	uint32 v1 = value.words[1];
+	uint32 v0 = value.words[0];
+	assert(v3 == w3 && v2 == w2 && v1 == w1 && v0 == w0, message, v3, v2, v1, v0);
+}
+
+inline max32 = uint32(-1);	// 0xffffffff
+
+// test values: every word of `a - b` borrows except the most significant one
+Uint128 a = u128(0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+Uint128 b = u128(0x00000001, 0xffffffff, 0x80000000, 0xffffffff);
+Uint128 zero = Uint128(0);
+Uint128 one = Uint128(1);
+Uint128 maxValue = u128(max32, max32, max32, max32);
+
+//~ make, bits, isZero
+
+// make(uint64): zero extended to all words
+assertWords("make: uint64 max", Uint128.make(uint64(-1)), 0, 0, max32, max32);
+assertWords("make: uint64 2^32", Uint128.make(uint64(1) << 32), 0, 0, 1, 0);
+assertWords("make: Uint128(1)", one, 0, 0, 0, 1);
+
+// make(int64): sign extended to all words
+assertWords("make: int64 -1", Uint128.make(int64(-1)), max32, max32, max32, max32);
+assertWords("make: int64 -2", Uint128.make(int64(-2)), max32, max32, max32, 0xfffffffe);
+assertWords("make: int64 max", Uint128.make(int64(0x7fffffffffffffff)), 0, 0, 0x7fffffff, max32);
+assertWords("make: int64 5", Uint128.make(int64(5)), 0, 0, 0, 5);
+
+// bits: the number of bits in the representation
+int32 bits128 = Uint128(0).bits();
+int32 bits256 = Uint256(0).bits();
+int32 bits512 = Uint512(0).bits();
+assert(bits128 == 128 && bits256 == 256 && bits512 == 512, "bits", bits128, bits256, bits512);
+
+// isZero: true only if every word is zero
+bool zeroIsZero = zero.isZero();
+bool oneIsZero = one.isZero();
+bool highIsZero = u128(0x80000000, 0, 0, 0).isZero();
+assert(zeroIsZero && !oneIsZero && !highIsZero, "isZero", zeroIsZero, oneIsZero, highIsZero);
+
+//~ bitwise operations: cmt, and, or, xor
+
+assertWords("cmt: ~a", Uint128.cmt(a), 0xedcba987, 0x6543210f, 0xf0123456, 0x789abcde);
+assertWords("cmt: ~0", Uint128.cmt(zero), max32, max32, max32, max32);
+assertWords("and: a & b", Uint128.and(a, b), 0, 0x9abcdef0, 0, 0x87654321);
+assertWords("or: a | b", Uint128.or(a, b), 0x12345679, max32, 0x8fedcba9, max32);
+assertWords("xor: a ^ b", Uint128.xor(a, b), 0x12345679, 0x6543210f, 0x8fedcba9, 0x789abcde);
+assertWords("xor: a ^ a", Uint128.xor(a, a), 0, 0, 0, 0);
+
+//~ shiftLeft (in place)
+Uint128 shl = a;
+shl.shiftLeft(0);
+assertWords("shiftLeft: 0", shl, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+shl = a;
+shl.shiftLeft(-1);
+assertWords("shiftLeft: negative count is ignored", shl, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+shl = a;
+shl.shiftLeft(1);
+assertWords("shiftLeft: 1", shl, 0x2468acf1, 0x3579bde0, 0x1fdb9753, 0x0eca8642);
+shl = a;
+shl.shiftLeft(4);
+assertWords("shiftLeft: 4", shl, 0x23456789, 0xabcdef00, 0xfedcba98, 0x76543210);
+shl = a;
+shl.shiftLeft(31);
+assertWords("shiftLeft: 31", shl, 0x4d5e6f78, 0x07f6e5d4, 0xc3b2a190, 0x80000000);
+shl = a;
+shl.shiftLeft(32);
+assertWords("shiftLeft: 32 (whole word)", shl, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0);
+shl = a;
+shl.shiftLeft(33);
+assertWords("shiftLeft: 33", shl, 0x3579bde0, 0x1fdb9753, 0x0eca8642, 0);
+shl = a;
+shl.shiftLeft(64);
+assertWords("shiftLeft: 64", shl, 0x0fedcba9, 0x87654321, 0, 0);
+shl = a;
+shl.shiftLeft(95);
+assertWords("shiftLeft: 95", shl, 0xc3b2a190, 0x80000000, 0, 0);
+shl = a;
+shl.shiftLeft(96);
+assertWords("shiftLeft: 96", shl, 0x87654321, 0, 0, 0);
+shl = a;
+shl.shiftLeft(100);
+assertWords("shiftLeft: 100", shl, 0x76543210, 0, 0, 0);
+shl = one;
+shl.shiftLeft(127);
+assertWords("shiftLeft: 1 << 127", shl, 0x80000000, 0, 0, 0);
+shl = a;
+shl.shiftLeft(128);
+assertWords("shiftLeft: 128 (all bits)", shl, 0, 0, 0, 0);
+shl = a;
+shl.shiftLeft(200);
+assertWords("shiftLeft: 200", shl, 0, 0, 0, 0);
+
+//~ shiftRight (in place)
+Uint128 shr = a;
+shr.shiftRight(0);
+assertWords("shiftRight: 0", shr, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+shr = a;
+shr.shiftRight(-1);
+assertWords("shiftRight: negative count is ignored", shr, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+shr = a;
+shr.shiftRight(1);
+assertWords("shiftRight: 1", shr, 0x091a2b3c, 0x4d5e6f78, 0x07f6e5d4, 0xc3b2a190);
+shr = a;
+shr.shiftRight(4);
+assertWords("shiftRight: 4", shr, 0x01234567, 0x89abcdef, 0x00fedcba, 0x98765432);
+shr = a;
+shr.shiftRight(31);
+assertWords("shiftRight: 31", shr, 0, 0x2468acf1, 0x3579bde0, 0x1fdb9753);
+shr = a;
+shr.shiftRight(32);
+assertWords("shiftRight: 32 (whole word)", shr, 0, 0x12345678, 0x9abcdef0, 0x0fedcba9);
+shr = a;
+shr.shiftRight(33);
+assertWords("shiftRight: 33", shr, 0, 0x091a2b3c, 0x4d5e6f78, 0x07f6e5d4);
+shr = a;
+shr.shiftRight(64);
+assertWords("shiftRight: 64", shr, 0, 0, 0x12345678, 0x9abcdef0);
+shr = a;
+shr.shiftRight(95);
+assertWords("shiftRight: 95", shr, 0, 0, 0, 0x2468acf1);
+shr = a;
+shr.shiftRight(96);
+assertWords("shiftRight: 96", shr, 0, 0, 0, 0x12345678);
+shr = a;
+shr.shiftRight(100);
+assertWords("shiftRight: 100", shr, 0, 0, 0, 0x01234567);
+shr = u128(0x80000000, 0, 0, 1);
+shr.shiftRight(127);
+assertWords("shiftRight: 2^127 >> 127", shr, 0, 0, 0, 1);
+shr = a;
+shr.shiftRight(128);
+assertWords("shiftRight: 128 (all bits)", shr, 0, 0, 0, 0);
+shr = a;
+shr.shiftRight(200);
+assertWords("shiftRight: 200", shr, 0, 0, 0, 0);
+
+//~ divRem (in place, returns the remainder)
+Uint128 div = a;
+uint32 rem = div.divRem(1);
+assertWords("divRem: a / 1", div, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+assert(rem == 0, "divRem: a % 1", rem);
+div = a;
+rem = div.divRem(7);
+assertWords("divRem: a / 7", div, 0x0299c335, 0xccf668fd, 0xb921f885, 0xeec552bb);
+assert(rem == 4, "divRem: a % 7", rem);
+div = a;
+rem = div.divRem(10);
+assertWords("divRem: a / 10", div, 0x01d208a5, 0xa912e318, 0x0197c790, 0xf3f086b6);
+assert(rem == 5, "divRem: a % 10", rem);
+div = a;
+rem = div.divRem(0x10000);
+assertWords("divRem: a / 2^16", div, 0x1234, 0x56789abc, 0xdef00fed, 0xcba98765);
+assert(rem == 0x4321, "divRem: a % 2^16", rem);
+div = a;
+rem = div.divRem(max32);
+assertWords("divRem: a / 0xffffffff", div, 0, 0x12345678, 0xacf13568, 0xbcdf0112);
+assert(rem == 0x44444433, "divRem: a % 0xffffffff", rem);
+
+//~ mulOvf (in place, returns the bits shifted out of the most significant word)
+Uint128 mul = a;
+uint32 ovf = mul.mulOvf(0);
+assertWords("mulOvf: a * 0", mul, 0, 0, 0, 0);
+assert(ovf == 0, "mulOvf: a * 0 overflow", ovf);
+mul = a;
+ovf = mul.mulOvf(1);
+assertWords("mulOvf: a * 1", mul, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+assert(ovf == 0, "mulOvf: a * 1 overflow", ovf);
+mul = a;
+ovf = mul.mulOvf(10);
+assertWords("mulOvf: a * 10", mul, 0xb60b60b6, 0x0b60b560, 0x9f49f49f, 0x49f49f4a);
+assert(ovf == 0, "mulOvf: a * 10 overflow", ovf);
+mul = a;
+ovf = mul.mulOvf(0x10000);
+assertWords("mulOvf: a * 2^16", mul, 0x56789abc, 0xdef00fed, 0xcba98765, 0x43210000);
+assert(ovf == 0x1234, "mulOvf: a * 2^16 overflow", ovf);
+mul = a;
+ovf = mul.mulOvf(max32);
+assertWords("mulOvf: a * 0xffffffff", mul, 0x88888877, 0x7530ecb9, 0x77777777, 0x789abcdf);
+assert(ovf == 0x12345678, "mulOvf: a * 0xffffffff overflow", ovf);
+
+// divRem undoes mulOvf when there is no overflow
+mul = a;
+mul.mulOvf(10);
+rem = mul.divRem(10);
+assertWords("mulOvf, divRem: a * 10 / 10", mul, 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+assert(rem == 0, "mulOvf, divRem: a * 10 % 10", rem);
+
+//~ neg: two's complement, -x = ~x + 1 (modulo 2^128)
+assertWords("neg: -0", Uint128.neg(zero), 0, 0, 0, 0);
+assertWords("neg: -1", Uint128.neg(one), max32, max32, max32, max32);
+assertWords("neg: -(2^32)", Uint128.neg(u128(0, 0, 1, 0)), max32, max32, max32, 0);
+assertWords("neg: -a", Uint128.neg(a), 0xedcba987, 0x6543210f, 0xf0123456, 0x789abcdf);
+assertWords("neg: -(-a)", Uint128.neg(Uint128.neg(a)), 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+
+//~ add
+assertWords("add: 2 + 3", Uint128.add(Uint128(2), Uint128(3)), 0, 0, 0, 5);
+// the carry from the lowest word propagates through all the words
+assertWords("add: (2^96 - 1) + 1", Uint128.add(u128(0, max32, max32, max32), one), 1, 0, 0, 0);
+assertWords("add: a + b", Uint128.add(a, b), 0x1234567a, 0x9abcdeef, 0x8fedcbaa, 0x87654320);
+// the result wraps around modulo 2^128
+assertWords("add: max + 1", Uint128.add(maxValue, one), 0, 0, 0, 0);
+assertWords("add: a + (-a)", Uint128.add(a, Uint128.neg(a)), 0, 0, 0, 0);
+
+//~ sub
+// no borrow at all: 7 - 5 = 2
+assertWords("sub: 7 - 5", Uint128.sub(Uint128(7), Uint128(5)), 0, 0, 0, 2);
+
+// borrow from the next word: 2^32 - 1 = [0, 0, 0, 0xffffffff]
+// word 0: 0 - 1 borrows, word 1: 1 - 0 - borrow = 0, the borrow must stop here.
+// a wrong borrow propagation turns into a carry: 2^64 + 2^32 - 1 = [0, 1, 0, 0xffffffff]
+assertWords("sub: 2^32 - 1", Uint128.sub(u128(0, 0, 1, 0), one), 0, 0, 0, max32);
+
+// borrow into a word which stays non zero: (5 * 2^32) - (3 * 2^32 + 1) = 2^33 - 1
+assertWords("sub: borrow into non zero word", Uint128.sub(u128(0, 0, 5, 0), u128(0, 0, 3, 1)), 0, 0, 1, max32);
+
+// borrow chain across several zero words: 2^96 - 1
+assertWords("sub: 2^96 - 1", Uint128.sub(u128(1, 0, 0, 0), one), 0, max32, max32, max32);
+
+// the result wraps around modulo 2^128: 0 - 1 = 2^128 - 1
+assertWords("sub: 0 - 1", Uint128.sub(zero, one), max32, max32, max32, max32);
+
+assertWords("sub: a - b", Uint128.sub(a, b), 0x12345676, 0x9abcdef0, 0x8fedcba8, 0x87654322);
+assertWords("sub: b - a", Uint128.sub(b, a), 0xedcba989, 0x6543210f, 0x70123457, 0x789abcde);
+assertWords("sub: a - a", Uint128.sub(a, a), 0, 0, 0, 0);
+assertWords("sub: a - 0", Uint128.sub(a, zero), 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+assertWords("sub: 0 - a == -a", Uint128.sub(zero, a), 0xedcba987, 0x6543210f, 0xf0123456, 0x789abcdf);
+assertWords("sub: (a - b) + b", Uint128.add(Uint128.sub(a, b), b), 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321);
+
+//~ compare
+int32 cmpEq = Uint128.compare(a, a);
+assert(cmpEq == 0, "compare: a == a", cmpEq);
+
+// small values in the low word
+int32 cmpLt = Uint128.compare(Uint128(1), Uint128(2));
+int32 cmpGt = Uint128.compare(Uint128(2), Uint128(1));
+assert(cmpLt < 0 && cmpGt > 0, "compare: 1 vs 2", cmpLt, cmpGt);
+
+// words with the highest bit set are large unsigned values, not negative ones
+// 0x80000000 > 1, but a signed comparison sees -2147483648 < 1
+int32 cmpHighBit = Uint128.compare(Uint128(0x80000000), one);
+assert(cmpHighBit > 0, "compare: 0x80000000 vs 1", cmpHighBit);
+
+// 0xffffffff is the largest word value, not -1
+int32 cmpMaxWord = Uint128.compare(Uint128(max32), zero);
+assert(cmpMaxWord > 0, "compare: 0xffffffff vs 0", cmpMaxWord);
+
+// the highest differing word decides: 2^32 > 2^32 - 1
+int32 cmpWord = Uint128.compare(u128(0, 0, 1, 0), u128(0, 0, 0, max32));
+assert(cmpWord > 0, "compare: 2^32 vs 2^32 - 1", cmpWord);
+
+// high bit in the most significant word: 2^127 > 2^96
+int32 cmpTop = Uint128.compare(u128(0x80000000, 0, 0, 0), u128(1, 0, 0, 0));
+int32 cmpTopRev = Uint128.compare(u128(1, 0, 0, 0), u128(0x80000000, 0, 0, 0));
+assert(cmpTop > 0 && cmpTopRev < 0, "compare: 2^127 vs 2^96", cmpTop, cmpTopRev);
+
+// the largest value is greater than anything else
+int32 cmpMax = Uint128.compare(maxValue, a);
+assert(cmpMax > 0, "compare: max vs a", cmpMax);
+
+//~ wider types share the same implementation: check the borrow and carry across 8 and 16 words
+Uint256 max256 = Uint256.sub(Uint256(0), Uint256(1));
+bool all256 = true;
+for (int i = 0; i < max256.words.length; i += 1) {
+	all256 = all256 && max256.words[i] == max32;
+}
+assert(all256, "Uint256: 0 - 1 sets all 8 words");
+bool wrap256 = Uint256.add(max256, Uint256(1)).isZero();
+assert(wrap256, "Uint256: (0 - 1) + 1 == 0");
+
+Uint512 max512 = Uint512.neg(Uint512(1));
+bool all512 = true;
+for (int i = 0; i < max512.words.length; i += 1) {
+	all512 = all512 && max512.words[i] == max32;
+}
+int32 cmp512 = Uint512.compare(max512, Uint512(0x80000000));
+assert(all512 && cmp512 > 0, "Uint512: -1 sets all 16 words, and is the largest value", cmp512);

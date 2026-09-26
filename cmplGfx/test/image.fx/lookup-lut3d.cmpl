@@ -30,7 +30,7 @@ struct ColorLut: Blender {
 		this.data[at(x, y, z)] = value;
 	}
 
-	// inexact at lengths: 7, 8, 10, 11, 12, 13 14
+	// inexact at lengths: 7, 8, 10, 11, 12, 13, 14
 	static void lerpPoints(ColorLut this&, int points[]) {
 		inline mix2(int32 f, uint32 a, uint32 b) = (a + ((f + (f >> 7)) * (b - a) >> 8)) & 0x00ff00ff;
 		inline mix(int32 f, argb a, argb b) = argb(mix2(f, a.v & 0x00ff00ff, b.v & 0x00ff00ff) | (mix2(f, a.v >> 8 & 0x00ff00ff, b.v >> 8 & 0x00ff00ff) << 8));

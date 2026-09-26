@@ -14,7 +14,7 @@ struct Uint32: 4 {
 	/// Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
 	static int32 test(Uint32 x) { return int32(u32(x) > 0); }
 
-	/// Negates an 32-bit unsigned value
+	/// Negates a 32-bit unsigned value
 	static Uint32 neg(Uint32 x) { return { value: inline(u32(x), i32.neg) }; }
 
 	/// Adds two 32-bit unsigned integers
@@ -32,7 +32,7 @@ struct Uint32: 4 {
 	/// Divide x by y, returning remainder
 	static Uint32 rem(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.rem) }; }
 
-	/// Negates an 32-bit unsigned value
+	/// Negates a 32-bit unsigned value
 	static Uint32 neg(Uint32 x, Uint32 overflow&) {
 		overflow.value = 1; // always overflows
 		return { value: inline(u32(x), i32.neg) };
@@ -59,7 +59,7 @@ struct Uint32: 4 {
 		return { value: result };
 	}
 
-	/// Subtracts two 32-bit unsigned integers with borrow out
+	/// Subtracts two 32-bit unsigned integers with borrow in and out
 	static Uint32 sub(Uint32 x, Uint32 y, Uint32 c, Uint32 overflow&) {
 		uint64 result = inline(u64(x), u64(y), i64.sub, u64(c), i64.sub);
 		overflow.value = -(result >> bits);
@@ -85,13 +85,13 @@ struct Uint32: 4 {
 	/// Computes the bitwise AND of two 32-bit unsigned integers
 	static Uint32 and(Uint32 x, Uint32 y) { return { value: inline(u32(x), u32(y), u32.and) }; }
 
-	/// Performs a logical left shift of x by n bits for an 32-bit unsigned integer
+	/// Performs a logical left shift of x by n bits for a 32-bit unsigned integer
 	static Uint32 shl(Uint32 x, uint32 n) { return { value: inline(u32(x), uint32(n), u32.shl) }; }
 
-	/// Performs a logical right shift of x by n bits for an 32-bit unsigned integer
+	/// Performs a logical right shift of x by n bits for a 32-bit unsigned integer
 	static Uint32 shr(Uint32 x, uint32 n) { return { value: inline(u32(x), uint32(n), u32.shr) }; }
 
-	/// Performs an arithmetic right shift of x by n bits for an 32-bit unsigned integer
+	/// Performs an arithmetic right shift of x by n bits for a 32-bit unsigned integer
 	static Uint32 sar(Uint32 x, uint32 n) { return { value: inline(u32(x), uint32(n), u32.sar) }; }
 
 	/// Returns the value of x rotated left by (n mod size) bits
@@ -184,7 +184,7 @@ struct Uint32: 4 {
 		return { value: (x >> 16) | (x << 16) };
 	}
 
-	/// Reverses the byte order of an 32-bit unsigned integer
+	/// Reverses the byte order of a 32-bit unsigned integer
 	static Uint32 reverseBytes(Uint32 y) {
 		uint32 x = u32(y);
 		x = (x & 0x0000ffff) << 16 | (x & 0xffff0000) >> 16;
@@ -201,7 +201,7 @@ struct Uint32: 4 {
 	/// Returns the greater of two values
 	static Uint32 max(Uint32 a, Uint32 b) { return u32(a) > u32(b) ? a : b; }
 
-	/// Returns the `value` clamped between the provided `min` and `max`
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Uint32 clamp(Uint32 value, Uint32 lo, Uint32 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -230,7 +230,7 @@ struct Uint32: 4 {
 	/// todo: deprecated method, use the called one
 	inline compare(uint32 x, uint32 y) = compare(Uint32(inline(x)), Uint32(inline(y)));
 
-	/// Extract and zero-extends a bit field from a value
+	/// Extracts and zero-extends a bit field from a value
 	static uint32 zeroExtend(uint32 value, int32 offs, int32 size) {
 		return value << (bits - (offs + size)) >> (bits - size);
 	}
@@ -249,7 +249,7 @@ struct Int32: 4 {
 	inline i32(Int32 x) = int32(x.value);
 	inline i64(Int32 x) = int64(i32(x));
 
-	/// Computes the arithmetic negation of an 32-bit signed integer
+	/// Computes the arithmetic negation of a 32-bit signed integer
 	static Int32 neg(Int32 x) { return { value: inline(i32(x), i32.neg) }; }
 
 	/// Add two values
@@ -258,7 +258,7 @@ struct Int32: 4 {
 	/// Subtract two values
 	static Int32 sub(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.sub) }; }
 
-	/// Multiply two values with overflow-out
+	/// Multiply two values
 	static Int32 mul(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.mul) }; }
 
 	/// Divide x by y, returning quotient
@@ -267,7 +267,7 @@ struct Int32: 4 {
 	/// Divide x by y, returning remainder
 	static Int32 rem(Int32 x, Int32 y) { return { value: inline(i32(x), i32(y), i32.rem) }; }
 
-	/// Computes the arithmetic negation of an 32-bit signed integer
+	/// Computes the arithmetic negation of a 32-bit signed integer
 	static Int32 neg(Int32 x, Int32 overflow&) {
 		overflow.value = int32(i32(x) == min);
 		return { value: inline(i32(x), i32.neg) };
@@ -294,12 +294,12 @@ struct Int32: 4 {
 		return { value: result };
 	}
 
-	/// Returns 1 if nonzero, 0 if zero
+	/// Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
 	static int32 sign(Int32 x) {
 		return int32(i32(x) > 0) - int32(i32(x) < 0);
 	}
 
-	/// Returns the absolute value (identity for unsigned)
+	/// Returns the absolute value
 	static Int32 abs(Int32 x) { return i32(x) < 0 ? x.neg() : x; }
 
 	/// Returns the smaller of two values
@@ -308,7 +308,7 @@ struct Int32: 4 {
 	/// Returns the greater of two values
 	static Int32 max(Int32 a, Int32 b) { return i32(a) > i32(b) ? a : b; }
 
-	/// Clamps value between min and max
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Int32 clamp(Int32 value, Int32 lo, Int32 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -329,20 +329,20 @@ struct Int32: 4 {
 	/// todo: deprecated method, use the called one
 	inline compare(int32 x, int32 y) = compare(Int32(inline(x)), Int32(inline(y)));
 
-	/// Extract and sign-extends a bit field from a signed byte value
+	/// Extracts and sign-extends a bit field from a value
 	static int32 signExtend(int32 value, int32 offs, int32 size) {
 		return value << (bits - (offs + size)) >> (bits - size);
 	}
 }
 
-/// Construct a Uint32 from a packed byte value
+/// Construct a Uint32 from a 32-bit unsigned value
 Uint32 Uint32(uint32 value) { return { value: value }; }
 
 /// Convert a Uint32 value to a uint32
 uint32 uint32(Uint32 value) { return value.value; }
 
-/// Construct an Int32 from a signed byte value
+/// Construct an Int32 from a 32-bit signed value
 Int32 Int32(int32 value) { return { value: value }; }
 
-/// Convert an Int32 value to a int32
+/// Convert an Int32 value to an int32
 int32 int32(Int32 value) { return value.value; }

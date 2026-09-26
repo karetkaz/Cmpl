@@ -84,18 +84,17 @@ static NumberFormat parseFormat(char format[], int fmt&) {
 	return result;
 }
 
-/**
- * Format integer to text
- * @param value value to format
- * @param output write output to this buffer
- * @param pos starting position for output
- * @param format format string
- *  	%b format as binary
- *  	%o format as octal
- *  	%d format as decimal
- *  	%x format as hexadecimal
- *  	%i format with custom radix passed as precision
- */
+/** Format integer to text
+@param value value to format
+@param output write output to this buffer
+@param out starting position for output
+@param format format string
+	%b format as binary
+	%o format as octal
+	%d format as decimal
+	%x format as hexadecimal
+	%i format with custom radix passed as precision
+*/
 int format(uint64 value, char output&[], int out, char format[]) {
 	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
 		char chr = format[fmt];
@@ -135,18 +134,17 @@ int format(uint64 value, char output&[], int out, char format[]) {
 	return out;
 }
 
-/**
- * Format integer to text
- * @param value value to format
- * @param output write output to this buffer
- * @param pos starting position for output
- * @param format format string
- *  	%b format as binary
- *  	%o format as octal
- *  	%d format as decimal
- *  	%x format as hexadecimal
- *  	%i format with custom radix passed as precision
- */
+/** Format integer to text
+@param value value to format
+@param output write output to this buffer
+@param out starting position for output
+@param format format string
+	%b format as binary
+	%o format as octal
+	%d format as decimal
+	%x format as hexadecimal
+	%i format with custom radix passed as precision
+*/
 int format(int64 value, char output&[], int out, char format[]) {
 	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
 		char chr = format[fmt];
@@ -186,18 +184,17 @@ int format(int64 value, char output&[], int out, char format[]) {
 	return out;
 }
 
-/**
- * Format integer to text
- * @param value value to format
- * @param output write output to this buffer
- * @param pos starting position for output
- * @param format format string
- *  	%b format as binary
- *  	%o format as octal
- *  	%d format as decimal
- *  	%x format as hexadecimal
- *  	%i format with custom radix passed as precision
- */
+/** Format integer to text
+@param value value to format
+@param output write output to this buffer
+@param out starting position for output
+@param format format string
+	%b format as binary
+	%o format as octal
+	%d format as decimal
+	%x format as hexadecimal
+	%i format with custom radix passed as precision
+*/
 int format(int32 value, char output&[], int out, char format[]) {
 	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
 		char chr = format[fmt];
@@ -237,16 +234,15 @@ int format(int32 value, char output&[], int out, char format[]) {
 	return out;
 }
 
-/**
- * Format a 64-bit floating-point value
- * @param value value to format
- * @param output write output to this buffer
- * @param pos starting position for output
- * @param format format string
- *  	%d format as decimal(%lg): => 3.141593
- *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
- *  	%b, %o, %x can be used to display the binary representation of the number
- */
+/** Format a 64-bit floating-point value
+@param value value to format
+@param output write output to this buffer
+@param out starting position for output
+@param format format string
+	%d format as decimal(%lg): => 3.141593
+	%f format as fixed precision(%lf) (always pad with `0` at the end)
+	%b, %o, %x can be used to display the binary representation of the number
+*/
 //  	%e todo: format as exponential(%le): 3.141593e+00
 //  	%x todo: format as hexadecimal(%la): 0x1.921fb54442d18p+1
 int format(float64 value, char output&[], int out, char format[]) {
@@ -292,16 +288,15 @@ int format(float64 value, char output&[], int out, char format[]) {
 	return out;
 }
 
-/**
- * Format a 32-bit floating-point value
- * @param value value to format
- * @param output write output to this buffer
- * @param pos starting position for output
- * @param format format string
- *  	%d format as decimal(%lg): => 3.141593
- *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
- *  	%b, %o, %x can be used to display the binary representation of the number
- */
+/** Format a 32-bit floating-point value
+@param value value to format
+@param output write output to this buffer
+@param out starting position for output
+@param format format string
+	%d format as decimal(%lg): => 3.141593
+	%f format as fixed precision(%lf) (always pad with `0` at the end)
+	%b, %o, %x can be used to display the binary representation of the number
+*/
 //  	%e todo: format as exponential(%le): 3.141593e+00
 int format(float32 value, char output&[], int out, char format[]) {
 	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {
@@ -346,16 +341,15 @@ int format(float32 value, char output&[], int out, char format[]) {
 	return out;
 }
 
-/**
- * Format a 32-bit fixed-point value
- * @param value value to format
- * @param output write output to this buffer
- * @param pos starting position for output
- * @param format format string
- *  	%d format as decimal(%lg): => 3.141593
- *  	%f format as fixed precision(%lf) (always pad with `0` at the end)
- *  	%b, %o, %x can be used to display the binary representation of the number
- */
+/** Format a 32-bit fixed-point value
+@param value value to format
+@param output write output to this buffer
+@param out starting position for output
+@param format format string
+	%d format as decimal(%lg): => 3.141593
+	%f format as fixed precision(%lf) (always pad with `0` at the end)
+	%b, %o, %x can be used to display the binary representation of the number
+*/
 //  	%e todo: format as exponential(%le): 3.141593e+00
 int format(Fixed32 value, char output&[], int out, char format[]) {
 	for (int fmt = 0; out < output.length && fmt < format.length; fmt += 1) {

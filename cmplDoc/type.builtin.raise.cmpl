@@ -1,0 +1,58 @@
+/** ## The `raise` function
+There is no `print` statement or exception handling built into the language.
+The `raise` function can be used to log a message, with or without the current stacktrace,
+and to abort the execution.
+
+`void raise(int32 level, int32 trace, char message[*], variant details...);`
+
+The compiler also passes the file name and line number where the function was invoked.
+
+Arguments:
+- `level`: the logging level of the message:
+	- `raise.abort`: log the message, then abort the execution.
+	- `raise.error`
+	- `raise.print`
+	- `raise.warn`
+	- `raise.info`
+	- `raise.debug`
+	- `raise.verbose`
+- `trace`: the maximum number of stack trace entries to print:
+	- `raise.noTrace`: no stack trace.
+	- `raise.defTrace`: the default stack trace length.
+- `message`: the message to be printed.
+- `details`: values to be inspected, printed after the message; useful in assertions.
+
+The message is logged only if the level is enabled.
+Except for `raise.abort`, the execution continues after the message is logged.
+
+### Logging and assertion helpers
+The standard library defines the following helpers on top of `raise`:
+
+| Function                                     | Level     | Stack trace |
+|----------------------------------------------|-----------|-------------|
+| `verbose(message, details...)`               | `verbose` | no          |
+| `debug(message, details...)`                 | `debug`   | no          |
+| `trace(message, details...)`                 | `debug`   | yes         |
+| `info(message, details...)`                  | `info`    | no          |
+| `warn(message, details...)`                  | `warn`    | no          |
+| `error(message, details...)`                 | `error`   | yes         |
+| `abort(message, details...)`, `abort()`      | `abort`   | yes         |
+| `assert(condition, message, details...)`     | `abort`   | yes         |
+| `assertEq(expected, returned, message, ...)` | `abort`   | no          |
+
+`assert` and `assertEq` abort the execution only if the assertion fails; the message is optional.
+Prefer these helpers over writing to `File.out`: the messages go to the log file, and `File.out` may not be available.
+Only variables should be passed as details after the message.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// raise: log a message at a given level, with variables to inspect
+int32 builtinRaiseValue = 42;
+raise(raise.debug, raise.noTrace, "raise with details", builtinRaiseValue);
+
+// the standard library helpers
+debug("debug message", builtinRaiseValue);
+assert(builtinRaiseValue == 42, "the value must be 42", builtinRaiseValue);
+assertEq(42, builtinRaiseValue);

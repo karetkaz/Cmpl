@@ -2,7 +2,7 @@
 struct Base64Encoder: ByteWriter {
 	static uint8 lookup![] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-	///@public
+	/// The underlying byte stream the encoded text is written to
 	ByteWriter writer;
 
 	uint8 buffer[1024];
@@ -93,7 +93,7 @@ struct Base64Encoder: ByteWriter {
 			size += 4;
 		}
 
-		// if the input size is not multiple of 3 bytes, add padding, so output will be multiple of 4
+		// if the input size is not a multiple of 3 bytes, add padding, so the output will be a multiple of 4
 		if (int left = data.length - i) {
 			if (size + 4 > buffer.length) {
 				flushBuffer(this);
@@ -109,7 +109,7 @@ struct Base64Encoder: ByteWriter {
 				this.padding = b;
 				size += 4;
 			} else {
-				// 1 bye = 8 bits = 6 + 2 + = + =
+				// 1 byte = 8 bits = 6 + 2 + = + =
 				int32 b = (data[i] & 0xff) << 4;
 				buffer[size + 0] = lookup[(b >> 6) & 0x3f];
 				buffer[size + 1] = lookup[(b >> 0) & 0x3f];
@@ -152,7 +152,7 @@ struct Base64Decoder: ByteReader {
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	};
 
-	///@public
+	/// The underlying byte stream the encoded text is read from
 	ByteReader reader;
 
 	// TODO: make it buffered

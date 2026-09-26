@@ -8,6 +8,7 @@ Window.show(offs, onEvent);
 image.destroy();
 
 int onEvent(int action, int button, int x, int y) {
+	inline scrollGestSpeed = 5;
 	inline scrollStop = .25;
 	static float64 scrollSpeedX = 0;
 	static float64 scrollSpeedY = 0;
@@ -42,6 +43,15 @@ int onEvent(int action, int button, int x, int y) {
 		}
 		mouseX = x;
 		mouseY = y;
+	}
+	else if (action == Window.GESTURE_SCROLL) {
+		static if (struct(scrollSpeed) != null) {
+			scrollX += scrollSpeedX = x * scrollGestSpeed;
+			scrollY += scrollSpeedY = -y * scrollGestSpeed;
+		} else {
+			scrollX += x * scrollGestSpeed;
+			scrollY += -y * scrollGestSpeed;
+		}
 	}
 	else if (action == Window.WINDOW_INIT) {
 		scrollSpeedX = scrollStop;

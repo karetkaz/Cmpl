@@ -50,7 +50,7 @@ typedef enum {
  * Print the given symbol to the output stream.
  *
  * @param out Output stream.
- * @param esc Escape translation (format string will be not escaped).
+ * @param esc Escape translation (format string will not be escaped).
  * @param sym the symbol to be printed.
  * @param mode How to print.
  * @param indent Indentation level. (Used for struct members)
@@ -61,7 +61,7 @@ void printSym(FILE *out, const char **esc, symn sym, dmpMode mode, int indent);
  * Print the given abstract syntax tree to the output stream.
  *
  * @param out Output stream.
- * @param esc Escape translation (format string will be not escaped).
+ * @param esc Escape translation (format string will not be escaped).
  * @param ast the abstract syntax tree to be printed.
  * @param mode How to print.
  * @param indent Indentation level. (Used for statements)
@@ -72,7 +72,7 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent);
  * Print an instruction to the output stream.
  *
  * @param out Output stream.
- * @param esc Escape translation (format string will be not escaped).
+ * @param esc Escape translation (format string will not be escaped).
  * @param ctx Optional runtime context.
  * @param ptr Instruction pointer.
  * @param mode How to print.
@@ -83,7 +83,7 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
  * Print an instruction to the output stream.
  *
  * @param out Output stream.
- * @param esc Escape translation (format string will be not escaped).
+ * @param esc Escape translation (format string will not be escaped).
  * @param opc Operation code of the instruction
  * @param args Argument of the instruction
  */
@@ -118,7 +118,7 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, void *ref, d
  * Print formatted text to the output stream.
  *
  * @param out Output stream.
- * @param esc Escape translation (format string will be not escaped).
+ * @param esc Escape translation (format string will not be escaped).
  * @param fmt Format text.
  * @param ... Format variables.
  * @note %[?]?[+-]?[0 ]?[0-9]*(\.([*]|[0-9]*))?[tTKAIbBoOxXuUdDfFeEsScC]
@@ -188,7 +188,7 @@ void dumpApi(rtContext ctx, userContext extra, void action(userContext, symn));
 /**
  * Print the current stacktrace.
  *
- * @param ctx Debugger context
+ * @param ctx Runtime context
  * @param out The file to be used as output
  * @param indent indentation
  * @param maxCalls limit the size of the stacktrace
@@ -296,7 +296,7 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define ERR_UNINITIALIZED_VARIABLE "uninitialized variable `%T`"
 #define ERR_UNINITIALIZED_ARRAY "uninitialized array `%T`"
 #define ERR_UNINITIALIZED_MEMBER "uninitialized member `%.T.%.T`"
-#define ERR_PARTIAL_INITIALIZE_UNION "partial union initialization with `%.T.%.T`"
+#define ERR_UNINITIALIZED_PARTIAL "partial record initialization with `%.T.%.T`"
 
 // Code generator errors
 #define ERR_CAST_EXPRESSION "can not emit expression: %t, invalid cast(%K -> %K)"
@@ -347,6 +347,8 @@ void print_log(rtContext ctx, raiseLevel level, const char *file, int line, stru
 #define ERR_INDIRECTION_MIXING "Mixing incompatible indirections: %t"
 #define WARN_EXTENDING_NAMESPACE "Extending static namespace: %T"
 #define WARN_INLINE_FILE "inline file: `%s`"
+#define WARN_INVALID_PLACEHOLDER "invalid documentation placeholder: `%s`"
+#define WARN_EMPTY_PLACEHOLDER "no symbols found for documentation placeholder: `%s`"
 #define INFO_PREVIOUS_DEFINITION "previously defined here as `%T`"
 
 #endif

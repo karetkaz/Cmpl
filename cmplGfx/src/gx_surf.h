@@ -7,7 +7,7 @@
 
 typedef enum {
 	ImageType = 0x000f,		// 0-15
-	Image2d = 0x0000,		// 2d image (tempPtr:= null)
+	Image2d = 0x0000,		// 2d image (tempPtr: null)
 	ImageIdx = 0x0001,		// indexed (tempPtr: CLUTPtr: palette)
 	ImageFnt = 0x0002,		// font (tempPtr: LLUTPtr: fontface)
 	Image3d = 0x0003,		// 3d image (tempPtr: zbuff)
@@ -286,7 +286,7 @@ static inline int convertImage(GxImage image, int x, int y, GxImage src, GxRect 
 
 static inline int blendImage(GxImage image, int x, int y, GxImage src, GxRect roi, int alpha) {
 	if (image->depth != src->depth) {
-		// source and destination must have same depth
+		// source and destination must have the same depth
 		return -2;
 	}
 	return copyImage(image, x, y, src, roi, &alpha, getBltProc(blt_cpy_mix, image->depth));

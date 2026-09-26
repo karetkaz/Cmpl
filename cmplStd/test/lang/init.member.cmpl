@@ -80,3 +80,18 @@ assert(recordInitZero.memberRec.memberInit == 0);
 
 /// initializing with undefined initializer: do not initialize
 RecordMemberTest recordUninitialized = {...?};
+
+/// a record with a single member is not a union: the default member initializer must be used
+struct RecordSingleMember {
+	int32 member = 3;
+}
+RecordSingleMember recordSingleDefault = {};
+assert(recordSingleDefault.member == 3);
+
+/// the default member initializer of a single member record propagates to the outer record
+struct RecordSingleMemberOuter {
+	int32 value;
+	RecordSingleMember inner;
+}
+RecordSingleMemberOuter recordSingleNested = {value: 1};
+assert(recordSingleNested.inner.member == 3);

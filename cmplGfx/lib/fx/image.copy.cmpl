@@ -1,7 +1,7 @@
 /// copy the `src` image to the destination with an optional blend method
 void copy(Image image, int32 x0, int32 y0, Image src, Rect roi?, pointer extra, argb blend(pointer extra, argb base, argb with)) {
 	static if (System.Platform.preferNativeCalls && struct(Image.copy) != null) {
-		// blend method uses uint32 instead of argb, so convert the method to a pointer to make compiler happy
+		// blend method uses uint32 instead of argb, so convert the method to a pointer to make the compiler happy
 		return Image.copy(image, x0, y0, src, roi, extra, pointer(blend));
 	}
 

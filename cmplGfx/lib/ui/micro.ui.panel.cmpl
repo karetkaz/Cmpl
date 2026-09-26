@@ -1,9 +1,9 @@
-///@public
+/// Panel is a layout that can be shown or hidden, hidden panels take no space
 struct Panel: Layout {
-	///@public
+	/// Whether the panel is visible
 	bool visible = false;
 
-	///@public
+	/// Show or hide the panel, returns true if the visibility changed
 	static bool visible(Panel this, bool value) {
 		if (this.visible == value) {
 			return false;
@@ -144,9 +144,9 @@ struct TabPage: Layout {
 	}
 }
 
-///@public
+/// Select is a dropdown: a header showing the selected option, which expands a list of options when clicked
 struct Select: Layout {
-	///@public
+	/// The text displayed on the header
 	char text[];
 	char states[2][]; // fixme: initialize: = {"<", "^"};
 
@@ -154,7 +154,7 @@ struct Select: Layout {
 	Switch header&? = null;
 	Panel panel&? = null;
 
-	///@public
+	/// Returns the data of the selected option, or `null` if nothing is selected
 	static variant selectedData(Select this) {
 		if (this.selected == null) {
 			return null;
@@ -183,9 +183,9 @@ struct Select: Layout {
 		return true;
 	}
 
-	///@public
+	/// Select the option at the given `index`
 	static Select setSelectedIndex(Select this&, int32 index) {
-		if (index < 0 || index > this.panel.itemCount) {
+		if (this.panel == null || index < 0 || index >= this.panel.itemCount) {
 			error("invalid index selected", index);
 			return this;
 		}
@@ -199,7 +199,7 @@ struct Select: Layout {
 		return this;
 	}
 
-	///@public
+	/// Add the given views as options, aligned with `align`
 	static Select addItems(Select this&, int32 align, View views...) {
 		struct Header: Switch {
 			Select select;
@@ -233,7 +233,7 @@ struct Select: Layout {
 		return this;
 	}
 
-	///@public
+	/// Add an option displaying `text`, having the given `data`
 	static Select addItem(Select this, char text[], variant data) {
 		struct SelectItem: Button {
 			Select select;
@@ -250,7 +250,7 @@ struct Select: Layout {
 		return this;
 	}
 
-	///@public
+	/// Add an option displaying `text`, using the text also as its data
 	static Select addItem(Select this, char text[]) {
 		return addItem(this, text, text);
 	}

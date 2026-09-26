@@ -1,0 +1,105 @@
+/** # Introduction
+Designed to be simple and minimalist.
+*/
+inline "./cmpl.intro.cmpl";
+
+/** # Lexical structure
+*/
+inline "./lex.comment.cmpl";
+inline "./lex.identifier.cmpl";
+inline "./lex.literal.number.cmpl";
+inline "./lex.literal.string.cmpl";
+inline "./lex.operator.cmpl";
+
+/** # Expressions
+Expressions are responsible for computing values.
+*/
+inline "./expr.unary.cmpl";
+inline "./expr.binary.cmpl";
+inline "./expr.assignment.cmpl";
+inline "./expr.logical.cmpl";
+inline "./expr.primary.cmpl";
+inline "./expr.precedence.cmpl";
+inline "./expr.inline.emit.cmpl";
+
+/** # Statements
+Statements are the basic blocks of a program.
+*/
+inline "./stmt.block.cmpl";
+inline "./stmt.if.cmpl";
+inline "./stmt.if.decl.cmpl";
+inline "./stmt.if.static.cmpl";
+inline "./stmt.if.static.platform.cmpl";
+inline "./stmt.for.cmpl";
+// todo: inline "./stmt.for.foreach.cmpl";
+inline "./stmt.break.cmpl";
+inline "./stmt.continue.cmpl";
+inline "./stmt.return.cmpl";
+inline "./stmt.inline.file.cmpl";
+inline "./stmt.declaration.cmpl";
+inline "./stmt.expression.cmpl";
+
+/** # Declarations
+Declaration adds new variables, functions or types to the program.
+*/
+inline "./decl.variable.cmpl";
+inline "./decl.array.cmpl";
+inline "./decl.array.multidim.cmpl";
+inline "./decl.array.literal.cmpl";
+inline "./decl.array.slicing.cmpl";
+inline "./decl.function.cmpl";
+inline "./decl.function.constructor.cmpl";
+inline "./decl.function.reflection.cmpl";
+inline "./decl.enum.cmpl";
+inline "./decl.record.cmpl";
+inline "./decl.record.member.cmpl";
+inline "./decl.record.literal.cmpl";
+inline "./decl.record.method.cmpl";
+inline "./decl.record.static.cmpl";
+inline "./decl.record.packed.cmpl";
+inline "./decl.record.extend.cmpl";
+inline "./decl.inline.cmpl";
+inline "./decl.inline.constructor.cmpl";
+inline "./decl.inline.expression.cmpl";
+inline "./decl.inline.operator.cmpl";
+
+inline "./type.builtin.types.cmpl";
+inline "./type.builtin.const.cmpl";
+
+/// # Builtin functions
+inline "./type.builtin.raise.cmpl";
+inline "./type.builtin.recover.cmpl";
+
+/** # Library and extensions
+The documented public symbols of the standard library and of the loaded extensions, grouped by the type declaring them.
+*/
+inline "*library";
+
+inline "./vm.overview.cmpl";
+inline "./vm.instruction.sys.cmpl";
+inline "./vm.instruction.stk.cmpl";
+inline "./vm.instruction.mem.cmpl";
+inline "./vm.instruction.u32.cmpl";
+inline "./vm.instruction.u64.cmpl";
+inline "./vm.instruction.i32.cmpl";
+inline "./vm.instruction.i64.cmpl";
+inline "./vm.instruction.f32.cmpl";
+inline "./vm.instruction.f64.cmpl";
+inline "./vm.instruction.p128.cmpl";
+
+/** # Command Line Reference
+To compile and execute a script file, the cmpl application must be invoked with the corresponding arguments.
+
+>cmpl \[global options\]... \[file \[file options\]...\]...
+*/
+inline "*usage";
+
+/* note:
+All the text of the documentation is in the doc comments of the inlined files,
+only the placeholders are replaced with generated text by `-dump.md`:
+- `inline "*example:tail";`: the rest of the file as example.
+- `inline "*example:<n>";`: the next n lines of the file as example.
+- `inline "*library";`, `inline "*library:<unit>";`: the documented library symbols.
+- `inline "*opcode:<name>";`: the generated properties of an instruction.
+- `inline "*usage";`: the command line options and examples.
+*/

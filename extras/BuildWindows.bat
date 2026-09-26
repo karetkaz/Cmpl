@@ -14,9 +14,6 @@ SET "CMPL_BIN=%userprofile%\Desktop\Cmpl"
 make -C "%CMPL_HOME%" BINDIR="%CMPL_BIN%" clean
 make -C "%CMPL_HOME%" -j 12 BINDIR="%CMPL_BIN%" cmpl libFile.dll libGfx.dll
 
-:: test the virtual machine
-%CMPL_BIN%\cmpl>"%CMPL_BIN%/vm.dump.md" --test-vm
-
 :: dump symbols, assembly, syntax tree and global variables
 SET TEST_FLAGS=-X+steps+fold+fast-stdin-glob-offsets -api/A/d/p -asm/n/s -ast -doc -use
 %CMPL_BIN%\cmpl -debug/G/M %TEST_FLAGS% -log/d/15 "%CMPL_BIN%/test-dump.cmpl" "cmplStd/test/test.cmpl"

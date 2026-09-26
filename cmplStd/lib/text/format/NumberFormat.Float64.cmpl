@@ -1,4 +1,4 @@
-/// formated print a floating-point value to the given `output` buffer
+/// formatted print a floating-point value to the given `output` buffer
 static int format(NumberFormat format!, char output&[], int pos, float64 value) {
 	if (value < 0) {
 		pos = append(&output, pos, format.negativeSymbol);

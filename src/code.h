@@ -39,10 +39,12 @@ typedef enum {
 	opc_drop,		// convert this to opcode.spc
 
 
-	u32_bit_and = 0 << 6,
-	u32_bit_shl = 1 << 6,
-	u32_bit_shr = 2 << 6,
-	u32_bit_sar = 3 << 6,
+	u32_ext_and = 0 << 5,
+	u32_ext_shl = 1 << 5,
+	u32_ext_shr = 2 << 5,
+	u32_ext_sar = 3 << 5,
+	u32_ext_mask = 0x1f,
+	// u32_ext_ext = 0x80 .. 0xff
 } vmOpcode;
 
 /// Value inside the virtual machine
@@ -179,7 +181,7 @@ vmError invoke(nfcContext ctx, symn fun, void *ret, void *args, const void *extr
 		}
 
 		// register event callback using the symbol of the function.
-		onMouse = rt->api.rtLookup(rt, fun);
+		onMouse = rt->api.lookup(rt, fun, 0);
 
 		// runtime error if symbol is not valid.
 		return onMouse != NULL ? noError : nativeCallError;
@@ -194,7 +196,7 @@ vmError invoke(nfcContext ctx, symn fun, void *ret, void *args, const void *extr
 	}
 
 	// expose the callback register function to the compiler
-	if (!rt->api.ccDefCall(rt->cc, setMouseCb, "void setMouseCallback(void Callback(int32 btn, int32 x, int32 y)")) {
+	if (!rt->api.ccAddCall(rt->cc, setMouseCb, "void setMouseCallback(void Callback(int32 btn, int32 x, int32 y))")) {
 		error(...)
 	}
  */
@@ -258,7 +260,7 @@ void fixJump(rtContext ctx, size_t src, size_t dst, ssize_t stc);
  * @param cb callback executed for each instruction.
  * @return number of errors found during the test.
  */
-int vmSelfTest(void cb(const char *error, const struct opcodeRec *info));
+int vmSelfTest(rtContext ctx, void cb(rtContext ctx, const char *error, const struct opcodeRec *info));
 
 /// Emits a virtual machine opcode without additional arguments.
 static inline size_t emit(rtContext ctx, vmOpcode opc) {

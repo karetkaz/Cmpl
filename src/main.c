@@ -10,6 +10,146 @@
 // default values
 static const char * const CMPL_HOME = "CMPL_HOME";    // Home environment path variable name
 
+/**
+ * One row of the CLI usage/help reference.
+ *
+ * `flag == NULL && desc == NULL`: blank separator line.
+ * `flag == NULL && desc != NULL`: a free-text line (already carries its own
+ *   leading indentation, if any), printed as-is: section headers, the
+ *   preamble, and the free-form "examples" walkthrough.
+ * `flag != NULL`: a flag/sub-option row (`flag` already carries its own
+ *   leading indentation: two spaces for a top-level flag, four for a
+ *   sub-option), printed left-justified to a fixed column so the
+ *   description lines up; `sub` distinguishes a sub-option (1) of the
+ *   preceding top-level flag (0) for the structured "usage" JSON dump.
+ *
+ * This single table is the source of truth for both the `--help` console
+ * output (usage(), below) and the `-dump.json`'s `"usage"` array
+ * (dumpUsageJSON(), below) -- no more hand-kept-in-sync duplicate of this
+ * reference in `extras/docs/700 - Usage.md`.
+ */
+static const struct {
+	const char *flag;
+	const char *desc;
+	int sub;
+} usage_opts[] = {
+	{NULL, NULL, 0},
+	{NULL, "<global options>:", 0},
+	{NULL, NULL, 0},
+	{"  -run[*]", "run at full speed, no debug information available", 0},
+	{"    /g /G", "dump global variable values (/G includes builtin types and functions)", 1},
+	{"    /m /M", "dump memory usage (/M includes heap allocations)", 1},
+	{"    /t", "add debug information for stack-traces", 1},
+	{NULL, NULL, 0},
+	{"  -debug[*]", "run with attached debugger, pausing on uncaught errors and break points", 0},
+	{"    /g /G", "dump global variable values (/G includes builtin types and functions)", 1},
+	{"    /m /M", "dump memory usage (/M includes heap allocations)", 1},
+	{"    /p /P", "dump caught errors (/P includes stacktrace)", 1},
+	{"    /t /T", "dump executed instructions (/T includes values on stack)", 1},
+	{"    /s /S", "pause on any error (/S pauses on startup)", 1},
+	{NULL, NULL, 0},
+	{"  -profile[*]", "run code with profiler: coverage, method tracing", 0},
+	{"    /g /G", "dump global variable values (/G includes builtin types and functions)", 1},
+	{"    /m /M", "dump memory usage (/M includes heap allocations)", 1},
+	{"    /p /P", "dump executed statements (/P include all functions and statements)", 1},
+	{"    /t /T", "trace execution with timestamps (/T includes instructions)", 1},
+	{NULL, NULL, 0},
+	{"  -std<file>", "specify custom standard library file (empty file name disables std library compilation).", 0},
+	{NULL, NULL, 0},
+	{"  -mem<int>[kKmMgG]", "override memory usage for compiler and runtime(heap)", 0},
+	{NULL, NULL, 0},
+	{"  -log[*]<int> <file>", "set logger for: compilation errors and warnings, runtime debug messages", 0},
+	{"    <int>", "set the default log(warning) level 0 - 15", 1},
+	{"    /a", "append to the log file", 1},
+	{"    /d", "dump to the log file", 1},
+	{NULL, NULL, 0},
+	{"  -dump[?] <file>", "set output for: dump(symbols, assembly, abstract syntax tree, coverage, call tree)", 0},
+	{"    .scite", "dump api for SciTE text editor", 1},
+	{"    .json", "dump api and profile data in javascript object notation format", 1},
+	{"    .md", "dump documentation in markdown format", 1},
+	{NULL, NULL, 0},
+	{"  -api[*]", "dump symbols", 0},
+	{"    /a /A", "include all library symbols(/A includes builtins)", 1},
+	{"    /d", "dump details of symbol", 1},
+	{"    /p", "dump params and fields", 1},
+	{NULL, NULL, 0},
+	{"  -doc[*]", "dump documentation", 0},
+	{"    /a /A", "include all library symbols(/A includes builtins)", 1},
+	{"    /d", "dump details of symbol", 1},
+	{"    /p", "dump params and fields", 1},
+	{NULL, NULL, 0},
+	{"  -use[*]", "dump usages", 0},
+	{"    /a /A", "include all library symbols(/A includes builtins)", 1},
+	{"    /d", "dump details of symbol", 1},
+	{"    /p", "dump params and fields", 1},
+	{NULL, NULL, 0},
+	{"  -asm[*]<int>", "dump assembled code: jmp +80", 0},
+	{"    /a /A", "include all library symbols(/A includes builtins)", 1},
+	{"    /d", "dump details of symbol", 1},
+	{"    /p", "dump params and fields", 1},
+	{"    /g", "use global address: jmp @0x003d8c", 1},
+	{"    /n", "prefer names over addresses: jmp <main+80>", 1},
+	{"    /s", "print source code statements", 1},
+	{NULL, NULL, 0},
+	{"  -ast[*]", "dump syntax tree", 0},
+	{"    /a /A", "include all library symbols(/A includes builtins)", 1},
+	{"    /d", "dump details of symbol", 1},
+	{"    /p", "dump params and fields", 1},
+	{"    /t", "dump sub-expression type information", 1},
+	{"    /l", "do not expand statements (print on single line)", 1},
+	{"    /b", "don't keep braces ('{') on the same line", 1},
+	{"    /e", "don't keep `else if` constructs on the same line", 1},
+	{NULL, NULL, 0},
+	{NULL, "<files with options>: filename followed by switches", 0},
+	{"  <file>", "if file extension is (.so|.dll|.wasm) load as library else compile", 0},
+	{"  -w[a|<int>]", "set or disable warning level for current file", 0},
+	{"  -b[*]<int>", "break point on <int> line in current file", 0},
+	{"    /[p|P]", "print only, do not pause (/P includes stack trace)", 1},
+	{"    /[v]", "after execution evaluate the top of the stack (partially implemented)", 1},
+	{"    /o", "one shot breakpoint, disable after first hit", 1},
+	{NULL, NULL, 0},
+	{NULL, "examples:", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app test.cmpl", 0},
+	{NULL, "    compile only the file `test.cmpl`, no global option (run, debug or profile) is specified", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -run test.cmpl", 0},
+	{NULL, "    compile and execute the file `test.cmpl` at full speed", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -debug test.cmpl", 0},
+	{NULL, "    compile and execute the file `test.cmpl` with additional checks", 0},
+	{NULL, "    in case of an error, the debugger pauses the execution at the fault location", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -profile test.cmpl", 0},
+	{NULL, "    compile, execute and measure the file `test.cmpl`", 0},
+	{NULL, "    when the execution finishes, the collected data is dumped to the console, or to the specified file", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -debug gl.so -w0 gl.cmpl -w0 test.cmpl -wa -b12 -b/o15 -b/p19", 0},
+	{NULL, "    execute in debug mode", 0},
+	{NULL, "    import `gl.so`", 0},
+	{NULL, "        with no warnings", 0},
+	{NULL, "    compile `gl.cmpl`", 0},
+	{NULL, "        with no warnings", 0},
+	{NULL, "    compile `test.cmpl`", 0},
+	{NULL, "        show all warnings", 0},
+	{NULL, "        break execution each time line 12 is hit", 0},
+	{NULL, "        break execution when line 15 is first hit", 0},
+	{NULL, "        print message when line 19 is hit", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -profile/t -api/a/d/p -dump.json test.json test.cmpl", 0},
+	{NULL, "    execute in profile mode, including the call tree in the dump", 0},
+	{NULL, "    include all symbols with details, parameters and fields in the dump", 0},
+	{NULL, "    dump in json format to the file `test.json`, which can be opened with the web inspector", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -api -dump.json api.json", 0},
+	{NULL, "    dump builtin symbols to `api.json` file (types, functions, variables, aliases)", 0},
+	{NULL, NULL, 0},
+	{NULL, ">app -doc/a -dump.md Cmpl.md cmplDoc/Cmpl.cmpl", 0},
+	{NULL, "    generate this documentation in markdown format to the file `Cmpl.md`", 0},
+	{NULL, NULL, 0},
+	{NULL, NULL, 0},
+};
+
 static inline int strEquals(const char *str, const char *with) {
 	if (str == NULL || with == NULL) {
 		return str == with;
@@ -134,7 +274,7 @@ typedef enum {
 	dbgStepOut = 'o',	// break on next return
 
 	dbgPrintStackTrace = 't',	// print stack trace
-	dbgPrintStackValues = 's',	// print values on sack
+	dbgPrintStackValues = 's',	// print values on stack
 	dbgPrintInstruction = 'p',	// print current instruction
 } dbgMode;
 
@@ -187,6 +327,11 @@ struct userContextRec {
 	const char **esc;            // escape characters
 	const char *steps;           // dump compilation steps
 	dmpMode dmpMode;             // dump flags
+
+	const char *mdFilter;        // markdown dump: filter for symbol or instruction
+	const char *mdFile;          // markdown dump: the file of the current library section
+	symn mdOwner;                // markdown dump: the record of the current library section
+	int mdCount;                 // markdown dump: count of listed library symbols
 
 	unsigned closeOut:1;         // close `out` file.
 
@@ -361,6 +506,9 @@ static void dumpAstXML(FILE *out, const char **esc, astn ast, dmpMode mode, int 
 			}
 
 			printFmt(out, esc, " value=\"%?t\">\n", ast);
+			if (isInline(ast->id.link)) {
+				break;
+			}
 			if (ast->id.link->init) {
 				dumpAstXML(out, esc, ast->id.link->init, mode, indent + 1, "init");
 			}
@@ -447,6 +595,34 @@ static clock_t leaveMethod(userContext usr) {
 
 	return time;
 }
+static dbgn nextDbgNode(dbgContext ctx, size_t pc, dbgn hint) {
+	dbgn base = (void *)ctx->statements.ptr;
+	size_t size = ctx->statements.cnt;
+
+	// still on the same leftmost node (statement with multiple instructions).
+	if (hint > base && pc >= hint->start && pc < hint->end && hint[-1].end <= pc) {
+		return hint;
+	}
+
+	// cold path: full binary search on [0, size).
+	size_t lo = 0;
+	size_t hi = size;
+	while (lo < hi) {
+		size_t mid = lo + (hi - lo) / 2;
+		if (base[mid].end > pc) {
+			hi = mid;
+		} else {
+			lo = mid + 1;
+		}
+	}
+	while (lo < size && base[lo].end > pc) {
+		if (base[lo].start <= pc) {
+			return base + lo;
+		}
+		lo += 1;
+	}
+	return NULL;
+}
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ json output
 static const char * const JSON_KEY_VERSION = "version";
@@ -462,6 +638,7 @@ static const char * const JSON_ARR_END = "%I]\n";
 
 static const char * const JSON_KEY_FILE = "file";
 static const char * const JSON_KEY_LINE = "line";
+static const char * const JSON_KEY_UNIT = "unit";
 static const char * const JSON_KEY_NAME = "name";
 static const char * const JSON_KEY_OFFS = "offs";
 static const char * const JSON_KEY_SIZE = "size";
@@ -487,8 +664,15 @@ static void jsonDumpSym(FILE *out, const char **esc, symn ptr, const char *kind,
 	}
 
 	printFmt(out, esc, "%I\"%s\": \"%T\"\n", indent, JSON_KEY_PROTO, ptr);
-	printFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent, JSON_KEY_KIND, ptr->kind & MASK_kind);
-	printFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent, JSON_KEY_CAST, ptr->kind & MASK_cast);
+	if (strEquals(ptr->name, doc_tag_inline) || strEquals(ptr->name, doc_tag_statement)) {
+		// synthetic doc-placeholder symbol (see declareDocSymbol, parser.c):
+		// distinguishable from a real symbol by "kind":"doc" alone, no new
+		// field needed to check.
+		printFmt(out, esc, "%I, \"%s\": \"doc\"\n", indent, JSON_KEY_KIND);
+	} else {
+		printFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent, JSON_KEY_KIND, ptr->kind & MASK_kind);
+		printFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent, JSON_KEY_CAST, ptr->kind & MASK_cast);
+	}
 	printFmt(out, esc, "%I, \"%s\": \"%.T\"\n", indent, JSON_KEY_NAME, ptr);
 	if (ptr->owner != NULL) {
 		printFmt(out, esc, "%I, \"%s\": \"%T\"\n", indent, JSON_KEY_OWNER, ptr->owner);
@@ -499,6 +683,9 @@ static void jsonDumpSym(FILE *out, const char **esc, symn ptr, const char *kind,
 	if (ptr->file != NULL && ptr->line != 0) {
 		printFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent, JSON_KEY_FILE, ptr->file);
 		printFmt(out, esc, "%I, \"%s\": %u\n", indent, JSON_KEY_LINE, ptr->line);
+	}
+	if (ptr->unit != NULL) {
+		printFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent, JSON_KEY_UNIT, ptr->unit);
 	}
 
 	if (isInvokable(ptr)) {
@@ -687,7 +874,83 @@ static void jsonDumpAsm(FILE *out, const char **esc, symn sym, rtContext ctx, in
 		printFmt(out, esc, "%I, \"%s\": %u\n", indent + 1, JSON_KEY_SIZE, opcode_tbl[*ip].size);
 	}
 }
-static void dumpApiJSON(userContext ctx, symn sym) {
+
+static void dumpJsonOpcodes(FILE *out, const char **esc, int indent) {
+	static const char *const JSON_KEY_OPCODES = "opcodes";
+	static const char *const JSON_KEY_NAME = "name";
+	static const char *const JSON_KEY_CODE = "code";
+	static const char *const JSON_KEY_SIZE = "size";
+	static const char *const JSON_KEY_STACK_IN = "stack_in";
+	static const char *const JSON_KEY_STACK_OUT = "stack_out";
+
+	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_OPCODES);
+	for (int i = 0; i < 256; ++i) {
+		const struct opcodeRec *op = &opcode_tbl[i];
+		if (op->name == NULL) {
+			continue;
+		}
+		printFmt(out, esc, JSON_OBJ_NEXT, indent + 1);
+		printFmt(out, esc, "%I\"%s\": \"%s\"\n", indent + 2, JSON_KEY_NAME, op->name);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_CODE, op->code);
+		printFmt(out, esc, "%I, \"%s\": %u\n", indent + 2, JSON_KEY_SIZE, op->size);
+		printFmt(out, esc, "%I, \"%s\": %u\n", indent + 2, JSON_KEY_STACK_IN, op->stack_in);
+		printFmt(out, esc, "%I, \"%s\": %u\n", indent + 2, JSON_KEY_STACK_OUT, op->stack_out);
+	}
+	printFmt(out, esc, JSON_OBJ_ARR_END, indent + 1);
+}
+static void dumpJsonUsage(FILE *out, const char **esc, int indent) {
+	static const char *const JSON_KEY_USAGE = "usage";
+	static const char *const JSON_KEY_FLAG = "flag";
+	static const char *const JSON_KEY_DESC = "desc";
+	static const char *const JSON_KEY_SUBFLAGS = "subflags";
+
+	// nested (flag -> subflags[]) structure doesn't fit the flat-list
+	// ARR_START/NEXT/END convention used elsewhere in this file (that
+	// convention closes-and-reopens exactly one brace per entry; here each
+	// top-level flag needs to close its subflags array *and* its own
+	// object before the next one can open), so brackets are managed
+	// explicitly instead.
+	printFmt(out, esc, "%I, \"%s\": [\n", indent, JSON_KEY_USAGE);
+	int open = 0;
+	int subOpen = 0;
+	for (size_t i = 0; i < lengthOf(usage_opts); ++i) {
+		const char *flag = usage_opts[i].flag;
+		const char *desc = usage_opts[i].desc;
+		if (flag == NULL) {
+			continue;
+		}
+		if (!usage_opts[i].sub) {
+			if (open) {
+				if (subOpen) {
+					printFmt(out, esc, "%I}\n", indent + 3);
+				}
+				printFmt(out, esc, "%I]\n", indent + 2);
+				printFmt(out, esc, "%I}, {\n", indent + 1);
+			} else {
+				printFmt(out, esc, "%I{\n", indent + 1);
+			}
+			open = 1;
+			subOpen = 0;
+			printFmt(out, esc, "%I\"%s\": \"%?s\"\n", indent + 2, JSON_KEY_FLAG, flag);
+			printFmt(out, esc, "%I, \"%s\": \"%?s\"\n", indent + 2, JSON_KEY_DESC, desc);
+			printFmt(out, esc, "%I, \"%s\": [\n", indent + 2, JSON_KEY_SUBFLAGS);
+		} else if (open) {
+			printFmt(out, esc, "%I%s{\n", indent + 3, subOpen ? "}, " : "");
+			subOpen = 1;
+			printFmt(out, esc, "%I\"%s\": \"%?s\"\n", indent + 4, JSON_KEY_FLAG, flag);
+			printFmt(out, esc, "%I, \"%s\": \"%?s\"\n", indent + 4, JSON_KEY_DESC, desc);
+		}
+	}
+	if (open) {
+		if (subOpen) {
+			printFmt(out, esc, "%I}\n", indent + 3);
+		}
+		printFmt(out, esc, "%I]\n", indent + 2);
+		printFmt(out, esc, "%I}\n", indent + 1);
+	}
+	printFmt(out, esc, "%I]\n", indent);
+}
+static void dumpJsonApi(userContext ctx, symn sym) {
 	static const char *const JSON_KEY_DOC = "doc";
 	static const char *const JSON_KEY_ASM = "asm";
 	static const char *const JSON_KEY_AST = "ast";
@@ -739,35 +1002,6 @@ static void dumpApiJSON(userContext ctx, symn sym) {
 	}
 }
 
-static dbgn nextDbgNode(dbgContext ctx, size_t pc, dbgn hint) {
-	dbgn base = (void *)ctx->statements.ptr;
-	size_t size = ctx->statements.cnt;
-
-	// still on the same leftmost node (statement with multiple instructions).
-	if (hint > base && pc >= hint->start && pc < hint->end && hint[-1].end <= pc) {
-		return hint;
-	}
-
-	// cold path: full binary search on [0, size).
-	size_t lo = 0;
-	size_t hi = size;
-	while (lo < hi) {
-		size_t mid = lo + (hi - lo) / 2;
-		if (base[mid].end > pc) {
-			hi = mid;
-		} else {
-			lo = mid + 1;
-		}
-	}
-	while (lo < size && base[lo].end > pc) {
-		if (base[lo].start <= pc) {
-			return base + lo;
-		}
-		lo += 1;
-	}
-	return NULL;
-}
-
 static vmError jsonProfile(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
@@ -812,6 +1046,11 @@ static vmError jsonProfile(dbgContext ctx, vmError error, size_t pc, size_t ss, 
 	return noError;
 }
 static void jsonPostProfile(dbgContext ctx) {
+	if (ctx == NULL || ctx->debug != jsonProfile) {
+		// not debugging
+		return;
+	}
+
 	static const char *const JSON_KEY_FUNC = "functions";
 	static const char *const JSON_KEY_STMT = "statements";
 	static const char *const JSON_KEY_TIME = "time";
@@ -1336,10 +1575,317 @@ static void dumpApiSciTE(userContext ctx, symn sym) {
 	else {
 		printSym(out, esc, sym, prSymQual|prSymArgs, 0);
 	}
-	if (sym->doc != NULL && *sym->doc && sym->doc != sym->name) {
+	if (sym->doc != NULL && *sym->doc && (sym->doc != sym->name || sym->params != NULL)) {
 		printFmt(out, esc, " # %s", sym->doc);
 	}
 	printFmt(out, esc, "\n");
+}
+
+
+/**
+ * Copy lines of a file following the given line into a cmpl code block,
+ * leading blank lines are skipped.
+ * @param count number of lines to copy, 0 copies the rest of the file.
+ * @return non-zero if the file could not be read.
+ */
+static int dumpMdExample(FILE *out, const char *path, int afterLine, int count) {
+	FILE *in = fopen(path, "rb");
+	if (in == NULL) {
+		return -1;
+	}
+	fseek(in, 0, SEEK_END);
+	long size = ftell(in);
+	fseek(in, 0, SEEK_SET);
+	char *text = malloc(size + 1);
+	if (text == NULL) {
+		fclose(in);
+		return -1;
+	}
+	size = (long) fread(text, 1, size, in);
+	text[size] = 0;
+	fclose(in);
+
+	char *ptr = text;
+	for (int line = 0; line < afterLine && *ptr; ptr += 1) {
+		if (*ptr == '\n') {
+			line += 1;
+		}
+	}
+	if (count > 0) {
+		// cut the text after the given number of lines
+		char *end = ptr;
+		for (int line = 0; line < count && *end; end += 1) {
+			if (*end == '\n') {
+				line += 1;
+			}
+		}
+		*end = 0;
+	}
+	// skip leading blank lines
+	for (char *eol = ptr; *eol == ' ' || *eol == '\t' || *eol == '\r' || *eol == '\n'; eol += 1) {
+		if (*eol == '\n') {
+			ptr = eol + 1;
+		}
+	}
+
+	size_t len = strlen(ptr);
+	fputs("\n```cmpl\n", out);
+	fputs(ptr, out);
+	if (len > 0 && ptr[len - 1] != '\n') {
+		fputc('\n', out);
+	}
+	fputs("```\n", out);
+	free(text);
+	return 0;
+}
+/**
+ * Dump the documented public symbols, which are not declared by the main unit,
+ * grouped by type (see `inline "*library";`).
+ */
+static void dumpMdApi(userContext ctx, symn sym) {
+	FILE *out = ctx->out;
+	if (sym->doc == NULL || sym->doc == sym->name || sym->file == NULL) {
+		// undocumented or builtin symbol
+		return;
+	}
+	if (sym->unit == ctx->rt->main->unit) {
+		// declared by the documentation
+		return;
+	}
+	if (ctx->mdFilter != NULL) {
+		// only the symbols of the requested unit: `inline "*library:unit.cmpl";`
+		size_t len = strlen(ctx->mdFilter);
+		size_t unitLen = sym->unit != NULL ? strlen(sym->unit) : 0;
+		if (unitLen < len || strcmp(sym->unit + unitLen - len, ctx->mdFilter) != 0) {
+			return;
+		}
+	}
+	char chr = sym->name != NULL ? *sym->name : 0;
+	if (!(chr == '_' || (chr >= 'a' && chr <= 'z') || (chr >= 'A' && chr <= 'Z'))) {
+		// hidden symbols and operators
+		return;
+	}
+
+	ctx->mdCount += 1;
+	if (isTypename(sym)) {
+		printFmt(out, NULL, "\n## %.*T\n%s\n\n", prSymQual, sym, sym->doc);
+		ctx->mdOwner = sym;
+		ctx->mdFile = NULL;
+		return;
+	}
+
+	if (sym->owner != NULL) {
+		if (sym->owner != ctx->mdOwner) {
+			// members are listed in the section of their type
+			return;
+		}
+		printFmt(out, NULL, "- `");
+		printSym(out, NULL, sym, prSymArgs | prSymType, 0);
+		printFmt(out, NULL, "`: %s\n", sym->doc);
+		return;
+	}
+
+	if (ctx->mdOwner != NULL || !strEquals(ctx->mdFile, sym->file)) {
+		printFmt(out, NULL, "\n## %s\n", sym->file);
+		ctx->mdOwner = NULL;
+		ctx->mdFile = sym->file;
+	}
+	printFmt(out, NULL, "- `");
+	printSym(out, NULL, sym, prSymQual | prSymArgs | prSymType, 0);
+	printFmt(out, NULL, "`: %s\n", sym->doc);
+}
+/// Validate the instructions of the virtual machine, abort on the first invalid instruction.
+static void dumpMdOpcode(rtContext ctx, const char *error, const struct opcodeRec *info) {
+	FILE *out = ctx->usr->out;
+	if (error != NULL) {
+		printFmt(out, NULL, "\n* Instruction error: `%s`\n", error);
+	}
+	if (!strEquals(ctx->usr->mdFilter, info->name)) {
+		return;
+	}
+	printFmt(out, NULL, "\nDetails:");
+	printFmt(out, NULL, "\n* Instruction code: `0x%02x`", info->code);
+	printFmt(out, NULL, "\n* Instruction length: `%d` byte%?c", info->size, info->size == 1 ? 0 : 's');
+	printFmt(out, NULL, "\n* Stack inputs: `%d` slot%?c", info->stack_in, info->stack_in == 1 ? 0 : 's');
+	printFmt(out, NULL, "\n* Stack outputs: `%d` slot%?c", info->stack_out, info->stack_out == 1 ? 0 : 's');
+	ctx->usr->mdCount += 1;
+}
+/// Dump the command line options and examples (see `inline "*usage";`).
+static void dumpMdUsage(FILE *out) {
+	for (size_t i = 0; i < lengthOf(usage_opts); ++i) {
+		const char *flag = usage_opts[i].flag;
+		const char *desc = usage_opts[i].desc;
+		if (flag == NULL && desc == NULL) {
+			printFmt(out, NULL, "\n");
+			continue;
+		}
+		if (flag != NULL) {
+			// flag or sub-option of the previous flag
+			while (*flag == ' ') {
+				flag += 1;
+			}
+			printFmt(out, NULL, "%s- `%s`: %s\n", usage_opts[i].sub ? "\t" : "", flag, desc);
+			continue;
+		}
+		if (strBegins(desc, ">app ")) {
+			// example invocation
+			printFmt(out, NULL, ">cmpl %s\n\n", desc + 5);
+			continue;
+		}
+		if (*desc == ' ') {
+			// explanation of an example, 4 spaces per nesting level
+			int level = 0;
+			while (strBegins(desc, "    ")) {
+				desc += 4;
+				level += 1;
+			}
+			for (int n = 1; n < level; ++n) {
+				printFmt(out, NULL, "\t");
+			}
+			printFmt(out, NULL, "- %s\n", desc);
+			continue;
+		}
+
+		// section header: `<name>: description` or `name:`
+		const char *end = strchr(desc, ':');
+		if (end == NULL) {
+			printFmt(out, NULL, "%s\n", desc);
+			continue;
+		}
+		const char *name = desc;
+		if (*name == '<') {
+			name += 1;
+		}
+		size_t len = end - name;
+		if (len > 0 && name[len - 1] == '>') {
+			len -= 1;
+		}
+		if (len == 0) {
+			printFmt(out, NULL, "%s\n", desc);
+			continue;
+		}
+		char chr = *name;
+		if (chr >= 'a' && chr <= 'z') {
+			chr = (char) (chr - 'a' + 'A');
+		}
+		printFmt(out, NULL, "## %c", chr);
+		fwrite(name + 1, 1, len - 1, out);
+		printFmt(out, NULL, "\n");
+		for (end += 1; *end == ' '; end += 1) {}
+		if (*end != 0) {
+			printFmt(out, NULL, "\n%s\n", end);
+		}
+	}
+}
+/**
+ * Insert the generated text of a documentation placeholder: `inline "*directive:argument";`
+ * (the directives are validated by the parser, see checkPlaceholder).
+ */
+static void dumpMdPlaceholder(userContext ctx, astn ast) {
+	FILE *out = ctx->out;
+	const char *name = ast->id.name + 1;
+	const char *arg = strchr(name, ':');
+	size_t len = arg != NULL ? (size_t) (arg - name) : strlen(name);
+	if (arg != NULL) {
+		arg += 1;
+	}
+
+	if (len == 7 && strncmp(name, "example", len) == 0) {
+		// `*example:tail`: the rest of the file, `*example:<n>`: the next n lines
+		int count = 0;
+		if (arg != NULL && !strEquals(arg, "tail")) {
+			count = atoi(arg);
+			if (count <= 0) {
+				return;
+			}
+		}
+		if (dumpMdExample(out, ast->file, ast->line, count) != 0) {
+			warn(ctx->rt, ast->file, ast->line, ERR_OPENING_FILE, ast->file);
+		}
+		return;
+	}
+	if (len == 7 && strncmp(name, "library", len) == 0) {
+		ctx->mdOwner = NULL;
+		ctx->mdFile = NULL;
+		ctx->mdCount = 0;
+		ctx->mdFilter = arg;
+		dumpApi(ctx->rt, ctx, dumpMdApi);
+		if (ctx->mdCount == 0) {
+			error(ctx->rt, ast->file, ast->line, WARN_EMPTY_PLACEHOLDER, ast->id.name);
+		}
+		ctx->mdFilter = NULL;
+		return;
+	}
+	if (len == 6 && strncmp(name, "opcode", len) == 0 && arg != NULL) {
+		ctx->mdCount = 0;
+		ctx->mdFilter = arg;
+		vmSelfTest(ctx->rt, dumpMdOpcode);
+		if (ctx->mdCount == 0) {
+			error(ctx->rt, ast->file, ast->line, WARN_EMPTY_PLACEHOLDER, ast->file);
+		}
+		ctx->mdFilter = NULL;
+		return;
+	}
+	if (len == 5 && strncmp(name, "usage", len) == 0) {
+		dumpMdUsage(out);
+	}
+}
+
+/**
+ * Dump the markdown documentation: the doc comments, which do not belong to a declaration
+ * (see doc_tag_inline and doc_tag_statement), followed by the generated text of the
+ * documentation placeholders: `inline "*example:tail";`, `inline "*library";`, ...
+ * `inline "./file.cmpl";` preceded by `/// **Example**` uses the whole file as example.
+ */
+static void dumpApiMarkdown(userContext ctx, symn sym) {
+	FILE *out = ctx->out;
+	if (!strEquals(sym->name, doc_tag_inline) && !strEquals(sym->name, doc_tag_statement)) {
+		return;
+	}
+	if (sym->doc == NULL || sym->unit != ctx->rt->main->unit) {
+		return;
+	}
+	if (*sym->doc != 0) {
+		// the documentation is printed as it was written
+		size_t len = strlen(sym->doc);
+		printFmt(out, NULL, "\n%s%s", sym->doc, sym->doc[len - 1] == '\n' ? "" : "\n");
+	}
+
+	astn ast = sym->init;
+	if (ast == NULL || ast->kind != TOKEN_val || ast->type != ctx->rt->cc->type_str) {
+		return;
+	}
+
+	const char *name = ast->id.name;
+	if (*name == '*') {
+		dumpMdPlaceholder(ctx, ast);
+		return;
+	}
+	if (!strEquals(sym->doc, "**Example**")) {
+		// the doc comment belongs to the inlined file, not an example
+		return;
+	}
+
+	char path[PATH_MAX] = {0};
+	if (strBegins(name, "./") || strBegins(name, "../")) {
+		// relative to the directory of the including file
+		strncpy(path, ast->file, sizeof(path) - 1);
+		char *dir = strrchr(path, '/');
+		dir = dir != NULL ? dir + 1 : path;
+		*dir = 0;
+		strncat(path, name, sizeof(path) - strlen(path) - 1);
+	}
+	else if (*name == '/') {
+		strncpy(path, name, sizeof(path) - 1);
+	}
+	else {
+		// relative to the home folder of the compiler
+		snprintf(path, sizeof(path), "%s/%s", ctx->rt->cc->home, name);
+	}
+
+	if (dumpMdExample(out, path, 0, 0) != 0) {
+		warn(ctx->rt, ast->file, ast->line, ERR_OPENING_FILE, path);
+	}
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ console debugger and profiler
@@ -1439,7 +1985,7 @@ static vmError dbgProfile(dbgContext ctx, vmError error, size_t pc, size_t ss, v
 
 		dbg->traps += 1;
 		if (isChecked(rt)) {
-			return noError;
+			return error;
 		}
 
 		// abort the execution and print the stacktrace
@@ -1477,7 +2023,8 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t pc, size_t ss, voi
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
-	if (mode != 0) {
+	if (mode != 0 && error == noError) {
+		// errors are reported leaving the function (mode < 0), handle them as instructions
 		// TODO: enter will break after executing call?
 		// TODO: leave will break after executing return?
 		if (usr->dbgCommand == dbgStepInto && mode > 0) {
@@ -1581,6 +2128,11 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t pc, size_t ss, voi
 		traceCalls(rt, out, 1, maxLogItems, 0);
 	}
 
+	if (error != noError && !(breakMode & brkPause) && isChecked(rt)) {
+		// the error is caught by `recover`, which should return it
+		return error;
+	}
+
 	// pause execution in debugger
 	for ( ; breakMode & brkPause; ) {
 		dbgMode cmd = usr->dbgCommand;
@@ -1655,34 +2207,6 @@ static vmError dbgDebug(dbgContext ctx, vmError error, size_t pc, size_t ss, voi
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-static void dumpVmOpc(const char *error, const struct opcodeRec *info) {
-	FILE *out = stdout;
-	const char **esc = NULL;
-	printFmt(out, esc, "### Instruction `%s`\n", info->name);
-	if (error != NULL) {
-		printFmt(out, esc, "Error: `%s`\n\n", error);
-		return;
-	}
-	printFmt(out, esc, "\nPerforms [todo]\n");
-	printFmt(out, esc, "\n* Instruction code: `0x%02x`", info->code);
-	printFmt(out, esc, "\n* Instruction length: %d byte%?c", info->size, info->size == 1 ? 0 : 's');
-
-	printFmt(out, esc, "\n* Requires %d operand%?c: […", info->stack_in, info->stack_in == 1 ? 0 : 's');
-	for (unsigned i = 0; i < info->stack_in; ++i) {
-		printFmt(out, esc, ", `%c`", 'a' + i);
-	}
-	printFmt(out, esc, ", [todo]\n");
-
-	printFmt(out, esc, "* Returns %d value%?c: […", info->stack_out, info->stack_in == 1 ? 0 : 's');
-	for (unsigned i = 0; i < info->stack_out; ++i) {
-		printFmt(out, esc, ", `%c`", 'a' + i);
-	}
-	printFmt(out, esc, ", [todo]\n");
-
-	printFmt(out, esc, "\n```\n[todo]\n```\n");
-	printFmt(out, esc, "\n");
-}
-
 /// Private dummy on exit native function.
 static vmError onHalt(nfcContext ctx) {
 	(void)ctx;
@@ -1708,102 +2232,20 @@ static int cmplVersion() {
 }
 
 static int usage() {
-	const char *USAGE = \
-		"cmpl [global options] [files with options]..."
-		"\n"
-		"\n<global options>:"
-		"\n"
-		"\n  -run[*]               run at full speed, no debug information available"
-		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
-		"\n    /m /M               dump memory usage (/M includes heap allocations)"
-		"\n    /t                  add debug information for stack-traces"
-		"\n"
-		"\n  -debug[*]             run with attached debugger, pausing on uncaught errors and break points"
-		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
-		"\n    /m /M               dump memory usage (/M includes heap allocations)"
-		"\n    /p /P               dump caught errors (/P includes stacktrace)"
-		"\n    /t /T               dump executed instructions (/T includes values on stack)"
-		"\n    /s /S               pause on any error (/S pauses on startup)"
-		"\n"
-		"\n  -profile[*]           run code with profiler: coverage, method tracing"
-		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
-		"\n    /m /M               dump memory usage (/M includes heap allocations)"
-		"\n    /p /P               dump executed statements (/P include all functions and statements)"
-		"\n    /t /T               trace execution with timestamps (/T includes instructions)"
-		"\n"
-		"\n  -std<file>            specify custom standard library file (empty file name disables std library compilation)."
-		"\n"
-		"\n  -mem<int>[kKmMgG]     override memory usage for compiler and runtime(heap)"
-		"\n"
-		"\n  -log[*]<int> <file>   set logger for: compilation errors and warnings, runtime debug messages"
-		"\n    <int>               set the default log(warning) level 0 - 15"
-		"\n    /a                  append to the log file"
-		"\n    /d                  dump to the log file"
-		"\n"
-		"\n  -dump[?] <file>       set output for: dump(symbols, assembly, abstract syntax tree, coverage, call tree)"
-		"\n    .scite              dump api for SciTE text editor"
-		"\n    .json               dump api and profile data in javascript object notation format"
-		"\n"
-		"\n  -api[*]               dump symbols"
-		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /d                  dump details of symbol"
-		"\n    /p                  dump params and fields"
-		"\n"
-		"\n  -doc[*]               dump documentation"
-		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /d                  dump details of symbol"
-		"\n    /p                  dump params and fields"
-		"\n"
-		"\n  -use[*]               dump usages"
-		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /d                  dump details of symbol"
-		"\n    /p                  dump params and fields"
-		"\n"
-		"\n  -asm[*]<int>          dump assembled code: jmp +80"
-		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /d                  dump details of symbol"
-		"\n    /p                  dump params and fields"
-		"\n    /g                  use global address: jmp @0x003d8c"
-		"\n    /n                  prefer names over addresses: jmp <main+80>"
-		"\n    /s                  print source code statements"
-		"\n"
-		"\n  -ast[*]               dump syntax tree"
-		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /d                  dump details of symbol"
-		"\n    /p                  dump params and fields"
-		"\n    /t                  dump sub-expression type information"
-		"\n    /l                  do not expand statements (print on single line)"
-		"\n    /b                  don't keep braces ('{') on the same line"
-		"\n    /e                  don't keep `else if` constructs on the same line"
-		"\n"
-		"\n<files with options>: filename followed by switches"
-		"\n  <file>                if file extension is (.so|.dll|.wasm) load as library else compile"
-		"\n  -w[a|<int>]           set or disable warning level for current file"
-		"\n  -b[*]<int>            break point on <int> line in current file"
-		"\n    /[p|P]              print only, do not pause (/P includes stack trace)"
-		"\n    /[v]                after execution evaluate the top of the stack (partially implemented)"
-		"\n    /o                  one shot breakpoint, disable after first hit"
-		"\n"
-		"\nexamples:"
-		"\n"
-		"\n>app -api -dump.json api.json"
-		"\n    dump builtin symbols to `api.json` file (types, functions, variables, aliases)"
-		"\n"
-		"\n>app -run test.cmpl"
-		"\n    compile and execute the file `test.cmpl`"
-		"\n"
-		"\n>app -debug gl.so -w0 gl.cmpl -w0 test.cmpl -wa -b12 -b15 -b/t/19"
-		"\n    execute in debug mode"
-		"\n    import `gl.so`"
-		"\n        with no warnings"
-		"\n    compile `gl.cmpl`"
-		"\n        with no warnings"
-		"\n    compile `test.cmpl`"
-		"\n        show all warnings"
-		"\n        break execution on lines 12 and 15"
-		"\n        print message when line 19 is hit"
-		"\n\n";
-	fputs(USAGE, stdout);
+	fputs("cmpl [global options] [files with options]...", stdout);
+	for (size_t i = 0; i < lengthOf(usage_opts); ++i) {
+		const char *flag = usage_opts[i].flag;
+		const char *desc = usage_opts[i].desc;
+		if (flag == NULL && desc == NULL) {
+			fputc('\n', stdout);
+		}
+		else if (flag == NULL) {
+			fprintf(stdout, "\n%s", desc);
+		}
+		else {
+			fprintf(stdout, "\n%-24s%s", flag, desc);
+		}
+	}
 	fprintf(stdout, "Version: %d, more details at: https://karetkaz.github.io/Cmpl\n", cmplVersion());
 	return 0;
 }
@@ -1849,9 +2291,6 @@ int main(int argc, char *argv[]) {
 		if (strcmp(argv[1], "--help") == 0) {
 			return usage();
 		}
-		if (strcmp(argv[1], "--test-vm") == 0) {
-			return vmSelfTest(dumpVmOpc);
-		}
 	}
 
 	struct userContextRec extra = {0};
@@ -1871,7 +2310,7 @@ int main(int argc, char *argv[]) {
 	extra.genDebugInformation = 1;
 	extra.warnLevel = 5;
 	extra.raiseLevel = 15;
-	extra.memory = 128 << 20;// 128 Mb memory compiler + runtime
+	extra.memory = 128 << 20;// 128 MB memory compiler + runtime
 
 
 	ccConfig install = install_def;
@@ -2167,10 +2606,13 @@ int main(int argc, char *argv[]) {
 				continue;
 			}
 			else if (strEquals(arg, "-dump.json")) {
-				dumpFun = dumpApiJSON;
+				dumpFun = dumpJsonApi;
 			}
 			else if (strEquals(arg, "-dump.scite")) {
 				dumpFun = dumpApiSciTE;
+			}
+			else if (strEquals(arg, "-dump.md")) {
+				dumpFun = dumpApiMarkdown;
 			}
 			else {
 				fatal("invalid argument '%s'", arg);
@@ -2508,7 +2950,7 @@ int main(int argc, char *argv[]) {
 		else break;
 	}
 
-	if (dumpFun == dumpApiSciTE && !extra.dmpDoc) {
+	if ((dumpFun == dumpApiSciTE || dumpFun == dumpApiMarkdown) && !extra.dmpDoc) {
 		// record documentation for api
 		extra.dmpDoc = 1;
 	}
@@ -2617,6 +3059,7 @@ int main(int argc, char *argv[]) {
 		char *arg = argv[i];
 		if (i == argc || *arg != '-') {
 			if (ccFile != NULL) {
+				cc->unit = ccFile;
 				char *ext = strrchr(ccFile, '.');
 				if (ext && (strEquals(ext, ".so") || strEquals(ext, ".dll") || strEquals(ext, ".wasm") || strEquals(ext, ".dylib"))) {
 					char *name = strrchr(ccFile, '/');
@@ -2760,13 +3203,25 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (rt->errors == 0) {
-		if (dumpFun == dumpApiJSON) {
+		if (dumpFun == dumpJsonApi) {
 			extra.esc = escapeJSON();
 			printFmt(extra.out, extra.esc, "{\n");
 			printFmt(extra.out, extra.esc, "%I\"%s\": \"%d\"\n", extra.indent, JSON_KEY_VERSION, cmplVersion());
 			printFmt(extra.out, extra.esc, JSON_OBJ_ARR_START, extra.indent, JSON_KEY_SYMBOLS);
-			dumpApi(rt, &extra, dumpApiJSON);
+			dumpApi(rt, &extra, dumpJsonApi);
 			printFmt(extra.out, extra.esc, JSON_OBJ_ARR_END, extra.indent);
+
+			printFmt(extra.out, extra.esc, JSON_OBJ_START, extra.indent, "main");
+			jsonDumpSym(extra.out, extra.esc, rt->main, NULL, extra.indent + 1);
+			printFmt(extra.out, extra.esc, JSON_OBJ_END, extra.indent);
+
+			if (extra.dmpDoc) {
+				// static VM/CLI metadata, independent of the compiled
+				// program: only emitted alongside documentation, so routine
+				// test/profile JSON dumps are unaffected.
+				dumpJsonOpcodes(extra.out, extra.esc, extra.indent);
+				dumpJsonUsage(extra.out, extra.esc, extra.indent);
+			}
 		}
 		else if (dumpFun != NULL) {
 			extra.esc = NULL;
@@ -2797,7 +3252,7 @@ int main(int argc, char *argv[]) {
 
 				case profile:
 					// set call tree dump method
-					if (dumpFun == dumpApiJSON) {
+					if (dumpFun == dumpJsonApi) {
 						dbg->debug = &jsonProfile;
 						jsonPreProfile(dbg);
 					} else {
@@ -2806,7 +3261,7 @@ int main(int argc, char *argv[]) {
 					break;
 			}
 
-			// update debug statement list, and remove statementts
+			// update debug statement list, and remove statements
 			size_t dataCnt = dbg->statements.cnt;
 			dbgn data = (dbgn) dbg->statements.ptr;
 			for (size_t j = 0; j < dataCnt; ++j) {
@@ -2878,10 +3333,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (rt->errors == 0) {
-		if (dumpFun == dumpApiJSON) {
-		if (rt->dbg != NULL && run_code != run) {
-				jsonPostProfile(rt->dbg);
-			}
+		if (dumpFun == dumpJsonApi) {
+			jsonPostProfile(rt->dbg);
 			printFmt(extra.out, extra.esc, "}\n");
 		}
 		else if (run_code != compile) {

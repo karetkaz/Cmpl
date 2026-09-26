@@ -1,0 +1,76 @@
+/** ### Members
+Members are the variables and functions declared inside a record.
+Each instance of the record has its own, independent storage for its instance members.
+
+If a member inside a record is declared `static`, it becomes a global variable or function,
+accessible only through the declaring type.
+
+A member may be marked with the same reference suffixes as a variable.
+A member marked `&` is a mutable reference: it refers to the variable given at construction.
+
+A `?`, `!` or `&` member must be bound to an existing, addressable variable — binding it to a literal
+or other computed value is a compile-time error, since there is no storage for the member to refer to.
+The only exception is an optional (`?`) member, which can also be initialized with `null`.
+
+Every member of a record must be initialized when creating an instance,
+unless it can be initialized by default (see [Record literal initializers](#record-literal-initializers)).
+*/
+
+
+/// **Example**
+inline "*example:tail";
+
+struct DeclRecPoint {
+	int32 x;
+	int32 y;
+}
+
+DeclRecPoint declRecMemP1 = { x: 1, y: 2 };
+DeclRecPoint declRecMemP2 = { x: 10, y: 20 };
+assertEq(1, declRecMemP1.x);    // member access via `.`
+assertEq(10, declRecMemP2.x);
+
+declRecMemP1.x = 99;
+assertEq(99, declRecMemP1.x);
+assertEq(10, declRecMemP2.x);   // each instance keeps its own storage, unaffected by the change above
+
+struct DeclRecRef {
+	static int32 globalFunction(int32 x) { return x * x + x; }
+	static int32 globalValue = 5;
+	static int32 globalOptional? = globalValue;
+	static int32 globalConstant! = 9;
+	static int32 globalMutable& = globalValue;
+
+	int32 functionRef(int32 x) = globalFunction;
+	int32 optional? = null;
+	int32 constant!;
+	int32 mutable&;
+	int32 value = 9;
+}
+DeclRecRef declRecMemR = {
+	optional: DeclRecRef.globalValue,
+	constant: DeclRecRef.globalValue,
+	mutable: DeclRecRef.globalValue,
+	value: DeclRecRef.globalValue,
+};
+assertEq(5, declRecMemR.optional);
+assertEq(5, declRecMemR.constant);
+assertEq(5, declRecMemR.mutable);
+assertEq(5, declRecMemR.value);
+
+declRecMemR.mutable = 7;
+assertEq(7, declRecMemR.optional);
+assertEq(7, declRecMemR.constant);
+assertEq(7, declRecMemR.mutable);
+assertEq(5, declRecMemR.value);
+
+DeclRecRef.globalValue = 9;
+assertEq(9, declRecMemR.optional);
+assertEq(9, declRecMemR.constant);
+assertEq(9, declRecMemR.mutable);
+assertEq(5, declRecMemR.value);
+
+
+// a `&`/`!` member must be bound to an existing variable: there is no storage for the member to
+// refer to if it is bound to a literal or other computed value, so this is a compile-time error:
+// DeclRecRef declRecMemBad = { optional: DeclRecRef.globalValue, constant: 5, mutable: DeclRecRef.globalValue };   // error: invalid cast(i64 -> ref)

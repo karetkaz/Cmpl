@@ -22,7 +22,7 @@ static int32 bits(BigUint this!) {
 	return this.words.length * 32;
 }
 
-/// returns true if all elements of m_data are zero.
+/// returns true if all elements of `words` are zero.
 static bool isZero(BigUint this!) {
 	for (int i = 0; i < this.words.length; i += 1) {
 		if (this.words[i] != 0) {
@@ -32,7 +32,7 @@ static bool isZero(BigUint this!) {
 	return true;
 }
 
-/// shifts bits to left value in place
+/// shifts the bits of the value to the left in place
 static void shiftLeft(BigUint this&, int count) {
 	if (count <= 0) {
 		return;
@@ -57,7 +57,7 @@ static void shiftLeft(BigUint this&, int count) {
 	}
 }
 
-/// shifts bits to right value in place
+/// shifts the bits of the value to the right in place
 static void shiftRight(BigUint this&, int count) {
 	if (count <= 0) {
 		return;
@@ -172,21 +172,21 @@ static BigUint add(BigUint a!, BigUint b!) {
 /// returns the difference of the values.
 static BigUint sub(BigUint a!, BigUint b!) {
 	BigUint result = {...?};
-	uint64 borrow = 0;
+	// signed accumulator: the arithmetic shift propagates the borrow as -1
+	int64 borrow = 0;
 	for (int i = 0; i < result.words.length; i += 1) {
-		borrow += uint64(a.words[i]) - b.words[i];
+		borrow += int64(a.words[i]) - int64(b.words[i]);
 		result.words[i] = borrow;
 		borrow >>= 32;
 	}
 	return result;
 }
 
-/// Compares two 64-bit signed integers(`0` if equal, `< 0` if fist is less, `> 0` if first is greater)
+/// Compares two big unsigned integers (`0` if equal, `< 0` if first is less, `> 0` if first is greater)
 static int32 compare(BigUint a!, BigUint b!) {
 	for (int i = a.words.length - 1; i >= 0; i -= 1) {
-		int32 c = Int32.compare(a.words[i], b.words[i]);
-		if (c != 0) {
-			return c;
+		if (a.words[i] != b.words[i]) {
+			return a.words[i] > b.words[i] ? 1 : -1;
 		}
 	}
 	return 0;

@@ -57,3 +57,33 @@ struct record_packDef {
 	uint8 _2;
 	uint16 c;
 }
+
+// the sizes are the same as in C, using `#pragma pack(n)`
+assert(sizeof(record_pack0) == 8);
+assert(sizeof(record_pack1) == 17);
+assert(sizeof(record_pack2) == 20);
+assert(sizeof(record_pack4) == 24);
+assert(sizeof(record_pack8) == 32);
+assert(sizeof(record_packDef) == 32);
+
+// like in C, the size is padded only to the largest alignment of the members
+struct record_int8 { int8 a; }
+struct record_int32 { int32 a; }
+struct record_int32x3 { int32 a; int32 b; int32 c; }
+struct record_int64int8 { int64 a; int8 b; }
+assert(sizeof(record_int8) == 1);
+assert(sizeof(record_int32) == 4);
+assert(sizeof(record_int32x3) == 12);
+assert(sizeof(record_int64int8) == 16);
+
+// nested records are aligned to the largest alignment of their members
+struct record_nested { int8 a; record_int32x3 b; }
+assert(sizeof(record_nested) == 16);
+
+// nested packed records are not padded
+struct record_packed1 { int8 a; record_pack1 b; }
+assert(sizeof(record_packed1) == 18);
+
+// union: padded to the largest alignment of the members
+struct record_union: 0 { int8 a[3]; int16 b; }
+assert(sizeof(record_union) == 4);

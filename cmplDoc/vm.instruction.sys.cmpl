@@ -1,0 +1,287 @@
+/** ### Instruction `nop`
+
+Does nothing.
+
+```
+// no operation
+```
+*/
+inline "*opcode:nop";
+/**
+* Immediate operand: none
+* Stack effect: `[…] → […]`
+*/
+
+/** ### Instruction `nfc`
+
+Calls a native ("C") function registered by the compiler or an extension.
+
+```
+libc nfc = nativeCalls[imm.u24]
+nfc.call(sp(0) ... sp(nfc.in - 1))
+SP -= nfc.out - nfc.in
+if (imm.u24 == 0) {
+    halt()
+}
+```
+*/
+inline "*opcode:nfc";
+/**
+* Immediate operand: `imm.u24`: index of the native function in the native call table
+* Stack effect: `[…, result, params] → […, result]`
+
+Traps:
+* `nativeCallError`: the native function returns an error.
+
+Notes:
+* the stack inputs and outputs depend on the called function: its parameters and its result.
+* the native function receives the top `nfc.in` slots as its arguments, the result space is reserved by the caller below the arguments.
+* after the call the stack pointer is adjusted by `nfc.in - nfc.out` slots, which normally removes the parameters.
+* the native function with index `0` is always `halt()`, calling it stops the execution of the virtual machine.
+*/
+
+/** ### Instruction `call`
+
+Calls the function whose address is on top of the stack, replacing it with the return address.
+
+```
+fn = pop()
+push(IP)
+IP = fn
+```
+*/
+inline "*opcode:call";
+/**
+* Immediate operand: none
+* Stack effect: `[…, result, params, fn] → […, result, params, IP]`
+
+Traps:
+* `illegalInstruction`: the function address is `0`, or past the end of the memory.
+
+Notes:
+* the pushed return address `IP` is the address of the instruction following the `call`.
+*/
+
+/** ### Instruction `ret`
+
+Returns from a function call, by jumping to the address on top of the stack (indirect jump).
+
+```
+IP = pop()
+```
+*/
+inline "*opcode:ret";
+/**
+* Immediate operand: none
+* Stack effect: `[…, IP] → […]`
+
+Traps:
+* `illegalInstruction`: the return address is `0`, or past the end of the memory.
+*/
+
+/** ### Instruction `jmp`
+
+Jumps unconditionally to an address relative to the current instruction.
+
+```
+IP += imm.i24
+```
+*/
+inline "*opcode:jmp";
+/**
+* Immediate operand: `imm.i24`: signed 24-bit offset relative to the start of this instruction
+* Stack effect: `[…] → […]`
+*/
+
+/** ### Instruction `jnz`
+
+Pops the top of the stack, and jumps if it is non-zero.
+
+```
+i32 c = pop()
+if (c != 0) {
+    IP += imm.i24
+}
+```
+*/
+inline "*opcode:jnz";
+/**
+* Immediate operand: `imm.i24`: signed 24-bit offset relative to the start of this instruction
+* Stack effect: `[…, c] → […]`
+*/
+
+/** ### Instruction `jz`
+
+Pops the top of the stack, and jumps if it is zero.
+
+```
+i32 c = pop()
+if (c == 0) {
+    IP += imm.i24
+}
+```
+*/
+inline "*opcode:jz";
+/**
+* Immediate operand: `imm.i24`: signed 24-bit offset relative to the start of this instruction
+* Stack effect: `[…, c] → […]`
+*/
+
+/** ### Instruction `not.u32`
+
+Computes the logical negation of the top of the stack.
+
+```
+u32 a = pop()
+push(a == 0 ? 1 : 0)
+```
+*/
+inline "*opcode:not.u32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, !a]`
+*/
+
+/** ### Instruction `inc.i32`
+
+Adds a signed immediate value to the top of the stack.
+
+```
+i32 a = pop()
+push(a + imm.i24)
+```
+*/
+inline "*opcode:inc.i32";
+/**
+* Immediate operand: `imm.i24`: signed 24-bit increment
+* Stack effect: `[…, a] → […, a + imm]`
+
+Notes:
+* the addition wraps around on overflow.
+*/
+
+/** ### Instruction `mad.u32`
+
+Multiplies the top of the stack by an immediate value, and adds the result to the value below it.
+
+```
+u32 b = pop()
+u32 a = pop()
+push(a + b * imm.i24)
+```
+*/
+inline "*opcode:mad.u32";
+/**
+* Immediate operand: `imm.i24`: signed 24-bit multiplier
+* Stack effect: `[…, a, b] → […, a + b * imm]`
+
+Notes:
+* the computation is done in unsigned 32-bit arithmetic, and wraps around on overflow.
+* used to compute the address of an element: `reference + index * elementSize`.
+*/
+
+/** ### Instruction `chk.idx`
+
+Checks the bounds of an array index, then computes the address of the element.
+
+```
+u32 index = pop()
+u32 reference = pop()
+u32 length = pop()
+if (index >= length) {
+    trap(illegalArrayAccess)
+}
+push(reference + index * imm.i24)
+```
+*/
+inline "*opcode:chk.idx";
+/**
+* Immediate operand: `imm.i24`: size of an element in bytes
+* Stack effect: `[…, length, reference, index] → […, reference + index * imm]`
+
+Traps:
+* `illegalArrayAccess`: `index` is greater than or equal to `length` (compared as unsigned, so negative indices also trap).
+*/
+
+/** ### Instruction `chk.len`
+
+Checks the bounds of a slice (`a[...n]`), keeping the requested count as the length of the resulting slice.
+
+```
+u32 reference = pop()
+u32 length = pop()
+u32 count = sp(0)
+if (count > length) {
+    trap(illegalArrayAccess)
+}
+push(reference)
+```
+*/
+inline "*opcode:chk.len";
+/**
+* Immediate operand: none
+* Stack effect: `[…, count, length, reference] → […, count, reference]`
+
+Traps:
+* `illegalArrayAccess`: `count` is greater than the `length` of the sliced array (compared as unsigned).
+
+Notes:
+* `count` is not popped, it remains on the stack as the length of the resulting slice.
+*/
+
+/** ### Instruction `inc.sp`
+
+Allocates or frees memory on the stack, by moving the stack pointer.
+
+```
+if (imm.i24 > 0) {
+    reserve(imm.i24 / 4)    // push imm / 4 uninitialized slots
+}
+else {
+    drop(-imm.i24 / 4)      // pop -imm / 4 slots
+}
+```
+*/
+inline "*opcode:inc.sp";
+/**
+* Immediate operand: `imm.i24`: signed number of bytes to allocate (positive) or free (negative), must be a multiple of `4`
+* Stack effect: `[…] → […, a1, …, an]` when allocating, `[…, a1, …, an] → […]` when freeing
+
+Traps:
+* `illegalInstruction`: `imm` is not a multiple of the stack slot size (`4` bytes).
+* `stackOverflow`: there is no room on the stack for the allocated slots.
+
+Notes:
+* the stack inputs and outputs depend on the immediate operand: `imm / 4` slots are allocated, or `-imm / 4` slots are freed.
+* the allocated slots are uninitialized, except in builds with `DEBUGGING` enabled, where they are zero-filled.
+*/
+
+/** ### Instruction `copy.mem`
+
+Copies a block of memory between the two addresses on top of the stack.
+
+```
+u32 a = pop()
+u32 b = pop()
+if (imm.i24 < 0) {
+    memmove(dst: a, src: b, -imm.i24)
+}
+else {
+    memmove(dst: b, src: a, imm.i24)
+}
+```
+*/
+inline "*opcode:copy.mem";
+/**
+* Immediate operand: `imm.i24`: number of bytes to copy, the sign selects the direction
+* Stack effect: `[…, b, a] → […]`
+
+Traps:
+* `illegalMemoryAccess`: the source address is `null`, or the source block extends past the end of the memory.
+* `illegalMemoryAccess`: the destination address points into the read-only region (constants and code), or the destination block extends past the end of the memory.
+
+Notes:
+* with a positive count the top of the stack is the source, with a negative count it is the destination.
+* overlapping blocks are copied correctly (`memmove` semantics).
+* temporary instruction, intended to be replaced by the native function call `pointer.move(dst, src, count)`.
+*/

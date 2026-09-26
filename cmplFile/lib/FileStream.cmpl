@@ -1,4 +1,4 @@
-///@public
+/// Byte reader reading from a file
 struct FileReader: ByteReader {
 	File file;
 
@@ -11,9 +11,9 @@ struct FileReader: ByteReader {
 	}
 }
 
-///@public
+/// Byte writer writing to a file
 struct FileWriter: ByteWriter {
-	///@public
+	/// The file the bytes are written to
 	File file;
 
 	void write^(FileWriter this, uint8 bytes[]) {
@@ -30,7 +30,7 @@ struct FileWriter: ByteWriter {
 	}
 }
 
-///@public
+/// Byte writer writing to a file through a 1 KiB buffer
 struct BufferedFileWriter: FileWriter {
 	uint8 buffer[1024];
 	int bufferSize = 0;
@@ -47,7 +47,7 @@ struct BufferedFileWriter: FileWriter {
 				this.flushBuffer();
 			}
 			if (bytes.length > this.buffer.length / 2) {
-				// writing more than buffer half size, make the write
+				// writing more than half the buffer size, write directly
 				FileWriter.write(this, bytes);
 				return;
 			}
@@ -69,21 +69,21 @@ struct BufferedFileWriter: FileWriter {
 	}
 }
 
-///@public
+/// Open the file at the given `path` for reading
 FileReader FileReader(char path[]) {
 	return {
 		file: File.open(path),
 	};
 }
 
-///@public
+/// Open the file at the given `path` for writing, `append` to the end of an existing file or create a new one
 FileWriter FileWriter(char path[], bool append) {
 	return {
 		file: append ? File.append(path) : File.create(path),
 	};
 }
 
-///@public
+/// Open the file at the given `path` for buffered writing, `append` to the end of an existing file or create a new one
 BufferedFileWriter BufferedFileWriter(char path[], bool append) {
 	return {
 		buffer: null,

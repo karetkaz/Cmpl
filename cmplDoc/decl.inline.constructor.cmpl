@@ -1,0 +1,31 @@
+/** ### Type construction/conversion operator
+A function named like a type constructs an instance of that type; an `inline` alias from one
+record type to another defines an explicit conversion between them.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// type construction/conversion operators
+
+struct DeclOpCelsius {
+	float64 degrees;
+}
+struct DeclOpFahrenheit {
+	float64 degrees;
+}
+
+DeclOpCelsius DeclOpCelsius(float64 value) {
+	return { degrees: value };
+}
+DeclOpFahrenheit DeclOpFahrenheit(float64 value) {
+	return { degrees: value };
+}
+
+// explicit conversion between two record types
+inline DeclOpCelsius(DeclOpFahrenheit value) = DeclOpCelsius((value.degrees - 32) / 1.8);
+inline DeclOpFahrenheit(DeclOpCelsius value) = DeclOpFahrenheit(value.degrees * 1.8 + 32);
+
+DeclOpCelsius declOpBoilC = DeclOpCelsius(100.);
+DeclOpFahrenheit declOpBoilF = DeclOpFahrenheit(declOpBoilC);   // explicit conversion
+assert(declOpBoilF.degrees > 211.9 && declOpBoilF.degrees < 212.1);

@@ -10,7 +10,7 @@ static vmError onHalt(nfcContext ctx) {
 #undef dieif
 #define dieif(__EXP) do { if (__EXP) { printFmt(stdout, NULL, "%?s:%?u: %s(" #__EXP "): failed to emit instruction\n", __FILE__, __LINE__, __FUNCTION__); abort(); } } while(0)
 
-/// demonstrate how to use of the virtual machine: multiply two float numbers.
+/// demonstrate how to use the virtual machine: multiply two float numbers.
 /// memory used by the virtual machine is 640 bytes.
 /// stack size used for execution is 12 bytes.
 int main() {

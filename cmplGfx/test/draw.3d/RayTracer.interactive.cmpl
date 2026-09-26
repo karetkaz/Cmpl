@@ -162,7 +162,7 @@ vec4f raytrace(vec4f xy) {
 		vec4f color = thing.color;
 		if (thing.checkBoard != 0) {
 			bool zx = thing.checkBoard < 0;
-			// fake check board texture with spherical uv mapping
+			// fake checkerboard texture with spherical uv mapping
 			float32 u = thing.checkBoard * (1 + Float32.atan2(zx ? hitDir.x : hitDir.y, hitDir.z) / Float32.pi);
 			float32 v = thing.checkBoard * (1 - Float32.acos(zx ? hitDir.y : hitDir.x) / Float32.pi);
 			if ((Float32.floor(u) + Float32.floor(v)) % 2 == 0) {

@@ -100,9 +100,7 @@ vmError dbgError(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, 
 /**
  * Execute bytecode.
  *
- * @param ctx Runtime context.
- * @param pu Cell to execute on.
- * @param fun The function to execute.
+ * @param pu Execution unit: the runtime context and the function to execute.
  * @param extra Extra data for native calls.
  * @return Error code of execution, noError on success.
  */
@@ -366,7 +364,7 @@ int isChecked(rtContext ctx) {
 	return 0;
 }
 
-int vmSelfTest(void cb(const char *, const struct opcodeRec *)) {
+int vmSelfTest(rtContext ctx, void cb(rtContext ctx, const char *, const struct opcodeRec *)) {
 	int errors = 0;
 	struct vmInstruction ip[1] = {0};
 	struct libc nfc0[1] = {0};
@@ -442,7 +440,7 @@ int vmSelfTest(void cb(const char *, const struct opcodeRec *)) {
 			#include "exec.i"
 		}
 		if (cb != NULL) {
-			cb(error, info);
+			cb(ctx, error, info);
 		}
 	}
 	return errors;
@@ -662,7 +660,7 @@ void traceCalls(rtContext ctx, FILE *out, int indent, size_t maxCalls, size_t sk
 		}
 
 		if (i < skipCalls) {
-			// do not print the n calls as requested byt the user
+			// do not print the n calls as requested by the user
 			continue;
 		}
 

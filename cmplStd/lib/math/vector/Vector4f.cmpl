@@ -72,19 +72,19 @@ struct vec4f: 0 {
 /// Initialize with given x, y, z, w components
 inline vec4f(float32 x, float32 y, float32 z, float32 w) = inline(float32(w), float32(z), float32(y), float32(x));
 
-/// Initialize with  (x: x, y: y, z: z, w: 1)
+/// Initialize with (x: x, y: y, z: z, w: 1)
 inline vec4f(float32 x, float32 y, float32 z) = vec4f(x, y, z, 1f);
 
 /// Initialize with (x: x, y: y, z: 0, w: 1)
 inline vec4f(float32 x, float32 y) = vec4f(x, y, 0f, 1f);
 
-/// Initialize x, y, z components using the components form the given vector, and w with the given value
+/// Initialize x, y, z components using the components from the given vector, and w with the given value
 inline vec4f(vec4f xyz, float32 w) = vec4f(xyz.x, xyz.y, xyz.z, w);
 
-/// Initialize x, y, z, w components with the given scalar value
+/// Initialize all components using the components from the given vector
 inline vec4f(vec4f val) = vec4f(inline(val));
 
-/// Initialize all components using the components form the given vector
+/// Initialize x, y, z, w components with the given scalar value
 inline vec4f(float32 val) = vec4f(val, val, val, val);
 
 /// Returns a negated copy of the vector.

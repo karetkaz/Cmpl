@@ -1,4 +1,4 @@
-/// apply a color lookup table to each pixel component (alpha channel as luminosity), defined by the `roi` on the `image`
+/// apply a color lookup table to each pixel component (alpha channel as luminosity), defined by the `roi` of the `src` image
 void colorMap(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256]) {
 	static if (System.Platform.preferNativeCalls && struct(Image.copy.lookupLrgb) != null) {
 		return Image.copy(image, x, y, src, roi, lut, Image.copy.lookupLrgb);
@@ -40,7 +40,7 @@ void colorMap(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256]
 	return image.copy(x, y, src, roi, lut, mapLuv);
 }
 
-/// apply a color lookup table to the red, green and blue pixel components, defined by the `roi` on the `image`
+/// apply a color lookup table to the red, green and blue pixel components, defined by the `roi` of the `src` image
 void colorMapRgb(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256]) {
 	static if (System.Platform.preferNativeCalls && struct(Image.copy.lookupRgb) != null) {
 		return Image.copy(image, x, y, src, roi, lut, Image.copy.lookupRgb);
@@ -55,7 +55,7 @@ void colorMapRgb(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[2
 	return image.copy(x, y, src, roi, lut, mapRgb);
 }
 
-/// apply a color lookup table to the red, green and blue pixel components, defined by the `roi` on the `image`
+/// apply a 3d color lookup table, indexed by the red, green and blue pixel components, defined by the `roi` of the `src` image
 void colorMap3d(Image image, int32 x, int32 y, Image src, Rect roi?, argb lut[256*256*256]) {
 	static if (System.Platform.preferNativeCalls && struct(Image.copy.lookup3d) != null) {
 		return Image.copy(image, x, y, src, roi, lut, Image.copy.lookup3d);

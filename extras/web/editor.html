@@ -289,11 +289,11 @@ var props = props || {};
 function onExecClick() {
 	// if already executing (canvas is shown), zoom or pan
 	if (hasStyle(document.body, 'canvas')) {
-        setStyle(document.body, '~canvas-pan');
+		setStyle(document.body, '~canvas-pan');
 		if (!hasStyle(document.body, 'canvas-pan')) {
-            centerCanvas(Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height));
-        } else {
-            centerCanvas(1);
+			centerCanvas(Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height));
+		} else {
+			centerCanvas(1);
 		}
 		return;
 	}
@@ -326,7 +326,7 @@ function showCanvas(show) {
 	setStyle(document.body, 'canvas');
 
 	if (typeof MainLoop === 'undefined' && Browser.mainLoop !== undefined) {
-        // for backward compatibility loading older compiler versions
+		// for backward compatibility loading older compiler versions
 		MainLoop = Browser.mainLoop;
 	}
 
@@ -509,7 +509,12 @@ else {
 	importScripts('module.js');
 }
 if (params.workspace == null && params.project == null && params.content == null && params.path == null) {
-	importScripts(version + '/../tests.js');
+	importScripts(version + '../tests.js');
+}
+else if (params?.inspect?.endsWith(".json")) {
+	document.documentElement.style.setProperty('--bottom-bar-size', "100%");
+	setStyle(document.body, 'output','-left-bar','-left-pin', '-tool-bar');
+	process({path: params.inspect, dump: params.inspect});
 }
 </script>
 </body>

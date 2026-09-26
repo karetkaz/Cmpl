@@ -264,7 +264,7 @@ struct DatetimeFormat {
 				end = appendText(&output, end, formatter.monthsShort[indexOf(value.month)], caseMode);
 			}
 			else if (chr == 'B') {
-				// %B     locale's full month name (e.g., en_US: [January, ..., December];de_DE: [Januar, ..., Dezember])
+				// %B     locale's full month name (e.g., en_US: [January, ..., December]; de_DE: [Januar, ..., Dezember])
 				end = appendText(&output, end, formatter.monthsLong[indexOf(value.month)], caseMode);
 			}
 //			else if (chr == 'c') // todo: %c     locale's date and time (e.g., Thu Mar  3 23:05:25 2005)

@@ -1,0 +1,32 @@
+/** ## The `recover` function
+The `recover` function can be used to recover the execution if it was aborted by an error.
+
+`int32 recover(pointer args, void action(pointer args));`
+
+The function executes the given action passing it `args`, and returns the error that stopped it,
+or `recover.noError` (`0`) if it was executed successfully.
+The error codes are available as constants of the `recover` function:
+- `recover.noError`: the action was executed successfully.
+- `recover.illegalState`: invalid state, also returned if `action` is not a function.
+- `recover.stackOverflow`: the stack size was exceeded.
+- `recover.divisionByZero`: integer division by zero.
+- `recover.illegalInstruction`: an invalid instruction was executed.
+- `recover.illegalMemoryAccess`: invalid memory access, e.g. reading through a `null` reference.
+- `recover.illegalArrayAccess`: array index out of bounds.
+- `recover.nativeCallError`: a native function failed, also returned after `raise.abort`, e.g. a failed assertion.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// recover: continue the execution after an error
+void builtinRecoverSuccess(pointer args) {
+}
+void builtinRecoverDivideByZero(pointer args) {
+	int32 zero = 0;
+	int32 value = 1 / zero;
+}
+int32 builtinRecoverNoError = recover(null, builtinRecoverSuccess);
+assert(builtinRecoverNoError == recover.noError);
+int32 builtinRecoverError = recover(null, builtinRecoverDivideByZero);
+assert(builtinRecoverError == recover.divisionByZero);

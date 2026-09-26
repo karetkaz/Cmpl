@@ -26,6 +26,14 @@ echo
 (cd $CMPL_HOME/cmplFile/test && find . -type f -not -name '.*' -not -path '*/out/*' -exec echo "			'{}'," \; | sort)
 echo "		]"
 echo "	},"
+echo "	'test.cmplDoc' : {"
+echo "		base: '/Cmpl/cmplDoc/',"
+echo "		exec: '-profile -ast -doc/a -dump.json /dump.json',"
+echo "		main: 'Cmpl.cmpl',"
+echo "		files: ["
+(cd $CMPL_HOME/cmplDoc && find . -type f -not -name '.*' -not -path '*/wip/*' -not -path './markdown/*' -exec echo "			'{}'," \; | sort)
+echo "		]"
+echo "	},"
 echo "};"
 echo
 echo "(function () {"
@@ -66,6 +74,10 @@ echo "	if (proj.flags != null) {"
 echo "		for (let flag of proj.flags) {"
 echo "			project[flag] = '';"
 echo "		}"
+echo "	}"
+echo
+echo "	if (proj.exec != null) {"
+echo "		project.exec = proj.exec;"
 echo "	}"
 echo
 echo "	// set files to be downloaded"

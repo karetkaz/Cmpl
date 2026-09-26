@@ -1,0 +1,48 @@
+/** ## Functions
+- Functions that are not implemented will be converted to function references.
+- Function references must be initialized, or later implemented (re-declared as an implemented function).
+- Functions are assigned and passed to functions as pointers.
+
+### Forward declared functions
+Forward declared functions are functions that can be used before they are implemented.
+Every forward declared function is converted to a function reference (which can decrease performance).
+
+### Function references
+Function references can be initialized to point to a function.
+If a function's parameter is a function, it is converted to a function reference.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// functions: variadic parameters, forward declaration, and references
+
+float64 declFunSum(float64 data...) {
+	float64 total = 0;
+	for (int i = 0; i < data.length; i += 1) {
+		total += data[i];
+	}
+	return total;
+}
+assertEq(6.0, declFunSum(1., 2., 3.));
+
+// forward declaration: usable before it's implemented
+float64 declFunForward();
+float64 declFunForwardResult = declFunForward();
+float64 declFunForward() {
+	return Float64.pi;
+}
+assertEq(Float64.pi, declFunForwardResult);
+
+// function reference: initialized to point to an existing function
+float64 declFunReference(float64 value) = Float64.sin;
+assertEq(0.0, declFunReference(0));
+
+// a function-typed parameter converts to a function reference
+int32 declFunApply(int32 x, int32 op(int32 value)) {
+	return op(x);
+}
+int32 declFunDouble(int32 value) {
+	return value * 2;
+}
+assertEq(10, declFunApply(5, declFunDouble));

@@ -30,7 +30,7 @@ struct vec2d: 0 {
 	/// Compare the two vectors for equality.
 	static bool ceq(vec2d a, vec2d b) { return inline(inline(a), inline(b), p128.ceq); }
 
-	/// Dot product of thw two vectors
+	/// Dot product of the two vectors
 	static float64 dot(vec2d a, vec2d b) { return a.x * b.x + a.y * b.y; }
 }
 

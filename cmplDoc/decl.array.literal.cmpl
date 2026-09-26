@@ -1,0 +1,46 @@
+/** ### Array literal initializers
+- `{}` — default initializer (iff the element type can be initialized by default).
+- `{a, b}` — per-element initializer.
+- `{...?}` — uninitialized memory.
+- `{...0}` — zero-initialize memory (equivalent to `memset(var, 0, sizeof(var))`).
+- `{...copy}` — copy elements from a source array.
+- `{...copy, x: y}` — copy elements, then overwrite selected elements.
+- `{...{}}` — fill every element with the default value.
+- `{...{}, x: y}` — fill with the default value, then overwrite selected elements.
+- `{...{fill}}` — fill every element with a given value.
+- `{...{fill}, x: y}` — fill with a value, then overwrite selected elements.
+- `{...(int idx){eval}}` — fill every element via a generator function.
+- `{...(int idx){eval}, x: y}` — initialize the selected elements first (they must form a contiguous prefix starting at index 0), then fill the remaining elements via the generator.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// array literal initializer forms
+
+float64 declArrLitDefault[5] = {};                                                      // {} - default initializer (iff the element type has a default)
+float64 declArrLitElements[5] = { 2, 5, 3, 8, 1 };                                       // {a, b} - per-element initializer
+float64 declArrLitUndefined[5] = { ...? };                                              // {...?} - uninitialized memory
+float64 declArrLitZero[5] = { ...0 };                                                    // {...0} - zero-initialize memory
+float64 declArrLitCopy[5] = { ...declArrLitElements };                                  // {...copy} - copy elements from a source array
+float64 declArrLitCopyOverwrite[5] = { ...declArrLitElements, 0: -9 };                  // {...copy, x: y} - copy, then overwrite selected elements
+float64 declArrLitFillDefault[5] = { ...{} };                                           // {...{}} - fill every element with the default value
+float64 declArrLitFillDefaultOverwrite[5] = { ...{}, 3: -9 };                           // {...{}, x: y} - fill with default, then overwrite selected elements
+float64 declArrLitFillValue[5] = { ...{8} };                                            // {...{fill}} - fill every element with a given value
+float64 declArrLitFillValueOverwrite[5] = { ...{8}, 3: -9 };                            // {...{fill}, x: y} - fill with a value, then overwrite selected elements
+float64 declArrLitGenerated[5] = { ...(int i) {return i / 5.;} };                       // {...(int idx){eval}} - fill every element via a generator function
+float64 declArrLitGeneratedOverwrite[5] = { ...(int i) {return i / 5.;}, 0: -1, 1: -2 }; // {...(int idx){eval}, x: y} - seed the first elements, then generate the rest
+
+assertEq(0, declArrLitDefault[0]);
+assertEq(2, declArrLitElements[0]);
+assertEq(0, declArrLitZero[4]);
+assertEq(2, declArrLitCopy[0]);
+assertEq(-9, declArrLitCopyOverwrite[0]);
+assertEq(5, declArrLitCopyOverwrite[1]);
+assertEq(0, declArrLitFillDefault[3]);
+assertEq(-9, declArrLitFillDefaultOverwrite[3]);
+assertEq(8, declArrLitFillValue[2]);
+assertEq(8, declArrLitFillValueOverwrite[0]);
+assertEq(-9, declArrLitFillValueOverwrite[3]);
+assertEq(-1, declArrLitGeneratedOverwrite[0]);
+assertEq(-2, declArrLitGeneratedOverwrite[1]);

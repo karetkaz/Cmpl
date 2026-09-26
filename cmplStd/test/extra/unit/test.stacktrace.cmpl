@@ -9,15 +9,15 @@ int levelN(int b) {
 levelN(3);
 
 // single invoke() bridge: the callback has no call-site of its own, the
-// native call that bridged over it (tryExec) shows the real call-site
+// native call that bridged over it (recover) shows the real call-site
 void bridgedInner(pointer data) {
-	trace("inside callback invoked via tryExec");
+	trace("inside callback invoked via recover");
 }
 void bridgedCb(pointer data) {
 	bridgedInner(data);
 }
 void callsBridged(pointer data) {
-	tryExec(data, bridgedCb);
+	recover(data, bridgedCb);
 }
 callsBridged(null);
 
@@ -26,13 +26,13 @@ void innerCb(pointer data) {
 	trace("nested callback, two bridges up");
 }
 void midFn(pointer data) {
-	tryExec(data, innerCb);
+	recover(data, innerCb);
 }
 void outerCb(pointer data) {
 	midFn(data);
 }
 void callsOuterTry(pointer data) {
-	tryExec(data, outerCb);
+	recover(data, outerCb);
 }
 callsOuterTry(null);
 
@@ -42,10 +42,10 @@ void deepCb(pointer data) {
 	trace("nested invoke, no real frame in between");
 }
 void midCb(pointer data) {
-	tryExec(data, deepCb);
+	recover(data, deepCb);
 }
 void outerCall(pointer data) {
-	tryExec(data, midCb);
+	recover(data, midCb);
 }
 outerCall(null);
 
@@ -55,7 +55,7 @@ void truncCb(pointer data) {
 	raise(raise.error, 4, "truncated trace across a bridge");
 }
 void truncWrap(pointer data) {
-	tryExec(data, truncCb);
+	recover(data, truncCb);
 }
 void truncCaller(pointer data) {
 	truncWrap(data);
@@ -63,25 +63,25 @@ void truncCaller(pointer data) {
 truncCaller(null);
 
 // recursive calls, plain and native call bridging
-static void tryExecRecursive(int b, int mod);
+static void recoverRecursive(int b, int mod);
 static void tryFnRecursive(pointer data) {
 	int args[*] = pointer(data);
-	tryExecRecursive(args[0], args[1]);
+	recoverRecursive(args[0], args[1]);
 }
-static void tryExecRecursive(int32 b, int32 mod) {
+static void recoverRecursive(int32 b, int32 mod) {
 	if (b == 0) {
 		trace("bottom of recursion", b);
 		return;
 	}
 	int args[2] = {b - Int32.sign(b), mod};
 	if ((b % mod != 0) != (b < 0)) {
-		tryExecRecursive(args[0], mod);
+		recoverRecursive(args[0], mod);
 		return;
 	}
-	tryExec(pointer(args), tryFnRecursive);
+	recover(pointer(args), tryFnRecursive);
 }
-tryExecRecursive(7, 5);
-tryExecRecursive(-7, 5);
+recoverRecursive(7, 5);
+recoverRecursive(-7, 5);
 
 /* - expected output:
 levelN(b: int32): int32: function {
@@ -120,14 +120,14 @@ levelN(b: int32): int32: function {
 bridgedInner(data: pointer): void: function {
 .instructions: (41 bytes)
 	test.stacktrace.cmpl:13: (41 bytes): static bridgedInner(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:14: (40 bytes): trace("inside callback invoked via tryExec");
+	test.stacktrace.cmpl:14: (40 bytes): trace("inside callback invoked via recover");
 	load.z32
 	load.sp(+4)
 	load.ref <?> ;"test.stacktrace.cmpl"
 	load.c32 14
 	load.c32 14
 	load.c32 128
-	load.ref <?> ;"inside callback invoked via tryExec"
+	load.ref <?> ;"inside callback invoked via recover"
 	dup.x64 sp(5)
 	nfc(2) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void
 	inc.sp(-8)
@@ -146,10 +146,10 @@ bridgedCb(data: pointer): void: function {
 callsBridged(data: pointer): void: function {
 .instructions: (16 bytes)
 	test.stacktrace.cmpl:19: (16 bytes): static callsBridged(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:20: (15 bytes): tryExec(data, bridgedCb);
+	test.stacktrace.cmpl:20: (15 bytes): recover(data, bridgedCb);
 	dup.x32 sp(1)
 	load.ref <?> ;bridgedCb(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	ret
 }
@@ -172,10 +172,10 @@ innerCb(data: pointer): void: function {
 midFn(data: pointer): void: function {
 .instructions: (16 bytes)
 	test.stacktrace.cmpl:28: (16 bytes): static midFn(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:29: (15 bytes): tryExec(data, innerCb);
+	test.stacktrace.cmpl:29: (15 bytes): recover(data, innerCb);
 	dup.x32 sp(1)
 	load.ref <?> ;innerCb(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	ret
 }
@@ -192,10 +192,10 @@ outerCb(data: pointer): void: function {
 callsOuterTry(data: pointer): void: function {
 .instructions: (16 bytes)
 	test.stacktrace.cmpl:34: (16 bytes): static callsOuterTry(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:35: (15 bytes): tryExec(data, outerCb);
+	test.stacktrace.cmpl:35: (15 bytes): recover(data, outerCb);
 	dup.x32 sp(1)
 	load.ref <?> ;outerCb(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	ret
 }
@@ -218,20 +218,20 @@ deepCb(data: pointer): void: function {
 midCb(data: pointer): void: function {
 .instructions: (16 bytes)
 	test.stacktrace.cmpl:44: (16 bytes): static midCb(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:45: (15 bytes): tryExec(data, deepCb);
+	test.stacktrace.cmpl:45: (15 bytes): recover(data, deepCb);
 	dup.x32 sp(1)
 	load.ref <?> ;deepCb(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	ret
 }
 outerCall(data: pointer): void: function {
 .instructions: (16 bytes)
 	test.stacktrace.cmpl:47: (16 bytes): static outerCall(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:48: (15 bytes): tryExec(data, midCb);
+	test.stacktrace.cmpl:48: (15 bytes): recover(data, midCb);
 	dup.x32 sp(1)
 	load.ref <?> ;midCb(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	ret
 }
@@ -254,10 +254,10 @@ truncCb(data: pointer): void: function {
 truncWrap(data: pointer): void: function {
 .instructions: (16 bytes)
 	test.stacktrace.cmpl:57: (16 bytes): static truncWrap(optional data: pointer): void := {...}
-	test.stacktrace.cmpl:58: (15 bytes): tryExec(data, truncCb);
+	test.stacktrace.cmpl:58: (15 bytes): recover(data, truncCb);
 	dup.x32 sp(1)
 	load.ref <?> ;truncCb(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	ret
 }
@@ -276,21 +276,21 @@ tryFnRecursive(data: pointer): void: function {
 	test.stacktrace.cmpl:67: (26 bytes): static tryFnRecursive(optional data: pointer): void := {...}
 	test.stacktrace.cmpl:68: (2 bytes): mutable optional args: int32[*] := pointer(data)
 	dup.x32 sp(1)
-	test.stacktrace.cmpl:69: (19 bytes): tryExecRecursive(args[0], args[1]);
+	test.stacktrace.cmpl:69: (19 bytes): recoverRecursive(args[0], args[1]);
 	dup.x32 sp(0)
 	load.i32
 	dup.x32 sp(1)
 	inc.i32(+4)
 	load.i32
-	load.m32 <?> ;tryExecRecursive(b: int32, mod: int32): void
+	load.m32 <?> ;recoverRecursive(b: int32, mod: int32): void
 	call
 	inc.sp(-8)
 	inc.sp(-4)
 	ret
 }
-tryExecRecursive(b: int32, mod: int32): void: function {
+recoverRecursive(b: int32, mod: int32): void: function {
 .instructions: (145 bytes)
-	test.stacktrace.cmpl:71: (145 bytes): static tryExecRecursive(mutable b: int32, mutable mod: int32): void := {...}
+	test.stacktrace.cmpl:71: (145 bytes): static recoverRecursive(mutable b: int32, mutable mod: int32): void := {...}
 	test.stacktrace.cmpl:72: (62 bytes): if (b == 0)
 	dup.x32 sp(2)
 	load.z32
@@ -336,19 +336,19 @@ tryExecRecursive(b: int32, mod: int32): void: function {
 	clt.i32
 	ceq.i32
 	jnz +23
-	test.stacktrace.cmpl:78: (14 bytes): tryExecRecursive(args[0], mod);
+	test.stacktrace.cmpl:78: (14 bytes): recoverRecursive(args[0], mod);
 	dup.x32 sp(0)
 	dup.x32 sp(4)
-	load.ref <?> ;tryExecRecursive(b: int32, mod: int32): void
+	load.ref <?> ;recoverRecursive(b: int32, mod: int32): void
 	call
 	inc.sp(-8)
 	test.stacktrace.cmpl:79: (5 bytes): return;
 	inc.sp(-8)
 	ret
-	test.stacktrace.cmpl:81: (17 bytes): tryExec(pointer(args), tryFnRecursive);
+	test.stacktrace.cmpl:81: (17 bytes): recover(pointer(args), tryFnRecursive);
 	load.sp(+0)
 	load.ref <?> ;tryFnRecursive(data: pointer): void
-	nfc(1) ;tryExec(args: pointer, action(args: pointer): void): int32
+	nfc(1) ;recover(args: pointer, action(args: pointer): void): int32
 	inc.sp(-4)
 	inc.sp(-8)
 	ret
@@ -358,7 +358,7 @@ test.stacktrace.cmpl:6: debug: bottom of recursion: int32(0)
 	test.stacktrace.cmpl:5: levelN(b: 1)
 	test.stacktrace.cmpl:5: levelN(b: 2)
 	test.stacktrace.cmpl:9: levelN(b: 3)
-test.stacktrace.cmpl:14: debug: inside callback invoked via tryExec
+test.stacktrace.cmpl:14: debug: inside callback invoked via recover
 	test.stacktrace.cmpl:17: bridgedInner(data: null)
 	test.stacktrace.cmpl:16: bridgedCb(data: null)
 	test.stacktrace.cmpl:20: .main
@@ -383,38 +383,38 @@ test.stacktrace.cmpl:55: error: truncated trace across a bridge
 	test.stacktrace.cmpl:63: truncCaller(data: null)
 	... more
 test.stacktrace.cmpl:73: debug: bottom of recursion: int32(0)
-	test.stacktrace.cmpl:78: tryExecRecursive(b: 0, mod: 5)
-	test.stacktrace.cmpl:78: tryExecRecursive(b: 1, mod: 5)
-	test.stacktrace.cmpl:78: tryExecRecursive(b: 2, mod: 5)
-	test.stacktrace.cmpl:78: tryExecRecursive(b: 3, mod: 5)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: 4, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: 0, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: 1, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: 2, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: 3, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: 4, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: .main
-	test.stacktrace.cmpl:78: tryExecRecursive(b: 5, mod: 5)
-	test.stacktrace.cmpl:78: tryExecRecursive(b: 6, mod: 5)
-	test.stacktrace.cmpl:83: tryExecRecursive(b: 7, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: 5, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: 6, mod: 5)
+	test.stacktrace.cmpl:83: recoverRecursive(b: 7, mod: 5)
 test.stacktrace.cmpl:73: debug: bottom of recursion: int32(0)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: 0, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: 0, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: tryFnRecursive(data: <?>)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: -1, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: -1, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: tryFnRecursive(data: <?>)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: -2, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: -2, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: tryFnRecursive(data: <?>)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: -3, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: -3, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: tryFnRecursive(data: <?>)
-	test.stacktrace.cmpl:78: tryExecRecursive(b: -4, mod: 5)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: -5, mod: 5)
+	test.stacktrace.cmpl:78: recoverRecursive(b: -4, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: -5, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: tryFnRecursive(data: <?>)
-	test.stacktrace.cmpl:69: tryExecRecursive(b: -6, mod: 5)
+	test.stacktrace.cmpl:69: recoverRecursive(b: -6, mod: 5)
 	test.stacktrace.cmpl:67: tryFnRecursive(data: <?>)
 	test.stacktrace.cmpl:81: .main
-	test.stacktrace.cmpl:84: tryExecRecursive(b: -7, mod: 5)
+	test.stacktrace.cmpl:84: recoverRecursive(b: -7, mod: 5)
 
 ---------- Globals:
-test.stacktrace.cmpl:66: tryExecRecursive: function(<tryExecRecursive>)
+test.stacktrace.cmpl:66: recoverRecursive: function(<recoverRecursive>)
 */

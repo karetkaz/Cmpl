@@ -1,0 +1,81 @@
+/** ### Record literal initializers
+A record instance can be created from a literal, optionally prefixed with the type name (`Point{x: 1}`):
+- `{}` — default initializer (iff every member can be initialized by default).
+- `{x: y}` — member initializer; members not listed are initialized by default.
+- `{...?}` — uninitialized memory.
+- `{...0}` — zero-initialize memory (equivalent to `memset(var, 0, sizeof(var))`).
+- `{...?, x: y}`, `{...0, x: y}` — uninitialized or zeroed memory, then initialize selected members.
+- `{...copy}` — copy members from a source instance.
+- `{...copy, x: y}` — copy members, then overwrite selected members.
+
+The fill (`{...{fill}}`) and generator (`{...(int idx){eval}}`) forms are valid only for arrays.
+
+A member that is not listed in the literal is initialized with:
+- its default member initializer, if it has one;
+- for a nested record whose members can be initialized by default, the same rules applied to its members;
+- otherwise with the default type initializer of its type (`0` for numbers),
+  if both the member and the initialized variable are mutable;
+- otherwise it is a compile-time error: `pointer`, `typename`, `variant`, enumeration, object members,
+  and `!`, `&` members must always be initialized explicitly.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// record literal initializer forms
+
+struct DeclRecLitPoint {
+	int32 x;
+	int32 y;
+	int32 z = 7;
+}
+
+DeclRecLitPoint declRecLitMembers = { x: 1, y: 2 };                // {x: y} - `z` uses its default member initializer
+assertEq(7, declRecLitMembers.z);
+
+DeclRecLitPoint declRecLitTyped = DeclRecLitPoint{ x: 1 };         // type-prefixed literal, `y` uses the default type initializer
+assertEq(0, declRecLitTyped.y);
+
+DeclRecLitPoint declRecLitZero = { ...0 };                         // {...0} - zero everything, even `z`
+assertEq(0, declRecLitZero.z);
+
+DeclRecLitPoint declRecLitZeroOverwrite = { ...0, x: 5 };          // {...0, x: y} - zero, then initialize `x`
+assertEq(5, declRecLitZeroOverwrite.x);
+assertEq(0, declRecLitZeroOverwrite.z);
+
+DeclRecLitPoint declRecLitUndefined = { ...?, x: 3 };              // {...?, x: y} - only `x` is initialized
+assertEq(3, declRecLitUndefined.x);
+
+DeclRecLitPoint declRecLitCopy = { ...declRecLitMembers };         // {...copy} - copy every member
+assertEq(2, declRecLitCopy.y);
+
+DeclRecLitPoint declRecLitCopyOverwrite = { ...declRecLitMembers, y: 9 };   // {...copy, x: y} - copy, then overwrite `y`
+assertEq(1, declRecLitCopyOverwrite.x);
+assertEq(9, declRecLitCopyOverwrite.y);
+
+// nested records not listed in the literal are initialized member by member, using the same rules
+struct DeclRecLitLine {
+	DeclRecLitPoint start;
+	int32 width = 1;
+}
+DeclRecLitLine declRecLitLine = { start: { x: 1, y: 2 } };          // `start.z` and `width` use their defaults
+assertEq(7, declRecLitLine.start.z);
+assertEq(1, declRecLitLine.width);
+
+struct DeclRecLitStyle {
+	int32 color = 0xff0000;
+}
+struct DeclRecLitShape {
+	int32 corners;
+	DeclRecLitStyle style;
+}
+DeclRecLitShape declRecLitShape = { corners: 3 };                  // `style` is not listed: `style.color` uses its default
+assertEq(0xff0000, declRecLitShape.style.color);
+
+// members without a default type initializer must be initialized explicitly
+struct DeclRecLitNamed {
+	char name![*];
+	int32 value;
+}
+DeclRecLitNamed declRecLitNamed = { name: "answer", value: 42 };
+// DeclRecLitNamed declRecLitNoName = { value: 42 };              // error: uninitialized member `name`

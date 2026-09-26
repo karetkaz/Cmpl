@@ -45,7 +45,7 @@ struct Uint8: 1 {
 		return { value: result };
 	}
 
-	/// Adds two 8-bit unsigned integers with carry out
+	/// Adds two 8-bit unsigned integers with carry in and out
 	static Uint8 add(Uint8 x, Uint8 y, Uint8 c, Uint8 overflow&) {
 		uint32 result = inline(u32(x), u32(y), i32.add, u32(c), i32.add);
 		overflow.value = result >> bits;
@@ -59,7 +59,7 @@ struct Uint8: 1 {
 		return { value: result };
 	}
 
-	/// Subtracts two 8-bit unsigned integers with borrow out
+	/// Subtracts two 8-bit unsigned integers with borrow in and out
 	static Uint8 sub(Uint8 x, Uint8 y, Uint8 c, Uint8 overflow&) {
 		uint32 result = inline(u32(x), u32(y), i32.sub, u32(c), i32.sub);
 		overflow.value = -(result >> bits);
@@ -113,7 +113,7 @@ struct Uint8: 1 {
 			return uint32.len(u32(x));
 		}
 
-		uint32 bits = u32(x);	// speed up by by avoiding load and store indirect memory
+		uint32 bits = u32(x);	// speed up by avoiding load and store indirect memory
 		int32 result = 0;
 
 		if ((bits >> 4) != 0) {
@@ -185,7 +185,7 @@ struct Uint8: 1 {
 	/// Returns the greater of two values
 	static Uint8 max(Uint8 a, Uint8 b) { return u32(a) > u32(b) ? a : b; }
 
-	/// Returns the `value` clamped between the provided `min` and `max`
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Uint8 clamp(Uint8 value, Uint8 lo, Uint8 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -218,7 +218,7 @@ struct Int8: 1 {
 	/// Subtract two values
 	static Int8 sub(Int8 x, Int8 y) { return { value: inline(i32(x), i32(y), i32.sub) }; }
 
-	/// Multiply two values with overflow-out
+	/// Multiply two values
 	static Int8 mul(Int8 x, Int8 y) { return { value: inline(i32(x), i32(y), i32.mul) }; }
 
 	/// Divide x by y, returning quotient
@@ -254,12 +254,12 @@ struct Int8: 1 {
 		return { value: result };
 	}
 
-	/// Returns 1 if nonzero, 0 if zero
+	/// Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
 	static int32 sign(Int8 x) {
 		return int32(i32(x) > 0) - int32(i32(x) < 0);
 	}
 
-	/// Returns the absolute value (identity for unsigned)
+	/// Returns the absolute value
 	static Int8 abs(Int8 x) { return i32(x) < 0 ? x.neg() : x; }
 
 	/// Returns the smaller of two values
@@ -268,7 +268,7 @@ struct Int8: 1 {
 	/// Returns the greater of two values
 	static Int8 max(Int8 a, Int8 b) { return i32(a) > i32(b) ? a : b; }
 
-	/// Clamps value between min and max
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Int8 clamp(Int8 value, Int8 lo, Int8 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -286,5 +286,5 @@ uint32 uint32(Uint8 value) { return value.value; }
 /// Construct an Int8 from a signed byte value
 Int8 Int8(int8 value) { return { value: value }; }
 
-/// Convert an Int8 value to a int32
+/// Convert an Int8 value to an int32
 int32 int32(Int8 value) { return value.value; }

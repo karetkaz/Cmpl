@@ -17,7 +17,7 @@ static GxImage defaultFont(int height);
 struct camera cam[1] = {0}; // TODO: singleton like camera
 struct GxLight lights[32] = {0};  // max 32 lights
 
-// convert a double to 16 bit fixed point
+// convert a double to 16.16 fixed point
 #define fxp16(__VALUE) ((int32_t)(65536 * (double)(__VALUE)))
 
 static inline vector a2Vec(vector storage, float32_t values[3]) {
@@ -980,7 +980,7 @@ static void mainLoopCallback(mainLoopArgs args) {
 		}
 	} else {
 		if (args->event.action == KEY_RELEASE && args->event.button == KEY_CODE_ESC) {
-			// if there is no callback, exit wit esc key
+			// if there is no callback, exit with esc key
 			return exitMainLoop(args);
 		}
 		timeout = INT32_MAX;
@@ -1665,7 +1665,7 @@ int cmplInit(rtContext ctx, ccContext cc) {
 		"}\n"
 	);
 
-	// surfaces are allocated outside the vm, and are handler types
+	// surfaces are allocated outside the vm, and are handle types
 	symn symImage = ctx->api.ccAddType(cc, "Image", sizeof(GxImage), 0);
 	symImage->fmt = "%a";
 

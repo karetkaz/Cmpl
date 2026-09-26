@@ -1,0 +1,27 @@
+/** ## Inline the content of a file
+There are three ways to inline the content of a file:
+- an absolute path specifies the exact file in the filesystem (not recommended).
+- a path starting with `./` or `../` is resolved relative to the current file's directory.
+- otherwise, the file is included from the compiler's home folder, like a library.
+
+A trailing `?` makes a missing file a no-op instead of an error.
+*/
+
+/* todo: merge visual snippets with the previous comment
+The inline keyword can be used to inline the content of a file:
+- `inline "lib.cmpl";`: inline the content of the file named `lib.cmpl`, from the compiler's home folder
+- `inline "lib.cmpl"?;`: the inlined file is optional, no error will be raised if the file does not exist
+- `inline "./part.cmpl";`: inline the content of the file named `part.cmpl`, from the same directory of the including file
+- `inline "../part.cmpl";`: inline the content of the file named `part.cmpl`, from the parent directory of the including file
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// inline "./file.cmpl" pulls in the content of a file, resolved relative to the
+// current file's directory since it starts with "./"
+inline "./test.inline.file.included.cmpl";
+assertEq(42, declInlineFileValue);
+
+// the trailing "?" makes a missing file a no-op instead of an error
+inline "./test.inline.file.doesNotExist.cmpl"?;

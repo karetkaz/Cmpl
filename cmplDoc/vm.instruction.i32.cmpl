@@ -1,0 +1,250 @@
+/** ### Instruction `neg.i32`
+
+Negates the 32-bit signed integer on top of the stack.
+
+```
+i32 a = pop()
+push(-a)
+```
+*/
+inline "*opcode:neg.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, -a]`
+
+Notes:
+* negating the minimum value (`-2147483648`) overflows; the overflow is not detected.
+*/
+
+/** ### Instruction `add.i32`
+
+Adds the two 32-bit integers on top of the stack.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a + b)
+```
+*/
+inline "*opcode:add.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a + b]`
+
+Notes:
+* overflow is not detected; the result for out-of-range values is undefined in C (it typically wraps around).
+*/
+
+/** ### Instruction `sub.i32`
+
+Subtracts the 32-bit integer on top of the stack from the one below it.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a - b)
+```
+*/
+inline "*opcode:sub.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a - b]`
+
+Notes:
+* overflow is not detected; the result for out-of-range values is undefined in C (it typically wraps around).
+*/
+
+/** ### Instruction `mul.i32`
+
+Multiplies the two 32-bit signed integers on top of the stack.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a * b)
+```
+*/
+inline "*opcode:mul.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+
+Notes:
+* only the low 32 bits of the product are kept; overflow is not detected; the result for out-of-range values is undefined in C (it typically wraps around).
+*/
+
+/** ### Instruction `div.i32`
+
+Divides the 32-bit signed integer below the top of the stack by the one on top.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a / b)
+```
+*/
+inline "*opcode:div.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero, or the division overflows (`-2147483648 / -1`).
+
+Notes:
+* the quotient is truncated toward zero.
+*/
+
+/** ### Instruction `rem.i32`
+
+Computes the remainder of the signed division of the two 32-bit integers on top of the stack.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a % b)
+```
+*/
+inline "*opcode:rem.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a % b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero, or the dividend is `-2147483648` and the divisor is `-1` (the result would be `0`, but the division overflows).
+
+Notes:
+* the result has the sign of the dividend `a` (C semantics: `a == (a / b) * b + a % b`).
+*/
+
+/** ### Instruction `ceq.i32`
+
+Compares the two 32-bit integers on top of the stack for equality.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a == b)
+```
+*/
+inline "*opcode:ceq.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a == b]`
+
+Notes:
+* the result is a 32-bit integer: `1` if the condition holds, `0` otherwise.
+*/
+
+/** ### Instruction `clt.i32`
+
+Checks if the 32-bit signed integer below the top of the stack is less than the one on top.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a < b)
+```
+*/
+inline "*opcode:clt.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a < b]`
+
+Notes:
+* the result is a 32-bit integer: `1` if the condition holds, `0` otherwise.
+*/
+
+/** ### Instruction `cgt.i32`
+
+Checks if the 32-bit signed integer below the top of the stack is greater than the one on top.
+
+```
+i32 b = pop()
+i32 a = pop()
+push(a > b)
+```
+*/
+inline "*opcode:cgt.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a > b]`
+
+Notes:
+* the result is a 32-bit integer: `1` if the condition holds, `0` otherwise.
+*/
+
+/** ### Instruction `i32.2bool`
+
+Converts the 32-bit integer on top of the stack to a boolean.
+
+```
+i32 a = pop()
+push(a != 0)
+```
+*/
+inline "*opcode:i32.2bool";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, a != 0]`
+
+Notes:
+* the result is `1` if `a` is non-zero, `0` otherwise.
+*/
+
+/** ### Instruction `i32.2i64`
+
+Converts the 32-bit signed integer on top of the stack to a 64-bit integer using sign extension.
+
+```
+i32 a = pop()
+push(i64(a))
+```
+*/
+inline "*opcode:i32.2i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, i64(a)]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the extra slot.
+*/
+
+/** ### Instruction `i32.2f32`
+
+Converts the 32-bit signed integer on top of the stack to a 32-bit floating point value.
+
+```
+i32 a = pop()
+push(f32(a))
+```
+*/
+inline "*opcode:i32.2f32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, f32(a)]`
+
+Notes:
+* values with a magnitude above 2^24 may be rounded, as `f32` has a 24-bit significand.
+*/
+
+/** ### Instruction `i32.2f64`
+
+Converts the 32-bit signed integer on top of the stack to a 64-bit floating point value.
+
+```
+i32 a = pop()
+push(f64(a))
+```
+*/
+inline "*opcode:i32.2f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, f64(a)]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the extra slot.
+
+Notes:
+* the conversion is exact.
+*/

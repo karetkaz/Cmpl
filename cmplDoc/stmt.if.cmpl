@@ -1,0 +1,36 @@
+/** ## If statement
+The if statement is a selection statement that can be used to execute a section of code only if a condition is met.
+The main purpose of the if statement is to handle exceptional cases in the control flow.
+
+An optional `else` branch is executed when the condition is not met.
+Conditions can be chained with `else if`: the conditions are tested in order,
+and only the branch of the first condition that is met is executed.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+if (Float64.sin(Float64.pi / 2) == 1) {
+	debug("The sine of pi / 2 is one");
+}
+
+// the `else` branch is executed when the condition is not met
+int32 stmtIfValue = 7;
+bool stmtIfEven = false;
+if (stmtIfValue % 2 == 0) {
+	stmtIfEven = true;
+} else {
+	stmtIfEven = false;
+}
+assert(!stmtIfEven);
+
+// `else if` chains conditions: only the first branch whose condition is met is executed
+char stmtIfSign[*] = null;
+if (stmtIfValue < 0) {
+	stmtIfSign = "negative";
+} else if (stmtIfValue == 0) {
+	stmtIfSign = "zero";
+} else {
+	stmtIfSign = "positive";
+}
+assertEq('p', stmtIfSign[0]);

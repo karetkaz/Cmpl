@@ -8,6 +8,8 @@
 #include "util.h"
 
 extern const char * const type_doc_builtin;
+extern const char * const doc_tag_inline;      // ".doc.inline": doc placeholder before `inline "x.cmpl";`
+extern const char * const doc_tag_statement;   // ".doc.statement": doc placeholder before any other unconsumed statement
 extern const char * const type_fmt_signed32;
 extern const char * const type_fmt_signed64;
 extern const char * const type_fmt_unsigned32;
@@ -111,8 +113,8 @@ struct ccContextRec {
 	astn init_und;        // used for undefined initialization
 
 	symn libc_dbg;        // raise(char file[*], int line, int level, int trace, char message[*], variant details...);
-	symn libc_try;        // tryExec(pointer args, void action(pointer args));
-	symn libc_mal;        // pointer.alloc(pointer old, int size);
+	symn libc_try;        // recover(pointer args, void action(pointer args));
+	symn libc_mem;        // pointer.alloc(pointer old, int size);
 	symn libc_new;        // object.create(typename type);
 };
 
@@ -137,8 +139,8 @@ ccContext ccInit(rtContext ctx, ccConfig config, vmError onHalt(nfcContext));
  * @param content The content string to parse. If NULL, the specified file is opened and parsed.
  * @return Error code, 0 on success.
  *
- * @example dieif(!ccScan(cc, "test.cmpl", 1, NULL));
- * @example dieif(!ccScan(cc, __FILE__, __LINE__, "float64 asinh(float64 x);"))`
+ * @example dieif(ccParse(cc, "test.cmpl", 1, NULL) != 0);
+ * @example dieif(ccParse(cc, __FILE__, __LINE__, "float64 asinh(float64 x);") != 0);
  */
 int ccParse(ccContext ctx, const char *file, int line, char *content);
 

@@ -135,13 +135,13 @@ static Switch chkCenterY = {
 	selected: 1,
 	clickToFocus: false,
 };
+static char statesDisplay[][] = {
+	"diff",
+	"error",
+	"native",
+	"computed",
+};
 static Switch chkDisplay = {
-	static char statesDisplay[][] = {
-		"diff",
-		"error",
-		"native",
-		"computed",
-	};
 	text: "display",
 	states: statesDisplay,
 	clickToFocus: false,
@@ -234,8 +234,8 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 	float64 yScale = xScale / width * height;
 	float64 yStart = -sldYOffset.value;
 
-	float64 yGood[w / zoom + 1] = {0};
-	float64 yComp[w / zoom + 1] = {0};
+	float64 yGood[w / zoom + 1] = {...?};
+	float64 yComp[w / zoom + 1] = {...?};
 
 	sldXOffset.shiftFactor = offs.width() / xScale / 2;
 	sldYOffset.shiftFactor = offs.height() / yScale / 2;

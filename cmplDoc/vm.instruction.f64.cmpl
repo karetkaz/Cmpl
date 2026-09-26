@@ -1,0 +1,257 @@
+/** ### Instruction `neg.f64`
+
+Negates the 64-bit floating point value on top of the stack.
+
+```
+f64 a = pop()
+push(-a)
+```
+*/
+inline "*opcode:neg.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, -a]`
+
+Notes:
+* only the sign is flipped: `-0.0` is produced from `0.0` and the sign of `NaN` is inverted.
+*/
+
+/** ### Instruction `add.f64`
+
+Adds the two 64-bit floating point values on top of the stack.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(a + b)
+```
+*/
+inline "*opcode:add.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a + b]`
+*/
+
+/** ### Instruction `sub.f64`
+
+Subtracts the 64-bit floating point value on top of the stack from the one below it.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(a - b)
+```
+*/
+inline "*opcode:sub.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a - b]`
+*/
+
+/** ### Instruction `mul.f64`
+
+Multiplies the two 64-bit floating point values on top of the stack.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(a * b)
+```
+*/
+inline "*opcode:mul.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+*/
+
+/** ### Instruction `div.f64`
+
+Divides the 64-bit floating point value below the top of the stack by the value on top of it.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(a / b)
+```
+*/
+inline "*opcode:div.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Notes:
+* division by zero does not trap: execution continues with the IEEE 754 result (`±inf` or `NaN`); when running with the debugger attached, the debugger is notified.
+*/
+
+/** ### Instruction `rem.f64`
+
+Computes the floating point remainder of dividing the 64-bit floating point value below the top of the stack by the value on top of it.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(fmod(a, b))
+```
+*/
+inline "*opcode:rem.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, fmod(a, b)]`
+
+Notes:
+* the result is computed with the C function `fmod`: it is truncated toward zero, so it has the sign of `a`.
+* a zero divisor does not trap: execution continues with the IEEE 754 result (`NaN`); when running with the debugger attached, the debugger is notified.
+*/
+
+/** ### Instruction `ceq.f64`
+
+Compares the two 64-bit floating point values on top of the stack for equality.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(i32(a == b))
+```
+*/
+inline "*opcode:ceq.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a == b]`
+
+Notes:
+* the result is `1` if the condition holds, `0` otherwise.
+* `NaN` is not equal to anything, including itself; `-0.0` is equal to `0.0`.
+*/
+
+/** ### Instruction `clt.f64`
+
+Checks whether the 64-bit floating point value below the top of the stack is less than the value on top of it.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(i32(a < b))
+```
+*/
+inline "*opcode:clt.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a < b]`
+
+Notes:
+* the result is `1` if the condition holds, `0` otherwise.
+* every comparison involving `NaN` yields `0`.
+*/
+
+/** ### Instruction `cgt.f64`
+
+Checks whether the 64-bit floating point value below the top of the stack is greater than the value on top of it.
+
+```
+f64 b = pop()
+f64 a = pop()
+push(i32(a > b))
+```
+*/
+inline "*opcode:cgt.f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a > b]`
+
+Notes:
+* the result is `1` if the condition holds, `0` otherwise.
+* every comparison involving `NaN` yields `0`.
+*/
+
+/** ### Instruction `f64.2i32`
+
+Converts the 64-bit floating point value on top of the stack to a 32-bit signed integer.
+
+```
+f64 a = pop()
+push(i32(a))
+```
+*/
+inline "*opcode:f64.2i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, i32(a)]`
+
+Notes:
+* the value is truncated toward zero; the result is undefined (in C) if the truncated value does not fit in the target type or `a` is `NaN`.
+*/
+
+/** ### Instruction `f64.2i64`
+
+Converts the 64-bit floating point value on top of the stack to a 64-bit signed integer.
+
+```
+f64 a = pop()
+push(i64(a))
+```
+*/
+inline "*opcode:f64.2i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, i64(a)]`
+
+Notes:
+* the value is truncated toward zero; the result is undefined (in C) if the truncated value does not fit in the target type or `a` is `NaN`.
+*/
+
+/** ### Instruction `f64.2f32`
+
+Converts the 64-bit floating point value on top of the stack to a 32-bit floating point value.
+
+```
+f64 a = pop()
+push(f32(a))
+```
+*/
+inline "*opcode:f64.2f32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, f32(a)]`
+
+Notes:
+* the value is rounded to the nearest representable value; values out of range become `±inf`.
+*/
+
+/** ### Instruction `f64.2bool`
+
+Converts the 64-bit floating point value on top of the stack to a boolean.
+
+```
+f64 a = pop()
+push(i32(a != 0 && !isNaN(a)))
+```
+*/
+inline "*opcode:f64.2bool";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, bool(a)]`
+
+Notes:
+* the result is `1` if `a` is non-zero and not `NaN`, `0` otherwise.
+* `NaN` converts to `0` (unlike in C, where `NaN` is truthy).
+*/
+
+/** ### Instruction `load.f64`
+
+Pushes a 64-bit floating point constant onto the stack.
+
+```
+push(imm.x64)
+```
+*/
+inline "*opcode:load.f64";
+/**
+* Immediate operand: `imm.x64`: the 64-bit constant to push
+* Stack effect: `[…] → […, imm]`
+
+Traps:
+* `stackOverflow`: there is no room on the stack for the extra slots.
+
+Notes:
+* temporary opcode: it is executed exactly like `load.c64`, and may be replaced by it.
+*/

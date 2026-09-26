@@ -1,0 +1,2 @@
+// the file being inlined by stmt.inline.file.cmpl's example
+int32 declInlineFileValue = 42;

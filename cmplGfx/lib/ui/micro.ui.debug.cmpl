@@ -11,14 +11,14 @@ struct DebugView: View {
 	/// Number of draw calls, initialize to `-1` to ignore
 	int64 draws = 0;
 
-	/// Start time measurement until this view is drawn on screen
+	/// Restart the time measurement until this view is drawn on screen
 	static void restartTimer(DebugView this&) {
 		this.durations[this.position] = 0;
 		this.started = System.millis();
 		invalidate(this, false);
 	}
 
-	/// Start time measurement until this view is drawn on screen
+	/// Start the time measurement, if not already started, until this view is drawn on screen
 	static void startTimer(DebugView this&) {
 		if (this.started == 0) {
 			restartTimer(&this);
@@ -71,7 +71,7 @@ struct DebugView: View {
 		}
 		if (!event.release) {
 			// press, motion and long-press events are not consumed
-			// click happens only when the button is released
+			// reset happens only when the button is released
 			return State.ignored;
 		}
 

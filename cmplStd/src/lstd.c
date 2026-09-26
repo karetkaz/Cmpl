@@ -15,9 +15,9 @@
 
 enum PrintFlags {
 	minus = 1 << 0,  // '-' Left-justify within the given field width; Right justification is the default (see width sub-specifier).
-	plus = 1 << 1,   // '+' Forces to preceed the result with a plus or minus sign (+ or -) even for positive numbers. By default, only negative numbers are preceded with a - sign.
+	plus = 1 << 1,   // '+' Forces to precede the result with a plus or minus sign (+ or -) even for positive numbers. By default, only negative numbers are preceded with a - sign.
 	space = 1 << 2,  // ' ' If no sign is going to be written, a blank space is inserted before the value.
-	hash = 1 << 3,   // '#' Used with o, x or X specifiers the value is preceeded with 0, 0x or 0X respectively for values different than zero. Used with a, A, e, E, f, F, g or G it forces the written output to contain a decimal point even if no more digits follow. By default, if no digits follow, no decimal point is written.
+	hash = 1 << 3,   // '#' Used with o, x or X specifiers the value is preceded with 0, 0x or 0X respectively for values different than zero. Used with a, A, e, E, f, F, g or G it forces the written output to contain a decimal point even if no more digits follow. By default, if no digits follow, no decimal point is written.
 	zero = 1 << 4,   // `0` Left-pads the number with zeroes (0) instead of spaces when padding is specified (see width sub-specifier).
 	// https://cplusplus.com/reference/cstdio/printf/
 	// warning: flag ' ' is ignored when flag '+' is present [-Wformat]
@@ -311,7 +311,7 @@ static vmError sysLocalZoneOffset(nfcContext ctx) {
 	return noError;
 }
 
-// pointer alloc(pointer ptr, int32 size);
+// pointer alloc(pointer ptr, int size);
 static vmError sysMemMgr(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -321,7 +321,7 @@ static vmError sysMemMgr(nfcContext ctx) {
 	retRef(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
-// pointer fill(pointer dst, int value, int32 size)
+// pointer fill(pointer dst&, uint8 value, int size);
 static vmError sysMemFill(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -332,7 +332,7 @@ static vmError sysMemFill(nfcContext ctx) {
 	retRef(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
-// pointer copy(pointer dst, pointer src, int32 size);
+// pointer copy(pointer dst&, pointer src, int size);
 static vmError sysMemCopy(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -343,7 +343,7 @@ static vmError sysMemCopy(nfcContext ctx) {
 	retRef(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
-// pointer swap(pointer dst, pointer src, int32 size);
+// pointer swap(pointer dst&, pointer src&, int size);
 static vmError sysMemSwap(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -354,7 +354,7 @@ static vmError sysMemSwap(nfcContext ctx) {
 	retRef(ctx, vmOffset(ctx->rt, dst));
 	return noError;
 }
-// pointer move(pointer dst, pointer src, int32 size);
+// pointer move(pointer dst&, pointer src, int size);
 static vmError sysMemMove(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -365,7 +365,7 @@ static vmError sysMemMove(nfcContext ctx) {
 	retRef(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
-// int compare(pointer dst, pointer src, int32 size);
+// int compare(pointer dst, pointer src, int size);
 static vmError sysMemCmp(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
@@ -452,8 +452,8 @@ static int ccLibSys(rtContext rt, ccContext cc) {
 
 	// alloc, free, memset, memcpy, memcmp
 	if (rt->api.ccExtend(cc, cc->type_ptr)) {
-		cc->libc_mal = rt->api.ccAddCall(cc, sysMemMgr, "pointer alloc(pointer ptr, int size)");
-		if (cc->libc_mal == NULL) {
+		cc->libc_mem = rt->api.ccAddCall(cc, sysMemMgr, "pointer alloc(pointer ptr, int size)");
+		if (cc->libc_mem == NULL) {
 			err = 3;
 		}
 		err = err || 3 * !rt->api.ccAddCall(cc, sysMemFill, "pointer fill(pointer dst&, uint8 value, int size)");
@@ -552,7 +552,7 @@ static int ccLibStd(rtContext rt, ccContext cc) {
 	};
 
 	int err = 0;
-	// Add extra operations to int32
+	// Add extra operations to uint32
 	if (!err && rt->api.ccExtend(cc, cc->type_u32)) {
 		for (size_t i = 0; i < lengthOf(bit32); i += 1) {
 			if (!rt->api.ccAddCall(cc, bit32[i].fun, bit32[i].def)) {
@@ -562,7 +562,7 @@ static int ccLibStd(rtContext rt, ccContext cc) {
 		}
 		rt->api.ccEnd(cc, cc->type_u32);
 	}
-	// Add extra operations to int64
+	// Add extra operations to uint64
 	if (!err && rt->api.ccExtend(cc, cc->type_u64)) {
 		for (size_t i = 0; i < lengthOf(bit64); i += 1) {
 			if (!rt->api.ccAddCall(cc, bit64[i].fun, bit64[i].def)) {

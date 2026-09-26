@@ -1,48 +1,48 @@
-/// Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
+/// Easing functions map an input of [0, 1) usually to [0, 1) with an acceleration
 // see: https://easings.net
 // todo: enum Easing: float64(float64 t) { ... }
 static struct Easing {
-	///@public
+	/// Linear easing: returns `t` unchanged
 	float64 linear(float64 t) {
 		return t;
 	}
 
-	///@public
+	/// Quadratic easing: `t^2`
 	float64 quad(float64 t) {
 		return t * t;
 	}
 
-	///@public
+	/// Cubic easing: `t^3`
 	float64 cubic(float64 t) {
 		return t * t * t;
 	}
 
-	///@public
+	/// Quartic easing: `t^4`
 	float64 quart(float64 t) {
 		return t * t * t * t;
 	}
 
-	///@public
+	/// Quintic easing: `t^5`
 	float64 quint(float64 t) {
 		return t * t * t * t * t;
 	}
 
-	///@public
+	/// Exponential easing: `2^(10 * (t - 1))`
 	float64 expo(float64 t) {
 		return t == 0 ? 0 : Float64.pow(2., 10 * (t - 1));
 	}
 
-	///@public
+	/// Sinusoidal easing: `1 - cos(t * pi / 2)`
 	float64 sine(float64 t) {
 		return -Float64.cos(t * Float64.pi / 2) + 1;
 	}
 
-	///@public
+	/// Circular easing: `1 - sqrt(1 - t^2)`
 	float64 circle(float64 t) {
 		return -(Float64.sqrt(1 - t * t) - 1);
 	}
 
-	///@public
+	/// Elastic easing: an exponentially growing sine wave, overshooting like a spring
 	float64 elastic(float64 t) {
 		if (t == 0.0 || t == 1.0) {
 			return t;
@@ -51,13 +51,13 @@ static struct Easing {
 		return - Float64.pow(2.0, 10.0 * t) * Float64.sin((t - 0.3 / 4.0) * (2.0 * Float64.pi) / 0.3) ;
 	}
 
-	///@public
+	/// Back easing: pulls back slightly before moving forward
 	float64 back(float64 t) {
 		inline s = 1.70158;
 		return t * t * ((s + 1) * t - s);
 	}
 
-	///@public
+	/// Bounce easing: bounces like a ball dropped to the ground
 	float64 bounce(float64 t) {
 		static float64 Helper(float64 t, float64 c, float64 a) {
 			if (t == 1) {

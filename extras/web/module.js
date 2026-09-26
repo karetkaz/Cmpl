@@ -5,59 +5,64 @@ Module.locateFile = function(path) {
 
 Module.importScripts(Module.locateFile('cmpl.js'));
 
-Module.listFiles = function(folders, recursive) {
-	let cwd = FS.cwd() + '/';
+// root folder of the file tree, `null` means the workspace itself
+Module.listRoot = null;
+
+Module.rootDir = function() {
+	return Module.listRoot || (Module.workspace + '/');
+};
+
+/// files inside the workspace are addressed relative to it, any other root uses absolute paths
+Module.rootPrefix = function(root) {
+	root = root || Module.rootDir();
+	return root === Module.workspace + '/' ? '' : root;
+};
+
+/// list the content of `root` in depth first order: folders first, then files, both sorted by name
+Module.listFiles = function(root, recursive) {
+	if (root == null || root.constructor !== String) {
+		root = Module.rootDir();
+	}
+	if (!root.endsWith('/')) {
+		root += '/';
+	}
+
+	let prefix = Module.rootPrefix(root);
 	let result = [];
 
-	function listRecursive(path) {
+	function listRecursive(path, relative) {
 		let dir = FS.analyzePath(path);
-		if (dir && dir.exists && dir.object) {
-			if (!path.endsWith('/')) {
-				path = path + '/';
-			}
-			for (let file in dir.object.contents) {
-				let filepath = path + file;
-				if (dir.object.contents[file].isFolder) {
-					filepath += '/';
-					if (recursive) {
-						listRecursive(filepath);
-						filepath = null;
-					}
-				}
-				if (filepath) {
-					if (filepath.startsWith(cwd) && filepath !== cwd) {
-						result.push(filepath.substr(cwd.length));
-					} else {
-						result.push(filepath);
-					}
-				}
-			}
+		if (!dir || !dir.exists || !dir.object) {
+			return;
 		}
-	}
-
-	if (folders && folders.constructor === String) {
-		folders = [folders];
-	}
-
-	for (let folder of folders) {
-		let tail = result.length;
-		listRecursive(folder);
-		let sorted = result.slice(tail).sort(function(lhs, rhs) {
-			let lhsDir = lhs.endsWith("/");
-			let rhsDir = rhs.endsWith("/");
-			if (lhsDir !== rhsDir) {
-				return lhsDir ? -1 : 1;
+		let entries = [];
+		for (let file in dir.object.contents) {
+			entries.push({
+				name: file,
+				folder: !!dir.object.contents[file].isFolder
+			});
+		}
+		entries.sort(function(lhs, rhs) {
+			if (lhs.folder !== rhs.folder) {
+				return lhs.folder ? -1 : 1;
 			}
-			return lhs.localeCompare(rhs);
+			return lhs.name.localeCompare(rhs.name);
 		});
-		result = result.slice(0, tail).concat(sorted);
 
-		if (folders.length === 1 && folders[0] === Module.workspace) {
-			for (let i = 0; i < result.length; ++i) {
-				result[i] = result[i].substr(Module.workspace.length + 1);
+		for (let entry of entries) {
+			if (!entry.folder) {
+				result.push(prefix + relative + entry.name);
+				continue;
+			}
+			// the folder is part of the tree even when it is empty
+			result.push(prefix + relative + entry.name + '/');
+			if (recursive) {
+				listRecursive(path + entry.name + '/', relative + entry.name + '/');
 			}
 		}
 	}
+
+	listRecursive(root, '');
 	return result;
 };
 
@@ -118,6 +123,8 @@ Module.initWorkspace = function(name, callback) {
 		return false;
 	}
 	Module.workspace = name;
+	// the file tree follows the new workspace
+	Module.listRoot = null;
 	FS.mkdirTree(Module.workspace);
 	FS.chdir(Module.workspace);
 	FS.mount(IDBFS, {}, Module.workspace);
@@ -153,14 +160,15 @@ Module.openProjectFile = function(data, callBack) {
 		return;
 	}
 
-	let list = null;
+	// refresh the file tree, it is always listed from `Module.rootDir()`
+	let list = false;
 	let sync = false;
 
 	let result = {};
 	// download and store project files
 	if (data.project != null) {
 		sync = !Module.wgetFiles(data.project);
-		list = [Module.workspace];
+		list = true;
 	}
 
 	// open, save, download file
@@ -170,16 +178,17 @@ Module.openProjectFile = function(data, callBack) {
 			let open = true;
 			let path = Module.absolutePath(data.path);
 
-			// not a file, list the content of the directory
+			// not a file, make it the root of the file tree
 			if (path.endsWith('/')) {
 				open = false;
-				list = [path];
+				Module.listRoot = path;
+				list = true;
 			}
 
 			if (data.content === null) {
 				if (Module.pathExists(path)) {
 					// file deleted, refresh file list
-					list = [Module.parentDir(path)]
+					list = true;
 				}
 				// delete file content
 				FS.unlink(Module.absolutePath(path));
@@ -190,7 +199,7 @@ Module.openProjectFile = function(data, callBack) {
 			else if (data.content !== undefined) {
 				if (!Module.pathExists(path)) {
 					// file saved, refresh file list
-					list = [Module.parentDir(path)]
+					list = true;
 				}
 				// save file content
 				Module.saveFile(path, data.content);
@@ -200,7 +209,7 @@ Module.openProjectFile = function(data, callBack) {
 			}
 			else if (data.url != null) {
 				if (!Module.pathExists(path)) {
-					list = [Module.workspace];
+					list = true;
 				}
 				operation = 'download';
 				sync = Module.wgetFiles([data]);
@@ -217,8 +226,12 @@ Module.openProjectFile = function(data, callBack) {
 					result.link = URL.createObjectURL(blob);
 				}
 
+				// opening a file never re-roots the tree, unless the file is outside of it
+				if (!path.startsWith(Module.rootDir())) {
+					Module.listRoot = Module.parentDir(path);
+				}
 				// file opened, refresh file list
-				list = [Module.parentDir(path)]
+				list = true;
 			}
 			Module.printLog('File ' + operation + ': ' + Module.absolutePath(path));
 		} catch (err) {
@@ -226,9 +239,10 @@ Module.openProjectFile = function(data, callBack) {
 		}
 	}
 
-	// list files from custom directory
-	if (list != null) {
-		result.list = Module.listFiles(list);
+	// list the whole file tree, starting at the root folder
+	if (list) {
+		result.root = Module.rootPrefix();
+		result.list = Module.listFiles(Module.rootDir(), true);
 	}
 	if (sync) {
 		FS.syncfs(function(error) {
@@ -311,6 +325,7 @@ Module.wgetFiles = function(files) {
 };
 
 Module.onFileDownloaded = function(progress, total) {
-	let list = Module.listFiles(Module.workspace + '/');
-	Module.process({ progress, total, list });
+	let root = Module.rootPrefix();
+	let list = Module.listFiles(Module.rootDir(), true);
+	Module.process({ progress, total, root, list });
 };

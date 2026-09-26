@@ -116,7 +116,7 @@ static inline size_t emitVarOffs(rtContext ctx, symn var) {
 	return emitInt(ctx, opc_lref, var->offs);
 }
 
-/// Generate byte-code for OPER_all and OPER_any usig jumps `a && b || c`.
+/// Generate byte-code for OPER_all and OPER_any using jumps `a && b || c`.
 static ccKind genCondition(ccContext ctx, astn ast) {
 	if (ast == NULL || ast->type == NULL) {
 		fatal(ERR_INTERNAL_ERROR);
@@ -411,6 +411,14 @@ static ccKind genDeclaration(ccContext ctx, symn variable, ccKind get) {
 	return varCast;
 }
 
+/// Size of an array element: fixed size arrays are stored inline, not by reference.
+static inline size_t inlineSize(symn type) {
+	if (isFixedSizeArray(type)) {
+		return type->size;
+	}
+	return refSize(type);
+}
+
 /// Generate byte-code for variable indirect load.
 static ccKind genIndirection(ccContext ctx, symn variable, ccKind get, int isIndex) {
 	if (get == KIND_var) {
@@ -433,6 +441,10 @@ static ccKind genIndirection(ccContext ctx, symn variable, ccKind get, int isInd
 			// typename is by reference, ex: pointer b = int32;
 			if (!isIndex) {
 				cast = CAST_any;
+			}
+			else if (isFixedSizeArray(variable)) {
+				// element of a multidimensional array is stored inline, ex: `f[y]` in `float64 f[3][3]`
+				cast = CAST_val;
 			}
 			type = variable;
 			break;
@@ -670,7 +682,7 @@ static ccKind genIndex(ccContext ctx, astn ast, ccKind get) {
 		checkBounds = isFixedSizeArray(array) || isDynamicSizeArray(array);
 	}
 
-	size_t elementSize = refSize(ast->type);	// size of array element
+	size_t elementSize = inlineSize(ast->type);	// size of array element
 	if (rt->foldConst && eval(ctx, &tmp, ast->op.rhso) == CAST_i64) {
 		int64_t index = intValue(&tmp);
 		if (checkBounds && index < 0) {
@@ -730,7 +742,7 @@ static ccKind genSlice(ccContext ctx, astn ast) {
 	astn end = ast->op.rhso->op.rhso;
 
 	symn array = ast->op.lhso->type;
-	size_t elementSize = refSize(array->type);	// size of array element
+	size_t elementSize = inlineSize(array->type);	// size of array element
 	// unknown size arrays (`int a[*]`) have no length to check against
 	int checkBounds = isFixedSizeArray(array) || isDynamicSizeArray(array);
 
@@ -2618,7 +2630,7 @@ static ccKind genAst(ccContext ctx, astn ast, ccKind get) {
 				break;
 		}
 
-		if (cast != opc_nop && !emit(rt, cast)) {
+		if (cast == opc_last || (cast != opc_nop && !emit(rt, cast))) {
 			error(rt, ast->file, ast->line, ERR_CAST_EXPRESSION, ast, got, get);
 			return CAST_any;
 		}

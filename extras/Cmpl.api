@@ -225,7 +225,15 @@ inline.cvt.u32_f64 # @builtin
 inline.cvt.u64_f32 # @builtin
 inline.cvt.u64_f64 # @builtin
 halt(): void # @builtin
-tryExec(args: pointer, action(args: pointer): void): int32 # @builtin
+recover(args: pointer, action(args: pointer): void): int32 # Execute an action, recovering the execution if it fails.
+recover.noError # @builtin
+recover.illegalState # @builtin
+recover.stackOverflow # @builtin
+recover.divisionByZero # @builtin
+recover.illegalInstruction # @builtin
+recover.illegalMemoryAccess # @builtin
+recover.illegalArrayAccess # @builtin
+recover.nativeCallError # @builtin
 raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant[]): void # Report messages or raise errors.
 raise.abort # @builtin
 raise.error # @builtin
@@ -416,8 +424,8 @@ NotEquals # Record used for debugging purposes, containing expected, returned an
 NotEquals.expected # Value of the expected result
 NotEquals.returned # Value of the actual result
 NotEquals.details # Extra argument to identify what happened
-NotEquals.debug(message: char[*], detail: NotEquals): void # abort execution displaying the expected and returned values
-NotEquals.error(message: char[*], detail: NotEquals): void # abort execution displaying the expected and returned values
+NotEquals.debug(message: char[*], detail: NotEquals): void # report the expected and returned values at `debug` logging level
+NotEquals.error(message: char[*], detail: NotEquals): void # report the expected and returned values at `error` logging level
 NotEquals.abort(message: char[*], detail: NotEquals): void # abort execution displaying the expected and returned values
 NotEquals(expected: variant, returned: variant, details: variant[]): NotEquals # Create a not equals record for inspection from expected and returned
 assertEq(expected: int64, returned: int64, message: char[*], details: variant[]): void # abort execution if the returned value is not equal to the expected value
@@ -440,9 +448,9 @@ Uint8.div(x: Uint8, y: Uint8): Uint8 # Divides two 8-bit unsigned integers
 Uint8.rem(x: Uint8, y: Uint8): Uint8 # Divide x by y, returning remainder
 Uint8.neg(x: Uint8, overflow: Uint8): Uint8 # Negates an 8-bit unsigned value
 Uint8.add(x: Uint8, y: Uint8, overflow: Uint8): Uint8 # Adds two 8-bit unsigned integers with carry out
-Uint8.add(x: Uint8, y: Uint8, c: Uint8, overflow: Uint8): Uint8 # Adds two 8-bit unsigned integers with carry out
+Uint8.add(x: Uint8, y: Uint8, c: Uint8, overflow: Uint8): Uint8 # Adds two 8-bit unsigned integers with carry in and out
 Uint8.sub(x: Uint8, y: Uint8, overflow: Uint8): Uint8 # Subtracts two 8-bit unsigned integers with borrow out
-Uint8.sub(x: Uint8, y: Uint8, c: Uint8, overflow: Uint8): Uint8 # Subtracts two 8-bit unsigned integers with borrow out
+Uint8.sub(x: Uint8, y: Uint8, c: Uint8, overflow: Uint8): Uint8 # Subtracts two 8-bit unsigned integers with borrow in and out
 Uint8.mul(x: Uint8, y: Uint8, overflow: Uint8): Uint8 # Multiplies two 8-bit unsigned integers with overflow out
 Uint8.cmt(x: Uint8): Uint8 # Computes the bitwise NOT of an 8-bit unsigned value
 Uint8.or(x: Uint8, y: Uint8): Uint8 # Computes the bitwise OR of two 8-bit unsigned integers
@@ -465,7 +473,7 @@ Uint8.reverseBytes(x: Uint8): Uint8 # Reverses the byte order of an 8-bit unsign
 Uint8.abs(x: Uint8): Uint8 # Returns the absolute value of the input (identity for unsigned)
 Uint8.min(a: Uint8, b: Uint8): Uint8 # Returns the smaller of two values
 Uint8.max(a: Uint8, b: Uint8): Uint8 # Returns the greater of two values
-Uint8.clamp(value: Uint8, lo: Uint8, hi: Uint8): Uint8 # Returns the `value` clamped between the provided `min` and `max`
+Uint8.clamp(value: Uint8, lo: Uint8, hi: Uint8): Uint8 # Returns the `value` clamped between the provided `lo` and `hi`
 Uint8.compare(x: Uint8, y: Uint8): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Uint8.reverseBits(x: uint8): uint8 # todo: deprecated method, use the called one
 Int8 # 8-bit signed integer
@@ -477,23 +485,23 @@ Int8.i32(x: Int8): int32
 Int8.neg(x: Int8): Int8 # Computes the arithmetic negation of an 8-bit signed integer
 Int8.add(x: Int8, y: Int8): Int8 # Add two values
 Int8.sub(x: Int8, y: Int8): Int8 # Subtract two values
-Int8.mul(x: Int8, y: Int8): Int8 # Multiply two values with overflow-out
+Int8.mul(x: Int8, y: Int8): Int8 # Multiply two values
 Int8.div(x: Int8, y: Int8): Int8 # Divide x by y, returning quotient
 Int8.rem(x: Int8, y: Int8): Int8 # Divide x by y, returning remainder
 Int8.neg(x: Int8, overflow: Int8): Int8 # Computes the arithmetic negation of an 8-bit signed integer
 Int8.add(x: Int8, y: Int8, overflow: Int8): Int8 # Add two values with carry-out
 Int8.sub(x: Int8, y: Int8, overflow: Int8): Int8 # Subtract two values with borrow-out
 Int8.mul(x: Int8, y: Int8, overflow: Int8): Int8 # Multiply two values with overflow-out (overflow holds upper 8 bits of 16-bit product)
-Int8.sign(x: Int8): int32 # Returns 1 if nonzero, 0 if zero
-Int8.abs(x: Int8): Int8 # Returns the absolute value (identity for unsigned)
+Int8.sign(x: Int8): int32 # Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
+Int8.abs(x: Int8): Int8 # Returns the absolute value
 Int8.min(a: Int8, b: Int8): Int8 # Returns the smaller of two values
 Int8.max(a: Int8, b: Int8): Int8 # Returns the greater of two values
-Int8.clamp(value: Int8, lo: Int8, hi: Int8): Int8 # Clamps value between min and max
+Int8.clamp(value: Int8, lo: Int8, hi: Int8): Int8 # Returns the `value` clamped between the provided `lo` and `hi`
 Int8.compare(x: Int8, y: Int8): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Uint8(value: uint8): Uint8 # Construct a Uint8 from a packed byte value
 uint32(value: Uint8): uint32 # Convert a Uint8 value to a uint32
 Int8(value: int8): Int8 # Construct an Int8 from a signed byte value
-int32(value: Int8): int32 # Convert an Int8 value to a int32
+int32(value: Int8): int32 # Convert an Int8 value to an int32
 Uint16 # 16-bit unsigned integer
 Uint16.value
 Uint16.bits
@@ -502,25 +510,25 @@ Uint16.max
 Uint16.u32(x: Uint16): uint32
 Uint16.i32(x: Uint16): int32
 Uint16.test(x: Uint16): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
-Uint16.neg(x: Uint16): Uint16 # Negates an 16-bit unsigned value
+Uint16.neg(x: Uint16): Uint16 # Negates a 16-bit unsigned value
 Uint16.add(x: Uint16, y: Uint16): Uint16 # Adds two 16-bit unsigned integers
 Uint16.sub(x: Uint16, y: Uint16): Uint16 # Subtracts two 16-bit unsigned integers
 Uint16.mul(x: Uint16, y: Uint16): Uint16 # Multiplies two 16-bit unsigned integers
 Uint16.div(x: Uint16, y: Uint16): Uint16 # Divides two 16-bit unsigned integers
 Uint16.rem(x: Uint16, y: Uint16): Uint16 # Divide x by y, returning remainder
-Uint16.neg(x: Uint16, overflow: Uint16): Uint16 # Negates an 16-bit unsigned value
+Uint16.neg(x: Uint16, overflow: Uint16): Uint16 # Negates a 16-bit unsigned value
 Uint16.add(x: Uint16, y: Uint16, overflow: Uint16): Uint16 # Adds two 16-bit unsigned integers with carry out
-Uint16.add(x: Uint16, y: Uint16, c: Uint16, overflow: Uint16): Uint16 # Adds two 16-bit unsigned integers with carry out
+Uint16.add(x: Uint16, y: Uint16, c: Uint16, overflow: Uint16): Uint16 # Adds two 16-bit unsigned integers with carry in and out
 Uint16.sub(x: Uint16, y: Uint16, overflow: Uint16): Uint16 # Subtracts two 16-bit unsigned integers with borrow out
-Uint16.sub(x: Uint16, y: Uint16, c: Uint16, overflow: Uint16): Uint16 # Subtracts two 16-bit unsigned integers with borrow out
+Uint16.sub(x: Uint16, y: Uint16, c: Uint16, overflow: Uint16): Uint16 # Subtracts two 16-bit unsigned integers with borrow in and out
 Uint16.mul(x: Uint16, y: Uint16, overflow: Uint16): Uint16 # Multiplies two 16-bit unsigned integers with overflow out
-Uint16.cmt(x: Uint16): Uint16 # Computes the bitwise NOT of an 16-bit unsigned value
+Uint16.cmt(x: Uint16): Uint16 # Computes the bitwise NOT of a 16-bit unsigned value
 Uint16.or(x: Uint16, y: Uint16): Uint16 # Computes the bitwise OR of two 16-bit unsigned integers
 Uint16.xor(x: Uint16, y: Uint16): Uint16 # Computes the bitwise XOR of two 16-bit unsigned integers
 Uint16.and(x: Uint16, y: Uint16): Uint16 # Computes the bitwise AND of two 16-bit unsigned integers
-Uint16.shl(x: Uint16, n: uint32): Uint16 # Performs a logical left shift of x by n bits for an 16-bit unsigned integer
-Uint16.shr(x: Uint16, n: uint32): Uint16 # Performs a logical right shift of x by n bits for an 16-bit unsigned integer
-Uint16.sar(x: Uint16, n: uint32): Uint16 # Performs an arithmetic right shift of x by n bits for an 16-bit unsigned integer
+Uint16.shl(x: Uint16, n: uint32): Uint16 # Performs a logical left shift of x by n bits for a 16-bit unsigned integer
+Uint16.shr(x: Uint16, n: uint32): Uint16 # Performs a logical right shift of x by n bits for a 16-bit unsigned integer
+Uint16.sar(x: Uint16, n: uint32): Uint16 # Performs an arithmetic right shift of x by n bits for a 16-bit unsigned integer
 Uint16.rotateLeft(x: Uint16, n: uint32): Uint16 # Returns the value of x rotated left by (n mod size) bits
 Uint16.rotateRight(x: Uint16, n: uint32): Uint16 # Returns the value of x rotated right by (n mod size) bits
 Uint16.lowestBit(x: Uint16): Uint16
@@ -531,11 +539,11 @@ Uint16.scanReverse(x: Uint16): int32 # Finds the index of the most significant(h
 Uint16.scanForward(x: Uint16): int32 # Finds the index of the least significant(lowest) set bit
 Uint16.countOnes(y: Uint16): int32 # Returns the number of set bits ("population count") in x
 Uint16.reverseBits(y: Uint16): Uint16 # Returns the value of x with its bits in reversed order
-Uint16.reverseBytes(y: Uint16): Uint16 # Reverses the byte order of an 16-bit unsigned integer
+Uint16.reverseBytes(y: Uint16): Uint16 # Reverses the byte order of a 16-bit unsigned integer
 Uint16.abs(x: Uint16): Uint16 # Returns the absolute value (identity for unsigned)
 Uint16.min(a: Uint16, b: Uint16): Uint16 # Returns the smaller of two values
 Uint16.max(a: Uint16, b: Uint16): Uint16 # Returns the greater of two values
-Uint16.clamp(value: Uint16, lo: Uint16, hi: Uint16): Uint16 # Returns the `value` clamped between the provided `min` and `max`
+Uint16.clamp(value: Uint16, lo: Uint16, hi: Uint16): Uint16 # Returns the `value` clamped between the provided `lo` and `hi`
 Uint16.compare(x: Uint16, y: Uint16): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Int16 # 16-bit signed integer
 Int16.value
@@ -543,26 +551,26 @@ Int16.bits
 Int16.min
 Int16.max
 Int16.i32(x: Int16): int32
-Int16.neg(x: Int16): Int16 # Computes the arithmetic negation of an 16-bit signed integer
+Int16.neg(x: Int16): Int16 # Computes the arithmetic negation of a 16-bit signed integer
 Int16.add(x: Int16, y: Int16): Int16 # Add two values
 Int16.sub(x: Int16, y: Int16): Int16 # Subtract two values
-Int16.mul(x: Int16, y: Int16): Int16 # Multiply two values with overflow-out
+Int16.mul(x: Int16, y: Int16): Int16 # Multiply two values
 Int16.div(x: Int16, y: Int16): Int16 # Divide x by y, returning quotient
 Int16.rem(x: Int16, y: Int16): Int16 # Divide x by y, returning remainder
-Int16.neg(x: Int16, overflow: Int16): Int16 # Computes the arithmetic negation of an 16-bit signed integer
+Int16.neg(x: Int16, overflow: Int16): Int16 # Computes the arithmetic negation of a 16-bit signed integer
 Int16.add(x: Int16, y: Int16, overflow: Int16): Int16 # Add two values with carry-out
 Int16.sub(x: Int16, y: Int16, overflow: Int16): Int16 # Subtract two values with borrow-out
 Int16.mul(x: Int16, y: Int16, overflow: Int16): Int16 # Multiply two values with overflow-out (overflow holds upper 16 bits of the 32-bit product)
-Int16.sign(x: Int16): int32 # Returns 1 if nonzero, 0 if zero
-Int16.abs(x: Int16): Int16 # Returns the absolute value (identity for unsigned)
+Int16.sign(x: Int16): int32 # Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
+Int16.abs(x: Int16): Int16 # Returns the absolute value
 Int16.min(a: Int16, b: Int16): Int16 # Returns the smaller of two values
 Int16.max(a: Int16, b: Int16): Int16 # Returns the greater of two values
-Int16.clamp(value: Int16, lo: Int16, hi: Int16): Int16 # Clamps value between min and max
+Int16.clamp(value: Int16, lo: Int16, hi: Int16): Int16 # Returns the `value` clamped between the provided `lo` and `hi`
 Int16.compare(x: Int16, y: Int16): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
-Uint16(value: uint16): Uint16 # Construct a Uint16 from a packed byte value
+Uint16(value: uint16): Uint16 # Construct a Uint16 from a 16-bit unsigned value
 uint32(value: Uint16): uint32 # Convert a Uint16 value to a uint32
-Int16(value: int16): Int16 # Construct an Int16 from a signed byte value
-int32(value: Int16): int32 # Convert an Int16 value to a int32
+Int16(value: int16): Int16 # Construct an Int16 from a 16-bit signed value
+int32(value: Int16): int32 # Convert an Int16 value to an int32
 Uint32 # 32-bit unsigned integer
 Uint32.value
 Uint32.bits
@@ -571,25 +579,25 @@ Uint32.max
 Uint32.u32(x: Uint32): uint32
 Uint32.u64(x: Uint32): uint64
 Uint32.test(x: Uint32): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
-Uint32.neg(x: Uint32): Uint32 # Negates an 32-bit unsigned value
+Uint32.neg(x: Uint32): Uint32 # Negates a 32-bit unsigned value
 Uint32.add(x: Uint32, y: Uint32): Uint32 # Adds two 32-bit unsigned integers
 Uint32.sub(x: Uint32, y: Uint32): Uint32 # Subtracts two 32-bit unsigned integers
 Uint32.mul(x: Uint32, y: Uint32): Uint32 # Multiplies two 32-bit unsigned integers
 Uint32.div(x: Uint32, y: Uint32): Uint32 # Divides two 32-bit unsigned integers
 Uint32.rem(x: Uint32, y: Uint32): Uint32 # Divide x by y, returning remainder
-Uint32.neg(x: Uint32, overflow: Uint32): Uint32 # Negates an 32-bit unsigned value
+Uint32.neg(x: Uint32, overflow: Uint32): Uint32 # Negates a 32-bit unsigned value
 Uint32.add(x: Uint32, y: Uint32, overflow: Uint32): Uint32 # Adds two 32-bit unsigned integers with carry out
 Uint32.add(x: Uint32, y: Uint32, c: Uint32, overflow: Uint32): Uint32 # Adds two 32-bit unsigned integers with carry in and out
 Uint32.sub(x: Uint32, y: Uint32, overflow: Uint32): Uint32 # Subtracts two 32-bit unsigned integers with borrow out
-Uint32.sub(x: Uint32, y: Uint32, c: Uint32, overflow: Uint32): Uint32 # Subtracts two 32-bit unsigned integers with borrow out
+Uint32.sub(x: Uint32, y: Uint32, c: Uint32, overflow: Uint32): Uint32 # Subtracts two 32-bit unsigned integers with borrow in and out
 Uint32.mul(x: Uint32, y: Uint32, overflow: Uint32): Uint32 # Multiplies two 32-bit unsigned integers with overflow out
 Uint32.cmt(x: Uint32): Uint32 # Computes the bitwise NOT of a 32-bit unsigned value
 Uint32.or(x: Uint32, y: Uint32): Uint32 # Computes the bitwise OR of two 32-bit unsigned integers
 Uint32.xor(x: Uint32, y: Uint32): Uint32 # Computes the bitwise XOR of two 32-bit unsigned integers
 Uint32.and(x: Uint32, y: Uint32): Uint32 # Computes the bitwise AND of two 32-bit unsigned integers
-Uint32.shl(x: Uint32, n: uint32): Uint32 # Performs a logical left shift of x by n bits for an 32-bit unsigned integer
-Uint32.shr(x: Uint32, n: uint32): Uint32 # Performs a logical right shift of x by n bits for an 32-bit unsigned integer
-Uint32.sar(x: Uint32, n: uint32): Uint32 # Performs an arithmetic right shift of x by n bits for an 32-bit unsigned integer
+Uint32.shl(x: Uint32, n: uint32): Uint32 # Performs a logical left shift of x by n bits for a 32-bit unsigned integer
+Uint32.shr(x: Uint32, n: uint32): Uint32 # Performs a logical right shift of x by n bits for a 32-bit unsigned integer
+Uint32.sar(x: Uint32, n: uint32): Uint32 # Performs an arithmetic right shift of x by n bits for a 32-bit unsigned integer
 Uint32.rotateLeft(x: Uint32, n: uint32): Uint32 # Returns the value of x rotated left by (n mod size) bits
 Uint32.rotateRight(x: Uint32, n: uint32): Uint32 # Returns the value of x rotated right by (n mod size) bits
 Uint32.lowestBit(x: Uint32): Uint32
@@ -600,11 +608,11 @@ Uint32.scanReverse(x: Uint32): int32 # Finds the index of the most significant(h
 Uint32.scanForward(x: Uint32): int32 # Finds the index of the least significant(lowest) set bit
 Uint32.countOnes(y: Uint32): int32 # Returns the number of set bits ("population count") in x
 Uint32.reverseBits(y: Uint32): Uint32 # Returns the value of x with its bits in reversed order
-Uint32.reverseBytes(y: Uint32): Uint32 # Reverses the byte order of an 32-bit unsigned integer
+Uint32.reverseBytes(y: Uint32): Uint32 # Reverses the byte order of a 32-bit unsigned integer
 Uint32.abs(x: Uint32): Uint32 # Returns the absolute value (identity for unsigned)
 Uint32.min(a: Uint32, b: Uint32): Uint32 # Returns the smaller of two values
 Uint32.max(a: Uint32, b: Uint32): Uint32 # Returns the greater of two values
-Uint32.clamp(value: Uint32, lo: Uint32, hi: Uint32): Uint32 # Returns the `value` clamped between the provided `min` and `max`
+Uint32.clamp(value: Uint32, lo: Uint32, hi: Uint32): Uint32 # Returns the `value` clamped between the provided `lo` and `hi`
 Uint32.compare(x: Uint32, y: Uint32): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Uint32.countOnes(x: uint32): int32 # todo: deprecated method, use the called one
 Uint32.reverseBits(x: uint32): uint32 # todo: deprecated method, use the called one
@@ -616,7 +624,7 @@ Uint32.min(x: uint32, y: uint32): uint32 # todo: deprecated method, use the call
 Uint32.max(x: uint32, y: uint32): uint32 # todo: deprecated method, use the called one
 Uint32.clamp(value: uint32, lo: uint32, hi: uint32): uint32 # todo: deprecated method, use the called one
 Uint32.compare(x: uint32, y: uint32): int32 # todo: deprecated method, use the called one
-Uint32.zeroExtend(value: uint32, offs: int32, size: int32): uint32 # Extract and zero-extends a bit field from a value
+Uint32.zeroExtend(value: uint32, offs: int32, size: int32): uint32 # Extracts and zero-extends a bit field from a value
 Int32 # 32-bit signed integer
 Int32.value
 Int32.bits
@@ -624,21 +632,21 @@ Int32.max
 Int32.min
 Int32.i32(x: Int32): int32
 Int32.i64(x: Int32): int64
-Int32.neg(x: Int32): Int32 # Computes the arithmetic negation of an 32-bit signed integer
+Int32.neg(x: Int32): Int32 # Computes the arithmetic negation of a 32-bit signed integer
 Int32.add(x: Int32, y: Int32): Int32 # Add two values
 Int32.sub(x: Int32, y: Int32): Int32 # Subtract two values
-Int32.mul(x: Int32, y: Int32): Int32 # Multiply two values with overflow-out
+Int32.mul(x: Int32, y: Int32): Int32 # Multiply two values
 Int32.div(x: Int32, y: Int32): Int32 # Divide x by y, returning quotient
 Int32.rem(x: Int32, y: Int32): Int32 # Divide x by y, returning remainder
-Int32.neg(x: Int32, overflow: Int32): Int32 # Computes the arithmetic negation of an 32-bit signed integer
+Int32.neg(x: Int32, overflow: Int32): Int32 # Computes the arithmetic negation of a 32-bit signed integer
 Int32.add(x: Int32, y: Int32, overflow: Int32): Int32 # Adds two 32-bit signed integers with carry out
 Int32.sub(x: Int32, y: Int32, overflow: Int32): Int32 # Subtracts two 32-bit signed integers with borrow out
 Int32.mul(x: Int32, y: Int32, overflow: Int32): Int32 # Multiplies two 32-bit signed integers with overflow out
-Int32.sign(x: Int32): int32 # Returns 1 if nonzero, 0 if zero
-Int32.abs(x: Int32): Int32 # Returns the absolute value (identity for unsigned)
+Int32.sign(x: Int32): int32 # Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
+Int32.abs(x: Int32): Int32 # Returns the absolute value
 Int32.min(a: Int32, b: Int32): Int32 # Returns the smaller of two values
 Int32.max(a: Int32, b: Int32): Int32 # Returns the greater of two values
-Int32.clamp(value: Int32, lo: Int32, hi: Int32): Int32 # Clamps value between min and max
+Int32.clamp(value: Int32, lo: Int32, hi: Int32): Int32 # Returns the `value` clamped between the provided `lo` and `hi`
 Int32.compare(x: Int32, y: Int32): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Int32.sign(x: int32): int32 # todo: deprecated method, use the called one
 Int32.abs(x: int32): int32 # todo: deprecated method, use the called one
@@ -646,11 +654,11 @@ Int32.min(x: int32, y: int32): int32 # todo: deprecated method, use the called o
 Int32.max(x: int32, y: int32): int32 # todo: deprecated method, use the called one
 Int32.clamp(value: int32, lo: int32, hi: int32): int32 # todo: deprecated method, use the called one
 Int32.compare(x: int32, y: int32): int32 # todo: deprecated method, use the called one
-Int32.signExtend(value: int32, offs: int32, size: int32): int32 # Extract and sign-extends a bit field from a signed byte value
-Uint32(value: uint32): Uint32 # Construct a Uint32 from a packed byte value
+Int32.signExtend(value: int32, offs: int32, size: int32): int32 # Extracts and sign-extends a bit field from a value
+Uint32(value: uint32): Uint32 # Construct a Uint32 from a 32-bit unsigned value
 uint32(value: Uint32): uint32 # Convert a Uint32 value to a uint32
-Int32(value: int32): Int32 # Construct an Int32 from a signed byte value
-int32(value: Int32): int32 # Convert an Int32 value to a int32
+Int32(value: int32): Int32 # Construct an Int32 from a 32-bit signed value
+int32(value: Int32): int32 # Convert an Int32 value to an int32
 Uint64 # 64-bit unsigned integer
 Uint64.value
 Uint64.bits
@@ -658,25 +666,25 @@ Uint64.min
 Uint64.max
 Uint64.u64(x: Uint64): uint64
 Uint64.test(x: Uint64): int32 # Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
-Uint64.neg(x: Uint64): Uint64 # Negates an 64-bit unsigned value
+Uint64.neg(x: Uint64): Uint64 # Negates a 64-bit unsigned value
 Uint64.add(x: Uint64, y: Uint64): Uint64 # Adds two 64-bit unsigned integers
 Uint64.sub(x: Uint64, y: Uint64): Uint64 # Subtracts two 64-bit unsigned integers
 Uint64.mul(x: Uint64, y: Uint64): Uint64 # Multiplies two 64-bit unsigned integers
 Uint64.div(x: Uint64, y: Uint64): Uint64 # Divides two 64-bit unsigned integers
 Uint64.rem(x: Uint64, y: Uint64): Uint64 # Divide x by y, returning remainder
-Uint64.neg(x: Uint64, overflow: Uint64): Uint64 # Negates an 64-bit unsigned value
+Uint64.neg(x: Uint64, overflow: Uint64): Uint64 # Negates a 64-bit unsigned value
 Uint64.add(x: Uint64, y: Uint64, overflow: Uint64): Uint64 # Adds two 64-bit unsigned integers with carry out
-Uint64.add(x: Uint64, y: Uint64, c: Uint64, overflow: Uint64): Uint64 # Adds two 64-bit unsigned integers with carry out
+Uint64.add(x: Uint64, y: Uint64, c: Uint64, overflow: Uint64): Uint64 # Adds two 64-bit unsigned integers with carry in and out
 Uint64.sub(x: Uint64, y: Uint64, overflow: Uint64): Uint64 # Subtracts two 64-bit unsigned integers with borrow out
-Uint64.sub(x: Uint64, y: Uint64, c: Uint64, overflow: Uint64): Uint64 # Subtracts two 64-bit unsigned integers with borrow out
+Uint64.sub(x: Uint64, y: Uint64, c: Uint64, overflow: Uint64): Uint64 # Subtracts two 64-bit unsigned integers with borrow in and out
 Uint64.mul(x: Uint64, y: Uint64, overflow: Uint64): Uint64 # Multiplies two 64-bit unsigned integers with overflow out
 Uint64.cmt(x: Uint64): Uint64 # Computes the bitwise NOT of a 64-bit unsigned value
 Uint64.or(x: Uint64, y: Uint64): Uint64 # Computes the bitwise OR of two 64-bit unsigned integers
 Uint64.xor(x: Uint64, y: Uint64): Uint64 # Computes the bitwise XOR of two 64-bit unsigned integers
 Uint64.and(x: Uint64, y: Uint64): Uint64 # Computes the bitwise AND of two 64-bit unsigned integers
-Uint64.shl(x: Uint64, n: uint32): Uint64 # Performs a logical left shift of x by n bits for an 64-bit unsigned integer
-Uint64.shr(x: Uint64, n: uint32): Uint64 # Performs a logical right shift of x by n bits for an 64-bit unsigned integer
-Uint64.sar(x: Uint64, n: uint32): Uint64 # Performs an arithmetic right shift of x by n bits for an 64-bit unsigned integer
+Uint64.shl(x: Uint64, n: uint32): Uint64 # Performs a logical left shift of x by n bits for a 64-bit unsigned integer
+Uint64.shr(x: Uint64, n: uint32): Uint64 # Performs a logical right shift of x by n bits for a 64-bit unsigned integer
+Uint64.sar(x: Uint64, n: uint32): Uint64 # Performs an arithmetic right shift of x by n bits for a 64-bit unsigned integer
 Uint64.rotateLeft(x: Uint64, n: uint32): Uint64 # Returns the value of x rotated left by (n mod size) bits
 Uint64.rotateRight(x: Uint64, n: uint32): Uint64 # Returns the value of x rotated right by (n mod size) bits
 Uint64.lowestBit(x: Uint64): Uint64
@@ -687,43 +695,43 @@ Uint64.scanReverse(x: Uint64): int32 # Finds the index of the most significant(h
 Uint64.scanForward(x: Uint64): int32 # Finds the index of the least significant(lowest) set bit
 Uint64.countOnes(y: Uint64): int32 # Returns the number of set bits ("population count") in x
 Uint64.reverseBits(y: Uint64): Uint64 # Returns the value of x with its bits in reversed order
-Uint64.reverseBytes(y: Uint64): Uint64 # Reverses the byte order of an 64-bit unsigned integer
+Uint64.reverseBytes(y: Uint64): Uint64 # Reverses the byte order of a 64-bit unsigned integer
 Uint64.abs(x: Uint64): Uint64 # Returns the absolute value (identity for unsigned)
 Uint64.min(a: Uint64, b: Uint64): Uint64 # Returns the smaller of two values
 Uint64.max(a: Uint64, b: Uint64): Uint64 # Returns the greater of two values
-Uint64.clamp(value: Uint64, lo: Uint64, hi: Uint64): Uint64 # Clamps value between min and max
+Uint64.clamp(value: Uint64, lo: Uint64, hi: Uint64): Uint64 # Returns the `value` clamped between the provided `lo` and `hi`
 Uint64.compare(x: Uint64, y: Uint64): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Uint64.reverseBytes(x: uint64): uint64 # todo: deprecated method, use the called one
-Uint64.zeroExtend(value: uint64, offs: int32, size: int32): uint64 # Extract and zero-extends a bit field from a value
+Uint64.zeroExtend(value: uint64, offs: int32, size: int32): uint64 # Extracts and zero-extends a bit field from a value
 Int64 # 64-bit signed integer
 Int64.value
 Int64.bits
 Int64.max
 Int64.min
 Int64.i64(x: Int64): int64
-Int64.neg(x: Int64): Int64 # Computes the arithmetic negation of an 64-bit signed integer
+Int64.neg(x: Int64): Int64 # Computes the arithmetic negation of a 64-bit signed integer
 Int64.add(x: Int64, y: Int64): Int64 # Add two values
 Int64.sub(x: Int64, y: Int64): Int64 # Subtract two values
-Int64.mul(x: Int64, y: Int64): Int64 # Multiply two values with overflow-out
+Int64.mul(x: Int64, y: Int64): Int64 # Multiply two values
 Int64.div(x: Int64, y: Int64): Int64 # Divide x by y, returning quotient
 Int64.rem(x: Int64, y: Int64): Int64 # Divide x by y, returning remainder
-Int64.neg(x: Int64, overflow: Int64): Int64 # Computes the arithmetic negation of an 64-bit signed integer
+Int64.neg(x: Int64, overflow: Int64): Int64 # Computes the arithmetic negation of a 64-bit signed integer
 Int64.add(x: Int64, y: Int64, overflow: Int64): Int64 # Adds two 64-bit signed integers with carry out
 Int64.sub(x: Int64, y: Int64, overflow: Int64): Int64 # Subtracts two 64-bit signed integers with borrow out
 Int64.mul(x: Int64, y: Int64, overflow: Int64): Int64 # Multiplies two 64-bit signed integers with overflow out
-Int64.sign(x: Int64): int32 # Returns 1 if nonzero, 0 if zero
-Int64.abs(x: Int64): Int64 # Returns the absolute value (identity for unsigned)
+Int64.sign(x: Int64): int32 # Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
+Int64.abs(x: Int64): Int64 # Returns the absolute value
 Int64.min(a: Int64, b: Int64): Int64 # Returns the smaller of two values
 Int64.max(a: Int64, b: Int64): Int64 # Returns the greater of two values
-Int64.clamp(value: Int64, lo: Int64, hi: Int64): Int64 # Clamps value between min and max
+Int64.clamp(value: Int64, lo: Int64, hi: Int64): Int64 # Returns the `value` clamped between the provided `lo` and `hi`
 Int64.compare(x: Int64, y: Int64): int32 # Compare: returns 0 if equal, positive if x > y, negative if x < y
 Int64.sign(x: int64): int32 # todo: deprecated method, use the called one
 Int64.abs(x: int64): int64 # todo: deprecated method, use the called one
-Int64.signExtend(value: int64, offs: int32, size: int32): int64 # Extract and sign-extends a bit field from a signed byte value
-Uint64(value: uint64): Uint64 # Construct a Uint64 from a packed byte value
+Int64.signExtend(value: int64, offs: int32, size: int32): int64 # Extracts and sign-extends a bit field from a value
+Uint64(value: uint64): Uint64 # Construct a Uint64 from a 64-bit unsigned value
 uint64(value: Uint64): uint64 # Convert a Uint64 value to a uint64
-Int64(value: int64): Int64 # Construct an Int64 from a signed byte value
-int64(value: Int64): int64 # Convert an Int64 value to a int64
+Int64(value: int64): Int64 # Construct an Int64 from a 64-bit signed value
+int64(value: Int64): int64 # Convert an Int64 value to an int64
 Float64 # 64 bit floating point struct and mathematical methods
 Float64.nan
 Float64.inf
@@ -740,7 +748,7 @@ Float64.ln10
 Float64.log10E
 Float64.smallestNormal
 Float64.isUndefined(x: float64): bool # Determines whether the given floating point value is undefined: not-a-number
-Float64.isFinite(x: float64): bool # Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
+Float64.isFinite(x: float64): bool # Determines whether the given floating point value is finite: `!isUndefined(x) && !isInfinity(x)`
 Float64.isInfinity(x: float64): bool # Determines whether the given floating point value is ±infinity
 Float64.isPosInf(x: float64): bool
 Float64.isNegInf(x: float64): bool
@@ -753,7 +761,7 @@ Float64.round(x: float64): float64 # Computes the nearest integer to the input
 Float64.absMod(val: float64, mod: float64): float64 # Returns the positive modulus of the input
 Float64.sign(x: float64): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
 Float64.abs(x: float64): float64 # Returns the absolute value of the input
-Float64.ulp(x: float64): float64 # Compute least significant bit (Unit in Last Position) for a number.
+Float64.ulp(x: float64): float64 # Compute least significant bit (Unit in the Last Place) for a number.
 Float64.min(a: float64, b: float64): float64 # Returns the smaller value from the input values
 Float64.max(a: float64, b: float64): float64 # Returns the greater value from the input values
 Float64.clamp(value: float64, min: float64, max: float64): float64 # Returns the `value` clamped between `min` and `max`
@@ -772,8 +780,8 @@ Float64.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64, a4:
 Float64.eval(x: float64, polynomial: float64[]): float64 # Return the polynomial evaluated at x using Horner's algorithm
 Float64.modf(x: float64, intPart: float64): float64 # Decompose a value into integer and fractional parts
 Float64.copysign(x: float64, y: float64): float64
-Float64.frexp(f: float64, exp: int32): float64 # Frexp breaks f into a normalized fraction and an integral power of two.\nIt returns frac and exp satisfying f == frac × 2**exp,\nwith the absolute value of frac in the interval [½, 1).\n\t * Special cases are:\n  * Frexp(±0) = ±0, 0\n  * Frexp(±Inf) = ±Inf, 0\n  * Frexp(NaN) = NaN, 0
-Float64.ldexp(f: float64, exp: int32): float64 # Ldexp is the inverse of Frexp.\nIt returns frac × 2**exp.\n\t * Special cases are:\n * Ldexp(±0, exp) = ±0\n * Ldexp(±Inf, exp) = ±Inf\n * Ldexp(NaN, exp) = NaN
+Float64.frexp(f: float64, exp: int32): float64 # Frexp breaks f into a normalized fraction and an integral power of two, satisfying $ f == frac \times 2 ^ {exp} $
+Float64.ldexp(f: float64, exp: int32): float64 # Ldexp is the inverse of Frexp, it returns $ frac \times 2 ^ {exp} $.
 Float64.ln(x: float64): float64 # Returns the natural logarithm of the argument `x`.
 Float64.exp(x: float64): float64 # Returns the base-e exponential: $ e^x $.
 Float64.log2(x: float64): float64 # Returns the base-2 logarithm of the argument `x`.
@@ -838,7 +846,7 @@ Float32.pow(x: float32, y: float32): float32 # Returns `x` raised to the power o
 Float32.radians(degrees: float32): float32 # Converts the input to radians from degrees.
 Float32.degrees(radians: float32): float32 # Converts the input to degrees from radians.
 Float32.sin(x: float32): float32 # Returns the sine of the radian argument `x`.
-Float32.cos(x: float32): float32 # Returns the sine of the radian argument `x`.
+Float32.cos(x: float32): float32 # Returns the cosine of the radian argument `x`.
 Float32.tan(x: float32): float32 # Returns the tangent of the radian argument `x`.
 Float32.atan2(y: float32, x: float32): float32 # Returns the inverse tangent of y/x.
 Float32.asin(x: float32): float32 # Returns the inverse sine of the radian argument `x`.
@@ -863,7 +871,7 @@ Fixed32.mul(x: Fixed32, y: Fixed32): Fixed32 # Multiply two fixed-point numbers
 Fixed32.div(x: Fixed32, y: Fixed32): Fixed32 # Divide one fixed-point number with another one
 Fixed32.rem(x: Fixed32, y: Fixed32): Fixed32 # Returns the remainder of the division of `x` by `y`
 Fixed32.inv(x: Fixed32): Fixed32 # Compute the reciprocal of x: (1 / x)
-Fixed32.cmp(x: Fixed32, y: Fixed32): int32 # Determines whether the given fixed point is less than the other one
+Fixed32.cmp(x: Fixed32, y: Fixed32): int32 # Compares two fixed point numbers: returns `-1` if `x` is less than `y`, `1` if greater, `0` if equal
 Fixed32.add(x: Fixed32, y: int32): Fixed32
 Fixed32.mul(x: Fixed32, y: int32): Fixed32
 Fixed32.div(x: Fixed32, y: int32): Fixed32
@@ -884,7 +892,7 @@ Fixed32.mul_30u(x: Fixed32, y: uint32): Fixed32
 Fixed32.log2(x: Fixed32): Fixed32 # Returns the binary logarithm of the argument `x`
 Fixed32.exp2(x: Fixed32): Fixed32 # Returns the base-2 exponential of the argument `x`
 Fixed32.ln(x: Fixed32): Fixed32 # Returns the natural logarithm of the argument `x`
-Fixed32.log(x: Fixed32, y: Fixed32): Fixed32 # Returns the logarithm of the argument `x`
+Fixed32.log(x: Fixed32, y: Fixed32): Fixed32 # Returns the logarithm of the argument `x` to the base `y`
 Fixed32.exp(x: Fixed32): Fixed32 # Returns the base-e exponential: $ e^x $
 Fixed32.sqrt(x: Fixed32): Fixed32 # Returns the square root of the parameter `x`: $\sqrt{x}$
 Fixed32.pow(x: Fixed32, y: Fixed32): Fixed32 # Returns `x` raised to the power of `y`: $ x^y $
@@ -957,8 +965,8 @@ Complex.sech(a: Complex): Complex # Compute the hyperbolic secant of the complex
 Complex.csch(a: Complex): Complex # Compute the hyperbolic cosecant of the complex number `a`.
 Complex(value: float64): Complex # Create a Complex number from the given `value`
 Complex(real: float64, imaginary: float64): Complex # Create a Complex number from the given `real` and `imaginary` values
-toCartesian(x: Complex): Complex # Convert the from polar(r,θ) to cartesian(x,y) coordinates
-toPolar(x: Complex): Complex # Convert the from cartesian(x,y) to polar(r,θ) coordinates
+toCartesian(x: Complex): Complex # Convert from polar(r,θ) to cartesian(x,y) coordinates
+toPolar(x: Complex): Complex # Convert from cartesian(x,y) to polar(r,θ) coordinates
 operator-(a: Complex): Complex # operator-
 operator+(a: Complex, b: Complex): Complex # operator+
 operator+(a: Complex, b: float64): Complex # operator+
@@ -986,7 +994,7 @@ vec2d.div(a: vec2d, b: vec2d): vec2d # Component wise divide the two vectors.
 vec2d.min(a: vec2d, b: vec2d): vec2d # Component wise select the minimum from the two vectors.
 vec2d.max(a: vec2d, b: vec2d): vec2d # Component wise select the maximum from the two vectors.
 vec2d.ceq(a: vec2d, b: vec2d): bool # Compare the two vectors for equality.
-vec2d.dot(a: vec2d, b: vec2d): float64 # Dot product of thw two vectors
+vec2d.dot(a: vec2d, b: vec2d): float64 # Dot product of the two vectors
 vec2d(x: float64, y: float64): vec2d # Initialize with given x, y components
 vec4f # A 4d vector (4x float32)
 vec4f.<?>
@@ -1006,11 +1014,11 @@ vec4f.mul(lhs: vec4f, rhs: vec4f): vec4f # Component wise multiply the two vecto
 vec4f.div(lhs: vec4f, rhs: vec4f): vec4f # Component wise divide the two vectors.
 vec4f.eval(v: vec4f, x: float32): float32 # Evaluate as a polynomial in point x
 vec4f(x: float32, y: float32, z: float32, w: float32): vec4f # Initialize with given x, y, z, w components
-vec4f(x: float32, y: float32, z: float32): vec4f # Initialize with  (x: x, y: y, z: z, w: 1)
+vec4f(x: float32, y: float32, z: float32): vec4f # Initialize with (x: x, y: y, z: z, w: 1)
 vec4f(x: float32, y: float32): vec4f # Initialize with (x: x, y: y, z: 0, w: 1)
-vec4f(xyz: vec4f, w: float32): vec4f # Initialize x, y, z components using the components form the given vector, and w with the given value
-vec4f(val: vec4f): vec4f # Initialize x, y, z, w components with the given scalar value
-vec4f(val: float32): vec4f # Initialize all components using the components form the given vector
+vec4f(xyz: vec4f, w: float32): vec4f # Initialize x, y, z components using the components from the given vector, and w with the given value
+vec4f(val: vec4f): vec4f # Initialize all components using the components from the given vector
+vec4f(val: float32): vec4f # Initialize x, y, z, w components with the given scalar value
 operator-(rhs: vec4f): vec4f # Returns a negated copy of the vector.
 operator+(lhs: vec4f, rhs: vec4f): vec4f # Component wise add the two vectors.
 operator+(lhs: vec4f, rhs: float32): vec4f # Component wise add vector and scalar.
@@ -1033,7 +1041,7 @@ normalize(v: vec4f): vec4f # Normalize the vector(xyz)
 mix(a: vec4f, b: vec4f, t: float32): vec4f # linear interpolate
 mat4f # A 4x4 matrix
 mat4f.m # Access elements as an array: m[1][0]
-mat4f.data # Access elements as a flatten array: data[4] => m[1][0]
+mat4f.data # Access elements as a flattened array: data[4] => m[1][0]
 mat4f.v # Access elements as an array of vectors: v[1].x => m[1][0]
 mat4f.<?>
 mat4f.<?>.x # The first row as a vector
@@ -1116,14 +1124,14 @@ RunningStat.SMDif
 RunningStat.clear(this: RunningStat): void # reset the counters
 RunningStat.push(this: RunningStat, value: float64): void # add a new value to the stats
 RunningStat.push(this: RunningStat, values: float64[]): void # add new values to the stats
-RunningStat.count(this: RunningStat): float64 # Returns the number of values added stats
+RunningStat.count(this: RunningStat): float64 # Returns the number of values added to the stats
 RunningStat.min(this: RunningStat): float64 # Returns the smallest value added to the stats
 RunningStat.max(this: RunningStat): float64 # Returns the largest value added to the stats
 RunningStat.mean(this: RunningStat): float64 # Returns the mean of all values added to the stats
 RunningStat.variance(this: RunningStat): float64 # Returns the variance of all values added to the stats
 RunningStat.stddev(this: RunningStat): float64 # Returns the standard deviation of all values added to the stats
 RunningStat.sum(this: RunningStat): float64 # Returns the sum of all values added to the stats
-Timeunit # enumeration of some known time unit, used for conversions and to specify the precision
+Timeunit # enumeration of some known time units, used for conversions and to specify the precision
 Timeunit.Nanos
 Timeunit.Micros
 Timeunit.Millis
@@ -1133,7 +1141,7 @@ Timeunit.Hours
 Timeunit.Days
 convert(value: int64, from: Timeunit, to: Timeunit): int64 # Convert the given integer `value` from the `from` to `to` unit
 convert(value: float64, from: Timeunit, to: Timeunit): float64 # Convert the given floating point `value` from the `from` to `to` unit
-Duration # Timespan is just a duration\nfor example: 33 seconds
+Duration # Timespan is just a duration\n * for example: 33 seconds
 Duration.value
 Duration.precision
 Duration.value(duration: Duration, precision: Timeunit): int64 # Returns the value of the `duration` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
@@ -1154,15 +1162,15 @@ Timestamp.value
 Timestamp.precision # The time unit specifying the precision of the timestamp
 Timestamp.value(timestamp: Timestamp, precision: Timeunit): int64 # Returns the value of `timestamp` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
 Timestamp.diff(a: Timestamp, b: Timestamp, precision: Timeunit): int64 # Returns the difference of `a` and `b` at the given `precision`
-Timestamp.diff(a: Timestamp, b: Timestamp): Duration # Returns the difference of `a` and `b
-Timestamp.compare(a: Timestamp, b: Timestamp): int32 # Returns whether the firs timestamp is less(<0), equal(=0), or greater(>0) than the second timestamp
+Timestamp.diff(a: Timestamp, b: Timestamp): Duration # Returns the difference of `a` and `b`
+Timestamp.compare(a: Timestamp, b: Timestamp): int32 # Returns whether the first timestamp is less(<0), equal(=0), or greater(>0) than the second timestamp
 Timestamp.equal(a: Timestamp, b: Timestamp, precision: Timeunit): bool # Check whether the two timestamps `a` and `b` are equal at the given `precision`
 Timestamp.equal(a: Timestamp, b: Timestamp): bool # Check whether the two timestamps `a` and `b` are equal
-Timestamp.add(lhs: Timestamp, value: int64, precision: Timeunit): Timestamp # Increment the the current timestamp with the given `value` at the given `precision`
-Timestamp.floor(value: Timestamp, precision: Timeunit): Timestamp # Floor the current timestamp, leaving the field specified as the most significant field.\nFor example, if you have the timestamp: 2002-03-28 13:45:01.231,\nusing resolution Timeunit.Days, it should return 2002-03-28 00:00:00.000.\nusing resolution Timeunit.Hours, it should return 2002-03-28 13:00:00.000.\nusing resolution Timeunit.Minutes, it should return 2002-03-28 13:45:00.000.\n\t * @param unit Resolution of the operation.
-Timestamp.ceil(value: Timestamp, precision: Timeunit): Timestamp # Ceil the current timestamp, leaving the field specified as the most significant field.\nFor example, if you have the timestamp: 2002-03-28 13:45:01.231,\nusing resolution Timeunit.Days, it should return 2002-03-29 00:00:00.000.\nusing resolution Timeunit.Hours, it should return 2002-03-28 14:00:00.000.\nusing resolution Timeunit.Minutes, it should return 2002-03-28 13:46:00.000.\n\t * @param unit Resolution of the operation.
-Timestamp.distribute(this: Timestamp, unit: Timeunit, duration: uint64): Timestamp # Distribute randomly between current value and the duration at the given time-unit resolution.\nFor example, if you had the timestamp: 2002-03-28 13:45:01.231,\nusing distribute(Timeunit.Hours, 2), it will return a date between 2002-03-28 13:46:01.231 and 2002-03-28 15:46:01.231.\n\t * @param unit  Resolution of the duration.\n@param duration The duration of the distribution time frame, negative values are allowed.
-Timestamp.distribute(this: Timestamp, unit: Timeunit, start: int32, end: int32): Timestamp # Distribute randomly between start and end at the given time-unit resolution.\nFor example, if you have the timestamp of 2002-03-28 13:46:01.231,\nusing distribute(Timeunit.Hours, 15, 17) as start and end, it will return a date between 2002-03-28 15:46:01.231 and 2002-03-28 17:46:01.231.\nin case you need a timestamp between 15:00:00.000 and 17:00:00.000 yo will need to use the floor method before or after this operation.\n\t * @param unit  Resolution of the operation.\n@param start The beginning of the distribution time frame.\n@param end   The end of the distribution time frame.
+Timestamp.add(lhs: Timestamp, value: int64, precision: Timeunit): Timestamp # Increment the current timestamp with the given `value` at the given `precision`
+Timestamp.floor(value: Timestamp, precision: Timeunit): Timestamp # Floor the current timestamp, leaving the field specified as the most significant field.\n\t * For example, if you have the timestamp: 2002-03-28 13:45:01.231,\n\t * using resolution Timeunit.Days, it should return 2002-03-28 00:00:00.000.\n\t * using resolution Timeunit.Hours, it should return 2002-03-28 13:00:00.000.\n\t * using resolution Timeunit.Minutes, it should return 2002-03-28 13:45:00.000.\n\t *\n\t * @param precision Resolution of the operation.
+Timestamp.ceil(value: Timestamp, precision: Timeunit): Timestamp # Ceil the current timestamp, leaving the field specified as the most significant field.\n\t * For example, if you have the timestamp: 2002-03-28 13:45:01.231,\n\t * using resolution Timeunit.Days, it should return 2002-03-29 00:00:00.000.\n\t * using resolution Timeunit.Hours, it should return 2002-03-28 14:00:00.000.\n\t * using resolution Timeunit.Minutes, it should return 2002-03-28 13:46:00.000.\n\t *\n\t * @param precision Resolution of the operation.
+Timestamp.distribute(this: Timestamp, unit: Timeunit, duration: uint64): Timestamp # Distribute randomly between current value and the duration at the given time-unit resolution.\n\t * For example, if you had the timestamp: 2002-03-28 13:45:01.231,\n\t * using distribute(Timeunit.Hours, 2), it will return a date between 2002-03-28 13:45:01.231 and 2002-03-28 15:45:01.231.\n\t *\n\t * @param unit  Resolution of the duration.\n\t * @param duration The duration of the distribution time frame, negative values are allowed.
+Timestamp.distribute(this: Timestamp, unit: Timeunit, start: int32, end: int32): Timestamp # Distribute randomly between start and end at the given time-unit resolution.\n\t * For example, if you have the timestamp of 2002-03-28 13:46:01.231,\n\t * using distribute(Timeunit.Hours, 15, 17) as start and end, it will return a date between 2002-03-28 15:46:01.231 and 2002-03-28 17:46:01.231.\n\t * in case you need a timestamp between 15:00:00.000 and 17:00:00.000 you will need to use the floor method before or after this operation.\n\t *\n\t * @param unit  Resolution of the operation.\n\t * @param start The beginning of the distribution time frame.\n\t * @param end   The end of the distribution time frame.
 Timestamp.now(): Timestamp # get the current utc time as timestamp from the system
 Timestamp(value: int64, precision: Timeunit): Timestamp # Create a timestamp from the given `value` at the given `precision`
 Timezone # Computer / named timezone helpers.
@@ -1202,7 +1210,7 @@ Calendar.Gregorian
 Datetime # DateTime represents the parts of an instant in time.
 Datetime.year # Year: 1970
 Datetime.month # Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
-Datetime.day # Day of month: 1 ... 30
+Datetime.day # Day of month: 1 ... 31
 Datetime.hour # Hour of day: 0 ... 23
 Datetime.minute # Minute of hour: 0 ... 59
 Datetime.second # Second of minute: 0 ... 59
@@ -1210,13 +1218,13 @@ Datetime.millis # Milliseconds of second: 0 ... 999
 Datetime.timezone
 Datetime.isoWeek # ISO-8601 week number: 1 ... 53
 Datetime.isoYear # ISO-8601 week-numbering year (may differ near year boundaries)
-Datetime.dayOfYear # Nth day of the year: 1 ... 365
+Datetime.dayOfYear # Nth day of the year: 1 ... 366
 Datetime.dayOfWeek # Day of week: 1 ... 7 / [Mon, Tue, ...]
 Datetime.leapYear # this is a leap year
 Datetime.DaysToMonth365
 Datetime.DaysToMonth366
 Datetime.DaysTil1970
-Datetime.isLeapYear(year: int32): bool # Checks weather the given year is a leap year or not
+Datetime.isLeapYear(year: int32): bool # Checks whether the given year is a leap year or not
 Datetime.add(cal: Datetime, years: int32, months: int32, days: int32): Datetime # Add the amount of `years`, `months` and `days` to the datetime
 Timestamp(value: Datetime): Timestamp # Convert the given Datetime `value` to a timestamp (milliseconds since 1970 UTC)
 Datetime(timestamp: Timestamp, calendar: Calendar, timezone: Timezone): Datetime # Convert the given `timestamp` to a datetime(year, month, day, ...) using the given `calendar` and `timezone`
@@ -1249,9 +1257,9 @@ remove(str: char[], start: int32, end: int32): void # remove the characters in t
 float64(value: char[]): float64 # Convert a string to a 64 bit floating point value
 append(output: char[], pos: int32, str: char[]): int32 # Append a string to the output at the given position
 append(output: char[], pos: int32, chr: char): int32 # Append a character to the output at the given position
-NumberFormat # Number formater
+NumberFormat # Number formatter
 NumberFormat.digits # number digits to be used for formatting
-NumberFormat.digitSymbols # binary: "01", decimal: "0123456789", hexadecimal: "0123456789abcdef"
+NumberFormat.digitSymbols # specify the digit symbols and the radix to be used for formatting:\n\t * * binary: "01",\n\t * * decimal: "0123456789",\n\t * * hexadecimal: "0123456789abcdef"
 NumberFormat.positiveSymbol # the prefix symbol to be used for positive values
 NumberFormat.negativeSymbol # the prefix symbol to be used for negative values
 NumberFormat.infinitySymbol # the symbol to be used for floating-point infinity values
@@ -1270,10 +1278,10 @@ NumberFormat.digitGrouping(format: NumberFormat, pos: int32): int32
 NumberFormat.firstGrouping(format: NumberFormat, pos: int32): int32
 NumberFormat.fractGrouping(format: NumberFormat, pos: int32): int32
 NumberFormat.formatNoSign(format: NumberFormat, output: char[], pos: int32, value: uint64): int32
-NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: int64): int32 # formated print an integer value to the given `output` buffer
-NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: uint64): int32 # formated print an integer value to the given `output` buffer
-NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: float64): int32 # formated print a floating-point value to the given `output` buffer
-NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: Fixed32): int32 # formated print a fixed-point value to the given `output` buffer
+NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: int64): int32 # formatted print an integer value to the given `output` buffer
+NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: uint64): int32 # formatted print an integer value to the given `output` buffer
+NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: float64): int32 # formatted print a floating-point value to the given `output` buffer
+NumberFormat.format(format: NumberFormat, output: char[], pos: int32, value: Fixed32): int32 # formatted print a fixed-point value to the given `output` buffer
 DatetimeFormat # datetime regional formatter, currently 'en' if instantiated with: `DatetimeFormat fmt = {};`
 DatetimeFormat.monthsLongEn
 DatetimeFormat.monthsShortEn
@@ -1292,14 +1300,14 @@ DatetimeFormat.dateLong
 DatetimeFormat.timeLong
 DatetimeFormat.dateShort
 DatetimeFormat.timeShort
-DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, value: Datetime, format: char[]): int32 # Format date to text\n@param formatter the formatter to be used\n@param output write output to this buffer\n@param end position in buffer where to print the datetime\n@param value date to format\n@param format format string\n \t@null defaults to: "%Y.%m.%d"
+DatetimeFormat.format(formatter: DatetimeFormat, output: char[], end: int32, value: Datetime, format: char[]): int32 # Format date to text\n\t * @param formatter the formatter to be used\n\t * @param output write output to this buffer\n\t * @param end position in buffer where to print the datetime\n\t * @param value date to format\n\t * @param format format string\n\t *  \t@null defaults to: "%Y.%m.%d"
 parseFormat(format: char[], fmt: int32): NumberFormat
-format(value: uint64, output: char[], out: int32, format: char[]): int32 # Format integer to text\n@param value value to format\n@param output write output to this buffer\n@param pos starting position for output\n@param format format string\n \t%b format as binary\n \t%o format as octal\n \t%d format as decimal\n \t%x format as hexadecimal\n \t%i format with custom radix passed as precision
-format(value: int64, output: char[], out: int32, format: char[]): int32 # Format integer to text\n@param value value to format\n@param output write output to this buffer\n@param pos starting position for output\n@param format format string\n \t%b format as binary\n \t%o format as octal\n \t%d format as decimal\n \t%x format as hexadecimal\n \t%i format with custom radix passed as precision
-format(value: int32, output: char[], out: int32, format: char[]): int32 # Format integer to text\n@param value value to format\n@param output write output to this buffer\n@param pos starting position for output\n@param format format string\n \t%b format as binary\n \t%o format as octal\n \t%d format as decimal\n \t%x format as hexadecimal\n \t%i format with custom radix passed as precision
-format(value: float64, output: char[], out: int32, format: char[]): int32 # Format a 64-bit floating-point value\n@param value value to format\n@param output write output to this buffer\n@param pos starting position for output\n@param format format string\n \t%d format as decimal(%lg): => 3.141593\n \t%f format as fixed precision(%lf) (always pad with `0` at the end)\n \t%b, %o, %x can be used to display the binary representation of the number
-format(value: float32, output: char[], out: int32, format: char[]): int32 # Format a 32-bit floating-point value\n@param value value to format\n@param output write output to this buffer\n@param pos starting position for output\n@param format format string\n \t%d format as decimal(%lg): => 3.141593\n \t%f format as fixed precision(%lf) (always pad with `0` at the end)\n \t%b, %o, %x can be used to display the binary representation of the number
-format(value: Fixed32, output: char[], out: int32, format: char[]): int32 # Format a 32-bit fixed-point value\n@param value value to format\n@param output write output to this buffer\n@param pos starting position for output\n@param format format string\n \t%d format as decimal(%lg): => 3.141593\n \t%f format as fixed precision(%lf) (always pad with `0` at the end)\n \t%b, %o, %x can be used to display the binary representation of the number
+format(value: uint64, output: char[], out: int32, format: char[]): int32 # Format integer to text\n@param value value to format\n@param output write output to this buffer\n@param out starting position for output\n@param format format string\n\t%b format as binary\n\t%o format as octal\n\t%d format as decimal\n\t%x format as hexadecimal\n\t%i format with custom radix passed as precision
+format(value: int64, output: char[], out: int32, format: char[]): int32 # Format integer to text\n@param value value to format\n@param output write output to this buffer\n@param out starting position for output\n@param format format string\n\t%b format as binary\n\t%o format as octal\n\t%d format as decimal\n\t%x format as hexadecimal\n\t%i format with custom radix passed as precision
+format(value: int32, output: char[], out: int32, format: char[]): int32 # Format integer to text\n@param value value to format\n@param output write output to this buffer\n@param out starting position for output\n@param format format string\n\t%b format as binary\n\t%o format as octal\n\t%d format as decimal\n\t%x format as hexadecimal\n\t%i format with custom radix passed as precision
+format(value: float64, output: char[], out: int32, format: char[]): int32 # Format a 64-bit floating-point value\n@param value value to format\n@param output write output to this buffer\n@param out starting position for output\n@param format format string\n\t%d format as decimal(%lg): => 3.141593\n\t%f format as fixed precision(%lf) (always pad with `0` at the end)\n\t%b, %o, %x can be used to display the binary representation of the number
+format(value: float32, output: char[], out: int32, format: char[]): int32 # Format a 32-bit floating-point value\n@param value value to format\n@param output write output to this buffer\n@param out starting position for output\n@param format format string\n\t%d format as decimal(%lg): => 3.141593\n\t%f format as fixed precision(%lf) (always pad with `0` at the end)\n\t%b, %o, %x can be used to display the binary representation of the number
+format(value: Fixed32, output: char[], out: int32, format: char[]): int32 # Format a 32-bit fixed-point value\n@param value value to format\n@param output write output to this buffer\n@param out starting position for output\n@param format format string\n\t%d format as decimal(%lg): => 3.141593\n\t%f format as fixed precision(%lf) (always pad with `0` at the end)\n\t%b, %o, %x can be used to display the binary representation of the number
 format(value: Datetime, output: char[], out: int32, format: char[]): int32 # extension method for backward compatibility
 format(value: Datetime, output: char[], format: char[]): int32 # extension method for backward compatibility
 format(value: float64, output: char[], format: char[]): int32 # extension method for debugging and testing
@@ -1311,21 +1319,21 @@ format(value: int64, output: char[], format: char[]): int32 # extension method f
 format(value: uint32, output: char[], format: char[]): int32 # extension method for debugging and testing
 format(value: int32, output: char[], format: char[]): int32 # extension method for debugging and testing
 Closeable # Represents the base class of closeable objects like files, streams, etc
-Closeable.close(this: Closeable): void # Release the resources hold by this object.
+Closeable.close(this: Closeable): void # Release the resources held by this object.
 Closeable.closeSafe(this: Closeable): void
 ByteReader # ByteReader can be used to read bytes from a stream (~= java:InputStream)
-ByteReader.read(this: ByteReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
+ByteReader.read(this: ByteReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of bytes read from the stream into the `bytes` array\n\t * in case there is an error -1 should be returned
 ByteReader.read(this: ByteReader): int32 # Read a single byte from the stream, a negative number is returned in case of error
 ByteWriter # ByteWriter can be used to write bytes to a stream (~= java:OutputStream)
-ByteWriter.write(this: ByteWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
-ByteWriter.flush(this: ByteWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+ByteWriter.write(this: ByteWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must write all the bytes from the `bytes` array
+ByteWriter.flush(this: ByteWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * if a buffer is used directly or indirectly this method must flush all buffered data to the stream.
 ByteWriter.write(this: ByteWriter, oneByte: uint8): void # Write a single byte to the stream
 ByteWriter.copy(this: ByteWriter, reader: ByteReader): int32 # Copy all bytes from the reader to the writer
 CopyReader
 CopyReader.source
 CopyReader.clone
-CopyReader.read(this: CopyReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
-CopyReader.close(this: CopyReader): void # Release the resources hold by this object.
+CopyReader.read(this: CopyReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of bytes read from the stream into the `bytes` array\n\t * in case there is an error -1 should be returned
+CopyReader.close(this: CopyReader): void # Release the resources held by this object.
 ByteBuffer
 ByteBuffer.position
 ByteBuffer.capacity
@@ -1343,20 +1351,20 @@ ByteBuffer.close(this: ByteBuffer): void
 ByteBuffer.close(this: ByteBuffer): void
 unicode
 TextReader # TextReader can be used to read decoded text from a stream, including basic parsing
-TextReader.reader # @public
-TextReader.decode(this: TextReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
-TextReader.close(this: TextReader): void # Release the resources hold by this object.
+TextReader.reader # The underlying byte stream the text is read and decoded from
+TextReader.decode(this: TextReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of characters decoded from the stream into the `chars` array\n\t * in case there is an error -1 should be returned
+TextReader.close(this: TextReader): void # Release the resources held by this object.
 TextReader.decode(this: TextReader): int32 # Read a single character from the stream, a negative number is returned in case of error
 TextWriter # TextWriter can be used to write encoded text to a stream, including basic printing
 TextWriter.defaultFormat
-TextWriter.Writeable # @public
+TextWriter.Writeable # Interface of objects that can write themselves to a `TextWriter`
 TextWriter.Writeable.write(this: Writeable, writer: TextWriter): void
-TextWriter.writer # @public
+TextWriter.writer # The underlying byte stream the encoded text is written to
 TextWriter.format # default formatter
-TextWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
+TextWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must encode and write all the characters from the `chars` array
 TextWriter.flush(this: TextWriter): void # flush the buffered data
 TextWriter.flush(this: TextWriter): void # flush the buffered data
-TextWriter.close(this: TextWriter): void # Release the resources hold by this object.
+TextWriter.close(this: TextWriter): void # Release the resources held by this object.
 TextWriter.write(this: TextWriter, value: char[]): TextWriter # Write an array of raw characters to the stream (no encoding)
 TextWriter.write(this: TextWriter, value: char): TextWriter # Write a single raw character to the stream (no encoding)
 TextWriter.write(this: TextWriter, value: bool): TextWriter # Write the value of the boolean parameter: "true" or "false"
@@ -1368,54 +1376,54 @@ TextWriter.write(this: TextWriter, value: uint32, format: NumberFormat): TextWri
 TextWriter.write(this: TextWriter, value: float64, format: NumberFormat): TextWriter # Write the value of the 64-bit floating-point parameter
 TextWriter.write(this: TextWriter, value: Writeable): TextWriter # Write the value of the writeable parameter
 TextWriter.writeln(this: TextWriter): TextWriter # Write a newline character
-TextWriter.writeln(this: TextWriter, value: Writeable): TextWriter # @public
-TextWriter.copy(writer: TextWriter, reader: TextReader): int32 # Convert from one encoding to another one.\n@returns converted character count.\n\t * example: convert utf-8 encoded file to ascii\nTextWriter output = AsciiWriter("out.txt");\nTextReader input = Utf8Reader("in.txt");\noutput.write(input);
+TextWriter.writeln(this: TextWriter, value: Writeable): TextWriter # Write the value of the writeable parameter followed by a newline character
+TextWriter.copy(writer: TextWriter, reader: TextReader): int32 # * Convert from one encoding to another one.\n\t * @returns converted character count.\n\t *\n\t * example: convert utf-8 encoded file to ascii\n\t * TextWriter output = AsciiWriter("out.txt");\n\t * TextReader input = Utf8Reader("in.txt");\n\t * output.copy(input);
 Base64Encoder # Base64 encoder
 Base64Encoder.lookup
-Base64Encoder.writer # @public
+Base64Encoder.writer # The underlying byte stream the encoded text is written to
 Base64Encoder.buffer
 Base64Encoder.bufferSize
 Base64Encoder.padding
 Base64Encoder.wrap # wrap at the given position with a newline
 Base64Encoder.wrapSize
 Base64Encoder.flushBuffer(this: Base64Encoder): void
-Base64Encoder.write(this: Base64Encoder, data: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
-Base64Encoder.flush(this: Base64Encoder): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
-Base64Encoder.close(this: Base64Encoder): void # Release the resources hold by this object.
+Base64Encoder.write(this: Base64Encoder, data: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must write all the bytes from the `bytes` array
+Base64Encoder.flush(this: Base64Encoder): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * if a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+Base64Encoder.close(this: Base64Encoder): void # Release the resources held by this object.
 Base64Decoder # Base64 decoder
 Base64Decoder.lookup
-Base64Decoder.reader # @public
+Base64Decoder.reader # The underlying byte stream the encoded text is read from
 Base64Decoder.bitsDecoded
 Base64Decoder.charDecoded
-Base64Decoder.read(this: Base64Decoder, data: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
-Base64Decoder.close(this: Base64Decoder): void # Release the resources hold by this object.
+Base64Decoder.read(this: Base64Decoder, data: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of bytes read from the stream into the `bytes` array\n\t * in case there is an error -1 should be returned
+Base64Decoder.close(this: Base64Decoder): void # Release the resources held by this object.
 AsciiReader # Ascii reader converts the given input by mapping every byte to a character
-AsciiReader.decode(this: AsciiReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
+AsciiReader.decode(this: AsciiReader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of characters decoded from the stream into the `chars` array\n\t * in case there is an error -1 should be returned
 AsciiWriter # Ascii Writer converts the given input by chopping each character to a byte
-AsciiWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
+AsciiWriter.encode(this: TextWriter, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must encode and write all the characters from the `chars` array
 Utf8Reader # Utf-8 decoder
-Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of characters decoded from the stream into the `chars` array\nin case there is an error -1 should be returned
+Utf8Reader.decode(this: Utf8Reader, chars: uint32[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of characters decoded from the stream into the `chars` array\n\t * in case there is an error -1 should be returned
 Utf8Writer # Utf-8 encoder
 Utf8Writer.encode(bytes: uint8[4], cp: uint32): int32 # encode a codepoint to utf-8 bytes and return the number of bytes written
-Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must encode and write all the characters from the `chars` array
-Easing # Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
-Easing.linear(t: float64): float64 # @public
-Easing.quad(t: float64): float64 # @public
-Easing.cubic(t: float64): float64 # @public
-Easing.quart(t: float64): float64 # @public
-Easing.quint(t: float64): float64 # @public
-Easing.expo(t: float64): float64 # @public
-Easing.sine(t: float64): float64 # @public
-Easing.circle(t: float64): float64 # @public
-Easing.elastic(t: float64): float64 # @public
-Easing.back(t: float64): float64 # @public
-Easing.bounce(t: float64): float64 # @public
+Utf8Writer.encode(this: Utf8Writer, chars: uint32[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must encode and write all the characters from the `chars` array
+Easing # Easing functions map an input of [0, 1) usually to [0, 1) with an acceleration
+Easing.linear(t: float64): float64 # Linear easing: returns `t` unchanged
+Easing.quad(t: float64): float64 # Quadratic easing: `t^2`
+Easing.cubic(t: float64): float64 # Cubic easing: `t^3`
+Easing.quart(t: float64): float64 # Quartic easing: `t^4`
+Easing.quint(t: float64): float64 # Quintic easing: `t^5`
+Easing.expo(t: float64): float64 # Exponential easing: `2^(10 * (t - 1))`
+Easing.sine(t: float64): float64 # Sinusoidal easing: `1 - cos(t * pi / 2)`
+Easing.circle(t: float64): float64 # Circular easing: `1 - sqrt(1 - t^2)`
+Easing.elastic(t: float64): float64 # Elastic easing: an exponentially growing sine wave, overshooting like a spring
+Easing.back(t: float64): float64 # Back easing: pulls back slightly before moving forward
+Easing.bounce(t: float64): float64 # Bounce easing: bounces like a ball dropped to the ground
 in(ease(ratio: float64): float64, ratio: float64): float64 # ease in, ex: Easing.elastic.in(t)
 out(ease(ratio: float64): float64, ratio: float64): float64 # ease out, ex: Easing.elastic.out(t)
 inOut(ease(ratio: float64): float64, ratio: float64): float64 # ease in and out, ex: Easing.elastic.inOut(t)
 outIn(ease(ratio: float64): float64, ratio: float64): float64 # ease out and in, ex: Easing.elastic.outIn(t)
 scalar
-Polynomial # @public
+Polynomial # Polynomial with `float64` coefficients, the coefficient at index `i` belongs to the term of degree `i`
 Polynomial.coefficients
 Polynomial.capacity
 Polynomial.c_zero
@@ -1461,25 +1469,25 @@ read(file: File): int32 # extension method to read a single byte from a file
 readLineRaw(file: File, buff: char[]): int32 # extension method to read a line from a file, or fill the buffer, no zero termination
 readLine(file: File, buff: char[]): bool # extension method to read a line from a file, or fill the buffer
 write(file: File, value: int32): int32 # extension method to write a single byte into a file
-FileReader # @public
+FileReader # Byte reader reading from a file
 FileReader.file
-FileReader.read(this: FileReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must return the number of bytes read from the stream into the `bytes` array\nin case there is an error -1 should be returned
-FileReader.close(this: FileReader): void # Release the resources hold by this object.
-FileWriter # @public
-FileWriter.file # @public
-FileWriter.write(this: FileWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
-FileWriter.flush(this: FileWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
-FileWriter.close(this: FileWriter): void # Release the resources hold by this object.
-BufferedFileWriter # @public
+FileReader.read(this: FileReader, bytes: uint8[]): int32 # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must return the number of bytes read from the stream into the `bytes` array\n\t * in case there is an error -1 should be returned
+FileReader.close(this: FileReader): void # Release the resources held by this object.
+FileWriter # Byte writer writing to a file
+FileWriter.file # The file the bytes are written to
+FileWriter.write(this: FileWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must write all the bytes from the `bytes` array
+FileWriter.flush(this: FileWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * if a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+FileWriter.close(this: FileWriter): void # Release the resources held by this object.
+BufferedFileWriter # Byte writer writing to a file through a 1 KiB buffer
 BufferedFileWriter.buffer
 BufferedFileWriter.bufferSize
 BufferedFileWriter.flushBuffer(this: BufferedFileWriter): void
-BufferedFileWriter.write(this: BufferedFileWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\nthe method must write all the bytes from the `bytes` array
-BufferedFileWriter.flush(this: BufferedFileWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\nif a buffer is used directly or indirectly this method must flush all buffered data to the stream.
-BufferedFileWriter.close(this: BufferedFileWriter): void # Release the resources hold by this object.
-FileReader(path: char[]): FileReader # @public
-FileWriter(path: char[], append: bool): FileWriter # @public
-BufferedFileWriter(path: char[], append: bool): BufferedFileWriter # @public
+BufferedFileWriter.write(this: BufferedFileWriter, bytes: uint8[]): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * the method must write all the bytes from the `bytes` array
+BufferedFileWriter.flush(this: BufferedFileWriter): void # This abstract method must be implemented in subclasses containing the proper implementation\n\t * if a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+BufferedFileWriter.close(this: BufferedFileWriter): void # Release the resources held by this object.
+FileReader(path: char[]): FileReader # Open the file at the given `path` for reading
+FileWriter(path: char[], append: bool): FileWriter # Open the file at the given `path` for writing, `append` to the end of an existing file or create a new one
+BufferedFileWriter(path: char[], append: bool): BufferedFileWriter # Open the file at the given `path` for buffered writing, `append` to the end of an existing file or create a new one
 Rect # The Rect type represents a rectangle in the plain.
 Rect.x0 # Represents the left edge of the rectangle
 Rect.y0 # Represents the top edge of the rectangle
@@ -1624,7 +1632,7 @@ Window.quit(): int32 # @builtin
 Window.font(height: int32): Image # @builtin
 Window.font # @builtin
 empty(rectangle: Rect): bool # Checks whether the given `rectangle` is empty or not.
-contains(rect: Rect, x: int32, y: int32): bool # Checks whether the given `rectangle` contains the point (`x`, `y`).
+contains(rect: Rect, x: int32, y: int32): bool # Checks whether the given `rect` contains the point (`x`, `y`).
 width(rectangle: Rect): int32 # Computes the width of the given `rectangle`.
 width(rectangle: Rect, width: int32): void # Sets the width of the given `rectangle`.
 height(rectangle: Rect): int32 # Computes the height of the given `rectangle`.
@@ -1633,13 +1641,13 @@ setSize(rectangle: Rect, width: int32, height: int32): void # Sets the width and
 positionX(rectangle: Rect, x: int32): void # Sets the x position of the given `rectangle`.
 positionY(rectangle: Rect, y: int32): void # Sets the y position of the given `rectangle`.
 position(rectangle: Rect, x: int32, y: int32): void # Sets the x and y position of the given `rectangle`.
-adjust(rect: Rect, dx0: int32, dy0: int32, dx1: int32, dy1: int32): void # @public
-padded(rect: Rect, padding: int32): void # @public
+adjust(rect: Rect, dx0: int32, dy0: int32, dx1: int32, dy1: int32): void # Moves each edge of the given `rect` by the given deltas: `x0` by `dx0`, `y0` by `dy0`, `x1` by `dx1` and `y1` by `dy1`.
+padded(rect: Rect, padding: int32): void # Grows the given `rect` by `padding` on each side, a negative `padding` shrinks it.
 translate(rectangle: Rect, dx: int32, dy: int32): void # Moves the given `rectangle` by `dx` and `dy`.
 translateX(rectangle: Rect, dx: int32): void # Moves the given `rectangle` horizontally by `dx`.
 translateY(rectangle: Rect, dy: int32): void # Moves the given `rectangle` vertically by `dy`.
 Rect(x0: int32, y0: int32, x1: int32, y1: int32): Rect # Create a rectangle using left, top, right and bottom values
-argb # an 32 bit argb color
+argb # a 32 bit argb color
 argb.v # value of color
 argb.<?>
 argb.<?>.b # blue component
@@ -1679,17 +1687,17 @@ mix_s8(t: int32, a: int32, b: int32): int32 # compute the linear interpolation o
 mix_s16(t: int32, a: int32, b: int32): int32 # compute the linear interpolation of the values `a` and `b` by `t` in range 0...65535
 mix_rgb8(t: int32, a: argb, b: argb): argb # compute the linear interpolation of the colors `a` and `b` by `t` in range 0...255
 lerpLut(lut: argb[], colors: argb[]): void # linear interpolate a lookup-table with the given colors
-alphaLut(lut: int32[], hardness: int32, alpha: int32, reflect: bool): void # linear interpolate a alpha lookup-table with the given colors
+alphaLut(lut: int32[], hardness: int32, alpha: int32, reflect: bool): void # fill an alpha lookup-table using the given `hardness` and `alpha`, mirrored if `reflect` is set
 vec4f(rgb: argb): vec4f # convert an argb color to a floating point vector
 argb(vec: vec4f): argb # convert a floating point vector to an argb color
 lum(vec: vec4f): float32 # calculate the luminosity of a color
 rgb2hsl(rgb: vec4f): vec4f # Convert color from Rgb color space to Hsl color space
 hsl2rgb(hsl: vec4f): vec4f # Convert color from Hsl color space to Rgb color space
-Image(width: int32, height: int32, depth: int32): Image # Create an image with the given with, height and depth
+Image(width: int32, height: int32, depth: int32): Image # Create an image with the given width, height and depth
 Image(fileName: char[], depth: int32): Image # Create an image by opening an image file
 Image(fileName: char[]): Image # Create an image by opening an image file
 clip(image: Image, roi: Rect): bool # Clip the rectangle against the given image boundaries
-set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
+set(image: Image, x: int32, y: int32, color: argb): void # Set the color of a pixel at the given position
 drawAntiAliased
 fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
 fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
@@ -1701,7 +1709,7 @@ fillRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, r
 drawRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
 fillRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
 drawRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Draw the given rectangle rounding the corners using the given radius
-fillRRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radii
 fillRRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
 drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line, including ending pixel
 drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line between the given coordinates(excluding the rightmost bottom pixel)
@@ -1725,39 +1733,39 @@ Image(copy: Image): Image # Create an image by copying another one
 tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
 eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
 transform(image: Image, rect: Rect, src: Image, mat: mat4f, interpolate: int32): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
-resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # Resize the given `region` of the `source` image into the `destination` image using the `interpolation`.
+resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # Resize the `roi` region of the `src` image into the `rect` region of the destination `image` using the given `interpolate` mode.
 Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
 Image(fileName: char[], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height
 Image(fileName: char[], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
 Image(fileName: char[], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
 blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
-colorMap(image: Image, x: int32, y: int32, src: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel component (alpha channel as luminosity), defined by the `roi` on the `image`
-colorMapRgb(image: Image, x: int32, y: int32, src: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to the red, green and blue pixel components, defined by the `roi` on the `image`
-colorMap3d(image: Image, x: int32, y: int32, src: Image, roi: Rect, lut: argb[16777216]): void # apply a color lookup table to the red, green and blue pixel components, defined by the `roi` on the `image`
-colorMat(image: Image, x: int32, y: int32, src: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
+colorMap(image: Image, x: int32, y: int32, src: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel component (alpha channel as luminosity), defined by the `roi` of the `src` image
+colorMapRgb(image: Image, x: int32, y: int32, src: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to the red, green and blue pixel components, defined by the `roi` of the `src` image
+colorMap3d(image: Image, x: int32, y: int32, src: Image, roi: Rect, lut: argb[16777216]): void # apply a 3d color lookup table, indexed by the red, green and blue pixel components, defined by the `roi` of the `src` image
+colorMat(image: Image, x: int32, y: int32, src: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` of the `src` image
 Mesh(fileName: char[]): Mesh # Create a mesh by opening a file
 Camera # Simple camera for 3d transformations and projection.
-Camera.position # @public
-Camera.forward # @public
-Camera.right # @public
-Camera.up # @public
+Camera.position # Position of the camera
+Camera.forward # Direction the camera is looking at
+Camera.right # Direction to the right of the camera
+Camera.up # Direction above the camera
 Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f # Create an orthographic(`fov` == 0) or perspective projection matrix
-Camera.projection(fov: float32, width: float32, height: float32): mat4f # so homogeneous consumers (Image.transform) apply the perspective divide.
+Camera.projection(fov: float32, width: float32, height: float32): mat4f # Create an orthographic(`fov` == 0) or perspective projection matrix in pixel space,\n\t * mapping camera rays to pixels: (x, y, z) -> (cx + focal * x / z, cy + focal * y / z).\n\t * `fov` is the full horizontal field of view in degrees; the w row holds the z divisor,\n\t * so homogeneous consumers (Image.transform) apply the perspective divide.
 Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera # Create a camera at the given `position` looking at the given `target`
-Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can be multiplied with the projection matrix
-Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # get the matrix of the camera multiplied with the projection matrix
+Camera.matrix(camera: Camera): mat4f # Get the matrix of the camera, which can be multiplied with the projection matrix
+Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # Get the matrix of the camera multiplied with the projection matrix
 Camera.move(camera: Camera, direction: vec4f, amount: float32): void # Move the camera in the given `direction` with the given `amount`
 Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): void # Rotate the camera around `orbit` in the given `direction` with the given `amount`
-Window # @public
+Window # Extends the native `Window` with timeout helpers
 Window.timeoutMax
 Window.timeoutFps(fps: float64): int64 # calculate the timeout based on the given fps
 Window.show(image: Image, onEvent(action: int32, button: int32, ex: int32, ey: int32): int32): void # Show the given `image` in a window and delegate the events to the `onEvent` callback
-Window.show(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
-Window.show(image0: Image, image1: Image, image2: Image): void # Show the images in a window clicking on the window will select one of them
-Window.show(image0: Image, image1: Image): void # Show the images in a window clicking on the window will select one of them
+Window.show(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the images in a window, clicking on the window will select one of them
+Window.show(image0: Image, image1: Image, image2: Image): void # Show the images in a window, clicking on the window will select one of them
+Window.show(image0: Image, image1: Image): void # Show the images in a window, clicking on the window will select one of them
 Window.show(image: Image): void # Show the image in a window
-Window.show(width: int32, height: int32, animationDownScale: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
-Window.show(width: int32, height: int32, eval(in: vec4f): vec4f): void # Show the the procedural image generated by the `eval` function
+Window.show(width: int32, height: int32, animationDownScale: int32, eval(in: vec4f): vec4f): void # Show or animate the procedural image generated by the `eval` function
+Window.show(width: int32, height: int32, eval(in: vec4f): vec4f): void # Show the procedural image generated by the `eval` function
 Window.show(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window
 Style # Style used to layout and draw text and views.
 Style.dark # Default dark theme color for background
@@ -1776,11 +1784,11 @@ Style.padding # Padding around text in views
 Style.font # The font to be used to draw text
 Style.defaultFormat # the default number format used for widgets
 Style.format # Formatting to be used printing numbers, dates, etc
-Style.backgroundColor # @public
-Style.hoveredColor # @public
-Style.focusedColor # @public
-Style.valueColor # @public
-Style.textColor # @public
+Style.backgroundColor # Background color of views
+Style.hoveredColor # Background color of hovered views
+Style.focusedColor # Background color of focused views
+Style.valueColor # Color used to draw values, and the border of pressed views
+Style.textColor # Color used to draw text
 Style.top
 Style.left
 Style.right
@@ -1798,9 +1806,9 @@ Style.horizontalLeft
 Style.horizontalRight
 Style.fill
 Style.align(parent: Rect, rect: Rect, align: int32): void # Place the given `rect` inside the `parent` rectangle conforming to `align`
-Style.measure(this: Style, rect: Rect, text: char[]): void # Measure the given `text` whit `this` style.
-Style.align(this: Style, parent: Rect, rect: Rect, value: char[], align: int32): void # Measure and align the given `text` whit `this` style.
-Style.align(this: Style, parent: Rect, rect: Rect, value: char[]): void # Measure and align the given `text` whit `this` style.
+Style.measure(this: Style, rect: Rect, text: char[]): void # Measure the given `text` with `this` style.
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[], align: int32): void # Measure and align the given `value` with `this` style.
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[]): void # Measure and align the given `value` with `this` style.
 Style.setColor(style: Style, background: argb, accent: argb): void # Setup a custom color for the style
 Style.vertical(align: int32): bool
 Style.horizontal(align: int32): bool
@@ -1809,7 +1817,7 @@ KeyEvent.release # The key was released.
 KeyEvent.isShift # Shift key is pressed when this event is generated.
 KeyEvent.isCtrl # Control key is pressed when this event is generated.
 KeyEvent.isAlt # Alt key is pressed when this event is generated.
-KeyEvent.repeat # Number of times the key was repeated holding down the key.
+KeyEvent.repeat # Number of times the key was repeated while holding it down.
 KeyEvent.key # Virtual key code.
 KeyEvent.chr # Unicode character.
 TouchEvent # Represents an event generated by a mouse or touch device (TouchScreen, TouchPad, etc).
@@ -1818,17 +1826,17 @@ TouchEvent.isShift # Shift key is pressed when this event is generated.
 TouchEvent.isCtrl # Control key is pressed when this event is generated.
 TouchEvent.isAlt # Alt key is pressed when this event is generated.
 TouchEvent.clicks # Number of times the click or tap event was repeated.
-TouchEvent.button # The mouse-button was pressed or finger was placed on the screen.
+TouchEvent.button # The mouse-button that was pressed or the finger that was placed on the screen.
 TouchEvent.x # Horizontal coordinate of the event
 TouchEvent.y # Vertical coordinate of the event
 TouchEvent.dx # Horizontal change between the previous and current event.
 TouchEvent.dy # Vertical change between the previous and current event.
-TouchEvent.test(event: TouchEvent, rect: Rect): bool # @public
-TouchEvent.isMotion(event: TouchEvent): bool # @public
-TouchEvent.isPress(event: TouchEvent): bool # @public
-TouchEvent.isLongPress(event: TouchEvent): bool # @public
-TouchEvent.isPress(event: TouchEvent, button: int32): bool # @public
-View # View is the base class of all user interface elements.\nit has width and height, forming a rectangular shape on screen.\nby it's own a view has no position, it must be positioned in a layout.
+TouchEvent.test(event: TouchEvent, rect: Rect): bool # Checks whether the event is inside the given `rect`
+TouchEvent.isMotion(event: TouchEvent): bool # Checks whether the event is a motion event
+TouchEvent.isPress(event: TouchEvent): bool # Checks whether the event is a press event
+TouchEvent.isLongPress(event: TouchEvent): bool # Checks whether the event is a long press event
+TouchEvent.isPress(event: TouchEvent, button: int32): bool # Checks whether the event is a press event of the given `button`
+View # View is the base class of all user interface elements.\n * it has width and height, forming a rectangular shape on screen.\n * on its own a view has no position, it must be positioned in a layout.
 View.State # State of the view used for drawing, and returned from event handlers
 View.State.ignored
 View.State.hovered
@@ -1856,11 +1864,11 @@ View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): State # Callback f
 View.onMeasure(this: View, rect: Rect): bool # Callback function executed when the view needs to be measured
 View.onMeasure(this: View, rect: Rect): bool # Callback function executed when the view needs to be measured
 View.onDraw(this: View, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void # @public
-View.onDraw(this: View, offs: Image, rect: Rect, text: char[], value: char[]): void # @public
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void # Draw the background of the view based on its `state`, then the view itself
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[], value: char[]): void # Draw the `text` of the view, and the `value` aligned to the right
 focus(view: View): void
 invalidate(view: View, layout: bool): void
-Layout # Layout is a view containing other views positioned by it.\nthe Layout class does not clip its children.\nthe size of the Layout class should contain all the views.
+Layout # Layout is a view containing other views positioned by it.\n * the Layout class does not clip its children.\n * the size of the Layout class should contain all the views.
 Layout.Item
 Layout.Item.rect
 Layout.Item.view
@@ -1876,16 +1884,16 @@ Layout.paddingTop # Space between layout and its content at top.
 Layout.paddingLeft # Space between layout and its content at left.
 Layout.paddingRight # Space between layout and its content at right.
 Layout.paddingBottom # Space between layout and its content at bottom.
-Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.orientation # Vertical, horizontal or other orientation of the layout\n\t * zero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\n\t * negative value represents a horizontal layout, specifying the number of rows to be used\n\t * positive value represents a vertical layout, specifying the number of columns to be used
 Layout.clearState(this: Layout, mode: int32): bool
 Layout.getPressed(this: Layout): View # Returns the pressed view in the current layout
 Layout.getFocused(this: Layout): View # Returns the focused view in the current layout
 Layout.setFocused(this: Layout, focus: View): bool # Sets the focused view in the current layout
 Layout.capacity(this: Layout, capacity: int32): Layout
 Layout.addItems(this: Layout, alignment: int32, views: View[]): Layout # Append the given `views` to `this` layout with the given `alignment`
-Layout.size(this: Layout): int32 # @public
-Layout.getView(this: Layout, idx: int32): View # @public
-Layout.setAlignment(this: Layout, idx: int32, alignment: int32): void # @public
+Layout.size(this: Layout): int32 # Returns the number of views in this layout
+Layout.getView(this: Layout, idx: int32): View # Returns the view at the given index
+Layout.setAlignment(this: Layout, idx: int32, alignment: int32): void # Set the alignment of the view at the given index
 Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout # Set the padding of `this` layout to the given values
 Layout.onCreate(this: Layout, parent: View): void # Callback function executed when the view is created
 Layout.onDestroy(this: Layout): void # Callback function executed when the view is destroyed
@@ -1896,10 +1904,10 @@ Layout.onLayout(this: Layout, measured: Rect): void
 Layout.onLayout(this: Layout, measured: Rect): void
 Layout.onDraw(this: Layout, offs: Image, parent: Rect): void # Callback function executed when the view needs to be drawn
 Layout.Custom(rowsCols: int32, alignment: int32, items: View[]): Layout # Create a custom Layout containing the given `items` all of them aligned as `alignment`
-Layout.Row(items: View[]): Layout # Create a Row-layout containing the given `items` arranged vertically in a single row
-Layout.Column(items: View[]): Layout # Create a Column-layout containing the given `items` arranged horizontally in a single column
+Layout.Row(items: View[]): Layout # Create a Row-layout containing the given `items` arranged horizontally in a single row
+Layout.Column(items: View[]): Layout # Create a Column-layout containing the given `items` arranged vertically in a single column
 Layout.Stack(items: View[]): Layout # Create a Stack-layout containing the given `items` stacked on top of each other
-Widget # Widget is a special kind of layout, which can clip the content of its elements.\na widget may clip its children and apply scrolling to them, even show a scrollbar.
+Widget # Widget is a special kind of layout, which can clip the content of its elements.\n * a widget may clip its children and apply scrolling to them, even show a scrollbar.
 Widget.measure
 Widget.redraw
 Widget.focus
@@ -1908,7 +1916,7 @@ Widget.scrollY
 Widget.focusNext(view: View, prev: bool): bool
 Widget.addItems(this: Widget, align: int32, views: View[]): Widget # Append the given `views` to `this` widget with the given `alignment`
 Widget.addItems(this: Widget, views: View[]): Widget # Append the given `views` to `this` widget
-Widget.focus(this: Widget, value: View): Widget # Set the initial focused wie in the widget
+Widget.focus(this: Widget, value: View): Widget # Set the initial focused view in the widget
 Widget.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout # Set the padding of `this` widget to the given values
 Widget.padding(this: Widget, vertical: int32, horizontal: int32): Layout # Set the padding of `this` widget to the given values
 Widget.padding(this: Widget, padding: int32): Widget # Set the padding of `this` widget to the given value
@@ -1916,45 +1924,45 @@ Widget.onCreate(this: Widget, parent: View): void # Callback function executed w
 Widget.onKeyEvent(this: Widget, event: KeyEvent): State # Callback function executed when the view receives a KeyEvent: press or release
 Widget.onMeasure(this: Widget, measured: Rect): bool # Callback function executed when the view needs to be measured
 Widget.onDraw(this: Widget, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-getWidget(view: View): Widget # Return the root widget of the given `view`
+getWidget(view: View): Widget # Return the nearest widget containing the given `view`
 focus(view: View): void # Set the given `view` focused
-isFocused(view: View): bool # Returns weather the given `view` is in focused state or not.
-hasFocused(this: Layout, items: View[]): bool # @public
-isPressed(view: View): bool # Returns weather the given `view` is in pressed state or not.
-hasPressed(this: Layout, items: View[]): bool # @public
+isFocused(view: View): bool # Returns whether the given `view` is in focused state or not.
+hasFocused(this: Layout, items: View[]): bool # Returns whether the focused view is one of the given `items`, searching in nested layouts; with no `items`, whether any view is focused
+isPressed(view: View): bool # Returns whether the given `view` is in pressed state or not.
+hasPressed(this: Layout, items: View[]): bool # Returns whether the pressed view is one of the given `items`, searching in nested layouts; with no `items`, whether any view is pressed
 invalidate(view: View, layout: bool): void # Invalidate the view, so the next frame it will be redrawn, and measured in case `layout` is set to true
 invalidate(view: View): void # Invalidate the view, so the next frame it will be measured and redrawn
-Button # @public
-Button.text # @public
+Button # Button is a view that can be clicked with the mouse, by touch, or with the space and enter keys
+Button.text # The text displayed on the button
 Button.onClick(this: Button, clicks: int32): void # Callback function executed when the view is clicked
 Button.onClick(this: Button, clicks: int32): void # Callback function executed when the view is clicked
 Button.onKeyEvent(this: Button, event: KeyEvent): State # Callback function executed when the view receives a KeyEvent: press or release
 Button.onTouchEvent(this: Button, rect: Rect, event: TouchEvent): State # Callback function executed when the view receives a TouchEvent: press, motion or release
 Button.onMeasure(this: Button, rect: Rect): bool # Callback function executed when the view needs to be measured
 Button.onDraw(this: Button, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-Slider # @public
-Slider.value # @public
+Slider # Slider is a button with a numeric value, adjusted by dragging, or with the `+`, `-` and digit keys
+Slider.value # The current value
 Slider._value
-Slider.minimum # @public
-Slider.maximum # @public
-Slider.stepSize # @public
-Slider.shiftFactor # @public
+Slider.minimum # The lowest value
+Slider.maximum # The highest value
+Slider.stepSize # Values are rounded to multiples of this step, `0` disables rounding
+Slider.shiftFactor # Multiplier applied to the change of the value while holding the shift key, for finer adjustments
 Slider.resetValue
 Slider.clickToFocus # clicking on a non focused view will not update the value, it will just focus it.
-Slider.onUpdate(this: Slider, value: float64): bool # @public
-Slider.onUpdate(this: Slider, value: float64): bool # @public
+Slider.onUpdate(this: Slider, value: float64): bool # Callback function executed when the value changes, clamps and rounds the value, returns true if it changed
+Slider.onUpdate(this: Slider, value: float64): bool # Callback function executed when the value changes, clamps and rounds the value, returns true if it changed
 Slider.onClick(this: Slider, clicks: int32): void # Callback function executed when the view is clicked
 Slider.onCreate(this: Slider, parent: View): void # Callback function executed when the view is created
 Slider.onKeyEvent(this: Slider, event: KeyEvent): State # Callback function executed when the view receives a KeyEvent: press or release
 Slider.onTouchEvent(this: Slider, rect: Rect, event: TouchEvent): State # Callback function executed when the view receives a TouchEvent: press, motion or release
 Slider.onMeasure(this: Slider, rect: Rect): bool # Callback function executed when the view needs to be measured
-Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void # @public
-Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void # @public
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void # Draw the value indicator bar of the slider
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void # Draw the value indicator bar of the slider
 Slider.onDraw(this: Slider, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-Switch # @public
+Switch # Switch is a button cycling through a list of states on each click
 Switch.onOff
-Switch.states # @public
-Switch.selected # @public
+Switch.states # The text of each state, an empty list makes a graphical on/off switch
+Switch.selected # The index of the selected state
 Switch.resetValue
 Switch.clickToFocus # clicking on a non focused view will not change the value, it will just focus it.
 Switch.onUpdate(this: Switch, selected: int32): bool # update the selected value of this switch
@@ -1964,7 +1972,7 @@ Switch.onCreate(this: Switch, parent: View): void # Callback function executed w
 Switch.onKeyEvent(this: Switch, event: KeyEvent): State # Callback function executed when the view receives a KeyEvent: press or release
 Switch.onMeasure(this: Switch, rect: Rect): bool # Callback function executed when the view needs to be measured
 Switch.onDraw(this: Switch, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-Input # Input is a single line, editable text field.\nthe text is stored in a caller supplied, null terminated buffer,\nthe capacity of the field is the length of the `text` slice.
+Input # Input is a single line, editable text field.\n * the text is stored in a caller supplied, null terminated buffer,\n * the capacity of the field is the length of the `text` slice.
 Input.text # Editable, null terminated text buffer; its `.length` is the capacity.
 Input.placeholder # Text shown dimmed when the field is empty.
 Input.cursor # Position of the caret, an index into `text` between 0 and its length.
@@ -1977,20 +1985,20 @@ Input.onSubmit(this: Input): void # Callback function executed when the enter ke
 Input.caretX(this: Input, cursor: int32): int32 # Pixel offset of the caret placed before the character at `cursor`.
 Input.caretAt(this: Input, rect: Rect, px: int32): int32 # Index of the caret nearest to the horizontal position `px`.
 Input.insert(this: Input, chr: char): bool # Insert a character at the caret position, growing the text.
-Input.delete(this: Input, backspace: bool): bool # Remove the character at the caret.
+Input.delete(this: Input, backspace: bool): bool # Remove the character at the caret, or the one before it if `backspace` is set.
 Input.setText(this: Input, value: char[]): void # Replace the content of the field with the given `value`, placing the caret at the end.
 Input.onCreate(this: Input, parent: View): void # Callback function executed when the view is created
 Input.onKeyEvent(this: Input, event: KeyEvent): State # Callback function executed when the view receives a KeyEvent: press or release
 Input.onTouchEvent(this: Input, rect: Rect, event: TouchEvent): State # Callback function executed when the view receives a TouchEvent: press, motion or release
 Input.onMeasure(this: Input, rect: Rect): bool # Callback function executed when the view needs to be measured
 Input.onDraw(this: Input, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-Window # @public
-Window.EVENT_PROCESSED # events with action having this bit set, were processed by the widget
+Window # Extends the native `Window` with methods to show and run widgets
+Window.EVENT_PROCESSED # events with action having this bit set were processed by the widget
 Window.show(offscreen: Image, onEvent(action: int32, button: int32, x: int32, y: int32): int32, widget: Widget): void # Show the given `widget` in a window drawn to the `offscreen` image
 Window.show(widget: Widget): void # Show the given `widget` in a window
-Panel # @public
-Panel.visible # @public
-Panel.visible(this: Panel, value: bool): bool # @public
+Panel # Panel is a layout that can be shown or hidden, hidden panels take no space
+Panel.visible # Whether the panel is visible
+Panel.visible(this: Panel, value: bool): bool # Show or hide the panel, returns true if the visibility changed
 Panel.onMeasure(this: Panel, rect: Rect): bool # Callback function executed when the view needs to be measured
 TabPage
 TabPage.tabs
@@ -2004,19 +2012,19 @@ TabPage.onDrawTab(tab: Button, offs: Image, rect: Rect): void
 TabPage.onDrawSeparator(this: View, offs: Image, rect: Rect): void
 TabPage.onClickTab(button: Button, clicks: int32): void
 TabPage.addItems(this: TabPage, text: char[], align: int32, views: View[]): TabPage
-Select # @public
-Select.text # @public
+Select # Select is a dropdown: a header showing the selected option, which expands a list of options when clicked
+Select.text # The text displayed on the header
 Select.states
 Select.selected
 Select.header
 Select.panel
-Select.selectedData(this: Select): variant # @public
+Select.selectedData(this: Select): variant # Returns the data of the selected option, or `null` if nothing is selected
 Select.expand(this: Select, value: bool): bool
 Select.onItemClick(this: Select, view: Button): bool
-Select.setSelectedIndex(this: Select, index: int32): Select # @public
-Select.addItems(this: Select, align: int32, views: View[]): Select # @public
-Select.addItem(this: Select, text: char[], data: variant): Select # @public
-Select.addItem(this: Select, text: char[]): Select # @public
+Select.setSelectedIndex(this: Select, index: int32): Select # Select the option at the given `index`
+Select.addItems(this: Select, align: int32, views: View[]): Select # Add the given views as options, aligned with `align`
+Select.addItem(this: Select, text: char[], data: variant): Select # Add an option displaying `text`, having the given `data`
+Select.addItem(this: Select, text: char[]): Select # Add an option displaying `text`, using the text also as its data
 DebugView # debug view to count draws
 DebugView.text
 DebugView.durations
@@ -2024,18 +2032,18 @@ DebugView.started
 DebugView.position
 DebugView.measures # Number of measures, initialize to `-1` to ignore
 DebugView.draws # Number of draw calls, initialize to `-1` to ignore
-DebugView.restartTimer(this: DebugView): void # Start time measurement until this view is drawn on screen
-DebugView.startTimer(this: DebugView): void # Start time measurement until this view is drawn on screen
+DebugView.restartTimer(this: DebugView): void # Restart the time measurement until this view is drawn on screen
+DebugView.startTimer(this: DebugView): void # Start the time measurement, if not already started, until this view is drawn on screen
 DebugView.update(this: DebugView): void
 DebugView.reset(this: DebugView): void
 DebugView.onTouchEvent(this: DebugView, rect: Rect, event: TouchEvent): State # Callback function executed when the view receives a TouchEvent: press, motion or release
 DebugView.onCreate(this: DebugView, parent: View): void # Callback function executed when the view is created
 DebugView.onMeasure(this: DebugView, rect: Rect): bool # Callback function executed when the view needs to be measured
 DebugView.onDraw(this: DebugView, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
-Histogram # @public
+Histogram # Histogram is a view displaying the red, green, blue and luminosity distribution of an image
 Histogram.lines # display lines instead of bars
-Histogram.color # @public
-Histogram.data # @public
+Histogram.color # Draw only the luminosity with the colors of the entries, instead of the separate red, green, blue and luminosity channels
+Histogram.data # The values of the histogram: red, green, blue, and luminosity in the alpha channel
 Histogram.update(this: Histogram, image: Image): void # update the histogram computed from the given image
 Histogram.onUpdate(this: Histogram, idx: int32, value: argb): bool # update the histogram value at the given lookup table index
 Histogram.onUpdate(this: Histogram, idx: int32, value: argb): bool # update the histogram value at the given lookup table index
@@ -2046,10 +2054,10 @@ Histogram.onKeyEvent(this: Histogram, event: KeyEvent): State # Callback functio
 Histogram.onMeasure(this: Histogram, rect: Rect): bool # Callback function executed when the view needs to be measured
 Histogram.onDraw(this: Histogram, offs: Image, rect: Rect): void # Callback function executed when the view needs to be drawn
 FxWidget # Widget used to display controls in image processing demos
-FxWidget.showOriginal # @public
-FxWidget.align # @public
-FxWidget.margin # @public
-FxWidget.radius # @public
+FxWidget.showOriginal # Whether the original, unprocessed image should be shown, set while `\` is pressed, or `[` or `]` is held down
+FxWidget.align # Alignment of the controls, `[` aligns them to the top left, `]` to the top right
+FxWidget.margin # Distance of the controls from the edges
+FxWidget.radius # Corner radius of the background
 FxWidget.resetAll(view: View, event: KeyEvent): bool
 FxWidget.onTouchEvent(this: FxWidget, rect: Rect, event: TouchEvent): State # Callback function executed when the view receives a TouchEvent: press, motion or release
 FxWidget.onKeyEvent(this: FxWidget, event: KeyEvent): State # Callback function executed when the view receives a KeyEvent: press or release

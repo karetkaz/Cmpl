@@ -1,0 +1,7 @@
+/// ## Comments
+
+/// Line comments start with `//` and run to the end of the line.
+
+/// Block comments are delimited by `/* ... */`.
+
+/// A doc-comment is a line comment starting with an extra `/` (`///`) or a block comment starting with an extra `*` that isn't immediately closed (`/** ... */`).

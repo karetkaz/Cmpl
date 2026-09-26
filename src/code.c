@@ -26,10 +26,10 @@ static void rtRaise(nfcContext ctx, int level, const char *msg, ...) {
 }
 
 /**
- * Allocate free and resize memory inside the vm heap.
+ * Allocate, free and resize memory inside the vm heap.
  *
  * @param ctx Execution context.
- * @param ptr Resize this memory chunk or allocate a new one if is null.
+ * @param ptr Resize this memory chunk or allocate a new one if it is null.
  * @param size New size of the allocation, use 0 to free the chunk.
  * @return Pointer to the allocated memory inside the vm heap.
  * cases:
@@ -222,7 +222,7 @@ static void *rtAlloc(nfcContext ctx, void *ptr, size_t size) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Native Calls
 
 /**
- * get an iterator to the native call methods.
+ * get an iterator to the native call arguments.
  *
  * @param ctx Execution context.
  * @return The argument list iterator.
@@ -241,7 +241,7 @@ static struct nfcArgs nfcArgList(nfcContext ctx) {
  *
  * @param args The argument list iterator.
  * @return the iterator, or NULL for ending, or if an error occurred.
- * @note offsets inside structs will be not converted to pointers.
+ * @note offsets inside structs will not be converted to pointers.
  */
 static nfcArgs nfcArgNext(nfcArgs args) {
 	symn param = args->param->next;

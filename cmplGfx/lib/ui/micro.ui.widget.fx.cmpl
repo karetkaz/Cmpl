@@ -1,12 +1,12 @@
 /// Widget used to display controls in image processing demos
 struct FxWidget: Widget {
-	///@public
+	/// Whether the original, unprocessed image should be shown, set while `\` is pressed, or `[` or `]` is held down
 	bool showOriginal = false;
-	///@public
+	/// Alignment of the controls, `[` aligns them to the top left, `]` to the top right
 	int32 align = Style.fill;
-	///@public
+	/// Distance of the controls from the edges
 	int32 margin = 0;
-	///@public
+	/// Corner radius of the background
 	int32 radius = 0;
 
 	static bool resetAll(View view, KeyEvent event!) {
@@ -69,7 +69,7 @@ struct FxWidget: Widget {
 				return State.ignored;
 			}
 			if (event.repeat == 0 && !event.release) {
-				// show/hide when button is on released, not when pressed
+				// show/hide when the button is released, not when pressed
 				return changed ? State.handled : State.ignored;
 			}
 

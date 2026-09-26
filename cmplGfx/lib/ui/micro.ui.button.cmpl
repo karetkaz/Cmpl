@@ -1,6 +1,6 @@
-///@public
+/// Button is a view that can be clicked with the mouse, by touch, or with the space and enter keys
 struct Button: View {
-	///@public
+	/// The text displayed on the button
 	char text[];
 
 	/// Callback function executed when the view is clicked

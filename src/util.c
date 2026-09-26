@@ -5,24 +5,30 @@
 
 void initBuff(struct arrBuffer *buff, size_t initCount, size_t elemSize) {
 	buff->cnt = 0;
-	buff->ptr = 0;
+	buff->ptr = NULL;
 	buff->esz = elemSize;
-	buff->cap = initCount * elemSize;
-	setBuff(buff, initCount, NULL);
+	buff->cap = 0;
+	if (initCount > 0) {
+		buff->ptr = malloc(initCount * elemSize);
+		if (buff->ptr != NULL) {
+			buff->cap = initCount * elemSize;
+		}
+	}
 }
 void *setBuff(struct arrBuffer *buff, size_t idx, const void *data) {
 	size_t pos = idx * buff->esz;
 
-	if (pos >= buff->cap) {
-		size_t size = pos * 2;
-		buff->ptr = realloc(buff->ptr, size);
-		if (buff->ptr == NULL) {
+	if (pos + buff->esz > buff->cap) {
+		size_t size = 2 * (pos + buff->esz);
+		char *ptr = realloc(buff->ptr, size);
+		if (ptr == NULL) {
 			return NULL;
 		}
+		buff->ptr = ptr;
 		buff->cap = size;
 	}
 
-	if (buff->cnt >= idx) {
+	if (idx >= buff->cnt) {
 		buff->cnt = idx + 1;
 	}
 

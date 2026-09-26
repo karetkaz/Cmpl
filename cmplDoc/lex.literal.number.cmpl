@@ -1,0 +1,48 @@
+/** ## Literals
+[Literals](https://en.wikipedia.org/wiki/Literal_(computer_programming)) are compile-time constant values.
+
+### Integer and floating-point literals
+Integers can be represented in decimal, binary, octal, or hexadecimal format,
+while floating-point literals can be specified only in decimal format.
+
+#### Number prefixes
+The following prefixes may be used to specify the radix of an integer:
+- binary: `0b` or `0B`
+- octal: `0o` or `0O`
+- hexadecimal: `0x` or `0X`
+
+#### Number suffixes
+The following suffixes are available to override the type of the value:
+- `d`: results in an int32 constant, ex: `inline i32Value = 3d;`
+- `D`: results in an int64 constant, ex: `inline i64Value = 3D;`
+- `u`: results in a uint32 constant, ex: `inline u32Value = 3u;`
+- `U`: results in a uint64 constant, ex: `inline u64Value = 3U;`
+- `f`: results in a float32 constant, ex: `inline f32Value = 3f;`
+- `F`: results in a float64 constant, ex: `inline f64Value = 3F;`
+*/
+
+/// **Example**
+inline "*example:tail";
+
+int32 lexLiteralsFromBinary = 0b101;
+assertEq(5, lexLiteralsFromBinary);
+
+int32 lexLiteralsFromOctal = 0o17;
+assertEq(15, lexLiteralsFromOctal);
+
+int32 lexLiteralsFromHex = 0x1F;
+assertEq(31, lexLiteralsFromHex);
+
+inline lexLiteralsI32 = 3d;
+inline lexLiteralsI64 = 3D;
+inline lexLiteralsU32 = 3u;
+inline lexLiteralsU64 = 3U;
+inline lexLiteralsF32 = 3f;
+inline lexLiteralsF64 = 3F;
+
+assert(struct(lexLiteralsI32) == int32);
+assert(struct(lexLiteralsI64) == int64);
+assert(struct(lexLiteralsU32) == uint32);
+assert(struct(lexLiteralsU64) == uint64);
+assert(struct(lexLiteralsF32) == float32);
+assert(struct(lexLiteralsF64) == float64);

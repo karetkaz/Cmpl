@@ -13,7 +13,7 @@ struct Uint64: 8 {
 	/// Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
 	static int32 test(Uint64 x) { return uint32(u64(x) > 0); }
 
-	/// Negates an 64-bit unsigned value
+	/// Negates a 64-bit unsigned value
 	static Uint64 neg(Uint64 x) { return { value: inline(u64(x), i64.neg) }; }
 
 	/// Adds two 64-bit unsigned integers
@@ -31,7 +31,7 @@ struct Uint64: 8 {
 	/// Divide x by y, returning remainder
 	static Uint64 rem(Uint64 x, Uint64 y) { return { value: inline(u64(x), u64(y), u64.rem) }; }
 
-	/// Negates an 64-bit unsigned value
+	/// Negates a 64-bit unsigned value
 	static Uint64 neg(Uint64 x, Uint64 overflow&) {
 		overflow.value = 1; // always overflows
 		return { value: inline(u64(x), i64.neg) };
@@ -44,10 +44,11 @@ struct Uint64: 8 {
 		return { value: result };
 	}
 
-	/// Adds two 64-bit unsigned integers with carry out
+	/// Adds two 64-bit unsigned integers with carry in and out
 	static Uint64 add(Uint64 x, Uint64 y, Uint64 c, Uint64 overflow&) {
-		uint64 result = inline(u64(x), u64(y), i64.add, u64(c), i64.add);
-		overflow.value = uint64(result < x.value);
+		uint64 sum = inline(u64(x), u64(y), i64.add);
+		uint64 result = inline(uint64(sum), uint64(c.value), i64.add);
+		overflow.value = uint64(sum < x.value) + uint64(result < sum);
 		return { value: result };
 	}
 
@@ -58,10 +59,11 @@ struct Uint64: 8 {
 		return { value: result };
 	}
 
-	/// Subtracts two 64-bit unsigned integers with borrow out
+	/// Subtracts two 64-bit unsigned integers with borrow in and out
 	static Uint64 sub(Uint64 x, Uint64 y, Uint64 c, Uint64 overflow&) {
-		uint64 result = inline(u64(x), u64(y), i64.sub, u64(c), i64.sub);
-		overflow.value = uint64(x.value < y.value);
+		uint64 diff = inline(u64(x), u64(y), i64.sub);
+		uint64 result = inline(uint64(diff), uint64(c.value), i64.sub);
+		overflow.value = uint64(x.value < y.value) + uint64(diff < c.value);
 		return { value: result };
 	}
 
@@ -97,13 +99,13 @@ struct Uint64: 8 {
 	/// Computes the bitwise AND of two 64-bit unsigned integers
 	static Uint64 and(Uint64 x, Uint64 y) { return { value: inline(u64(x), u64(y), u64.and) }; }
 
-	/// Performs a logical left shift of x by n bits for an 64-bit unsigned integer
+	/// Performs a logical left shift of x by n bits for a 64-bit unsigned integer
 	static Uint64 shl(Uint64 x, uint32 n) { return { value: inline(u64(x), uint32(n), u64.shl) }; }
 
-	/// Performs a logical right shift of x by n bits for an 64-bit unsigned integer
+	/// Performs a logical right shift of x by n bits for a 64-bit unsigned integer
 	static Uint64 shr(Uint64 x, uint32 n) { return { value: inline(u64(x), uint32(n), u64.shr) }; }
 
-	/// Performs an arithmetic right shift of x by n bits for an 64-bit unsigned integer
+	/// Performs an arithmetic right shift of x by n bits for a 64-bit unsigned integer
 	static Uint64 sar(Uint64 x, uint32 n) { return { value: inline(u64(x), uint32(n), u64.sar) }; }
 
 	/// Returns the value of x rotated left by (n mod size) bits
@@ -201,7 +203,7 @@ struct Uint64: 8 {
 		return { value: (x >> 32) | (x << 32) };
 	}
 
-	/// Reverses the byte order of an 64-bit unsigned integer
+	/// Reverses the byte order of a 64-bit unsigned integer
 	static Uint64 reverseBytes(Uint64 y) {
 		uint64 x = u64(y);
 		x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
@@ -219,7 +221,7 @@ struct Uint64: 8 {
 	/// Returns the greater of two values
 	static Uint64 max(Uint64 a, Uint64 b) { return u64(a) > u64(b) ? a : b; }
 
-	/// Clamps value between min and max
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Uint64 clamp(Uint64 value, Uint64 lo, Uint64 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -230,7 +232,7 @@ struct Uint64: 8 {
 	/// todo: deprecated method, use the called one
 	inline reverseBytes(uint64 x) = uint64(inline(reverseBytes(Uint64(inline(x)))));
 
-	/// Extract and zero-extends a bit field from a value
+	/// Extracts and zero-extends a bit field from a value
 	static uint64 zeroExtend(uint64 value, int32 offs, int32 size) {
 		return value << (bits - (offs + size)) >> (bits - size);
 	}
@@ -248,7 +250,7 @@ struct Int64: 8 {
 
 	inline i64(Int64 x) = int64(x.value);
 
-	/// Computes the arithmetic negation of an 64-bit signed integer
+	/// Computes the arithmetic negation of a 64-bit signed integer
 	static Int64 neg(Int64 x) { return { value: inline(i64(x), i64.neg) }; }
 
 	/// Add two values
@@ -257,7 +259,7 @@ struct Int64: 8 {
 	/// Subtract two values
 	static Int64 sub(Int64 x, Int64 y) { return { value: inline(i64(x), i64(y), i64.sub) }; }
 
-	/// Multiply two values with overflow-out
+	/// Multiply two values
 	static Int64 mul(Int64 x, Int64 y) { return { value: inline(i64(x), i64(y), i64.mul) }; }
 
 	/// Divide x by y, returning quotient
@@ -266,7 +268,7 @@ struct Int64: 8 {
 	/// Divide x by y, returning remainder
 	static Int64 rem(Int64 x, Int64 y) { return { value: inline(i64(x), i64(y), i64.rem) }; }
 
-	/// Computes the arithmetic negation of an 64-bit signed integer
+	/// Computes the arithmetic negation of a 64-bit signed integer
 	static Int64 neg(Int64 x, Int64 overflow&) {
 		overflow.value = int64(i64(x) == min);
 		return { value: inline(i64(x), i64.neg) };
@@ -310,12 +312,12 @@ struct Int64: 8 {
 		return { value: r.value };
 	}
 
-	/// Returns 1 if nonzero, 0 if zero
+	/// Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
 	static int32 sign(Int64 x) {
 		return int32(i64(x) > 0) - int32(i64(x) < 0);
 	}
 
-	/// Returns the absolute value (identity for unsigned)
+	/// Returns the absolute value
 	static Int64 abs(Int64 x) { return i64(x) < 0 ? x.neg() : x; }
 
 	/// Returns the smaller of two values
@@ -324,7 +326,7 @@ struct Int64: 8 {
 	/// Returns the greater of two values
 	static Int64 max(Int64 a, Int64 b) { return i64(a) > i64(b) ? a : b; }
 
-	/// Clamps value between min and max
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Int64 clamp(Int64 value, Int64 lo, Int64 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -338,20 +340,20 @@ struct Int64: 8 {
 	/// todo: deprecated method, use the called one
 	inline abs(int64 x) = int64(inline(abs(Int64(inline(x)))));
 
-	/// Extract and sign-extends a bit field from a signed byte value
+	/// Extracts and sign-extends a bit field from a value
 	static int64 signExtend(int64 value, int32 offs, int32 size) {
 		return value << (bits - (offs + size)) >> (bits - size);
 	}
 }
 
-/// Construct a Uint64 from a packed byte value
+/// Construct a Uint64 from a 64-bit unsigned value
 Uint64 Uint64(uint64 value) { return { value: value }; }
 
 /// Convert a Uint64 value to a uint64
 uint64 uint64(Uint64 value) { return value.value; }
 
-/// Construct an Int64 from a signed byte value
+/// Construct an Int64 from a 64-bit signed value
 Int64 Int64(int64 value) { return { value: value }; }
 
-/// Convert an Int64 value to a int64
+/// Convert an Int64 value to an int64
 int64 int64(Int64 value) { return value.value; }

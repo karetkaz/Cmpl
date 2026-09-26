@@ -129,7 +129,7 @@ static struct Float32 {
 		return float32(Float64.sin(float64(x)));
 	}
 
-	/// Returns the sine of the radian argument `x`.
+	/// Returns the cosine of the radian argument `x`.
 	static float32 cos(float32 x) {
 		static if (System.Platform.preferNativeCalls && struct(float32.cos) != null) {
 			// use the native method if available

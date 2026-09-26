@@ -1,0 +1,16 @@
+/** ## Block statement
+Block statement groups zero or more statements as a single statement.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// block statement: groups zero or more statements into a single statement
+
+int stmtBlockValue = 0;
+{
+	int step = 3;
+	stmtBlockValue += step;
+	stmtBlockValue += step;
+}
+assertEq(6, stmtBlockValue);

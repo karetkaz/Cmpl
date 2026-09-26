@@ -1,5 +1,5 @@
 enum: int32 {
-	lutInterpolation: 3, // lookup table interpolation: 0: none, 1: linear, 2: parabola, 3 cubic
+	lutInterpolation: 3, // lookup table interpolation: 0: none, 1: linear, 2: parabola, 3: cubic
 
 	l2e_30u: 0x5c551d95,                            // 1.442695040888963 : log2(e) = 1 / ln(2)
 	l2t_30u: 0xd49a784b,                            // 3.321928094887362 : log2(10) = 1 / lg(2)
@@ -273,7 +273,7 @@ static Fixed32 ln(Fixed32 x) {
 	return mul_30u(log2(x), ln2_30u);
 }
 
-/// Returns the logarithm of the argument `x`
+/// Returns the logarithm of the argument `x` to the base `y`
 // log(x, y) := log2(x) / log2(y)
 static Fixed32 log(Fixed32 x, Fixed32 y) {
 	if (x.bits > 0 && y.bits == 0) {

@@ -493,6 +493,113 @@ window.onkeydown = function(event) {
 	}
 }
 
+/// name of the file or folder, without the path leading to it
+function fileName(path) {
+	if (path.endsWith('/')) {
+		path = path.substring(0, path.length - 1);
+	}
+	return path.substring(path.lastIndexOf('/') + 1);
+}
+
+/// path of the folder containing the given file or folder
+function fileFolder(path) {
+	if (path.endsWith('/')) {
+		path = path.substring(0, path.length - 1);
+	}
+	return path.substring(0, path.lastIndexOf('/') + 1);
+}
+
+// folders expanded by the user, remembered while the file list is refreshed
+let expandedFolders = new Set();
+
+/// pin the header of every collapsible sidebar section, stacked below the headers it is nested in
+function stickyHeaders() {
+	for (let head of document.querySelectorAll('.sidebar div.submenu > li, .sidebar div.folder > li')) {
+		let depth = 0;
+		// skip the section of the header itself, count only the ones wrapping it
+		for (let parent = head.parentElement.parentElement; parent != null; parent = parent.parentElement) {
+			let section = parent.firstElementChild;
+			if (section != null && section.tagName === 'LI' && hasStyle(parent, 'submenu', 'folder')) {
+				depth += 1;
+			}
+		}
+		head.style.setProperty('--depth', depth);
+		setStyle(head, 'sticky');
+	}
+}
+
+/// highlight the file currently opened in the editor
+function markActiveFile() {
+	try {
+		let active = params.getPath();
+		for (let li of fileList.querySelectorAll('li.file')) {
+			setStyle(li, li.dataset.path === active ? 'active' : '-active');
+		}
+	} catch (ex) {
+		console.log(ex);
+	}
+}
+
+/// show the content of `root` as a collapsible tree of folders and files
+function showFiles(list, root) {
+	root = root || '';
+
+	// keep the folders leading to the opened file expanded
+	let active = params.getPath('');
+	if (active.startsWith(root)) {
+		for (let i = active.indexOf('/', root.length); i > 0; i = active.indexOf('/', i + 1)) {
+			expandedFolders.add(active.substring(0, i + 1));
+		}
+	}
+
+	fileList.innerHTML = '';
+	// maps each folder to the element holding its content
+	let content = Object.create(null);
+	content[root] = fileList;
+
+	for (let path of list) {
+		const parent = content[fileFolder(path)] || fileList;
+		const li = document.createElement('li');
+		li.innerText = fileName(path);
+		li.dataset.path = path;
+		li.title = path;
+
+		if (!path.endsWith('/')) {
+			li.classList.add('file');
+			li.onclick = function() {
+				// update params to preserve history navigation
+				params.update({ path, content: null });
+			};
+			li.ondblclick = function() {
+				openProjectFile({ path, link: true });
+			};
+			parent.appendChild(li);
+			continue;
+		}
+
+		// a folder collapses and expands like the other sections of the sidebar
+		const folder = document.createElement('div');
+		folder.classList.add('folder');
+		if (!expandedFolders.has(path)) {
+			folder.classList.add('collapsed');
+		}
+		li.onclick = function() {
+			if (hasStyle(folder, 'collapsed')) {
+				expandedFolders.add(path);
+			} else {
+				expandedFolders.delete(path);
+			}
+			setStyle(folder, '~collapsed');
+		};
+		folder.appendChild(li);
+		content[path] = folder.appendChild(document.createElement('ul'));
+		parent.appendChild(folder);
+	}
+
+	markActiveFile();
+	stickyHeaders();
+}
+
 function setContent(content, file, line, column) {
 	let contentSet = false;
 	if (content != null && content !== editor.getValue()) {
@@ -504,9 +611,7 @@ function setContent(content, file, line, column) {
 	}
 	if (file != null) {
 		edtFileName.value = file;
-		for (let li of fileList.children) {
-			setStyle(li, li.innerText === file ? 'active' : '-active');
-		}
+		markActiveFile();
 	}
 	if (line != null) {
 		var middleHeight = editor.getScrollerElement().offsetHeight / 2;
@@ -820,31 +925,7 @@ function process(data) {
 		return;
 	}
 	if (data.list !== undefined) {
-		fileList.innerHTML = '';
-		for (let path of data.list) {
-			const li = document.createElement('li');
-			li.innerText = path;
-			if (path.endsWith('/')) {
-				li.classList.add('folder');
-				li.onclick = function() {
-					// update params to preserve history navigation
-					params.update({ path });
-				};
-			} else {
-				li.classList.add('file');
-				li.onclick = function() {
-					// update params to preserve history navigation
-					params.update({ path, content: null });
-				};
-				li.ondblclick = function() {
-					openProjectFile({ path, link: true });
-				};
-			}
-			if (path === params.getPath()) {
-				li.classList.add('active');
-			}
-			fileList.appendChild(li);
-		}
+		showFiles(data.list, data.root);
 	}
 	if (data.dump !== undefined) {
 		terminal.append('');
@@ -856,35 +937,24 @@ function process(data) {
 		terminal.append(open);
 
 		if (data.path.endsWith('.json')) {
-			let open = document.createElement('p');
-			open.textContent = 'Open dump file in inspector: ';
-			let openLink = open.appendChild(document.createElement('a'));
-			openLink.href = window.location.origin + '/Cmpl/extras/web/inspector.html#' + data.dump;
-			openLink.target = '_blank';
-			openLink.textContent = data.path;
-			terminal.append(open);
-
-			let trace = document.createElement('p');
-			trace.textContent = 'Convert to chrome trace file: ';
-			let traceLink = trace.appendChild(document.createElement('a'));
-			traceLink.textContent = 'ChromeTracing.json';
-			traceLink.download = 'ChromeTracing.json';
-			terminal.append(trace);
-
 			Inspector(data.dump, (data) => {
-				data.createSymbolLinks = 'javascript:void(params.update({ content: null, path:\'${file}:${line}\'}));';
-				traceLink.href = data.createTraceEventsUrl();
+				if (params.project != null) {
+					data.createSymbolLinks = 'javascript:void(params.update({ content: null, path:\'${file}:${line}\'}));';
+					data.sourceCodeMap = {};
+					try {
+						for(let x of JSON.parse(atob(params.project))) {
+							data.sourceCodeMap[x.path] = x.url;
+						}
+					} catch (e) {
+						console.error(e);
+					}
+				} else {
+					data.sourceCodeMap = {'/': '/Cmpl/'};
+				}
 
-				let lst = document.createElement('ul');
-				lst.setAttribute('class', 'syms');
-				data.createSymbolList(lst);
-				pinOutput(lst, 'Symbols-');
+				pinOutput(buildCallTree(data), 'Profiler-');
 				optionPinOutput.value -= 1;
-
-				let tbl = document.createElement('table');
-				tbl.setAttribute('class', 'tree');
-				data.createCallTree(tbl.appendChild(document.createElement('tbody')));
-				pinOutput(tbl, 'Profiler-');
+				pinOutput(buildSymbolList(data), 'Symbols-');
 			});
 		}
 		data.path = null;
@@ -963,7 +1033,7 @@ if (window.addEventListener) {
 			if (!hasStyle(document.body, 'output')) {
 				return;
 			}
-			let y = event.pageY - evDown.offsetY;
+			let y = Math.max(0, event.pageY - evDown.offsetY);
 			if (y !== y && event.touches !== undefined) {
 				y = event.touches[0].pageY;
 			}
@@ -1008,6 +1078,9 @@ if (window.addEventListener) {
 	window.addEventListener("mouseup", dragStop);
 	window.addEventListener("touchend", dragStop);
 }
+
+// pin the headers of the sections written in the html
+stickyHeaders();
 
 // allow drag and drop files
 document.ondragover = function (e) {

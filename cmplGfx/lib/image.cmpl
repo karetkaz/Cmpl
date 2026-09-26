@@ -1,4 +1,4 @@
-/// Create an image with the given with, height and depth
+/// Create an image with the given width, height and depth
 inline Image(int width, int height, int depth) = Image.create(width, height, depth);
 
 /// Create an image by opening an image file
@@ -50,5 +50,5 @@ bool clip(Image image, Rect roi&) {
 	return !roi.empty();
 }
 
-/// Set the the color of a pixel at the given position
+/// Set the color of a pixel at the given position
 inline set(Image image, int32 x, int32 y, argb color) = Image.set(image, x, y, uint32(color));

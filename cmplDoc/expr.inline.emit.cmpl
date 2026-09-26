@@ -1,0 +1,46 @@
+/** ## Inline low level operations
+When `inline` is used as a function, its arguments are emitted as raw instructions and values.
+- `sti8` — opcode to store an 8-bit value indirectly.
+- `i32.mul` — opcode to multiply two 32-bit integers.
+- `i64.i32` — opcode to convert an int64 to an int32.
+
+Use `-api` to list all available instructions.
+
+Values should be typed with a cast when emitting them, otherwise a warning is raised.
+When there is no cast for the required type, `inline` can be used again to convert it.
+The result is not always typed; it can be assigned to a variable, but the stack size after the
+operation must match the size of the destination variable.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// inline low-level operations: emit raw VM instructions / values
+
+struct DeclInlineComplex {
+	float64 re;
+	float64 im;
+}
+
+inline DeclInlineComplex(DeclInlineComplex copy) = inline(copy);
+inline DeclInlineComplex(float64 re, float64 im) = inline(inline(im), inline(re));
+inline +(DeclInlineComplex a, DeclInlineComplex b) = DeclInlineComplex(inline(DeclInlineComplex(a), DeclInlineComplex(b), p128.add2d));
+
+DeclInlineComplex declInlineA = DeclInlineComplex(1., 2.);
+DeclInlineComplex declInlineB = { re: 3, im: 4 };
+DeclInlineComplex declInlineC = declInlineA + declInlineB;
+assertEq(4.0, declInlineC.re);
+assertEq(6.0, declInlineC.im);
+
+// pushes 3.14/2 as a float and executes the `float32.sin` native function
+float32 declInlineSin = inline(float32(3.14 / 2), float32.sin);
+assert(declInlineSin > 0.999);
+
+// pushes the value as a float and reinterprets its bits as an integer
+int32 declInlineBits = inline(float32(500));
+assertEq(1140457472, declInlineBits);
+
+// creates a slice from the string with the given length
+char declInlineSlice[] = inline(int(3), pointer("string"));
+assertEq(3, declInlineSlice.length);
+assertEq('s', declInlineSlice[0]);

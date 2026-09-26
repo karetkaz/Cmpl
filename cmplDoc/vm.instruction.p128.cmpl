@@ -1,0 +1,429 @@
+/** ### Instruction `neg.v4f`
+
+Negates each lane of the 32-bit floating point vector on top of the stack.
+
+```
+v4f a = pop()
+push(v4f(-a.x, -a.y, -a.z, -a.w))
+```
+*/
+inline "*opcode:neg.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, -a]`
+
+Notes:
+* lane `x` (lane 0) is stored at the lowest address, which is the top slot of the vector on the stack.
+*/
+
+/** ### Instruction `add.v4f`
+
+Adds the two 32-bit floating point vectors on top of the stack, lane by lane.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(v4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w))
+```
+*/
+inline "*opcode:add.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a + b]`
+*/
+
+/** ### Instruction `sub.v4f`
+
+Subtracts the 32-bit floating point vector on top of the stack from the one below it, lane by lane.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(v4f(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w))
+```
+*/
+inline "*opcode:sub.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a - b]`
+*/
+
+/** ### Instruction `mul.v4f`
+
+Multiplies the two 32-bit floating point vectors on top of the stack, lane by lane.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(v4f(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w))
+```
+*/
+inline "*opcode:mul.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+*/
+
+/** ### Instruction `div.v4f`
+
+Divides the 32-bit floating point vector below the top of the stack by the one on top, lane by lane.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(v4f(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w))
+```
+*/
+inline "*opcode:div.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Notes:
+* division by zero does not trap: the lane receives the IEEE 754 result (`±inf` or `NaN`).
+*/
+
+/** ### Instruction `ceq.v4f`
+
+Compares the two 32-bit floating point vectors on top of the stack, and pushes `1` if all four lanes are equal, `0` otherwise.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(i32(a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w))
+```
+*/
+inline "*opcode:ceq.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a == b]`
+
+Notes:
+* lanes are compared as floating point values: a `NaN` lane never compares equal, `-0.0` equals `+0.0`.
+*/
+
+/** ### Instruction `min.v4f`
+
+Computes the lane by lane minimum of the two 32-bit floating point vectors on top of the stack.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(v4f(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z), min(a.w, b.w)))
+```
+*/
+inline "*opcode:min.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, min(a, b)]`
+
+Notes:
+* each lane is computed as `a > b ? b : a`, so if either operand is `NaN` the lane of `a` is kept.
+*/
+
+/** ### Instruction `max.v4f`
+
+Computes the lane by lane maximum of the two 32-bit floating point vectors on top of the stack.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(v4f(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w)))
+```
+*/
+inline "*opcode:max.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, max(a, b)]`
+
+Notes:
+* each lane is computed as `a < b ? b : a`, so if either operand is `NaN` the lane of `a` is kept.
+*/
+
+/** ### Instruction `dp3.v4f`
+
+Computes the 3-component dot product of the two 32-bit floating point vectors on top of the stack.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(a.x * b.x + a.y * b.y + a.z * b.z)
+```
+*/
+inline "*opcode:dp3.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, dp3(a, b)]`
+
+Notes:
+* the `w` lanes of both operands are ignored.
+* the result is a single `f32` value.
+*/
+
+/** ### Instruction `dp4.v4f`
+
+Computes the 4-component dot product of the two 32-bit floating point vectors on top of the stack.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w)
+```
+*/
+inline "*opcode:dp4.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, dp4(a, b)]`
+
+Notes:
+* the result is a single `f32` value.
+*/
+
+/** ### Instruction `dph.v4f`
+
+Computes the homogeneous dot product of the two 32-bit floating point vectors on top of the stack: the 3-component dot product plus the `w` lane of the first operand.
+
+```
+v4f b = pop()
+v4f a = pop()
+push(a.x * b.x + a.y * b.y + a.z * b.z + a.w)
+```
+*/
+inline "*opcode:dph.v4f";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, dph(a, b)]`
+
+Notes:
+* the `w` lane of `b` is ignored, the `w` lane of `a` is added to the result.
+* the result is a single `f32` value.
+*/
+
+/** ### Instruction `swz.p4x`
+
+Shuffles the four 32-bit slots on top of the stack, each result lane is selected by a 2-bit field of the immediate operand.
+
+```
+s0 = sp((imm.u8 >> 0) & 3)
+s1 = sp((imm.u8 >> 2) & 3)
+s2 = sp((imm.u8 >> 4) & 3)
+s3 = sp((imm.u8 >> 6) & 3)
+sp(0) = s0
+sp(1) = s1
+sp(2) = s2
+sp(3) = s3
+```
+*/
+inline "*opcode:swz.p4x";
+/**
+* Immediate operand: `imm.u8`: selector, bits `2k+1‥2k` give the source lane of result lane `k`
+* Stack effect: `[…, a3, a2, a1, a0] → […, r3, r2, r1, r0]`
+
+Notes:
+* lane `k` is the slot `sp(k)`: lane 0 (`x`) is on top of the stack, lane 3 (`w`) is the deepest.
+* the shuffle is type-agnostic, it works on any 4 x 32-bit vector.
+* example: `swz.p4x 0x44` (`0b01_00_01_00`) results in `[…, a1, a0, a1, a0]` (`xyxy`); `0xe4` is the identity, `0x00` broadcasts lane `x`.
+*/
+
+/** ### Instruction `load.m128`
+
+Loads a 128-bit value from the memory address given by the immediate operand onto the stack.
+
+```
+a4 = mem[imm.i24 +  0].x32
+a3 = mem[imm.i24 +  4].x32
+a2 = mem[imm.i24 +  8].x32
+a1 = mem[imm.i24 + 12].x32
+push(a1)
+push(a2)
+push(a3)
+push(a4)
+```
+*/
+inline "*opcode:load.m128";
+/**
+* Immediate operand: `imm.i24`: absolute memory address of the value
+* Stack effect: `[…] → […, a1, a2, a3, a4]`
+
+Traps:
+* `illegalMemoryAccess`: the address is `null` or negative, or `address + 16` is past the end of the memory.
+* `stackOverflow`: there is no room on the stack for the new slots.
+
+Notes:
+* compressed form of `load.ref address` followed by `load.i128`.
+* the 16 bytes are copied verbatim: the top slot `a4` receives bytes `0‥3`, the deepest slot `a1` receives bytes `12‥15`.
+* the transfer is type-agnostic, it is used for any 128-bit value: `v4f`, `v2d`, 16-byte records, ...
+* the alignment of the address is not checked.
+*/
+
+/** ### Instruction `store.m128`
+
+Stores the 128-bit value on top of the stack to the memory address given by the immediate operand.
+
+```
+a4 = pop()
+a3 = pop()
+a2 = pop()
+a1 = pop()
+mem[imm.i24 +  0].x32 = a4
+mem[imm.i24 +  4].x32 = a3
+mem[imm.i24 +  8].x32 = a2
+mem[imm.i24 + 12].x32 = a1
+```
+*/
+inline "*opcode:store.m128";
+/**
+* Immediate operand: `imm.i24`: absolute memory address of the value
+* Stack effect: `[…, a1, a2, a3, a4] → […]`
+
+Traps:
+* `illegalMemoryAccess`: the address points into the read-only region (constants and code), is negative, or `address + 16` is past the end of the memory.
+
+Notes:
+* compressed form of `load.ref address` followed by `store.i128`.
+* the 4 slots are copied verbatim: the slot pushed last (`a4`) is written to bytes `0‥3`, the slot pushed first (`a1`) to bytes `12‥15`.
+* the transfer is type-agnostic, it is used for any 128-bit value: `v4f`, `v2d`, 16-byte records, ...
+* the alignment of the address is not checked.
+*/
+
+/** ### Instruction `neg.v2d`
+
+Negates each lane of the 64-bit floating point vector on top of the stack.
+
+```
+v2d a = pop()
+push(v2d(-a.x, -a.y))
+```
+*/
+inline "*opcode:neg.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, -a]`
+
+Notes:
+* lane `x` (lane 0) is stored at the lowest address, which is the top two slots of the vector on the stack.
+*/
+
+/** ### Instruction `add.v2d`
+
+Adds the two 64-bit floating point vectors on top of the stack, lane by lane.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(v2d(a.x + b.x, a.y + b.y))
+```
+*/
+inline "*opcode:add.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a + b]`
+*/
+
+/** ### Instruction `sub.v2d`
+
+Subtracts the 64-bit floating point vector on top of the stack from the one below it, lane by lane.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(v2d(a.x - b.x, a.y - b.y))
+```
+*/
+inline "*opcode:sub.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a - b]`
+*/
+
+/** ### Instruction `mul.v2d`
+
+Multiplies the two 64-bit floating point vectors on top of the stack, lane by lane.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(v2d(a.x * b.x, a.y * b.y))
+```
+*/
+inline "*opcode:mul.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+*/
+
+/** ### Instruction `div.v2d`
+
+Divides the 64-bit floating point vector below the top of the stack by the one on top, lane by lane.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(v2d(a.x / b.x, a.y / b.y))
+```
+*/
+inline "*opcode:div.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Notes:
+* division by zero does not trap: the lane receives the IEEE 754 result (`±inf` or `NaN`).
+*/
+
+/** ### Instruction `ceq.v2d`
+
+Compares the two 64-bit floating point vectors on top of the stack, and pushes `1` if both lanes are equal, `0` otherwise.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(i32(a.x == b.x && a.y == b.y))
+```
+*/
+inline "*opcode:ceq.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a == b]`
+
+Notes:
+* lanes are compared as floating point values: a `NaN` lane never compares equal, `-0.0` equals `+0.0`.
+*/
+
+/** ### Instruction `min.v2d`
+
+Computes the lane by lane minimum of the two 64-bit floating point vectors on top of the stack.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(v2d(min(a.x, b.x), min(a.y, b.y)))
+```
+*/
+inline "*opcode:min.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, min(a, b)]`
+
+Notes:
+* each lane is computed as `a > b ? b : a`, so if either operand is `NaN` the lane of `a` is kept.
+*/
+
+/** ### Instruction `max.v2d`
+
+Computes the lane by lane maximum of the two 64-bit floating point vectors on top of the stack.
+
+```
+v2d b = pop()
+v2d a = pop()
+push(v2d(max(a.x, b.x), max(a.y, b.y)))
+```
+*/
+inline "*opcode:max.v2d";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, max(a, b)]`
+
+Notes:
+* each lane is computed as `a < b ? b : a`, so if either operand is `NaN` the lane of `a` is kept.
+*/

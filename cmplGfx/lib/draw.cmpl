@@ -1,5 +1,5 @@
 static if (struct(drawAntiAliased) == null) {
-	// by default draw without antialiasing
+	// by default draw with antialiasing
 	inline drawAntiAliased = true;
 }
 inline "./draw/draw.rect.cmpl";

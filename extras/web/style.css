@@ -31,12 +31,13 @@ select {
 	--bottom-bar-size: 40vh;
 	--main-toolbar-size: 2em;
 	--output-toolbar-size: 1.5em;
+	--sidebar-item-size: 2em;
 }
 
 .left {float: left;}
 .right {float: right;}
 .clear {clear: both;}
-.gone {display: none;}
+.gone {display: none !important;}
 
 .overlay {
 	-webkit-user-select: none;
@@ -80,7 +81,6 @@ select {
 	text-decoration: none;
 	text-align: center;
 	border-radius: 0.2em;
-	cursor: hand;
 }
 .toolbar > span:last-child {
 	width: auto;
@@ -100,10 +100,7 @@ select {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	z-index: 10;
-}
-.sidebar * {
-	/*padding: .5em 0;*/
+	 z-index: 10;
 }
 .sidebar li>span.right {
 	font-size: .8em;
@@ -115,11 +112,19 @@ select {
 	list-style: none;
 	overflow: hidden;
 	white-space: nowrap;
-	padding: 0.5em 0.25em;
+	padding: calc((var(--sidebar-item-size) - 1em) / 2) 0.25em;
 	line-height: 1em;
 }
+/* the header of a collapsible section stays on top of its content, below the headers it is nested in */
+.sidebar .sticky {
+	position: sticky;
+	top: calc(var(--depth, 0) * var(--sidebar-item-size));
+	z-index: max(1, 10 - var(--depth, 0));
+	box-sizing: border-box;
+	height: var(--sidebar-item-size);
+}
 .sidebar li:hover {
-	cursor: hand;
+	cursor: default;
 }
 .sidebar li.submenu:before,
 .sidebar div.submenu {
@@ -185,20 +190,23 @@ body.output #output-toolbar {
 	cursor: row-resize;
 }
 
-#fileList > .file:before {
+#fileList .file:before {
 	content: '📄 ';
 }
-#fileList > .folder:before {
+#fileList .folder > li:before {
 	content: '📂 ';
 }
-#fileList > .project:before {
+#fileList .collapsed.folder > li:before {
+	content: '📁 ';
+}
+#fileList .project:before {
 	content: '📦 ';
 }
-#fileList > .active {
+#fileList .active {
 	font-weight: bold;
 }
 
-body.edited #fileList > .active:after {
+body.edited #fileList .active:after {
 	content: ' *';
 }
 
@@ -222,7 +230,6 @@ body.edited #fileList > .active:after {
 	overflow-y: scroll;
 	white-space: pre;
 	font-family: monospace;
-	background-color: inherit;
 }
 #output>p {
 	min-height: 1em;
@@ -253,8 +260,7 @@ body:not(.tool-bar) #main-toolbar { display: none; }
 #left-sidebar {
 	float: left;
 	right: unset;
-	width: calc(var(--left-bar-size) - 1em);
-	padding: .5em;
+	width: var(--left-bar-size);
 	overflow-y: auto;
 }
 body:not(.left-bar) #left-sidebar { display: none; }
@@ -265,8 +271,7 @@ body.left-bar.left-pin { padding-left: var(--left-bar-size); }
 #right-sidebar {
 	float: right;
 	left: unset;
-	width: calc(var(--right-bar-size) - 1em);
-	padding: .5em;
+	width: var(--right-bar-size);
 	overflow-y: auto;
 }
 body:not(.right-bar) #right-sidebar { display: none; }
@@ -316,6 +321,9 @@ span.expander {
 .tree tr:first-child {
 	font-weight: bold;
 	width: 100%;
+	background-color: var(--output-bg);
+	position: sticky;
+	top: 0;
 }
 .tree tr>td:last-child {
 	white-space: nowrap;
@@ -331,11 +339,44 @@ span.expander {
 	max-width: 7em;
 	width: 7em;
 }
+.tree tr:not(:first-child):hover {
+    background-color: var(--toolbar-hover-bg);
+}
 
 /* Symbol list */
 .syms {
 	width: 100%;
 	border-spacing: 0;
+	padding: .3em;
+}
+
+.syms>div>div { margin: 1em; }
+.syms>div>div:not(.title-node) { margin-left: 2em; }
+
+.syms>div.builtin>div.title-node>a { text-decoration:none; }
+.syms:not(.private)>div.private { display: none; }
+.syms:not(.library)>div.library { display: none; }
+.syms:not(.details)>div.comment>div.title-node { display: none; }
+.syms:not(.details)>div:not(.details)>div.argument { display: none; }
+.syms:not(.details)>div:not(.details)>div:not(.argument).details { display: none; }
+.syms:not(.details)>div:not(.details)>div.argument:not(.details)>div.details { display: none; }
+
+.syms span.filter-private:before { content: ' ✓ ';}
+.syms:not(.private) span.filter-private:before { content: ' x '; }
+.syms span.filter-library:before { content: ' ✓ ';}
+.syms:not(.library) span.filter-library:before { content: ' x '; }
+.syms span.filter-details:before { content: ' ✓ ';}
+.syms:not(.details) span.filter-details:before { content: ' x '; }
+
+.syms span.filter-export { margin-left: 1em; cursor: pointer; }
+
+.syms>div:first-child {
+	background-color: var(--output-bg);
+	font-weight: bold;
+	width: 100%;
+	position: sticky;
+	top: 0;
+	z-index: 15;
 }
 
 .sidebar>#output li { overflow: unset; }

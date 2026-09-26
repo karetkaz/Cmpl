@@ -427,7 +427,7 @@ static inline vector vecrfl(vector dst, vector dir, vector nrm) {	// reflect
 }// */
 //~ static inline vector vecrfr(vector dst, vector dir, vector nrm);	// refract
 
-static inline scalar vecpev(vector pol, scalar val) {				// polinomial evaluate
+static inline scalar vecpev(vector pol, scalar val) {				// polynomial evaluate
 	return ((((pol->w) * val + pol->z) * val + pol->y) * val) + pol->x;
 }
 
@@ -714,7 +714,7 @@ static inline void persp_mat(matrix dst, scalar l, scalar r, scalar b, scalar t,
 		0.,				1.,				0.,				-(t+b)/2,
 		0.,				0.,				1.,				-(n+f)/2,
 		0.,				0.,				0.,				1.));
-	//~ --- Ortographic ---
+	//~ --- Orthographic ---
 	matmul(dst, dst, matldf(&tmp,		// perspective
 		n,				0.,				0.,				0,
 		0.,				n,				0.,				0,

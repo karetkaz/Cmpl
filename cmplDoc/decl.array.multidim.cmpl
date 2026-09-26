@@ -1,0 +1,50 @@
+/** ### Multidimensional arrays
+Array dimensions are read in C order: the leftmost dimension is the outermost.
+- `int32 a[2][3]` is an array of 2 elements, each of type `int32[3]`: `a[1][2]` is valid, `a[2][1]` is out of bounds.
+- The elements are stored contiguously, row after row: `a[i][j]` is the element at position `i * 3 + j`.
+- An element of the outer array (a row) is a fixed-size array: it can be indexed, sliced or referenced by a slice.
+- The dimensions can be of different kinds; the leftmost dimension decides the kind of the variable:
+  - `char names[4][*]` is a fixed-size array of 4 unknown-size arrays (strings).
+  - `char lines[][80]` is a slice of fixed-size `char[80]` arrays.
+- The same order is used by C, C++, Java, C# and Go.
+
+Note: the type suffix notation of the D language (`int[3][2] a;`) reads the dimensions in reverse, this is not supported.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// multidimensional arrays: dimensions are in C order, the leftmost is the outermost
+
+// 2 rows, each row is an `int32[3]`
+int32 declArrMatrix[2][3] = {
+	{11, 12, 13},
+	{21, 22, 23}
+};
+assertEq(2, declArrMatrix.length);
+assertEq(3, declArrMatrix[0].length);
+assertEq(23, declArrMatrix[1][2]);
+
+// the elements are stored contiguously, row after row: `[i][j]` is the element `i * 3 + j`
+int32 declArrMatrixFlat[*] = declArrMatrix[0];
+assertEq(23, declArrMatrixFlat[1 * 3 + 2]);
+
+// a row is a fixed-size array: it can be indexed, sliced or referenced by a slice
+int32 declArrMatrixRow[] = declArrMatrix[1];
+assertEq(3, declArrMatrixRow.length);
+assertEq(21, declArrMatrixRow[0]);
+int32 declArrMatrixRowPart[] = declArrMatrix[1][1 ... 3];
+assertEq(2, declArrMatrixRowPart.length);
+assertEq(22, declArrMatrixRowPart[0]);
+
+// a slice of rows: the length of the rows is known by the compiler, the number of rows at runtime
+int32 declArrMatrixRows[][3] = declArrMatrix;
+assertEq(2, declArrMatrixRows.length);
+assertEq(21, declArrMatrixRows[1][0]);
+
+// mixing array kinds: the leftmost dimension decides the kind of the variable
+char declArrNames[2][*] = {"Rocco", "Milo"};	// fixed-size array of 2 strings
+assertEq('M', declArrNames[1][0]);
+char declArrWords[][] = {"one", "two", "three"};	// slice of slices
+assertEq(3, declArrWords.length);
+assertEq(5, declArrWords[2].length);

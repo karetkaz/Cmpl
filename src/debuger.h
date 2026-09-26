@@ -26,7 +26,7 @@ typedef enum {
 	brkTrace = 0x02,    // trace when hit
 	brkPause = 0x04,    // pause when hit
 	brkValue = 0x08,    // print stack after hit
-	brkOnce = 0x10,     // one shoot breakpoint (disabled after first hit)
+	brkOnce = 0x10,     // one shot breakpoint (disabled after first hit)
 } brkMode;
 
 /// Debug info node
@@ -80,7 +80,7 @@ dbgContext dbgInit(rtContext ctx, vmError (*debug)(dbgContext ctx, vmError, size
 vmError dbgError(dbgContext ctx, vmError error, size_t pc, size_t ss, void *sp, int mode);
 
 /**
- * Check if the current stacktrace contains tryExec, if an error can terminate the execution of the vm.
+ * Check if the current stacktrace contains `recover`, so an error will not terminate the execution of the vm.
  * @param ctx Runtime context
  * @return true or false
  */

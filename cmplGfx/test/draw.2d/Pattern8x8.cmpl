@@ -36,7 +36,7 @@ static uint64 patterns[] = {
 	0xf87422478f172271, // Win9x - Thatches
 	0x45820100018245aa, // Win9x - Tile
 	0x8707060400f7e7c7, // Win9x - Triangles
-	0x4d9a0855ef9a4d9a, // Win9x - Waffl's Revenge
+	0x4d9a0855ef9a4d9a, // Win9x - Waffle's Revenge
 
 	0xaa55aa55aa55aa55, // Win2k - 50% Gray
 	0x7f41414141417f00, // Win2k - Boxes

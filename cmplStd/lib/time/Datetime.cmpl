@@ -14,7 +14,7 @@ enum Month: int8 {
 	December,
 }
 /// FIXME: implement enum indexing
-Month Month(int32 index) { return index + Month.January; }
+Month Month(int32 index) { return inline(index + Month.January); }
 /// FIXME: implement enum indexing
 inline indexOf(Month value) = (value - Month.January);
 
@@ -29,7 +29,7 @@ enum Weekday: int8 {
 	Sunday,
 }
 /// FIXME: implement enum indexing
-Weekday Weekday(int32 index) {return index + Weekday.Monday; }
+Weekday Weekday(int32 index) { return inline(index + Weekday.Monday); }
 /// FIXME: implement enum indexing
 inline indexOf(Weekday value) = (value - Weekday.Monday);
 
@@ -61,7 +61,7 @@ struct Datetime {
 	int32 year;
 	/// Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
 	Month month;
-	/// Day of month: 1 ... 30
+	/// Day of month: 1 ... 31
 	uint8 day;
 
 	// Time parts
@@ -88,7 +88,7 @@ struct Datetime {
 	/// ISO-8601 week-numbering year (may differ near year boundaries)
 	int32 isoYear;
 
-	/// Nth day of the year: 1 ... 365
+	/// Nth day of the year: 1 ... 366
 	uint16 dayOfYear;
 
 	/// Day of week: 1 ... 7 / [Mon, Tue, ...]
@@ -101,7 +101,7 @@ struct Datetime {
 	static int32 DaysToMonth366![13] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 	static int32 DaysTil1970! = 719162;
 
-	/// Checks weather the given year is a leap year or not
+	/// Checks whether the given year is a leap year or not
 	static bool isLeapYear(int32 year) {
 		if (year % 4 != 0) {
 			return false;
@@ -125,8 +125,9 @@ struct Datetime {
 			month %= 12;
 		}
 		else if (month < 0) {
-			year += month / 12 - 1;
-			month = 12 - (-month % 12);
+			int32 borrow = (11 - month) / 12;
+			year -= borrow;
+			month += 12 * borrow;
 		}
 
 		assert(days == 0);
@@ -246,7 +247,7 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 		y1 = 3;
 	}
 
-	// If year was requested, compute and return it
+	// compute the year
 	int32 year = y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1;
 
 	// n = day number within year
@@ -254,7 +255,7 @@ Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 
 	// All months have less than 32 days, so n >> 5 is a good conservative
 	// estimate for the month
-	int32 m = n >> 5 + 1;
+	int32 m = (n >> 5) + 1;
 	int32 DaysToMonth![*] = Datetime.isLeapYear(year) ? Datetime.DaysToMonth366 : Datetime.DaysToMonth365;
 
 	// m = 1-based month number

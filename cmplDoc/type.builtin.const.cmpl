@@ -1,0 +1,36 @@
+/** ## Builtin aliases and constants
+
+### int
+`int` is an alias for `int32` or `int64`, depending on the pointer size of the virtual machine.
+
+### null
+`null` is the constant reference value representing missing data.
+It can be assigned to pointers, slices, unknown-size arrays, variants, functions,
+objects and optional (`?`) references.
+
+### true and false
+`true` and `false` are the values of the `bool` type.
+They are not keywords; the standard library defines them as an anonymous enumeration:
+```
+enum: bool {
+	true: 0 == 0,
+	false: 0 != 0,
+}
+```
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// `int` is an alias of one of the fixed-size integer types
+assert(int == int32 || int == int64);
+
+// `null` represents missing data
+pointer typeBuiltinPtr = null;
+assert(typeBuiltinPtr == null);
+int32 typeBuiltinOptional? = null;
+
+// `true` and `false` are the values of `bool`
+bool typeBuiltinTrue = 0 == 0;
+assert(typeBuiltinTrue == true);
+assert(typeBuiltinTrue != false);

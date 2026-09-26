@@ -1,0 +1,66 @@
+/** ## Variables
+A [variable](https://en.wikipedia.org/wiki/Variable_(computer_science)) is a symbolic name
+associated with a value, which may be changed at runtime.
+
+### Static variables
+Variables marked with the `static` attribute point to the same, shared global memory.
+Initialization of all static variables is executed once, when `main` is executed.
+
+### References
+Variables marked with one of the following suffixes become references to variables:
+- `?`: optional reference: the reference can be `null` or point to a valid value.
+- `&`: mutable reference: the value is writable through the reference.
+- `!`: const reference: the value is read-only through the reference.
+
+A `static` immutable reference (`!`) is a common idiom for constants.
+
+### Initialization
+A variable can be initialized either by calling an initializer function, or with a literal
+(optionally prefixed with a type name).
+
+#### Default type initializer
+Some builtin types have a default type initializer (`int`, `float`, ...); others must be
+initialized explicitly when a new instance is created (`pointer`, `variant`, `typename`, `function`).
+Enumerated types have no default initializer, so they must always be initialized explicitly.
+
+#### Default member initializer
+Every member of a record must be initialized when creating an instance, unless it has a default
+member initializer, or it can use the default type initializer
+(see [Record literal initializers](#record-literal-initializers)).
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// variables: static storage, references, and initialization
+
+// a `static` local is initialized once and keeps its value across calls,
+// pointing to the same shared (global) memory
+int declVarCountCalls() {
+	static int count = 0;
+	return count += 1;
+}
+assertEq(1, declVarCountCalls());
+assertEq(2, declVarCountCalls());
+
+// a static member acts as shared state across all instances of the record
+struct DeclVarInstance {
+	static int count = 0;
+	int instanceNr;
+}
+DeclVarInstance DeclVarInstance() {
+	DeclVarInstance.count += 1;
+	return { instanceNr: DeclVarInstance.count };
+}
+DeclVarInstance declVarFirst = DeclVarInstance();
+DeclVarInstance declVarSecond = DeclVarInstance();
+assertEq(1, declVarFirst.instanceNr);
+assertEq(2, declVarSecond.instanceNr);
+
+// a static immutable reference (`!`) is a common idiom for constants
+static float64 declVarConstant! = 3.1415;
+assert(declVarConstant == 3.1415);
+
+// builtin types like `int` have a default type initializer (`0`)
+int declVarDefaultInt;
+assertEq(0, declVarDefaultInt);

@@ -1,0 +1,18 @@
+/** ## Assignment expressions
+This operator assigns the value on the right to the operand on the left side.
+Compound operators are expanded; `a += 3 + b` is converted to `a = a + (3 + b)`.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// assignment expressions: compound forms are expanded into a plain assignment
+
+int32 exprAssignA = 0;
+int32 exprAssignB = 3;
+
+exprAssignA = 5;
+assertEq(5, exprAssignA);
+
+exprAssignA += 3 + exprAssignB;   // expanded to: exprAssignA = exprAssignA + (3 + exprAssignB)
+assertEq(11, exprAssignA);

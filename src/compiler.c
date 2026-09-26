@@ -216,7 +216,7 @@ static vmError objectHelpers(nfcContext ctx) {
 			return nativeCallError;
 		}
 		if (obj == NULL) {
-			// null is null type does not matter
+			// null is null, type does not matter
 			retRef(ctx, vmOffset(rt, obj));
 			return noError;
 		}
@@ -297,9 +297,9 @@ static vmError sysRaise(nfcContext ctx) {
 	return noError;
 }
 
-// int tryExec(variant outError, pointer args, void action(pointer args));
-const char *const sys_try_exec = "int32 tryExec(pointer args, void action(pointer args))";
-static vmError sysTryExec(nfcContext ctx) {
+// int recover(variant outError, pointer args, void action(pointer args));
+const char *const sys_try_exec = "int32 recover(pointer args, void action(pointer args))";
+static vmError sysRecover(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	struct nfcArgs al = rt->api.nfcArgs(ctx);
 	size_t args = argRef(ctx, rt->api.nextArg(&al)->offset);
@@ -673,7 +673,8 @@ static void install_emit(ccContext ctx, ccConfig config) {
 /**
  * Install base functions.
  *
- * @param ctx Runtime context.
+ * @param ctx Compiler context.
+ * @param config What to install.
  * @param onHalt the function to be invoked when execution stops.
  * @returns 0 on success
  */
@@ -681,11 +682,24 @@ static int install_base(ccContext ctx, ccConfig config, vmError onHalt(nfcContex
 	//! halt must be the first native call.
 	int error = !ccAddCall(ctx, onHalt, "void halt()");
 
-	// tryExecute
+	// recover
 	if (!error && ctx->type_ptr != NULL) {
-		ctx->libc_try = ccAddCall(ctx, sysTryExec, sys_try_exec);
+		ctx->libc_try = ccAddCall(ctx, sysRecover, sys_try_exec);
 		if (ctx->libc_try == NULL) {
 			error = 2;
+		}
+		if (!error && ccExtend(ctx, ctx->libc_try)) {
+			ctx->libc_try->doc = "Execute an action, recovering the execution if it fails.";
+			// error codes returned
+			error = error || !ccDefInt(ctx, "noError", noError);
+			error = error || !ccDefInt(ctx, "illegalState", illegalState);
+			error = error || !ccDefInt(ctx, "stackOverflow", stackOverflow);
+			error = error || !ccDefInt(ctx, "divisionByZero", divisionByZero);
+			error = error || !ccDefInt(ctx, "illegalInstruction", illegalInstruction);
+			error = error || !ccDefInt(ctx, "illegalMemoryAccess", illegalMemoryAccess);
+			error = error || !ccDefInt(ctx, "illegalArrayAccess", illegalArrayAccess);
+			error = error || !ccDefInt(ctx, "nativeCallError", nativeCallError);
+			ccEnd(ctx, ctx->libc_try);
 		}
 	}
 	// raise(fatal, error, warn, info, debug, trace)
@@ -821,6 +835,7 @@ ccContext ccInit(rtContext ctx, ccConfig config, vmError onHalt(nfcContext)) {
 	cc->rt = ctx;
 	ctx->cc = cc;
 
+	cc->unit = cmplUnit;
 	cc->genDocumentation = 0;
 	cc->genStaticGlobals = 1;
 	cc->errPrivateAccess = 1;

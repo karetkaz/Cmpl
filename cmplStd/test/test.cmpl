@@ -9,7 +9,7 @@ inline "./lang/overload.inline.cmpl";
 
 // native calls
 inline "./lang/memory.cmpl";
-inline "./lang/tryExec.cmpl";
+inline "./lang/recover.cmpl";
 inline "./lang/pointer.cmpl";
 
 
@@ -40,9 +40,15 @@ inline "./lang/recPacking.cmpl";
 inline "./lang/useOperator.cmpl";
 
 
-// statements
-inline "./lang/stmt.if.cmpl";
-inline "./lang/stmt.for.cmpl";
+// Statements
+//inline "./lang/stmt.block.cmpl";
+//inline "./lang/stmt.if.cmpl";
+//inline "./lang/stmt.for.cmpl";
+//inline "./lang/stmt.break.cmpl";
+//inline "./lang/stmt.continue.cmpl";
+//inline "./lang/stmt.return.cmpl";
+//inline "./lang/stmt.declaration.cmpl";
+//inline "./lang/stmt.expression.cmpl";
 
 
 // implemented functions
@@ -51,3 +57,4 @@ inline "./math/test.Numbers.cmpl";
 inline "./math/test.Math.cmpl";
 { inline "./math/test.Complex.cmpl"; }
 { inline "./math/test.Polynomial.cmpl"; }
+{ inline "./math/test.UintBig.cmpl"; }

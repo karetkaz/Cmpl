@@ -15,9 +15,9 @@ int32 emitDivI32 = inline(int32(10), int32(5), i32.div);
 /// Emit the calculation of `float32.sin(3.14f / 2)`
 float32 emitNfcF32 = inline(float32(3.14), float32(2), f32.div, float32.sin);
 
-/// interpret a 32 bit floating point number as an 32 bit integer
+/// interpret a 32 bit floating point number as a 32 bit integer
 int32 floatAsInt32(float32 value) { return inline(value); }
-/// interpret a 64 bit floating point number as an 64 bit integer
+/// interpret a 64 bit floating point number as a 64 bit integer
 int64 floatAsInt64(float64 value) { return inline(value); }
 
 int32 emitFloatAsInt1 = floatAsInt32(500);

@@ -54,7 +54,7 @@ struct Complex {
 	/// Compute the absolute value of the complex number `a`
 	static float64 abs(Complex a) { return Float64.sqrt(a.re * a.re + a.im * a.im); }
 	/// Compute the argument of the complex number `a`
-	static float64 arg(Complex a) { return Float64.atan2(a.re, a.im); }
+	static float64 arg(Complex a) { return Float64.atan2(a.im, a.re); }
 
 	/// Compute the reciprocal of a complex number (1 / a)
 	static Complex inv(Complex a) {
@@ -148,9 +148,9 @@ Complex Complex(float64 real, float64 imaginary) {
 	};
 }
 
-/// Convert the from polar(r,θ) to cartesian(x,y) coordinates
+/// Convert from polar(r,θ) to cartesian(x,y) coordinates
 inline toCartesian(Complex x) = Complex(x.re * Float64.cos(x.im), x.re * Float64.sin(x.im));
-/// Convert the from cartesian(x,y) to polar(r,θ) coordinates
+/// Convert from cartesian(x,y) to polar(r,θ) coordinates
 inline toPolar(Complex x) = Complex(x.abs(), x.arg());
 
 

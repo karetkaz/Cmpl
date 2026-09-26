@@ -12,7 +12,7 @@
  *
  * @param ctx Compiler context.
  * @param match The token type to be matched.
- * @param raise Flag indicating whether to raise an error or bee silent.
+ * @param raise Flag indicating whether to raise an error or be silent.
  * @return The next token, NULL if the token does not match.
  */
 astn nextToken(ccContext ctx, ccToken match, int raise);
@@ -31,7 +31,7 @@ astn backToken(ccContext ctx, astn token);
  *
  * @param ctx Compiler context.
  * @param match The token type to be matched.
- * @param raise Flag indicating whether to raise an error or bee silent.
+ * @param raise Flag indicating whether to raise an error or be silent.
  * @return The kind of the token that was skipped or TOKEN_any if no token was found.
  */
 ccToken skipToken(ccContext ctx, ccToken match, int raise);

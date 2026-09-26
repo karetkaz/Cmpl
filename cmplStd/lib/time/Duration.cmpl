@@ -1,7 +1,6 @@
-/**
- * Timespan is just a duration
+/** Timespan is just a duration
  * for example: 33 seconds
- */
+*/
 struct Duration {
 	int64 value = 0;
 	// fixme: inline precision = Timeunit.Millis;

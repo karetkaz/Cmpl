@@ -128,7 +128,7 @@ int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
 		.mul(rotation(vec4f(0, 0, 1, 0), -Float64.radians(rotate.value)));
 
 	// project the rotated ray back to the image plane; the w row makes
-	// Image.transform divide by z (homography H = P * R^-1 * P^-1, up to scale);
+	// Image.transform divide by z (homography H = K * R^-1 * K^-1, up to scale);
 	// scale builds the reciprocal: inverse mapping magnifies by sampling less
 	mat4f mat = Camera.projection(fov.value, width, height)
 		.mul(scale(vec4f(zoom.value, zoom.value, 1, 0), 1))

@@ -65,7 +65,7 @@ GxWindow createWindow(GxImage image, const char *title) {
 		rc.right - rc.left,			// width of the window
 		rc.bottom - rc.top,			// height of the window
 		NULL,				// Handle to a parent window (none)
-		NULL,				// Handle to a child window (none)
+		NULL,				// Handle to a menu (none)
 		mainInstance,			// Handle to the current Instance
 		NULL					// Pointer to extra data I don't care about
 	);

@@ -1,0 +1,211 @@
+/** ### Instruction `cmt.u64`
+
+Inverts each bit of the 64-bit integer on top of the stack (bitwise complement).
+
+```
+u64 a = pop()
+push(~a)
+```
+*/
+inline "*opcode:cmt.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, ~a]`
+*/
+
+/** ### Instruction `and.u64`
+
+Computes the bitwise and of the two 64-bit integers on top of the stack.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a & b)
+```
+*/
+inline "*opcode:and.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a & b]`
+*/
+
+/** ### Instruction `or.u64`
+
+Computes the bitwise or of the two 64-bit integers on top of the stack.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a | b)
+```
+*/
+inline "*opcode:or.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a | b]`
+*/
+
+/** ### Instruction `mul.u64`
+
+Multiplies the two unsigned 64-bit integers on top of the stack.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a * b)
+```
+*/
+inline "*opcode:mul.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+
+Notes:
+* the result wraps around modulo 2^64.
+*/
+
+/** ### Instruction `div.u64`
+
+Divides the two unsigned 64-bit integers on top of the stack.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a / b)
+```
+*/
+inline "*opcode:div.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero.
+*/
+
+/** ### Instruction `rem.u64`
+
+Computes the remainder of the unsigned division of the two 64-bit integers on top of the stack.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a % b)
+```
+*/
+inline "*opcode:rem.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a % b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero.
+*/
+
+/** ### Instruction `clt.u64`
+
+Compares the two unsigned 64-bit integers on top of the stack, and pushes `1` if the first is less than the second, `0` otherwise.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a < b)
+```
+*/
+inline "*opcode:clt.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a < b]`
+*/
+
+/** ### Instruction `cgt.u64`
+
+Compares the two unsigned 64-bit integers on top of the stack, and pushes `1` if the first is greater than the second, `0` otherwise.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a > b)
+```
+*/
+inline "*opcode:cgt.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a > b]`
+*/
+
+/** ### Instruction `shl.u64`
+
+Shifts the 64-bit integer left by the given number of bits, filling with zeros.
+
+```
+u32 b = pop()
+u64 a = pop()
+push(a << b)
+```
+*/
+inline "*opcode:shl.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a << b]`
+
+Notes:
+* the shift count `b` is a 32-bit integer.
+* the shift count is not masked at runtime: a count of `64` or more is undefined behavior in C (x86 hosts typically use only the low 6 bits of the count).
+*/
+
+/** ### Instruction `shr.u64`
+
+Shifts the unsigned 64-bit integer right by the given number of bits, filling with zeros (logical shift).
+
+```
+u32 b = pop()
+u64 a = pop()
+push(a >> b)
+```
+*/
+inline "*opcode:shr.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a >> b]`
+
+Notes:
+* the shift count `b` is a 32-bit integer.
+* the shift count is not masked at runtime: a count of `64` or more is undefined behavior in C (x86 hosts typically use only the low 6 bits of the count).
+*/
+
+/** ### Instruction `sar.u64`
+
+Shifts the signed 64-bit integer right by the given number of bits, replicating the sign bit (arithmetic shift).
+
+```
+i32 b = pop()
+i64 a = pop()
+push(a >> b)
+```
+*/
+inline "*opcode:sar.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a >> b]`
+
+Notes:
+* the shift count `b` is a signed 32-bit integer.
+* the shift count is not masked at runtime: a count of `64` or more, or a negative count, is undefined behavior in C (x86 hosts typically use only the low 6 bits of the count).
+*/
+
+/** ### Instruction `xor.u64`
+
+Computes the bitwise exclusive or of the two 64-bit integers on top of the stack.
+
+```
+u64 b = pop()
+u64 a = pop()
+push(a ^ b)
+```
+*/
+inline "*opcode:xor.u64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a ^ b]`
+*/

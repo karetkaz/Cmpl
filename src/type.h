@@ -79,7 +79,7 @@ symn ccDefVar(ccContext ctx, const char *name, symn type);
  * @param size Size of the type.
  * @param refType Value or Reference type.
  * @return Defined symbol, null on error.
- * @see plugins/file.c
+ * @see cmplFile/src/file.c
  */
 symn ccAddType(ccContext ctx, const char *name, unsigned size, int refType);
 
@@ -97,7 +97,7 @@ symn ccAddType(ccContext ctx, const char *name, unsigned size, int refType);
 		return noError;                     // do not abort execution
 	}
 	...
-	if (!rt->api.ccDefCall(rt, f64sin, "float64 sin(float64 x)")) {
+	if (!rt->api.ccAddCall(cc, f64sin, "float64 sin(float64 x)")) {
 		// error was reported, terminate by returning error count.
 		return rt->errors;
 	}
@@ -234,7 +234,7 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int strict);
  * @param ctx Compiler context.
  * @param loc Override scope.
  * @param ast Tree to check.
- * @param raise Flag indicating whether to raise an error or bee silent.
+ * @param raise Flag indicating whether to raise an error or be silent.
  * @return Type of expression.
  */
 symn typeCheck(ccContext ctx, symn loc, astn ast, int raise);

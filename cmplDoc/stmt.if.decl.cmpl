@@ -1,0 +1,13 @@
+/** ### Declaration in the condition
+The condition may be preceded by an optional declaration, separated by a semicolon.
+The declared variable is visible in the condition and in the `true` branch of the statement.
+If only the declaration is given, its value converted to boolean is used as the condition:
+`if (float64 x = someMethod())` is equivalent to `if (float64 x = someMethod(); bool(x))`.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+if (int32 one = Float64.sin(Float64.pi / 2); one == 1) {
+	debug("The sine of pi / 2 is one", one);
+}

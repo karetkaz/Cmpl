@@ -1,0 +1,42 @@
+/** ## Primary expressions
+- `child.name` — member access.
+- `values[10]` — array access (subscript).
+- `values[...end]` — prefix slice: 0-based, `end` exclusive.
+- `values[start...end]` — slice: `start` inclusive, `end` exclusive.
+- `...values` — spread: expands an array as the arguments passed to a variadic parameter.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// member access, array access, array slicing, and spread
+
+struct ExprSlicePoint {
+	int32 x;
+	int32 y;
+}
+ExprSlicePoint exprSliceP = {x: 3, y: 4};
+assertEq(3, exprSliceP.x);   // member access
+
+int32 exprSliceValues[5] = {10, 20, 30, 40, 50};
+assertEq(30, exprSliceValues[2]);   // array access (subscript)
+
+// `a[...end]`: prefix slice, 0-based, end exclusive
+int32 exprSlicePrefix[] = exprSliceValues[...3];
+assertEq(3, exprSlicePrefix.length);
+assertEq(10, exprSlicePrefix[0]);
+
+// `a[start...end]`: start inclusive, end exclusive
+int32 exprSliceMiddle[] = exprSliceValues[1 ... 3];
+assertEq(2, exprSliceMiddle.length);
+assertEq(20, exprSliceMiddle[0]);
+
+int32 exprSliceSum(int32 values...) {
+	int32 total = 0;
+	for (int32 i = 0; i < values.length; i += 1) {
+		total += values[i];
+	}
+	return total;
+}
+// `...values`: spread an array as the arguments of a variadic parameter
+assertEq(150, exprSliceSum(...exprSliceValues));

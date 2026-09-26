@@ -1,0 +1,21 @@
+/** ## Declaration statement
+A declaration (variable, function, type, alias) is itself a valid statement.
+
+A `static` local declaration is initialized only once, when the program starts,
+and keeps its value across subsequent calls — this is a different concept from a `static if` or `static for`.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// declaration statement: `static` on a local declaration initializes it once,
+// when the program starts, and keeps its value across calls
+
+int stmtDeclCallCount() {
+	static int calls = 0;
+	calls += 1;
+	return calls;
+}
+assertEq(1, stmtDeclCallCount());
+assertEq(2, stmtDeclCallCount());
+assertEq(3, stmtDeclCallCount());

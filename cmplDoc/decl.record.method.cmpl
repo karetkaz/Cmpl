@@ -1,0 +1,57 @@
+/** ### Methods
+
+Functions, just like variables, can be part of a record.
+
+In case their first parameter is of the declaring type,
+they can be invoked as `instance.method(...)`.
+
+- If a `static` method is initialized, it becomes a function reference.
+- If a `static` method is not implemented, it becomes a forward declared function.
+
+- If a method is not implemented or initialized, it is **abstract**: it must be overridden in a
+  record that extends this record, and is looked up at runtime.
+- If a method is initialized (delegating to an existing implementation), it is **virtual**: it declares
+  only the member function, can be overridden, and is looked up at runtime.
+- If a method is implemented directly, it is **virtual**: the record declares both the member and the
+  static function with the same name, it can be overridden, and is looked up at runtime.
+- A `static` method is resolved at compile time.
+
+A method that overrides an abstract or virtual method from a base record must mark its name with
+a trailing `^`. Calling `TypeName.method(instance)` always invokes that exact method; calling
+`instance.method()` may dispatch through an extension or an override instead.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// methods: abstract, static, and overridden
+
+// abstract method: declared but not implemented -- must be overridden by an extending
+// record; resolved at runtime, not at compile time
+struct DeclRecReader: object {
+	int32 read(DeclRecReader this);
+
+	// static method: implemented directly -- resolved at compile time
+	static int32 magic() {
+		return 7;
+	}
+}
+
+struct DeclRecConstReader: DeclRecReader {
+	int32 value;
+
+	// overrides the abstract `read` method (the trailing `^` marks an override)
+	int32 read^(DeclRecConstReader this) {
+		return this.value;
+	}
+}
+
+DeclRecConstReader declRecInstance = { value: 21 };
+
+// `instance.read()` may dispatch through an extension or override
+assertEq(21, declRecInstance.read());
+
+// `TypeName.read(instance)` ensures this exact override is invoked
+assertEq(21, DeclRecConstReader.read(declRecInstance));
+
+assertEq(7, DeclRecReader.magic());

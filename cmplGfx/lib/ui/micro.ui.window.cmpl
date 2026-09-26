@@ -1,6 +1,6 @@
-///@public
+/// Extends the native `Window` with methods to show and run widgets
 static struct Window {
-	/// events with action having this bit set, were processed by the widget
+	/// events with action having this bit set were processed by the widget
 	inline EVENT_PROCESSED = 1 << 16;
 
 	/// Show the given `widget` in a window drawn to the `offscreen` image

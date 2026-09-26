@@ -1,9 +1,9 @@
 #!/usr/bin/env -S cmpl -X+steps -run
 
-// test floating point number formatting
+// test fixed point number formatting
 NumberFormat format = {
 //	digitSymbols: NumberFormat.digits[...2],
-//	positiveSymbol: '+'; // force sig,
+//	positiveSymbol: '+'; // force sign,
 //	fractionSymbol: ',',
 //	groupingSymbol: ' ',
 //	groupingDigits: 8,

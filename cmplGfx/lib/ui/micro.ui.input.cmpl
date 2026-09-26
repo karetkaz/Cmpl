@@ -73,7 +73,7 @@ struct Input: View {
 		return true;
 	}
 
-	/// Remove the character at the caret.
+	/// Remove the character at the caret, or the one before it if `backspace` is set.
 	static bool delete(Input this, bool backspace) {
 		int back = int(backspace);
 		if (this.cursor < back) {

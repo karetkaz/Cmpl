@@ -13,7 +13,7 @@ vec4f blob(vec4f in) {
 	vec2d move4 = vec2d(Float64.cos(time * 2.0) * 0.4, Float64.sin(time * 4.3) * 0.4);
 
 	float64 metaball = 0;
-	//! sum the meatballs as the radius for each blob
+	//! sum the metaballs as the radius for each blob
 	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move1), p.sub(move1)) * 22);
 	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move2), p.sub(move2)) * 26);
 	metaball += 1. / Float64.max(1F, vec2d.dot(p.sub(move3), p.sub(move3)) * 32);

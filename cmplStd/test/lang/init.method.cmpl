@@ -20,14 +20,14 @@ struct RecordMethodTest {
 	/**
 	 * abstract methods must be overridden when inheriting or instantiating
 	 * the compiler sees it as a `constant function reference` without `default type initializer`
-	 * @see lang/member.cmpl
+	 * @see lang/init.member.cmpl
 	 */
 	void abstractMethod(RecordMethodTest this, int x);
 
 	/**
 	 * virtual method (use to delegate)
 	 * the compiler sees it as a `constant function reference` with `default field initializer`
-	 * @see lang/member.cmpl
+	 * @see lang/init.member.cmpl
 	 */
 	void delegateMethod(RecordMethodTest this, int x) = forwardMethod;
 
@@ -94,8 +94,8 @@ void virtualMethod(RecordMethodTest this, int x) {
 	}
 }
 
-recordMethodTest.staticMethod(2);                               // => staticMethod(recordMethodTest, 1);
-recordMethodTest.virtualMethod(2);                              // => virtualMethod(recordMethodTest, 1);
+recordMethodTest.staticMethod(2);                               // => staticMethod(recordMethodTest, 2);
+recordMethodTest.virtualMethod(2);                              // => virtualMethod(recordMethodTest, 2);
 
 // invoke the original methods, by explicitly passing all the arguments
 RecordMethodTest.staticMethod(recordMethodTest, 3);             // invoke the static method implemented in the type

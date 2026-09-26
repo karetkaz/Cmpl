@@ -1,0 +1,25 @@
+/** ## Expression statement
+An expression statement is an expression terminated with `;`.
+
+Only assignment (`a = 2;`, including compound forms like `a += 3;`, which are expanded to a plain assignment)
+and invocation (`foo();`) expressions may form a statement.
+Any other expression statement, e.g. `a * 4;`, is reported as a warning, which can be treated as an error.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// expression statement: only assignment and invocation expressions are valid statements
+
+int stmtExprCounter = 0;
+stmtExprCounter = 5;    // assignment
+stmtExprCounter += 2;   // compound assignment is expanded to `stmtExprCounter = stmtExprCounter + 2`
+assertEq(7, stmtExprCounter);
+
+int stmtExprDoubled(int x) {
+	return x * 2;
+}
+stmtExprDoubled(stmtExprCounter);   // invocation; its result may be discarded
+assertEq(7, stmtExprCounter);
+
+// stmtExprCounter * 2;   // compilation warning: not a valid statement (neither assignment nor invocation)

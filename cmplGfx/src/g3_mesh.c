@@ -32,7 +32,7 @@ static char* readKVP(char *ptr, char *key, char *sep, char *wsp) {	// key = valu
 		while (*ptr && strchr(wsp, *ptr)) ++ptr;
 	}
 
-	// if key and separator were mached
+	// if key and separator were matched
 	return (*key || (sep && *sep)) ? NULL : ptr;
 }
 static char* readI32(char *ptr, int *outVal) {
@@ -500,7 +500,7 @@ int read3ds(GxMesh msh, const char *file) {
 			break;
 		}
 
-		//Read the lenght of the chunk
+		//Read the length of the chunk
 		unsigned int chunk_len;
 		if (!fread(&chunk_len, 4, 1, fin)) {
 			gx_debug("input error");
@@ -540,7 +540,7 @@ int read3ds(GxMesh msh, const char *file) {
 					//~ 0x2200 : Fog
 					//~ 0x2201 : Use fog
 					//~ 0x2210 : Fog background
-					//~ 0x2300 : Distance queue
+					//~ 0x2300 : Distance cue
 						//~ 0x2310 : Dim background
 					//~ 0x2301 : Use distance queue
 					//~ 0x2302 : Layered fog options
@@ -688,7 +688,7 @@ int read3ds(GxMesh msh, const char *file) {
 					//~ case 0x2200: // Fog
 					//~ case 0x2201: // Use fog
 					//~ case 0x2210: // Fog background
-					//~ case 0x2300: // Distance queue
+					//~ case 0x2300: // Distance cue
 					//~ case 0x2310: // Dim background
 					//~ case 0x2301: // Use distance queue
 					//~ case 0x2302: // Layered fog options

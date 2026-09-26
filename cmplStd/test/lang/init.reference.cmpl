@@ -97,12 +97,12 @@ variant valueOfVar = variant(value);
 typename valueOfTyp = struct(value);
 
 typename typeOfValue = struct(value);
-// typename assignValue = value;  // FIXME: this should be not possible
+// typename assignValue = value;  // FIXME: this should not be possible
 // typename assignVariant = valueVar;  // FIXME: this should extract the type?
 // typename typeOfVar = struct(valueVar);// FIXME: extract type from variant: integer, not variant
 
 // Assign pointer to variant: add pointer as type and copy the reference
 variant copyPtrFloat64 = ptrFloat64;
 
-// Assign variant to pointer: discards typename and copy reference
+// Assign variant to pointer: discards typename and copies reference
 pointer copyVarFloat64 = varFloat64;

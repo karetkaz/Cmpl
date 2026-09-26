@@ -1,0 +1,386 @@
+/** ### Instruction `load.is8`
+
+Loads a signed 8-bit value from the memory address on top of the stack, sign-extended to 32 bits.
+
+```
+ref = pop()
+i32 val = mem[ref].i8
+push(val)
+```
+*/
+inline "*opcode:load.is8";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, val]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 1` is past the end of the memory.
+*/
+
+/** ### Instruction `load.iu8`
+
+Loads an unsigned 8-bit value from the memory address on top of the stack, zero-extended to 32 bits.
+
+```
+ref = pop()
+u32 val = mem[ref].u8
+push(val)
+```
+*/
+inline "*opcode:load.iu8";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, val]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 1` is past the end of the memory.
+*/
+
+/** ### Instruction `load.is16`
+
+Loads a signed 16-bit value from the memory address on top of the stack, sign-extended to 32 bits.
+
+```
+ref = pop()
+i32 val = mem[ref].i16
+push(val)
+```
+*/
+inline "*opcode:load.is16";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, val]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 2` is past the end of the memory.
+
+Notes:
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `load.iu16`
+
+Loads an unsigned 16-bit value from the memory address on top of the stack, zero-extended to 32 bits.
+
+```
+ref = pop()
+u32 val = mem[ref].u16
+push(val)
+```
+*/
+inline "*opcode:load.iu16";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, val]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 2` is past the end of the memory.
+
+Notes:
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `load.i32`
+
+Loads a 32-bit value from the memory address on top of the stack.
+
+```
+ref = pop()
+a1 = mem[ref].x32
+push(a1)
+```
+*/
+inline "*opcode:load.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, a1]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 4` is past the end of the memory.
+
+Notes:
+* the transfer is type-agnostic, it is used for any 32-bit value: `i32`, `u32`, `f32`, references, ...
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `load.i64`
+
+Loads a 64-bit value from the memory address on top of the stack.
+
+```
+ref = pop()
+a2 = mem[ref + 0].x32
+a1 = mem[ref + 4].x32
+push(a1)
+push(a2)
+```
+*/
+inline "*opcode:load.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, a1, a2]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 8` is past the end of the memory.
+* `stackOverflow`: there is no room on the stack for the extra slot.
+
+Notes:
+* the 8 bytes at `ref` are copied verbatim into two stack slots: the top slot `a2` receives bytes `0‥3`, the slot below it `a1` receives bytes `4‥7`.
+* the transfer is type-agnostic, it is used for any 64-bit value: `i64`, `u64`, `f64`, ...
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `load.i128`
+
+Loads a 128-bit value from the memory address on top of the stack.
+
+```
+ref = pop()
+a4 = mem[ref +  0].x32
+a3 = mem[ref +  4].x32
+a2 = mem[ref +  8].x32
+a1 = mem[ref + 12].x32
+push(a1)
+push(a2)
+push(a3)
+push(a4)
+```
+*/
+inline "*opcode:load.i128";
+/**
+* Immediate operand: none
+* Stack effect: `[…, ref] → […, a1, a2, a3, a4]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` is `null`, or `ref + 16` is past the end of the memory.
+* `stackOverflow`: there is no room on the stack for the extra slots.
+
+Notes:
+* the 16 bytes at `ref` are copied verbatim into four stack slots: the top slot `a4` receives bytes `0‥3`, the deepest slot `a1` receives bytes `12‥15`.
+* the transfer is type-agnostic, it is used for any 128-bit value: `v4f`, `v2d`, 16-byte records, ...
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `store.i8`
+
+Stores the low 8 bits of a value from the stack to the memory address on top of the stack.
+
+```
+ref = pop()
+val = pop()
+mem[ref].i8 = val
+```
+*/
+inline "*opcode:store.i8";
+/**
+* Immediate operand: none
+* Stack effect: `[…, val, ref] → […]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` points into the read-only region (constants and code), or `ref + 1` is past the end of the memory.
+
+Notes:
+* the value is truncated to its lowest byte, the upper 24 bits are discarded.
+*/
+
+/** ### Instruction `store.i16`
+
+Stores the low 16 bits of a value from the stack to the memory address on top of the stack.
+
+```
+ref = pop()
+val = pop()
+mem[ref].i16 = val
+```
+*/
+inline "*opcode:store.i16";
+/**
+* Immediate operand: none
+* Stack effect: `[…, val, ref] → […]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` points into the read-only region (constants and code), or `ref + 2` is past the end of the memory.
+
+Notes:
+* the value is truncated to its lowest 16 bits, the upper 16 bits are discarded.
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `store.i32`
+
+Stores a 32-bit value from the stack to the memory address on top of the stack.
+
+```
+ref = pop()
+a1 = pop()
+mem[ref].x32 = a1
+```
+*/
+inline "*opcode:store.i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a1, ref] → […]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` points into the read-only region (constants and code), or `ref + 4` is past the end of the memory.
+
+Notes:
+* the transfer is type-agnostic, it is used for any 32-bit value: `i32`, `u32`, `f32`, references, ...
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `store.i64`
+
+Stores a 64-bit value from the stack to the memory address on top of the stack.
+
+```
+ref = pop()
+a2 = pop()
+a1 = pop()
+mem[ref + 0].x32 = a2
+mem[ref + 4].x32 = a1
+```
+*/
+inline "*opcode:store.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a1, a2, ref] → […]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` points into the read-only region (constants and code), or `ref + 8` is past the end of the memory.
+
+Notes:
+* the 2 stack slots below `ref` are copied verbatim into the 8 bytes at `ref`: the slot pushed last (`a2`) is written to bytes `0‥3`, the slot pushed first (`a1`) to bytes `4‥7`.
+* the transfer is type-agnostic, it is used for any 64-bit value: `i64`, `u64`, `f64`, ...
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `store.i128`
+
+Stores a 128-bit value from the stack to the memory address on top of the stack.
+
+```
+ref = pop()
+a4 = pop()
+a3 = pop()
+a2 = pop()
+a1 = pop()
+mem[ref +  0].x32 = a4
+mem[ref +  4].x32 = a3
+mem[ref +  8].x32 = a2
+mem[ref + 12].x32 = a1
+```
+*/
+inline "*opcode:store.i128";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a1, a2, a3, a4, ref] → […]`
+
+Traps:
+* `illegalMemoryAccess`: `ref` points into the read-only region (constants and code), or `ref + 16` is past the end of the memory.
+
+Notes:
+* the 4 stack slots below `ref` are copied verbatim into the 16 bytes at `ref`: the slot pushed last (`a4`) is written to bytes `0‥3`, the slot pushed first (`a1`) to bytes `12‥15`.
+* the transfer is type-agnostic, it is used for any 128-bit value: `v4f`, `v2d`, 16-byte records, ...
+* the alignment of `ref` is not checked.
+*/
+
+/** ### Instruction `load.m32`
+
+Loads a 32-bit value from the memory address given by the immediate operand.
+
+```
+a1 = mem[imm.i24].x32
+push(a1)
+```
+*/
+inline "*opcode:load.m32";
+/**
+* Immediate operand: `imm.i24`: absolute memory address
+* Stack effect: `[…] → […, a1]`
+
+Traps:
+* `illegalMemoryAccess`: the address is `null` or negative, or `address + 4` is past the end of the memory.
+* `stackOverflow`: there is no room on the stack for the new slot.
+
+Notes:
+* compressed form of `load.ref address` followed by `load.i32`.
+* only the first 8 MiB of the memory is addressable by the 24-bit immediate.
+* the alignment of the address is not checked.
+*/
+
+/** ### Instruction `load.m64`
+
+Loads a 64-bit value from the memory address given by the immediate operand.
+
+```
+a2 = mem[imm.i24 + 0].x32
+a1 = mem[imm.i24 + 4].x32
+push(a1)
+push(a2)
+```
+*/
+inline "*opcode:load.m64";
+/**
+* Immediate operand: `imm.i24`: absolute memory address
+* Stack effect: `[…] → […, a1, a2]`
+
+Traps:
+* `illegalMemoryAccess`: the address is `null` or negative, or `address + 8` is past the end of the memory.
+* `stackOverflow`: there is no room on the stack for the new slots.
+
+Notes:
+* compressed form of `load.ref address` followed by `load.i64`.
+* the 8 bytes at the address are copied verbatim into two stack slots: the top slot `a2` receives bytes `0‥3`, the slot below it `a1` receives bytes `4‥7`.
+* only the first 8 MiB of the memory is addressable by the 24-bit immediate.
+* the alignment of the address is not checked.
+*/
+
+/** ### Instruction `store.m32`
+
+Stores a 32-bit value from the stack to the memory address given by the immediate operand.
+
+```
+a1 = pop()
+mem[imm.i24].x32 = a1
+```
+*/
+inline "*opcode:store.m32";
+/**
+* Immediate operand: `imm.i24`: absolute memory address
+* Stack effect: `[…, a1] → […]`
+
+Traps:
+* `illegalMemoryAccess`: the address points into the read-only region (constants and code), is negative, or `address + 4` is past the end of the memory.
+
+Notes:
+* compressed form of `load.ref address` followed by `store.i32`.
+* only the first 8 MiB of the memory is addressable by the 24-bit immediate.
+* the alignment of the address is not checked.
+*/
+
+/** ### Instruction `store.m64`
+
+Stores a 64-bit value from the stack to the memory address given by the immediate operand.
+
+```
+a2 = pop()
+a1 = pop()
+mem[imm.i24 + 0].x32 = a2
+mem[imm.i24 + 4].x32 = a1
+```
+*/
+inline "*opcode:store.m64";
+/**
+* Immediate operand: `imm.i24`: absolute memory address
+* Stack effect: `[…, a1, a2] → […]`
+
+Traps:
+* `illegalMemoryAccess`: the address points into the read-only region (constants and code), is negative, or `address + 8` is past the end of the memory.
+
+Notes:
+* compressed form of `load.ref address` followed by `store.i64`.
+* the 2 top stack slots are copied verbatim into the 8 bytes at the address: the top slot `a2` is written to bytes `0‥3`, the slot below it `a1` to bytes `4‥7`.
+* only the first 8 MiB of the memory is addressable by the 24-bit immediate.
+* the alignment of the address is not checked.
+*/

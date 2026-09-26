@@ -1,0 +1,33 @@
+/** ## Return statement
+The return statement terminates the execution of the current function.
+
+If an expression is given, it is assigned to the function's result parameter before returning.
+It is allowed to `return` an expression of type `void` (e.g. invoking a void function) even from a void-returning function — the expression is evaluated, but nothing is returned.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// return statement: assigns its expression into the function's result, then exits the function
+
+int stmtReturnAddOne(int x) {
+	return x + 1;
+}
+assertEq(6, stmtReturnAddOne(5));
+
+void stmtReturnNoop() {
+	return;
+}
+stmtReturnNoop();
+
+// a `void`-returning function may `return` an expression of type `void`
+// (e.g. invoking another void function): it is evaluated, but nothing is returned
+static int stmtReturnSideEffects = 0;
+void stmtReturnBump() {
+	stmtReturnSideEffects += 1;
+}
+void stmtReturnBumpAndExit() {
+	return stmtReturnBump();
+}
+stmtReturnBumpAndExit();
+assertEq(1, stmtReturnSideEffects);

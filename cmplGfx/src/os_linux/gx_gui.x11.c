@@ -143,7 +143,7 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 		}
 	}
 
-	// do nopt not process key release while key is pressed
+	// do not process key release while key is pressed
 	if (event.type == KeyRelease && XPending(display)) {
 		XEvent nextEvent;
 		XPeekEvent(display, &nextEvent);

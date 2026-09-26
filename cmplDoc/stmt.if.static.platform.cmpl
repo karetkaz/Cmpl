@@ -1,0 +1,20 @@
+/** ### Platform specific code
+A `static if` can select code for the target platform at compile time:
+the branches of the other platforms are type-checked, but no code is generated for them.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+static if (System.Platform.WebAssembly != 0) {
+	debug("WebAssembly platform");
+}
+static if (System.Platform.Windows != 0) {
+	debug("Windows platform");
+}
+static if (System.Platform.MacOS != 0) {
+	debug("macOS platform");
+}
+static if (System.Platform.Linux != 0) {
+	debug("Linux platform");
+}

@@ -34,7 +34,7 @@ struct DebugWriter: ByteWriter {
 				// raise will add a new line, ignore the last one in the buffer
 				this.position -= 1;
 			}
-			// raise still uses zero terminated string for printing, make sure is terminated
+			// raise still uses zero terminated string for printing, make sure it is terminated
 			this.buffer[this.position] = 0;
 		}
 

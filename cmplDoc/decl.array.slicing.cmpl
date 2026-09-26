@@ -1,0 +1,31 @@
+/** ### Array slicing
+A slice can be created from a fixed-size array, a slice, or an unknown-size array, using the slice operator.
+- The start is optional and defaults to 0: `a[...end]` is the same as `a[0 ... end]`.
+- The bounds are checked: `start <= end` must hold, and `end` must not exceed the length of the sliced array.
+  Constant bounds on fixed-size arrays are verified at compile time, otherwise at runtime, aborting execution with `illegalArrayAccess`.
+- Unknown-size arrays (`int a[*]`) have no length, so only the `start <= end` relation is validated.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// a slice points to the same memory as the array it was created from, and saves the length
+float64 declArrSlcFixed[3] = {2, 1, 3};
+float64 declArrSlcAll[] = declArrSlcFixed;
+assertEq(3, declArrSlcAll.length);
+assertEq(declArrSlcFixed[2], declArrSlcAll[2]);
+
+// the start is optional: `[... end]` is the same as `[0 ... end]`
+float64 declArrSlcPrefix[] = declArrSlcFixed[... 2];
+assertEq(2, declArrSlcPrefix.length);
+assertEq(declArrSlcFixed[1], declArrSlcPrefix[1]);
+
+// `start` is inclusive, `end` is exclusive
+float64 declArrSlcMiddle[] = declArrSlcFixed[1 ... 3];
+assertEq(2, declArrSlcMiddle.length);
+assertEq(declArrSlcFixed[1], declArrSlcMiddle[0]);
+
+// an unknown-size array has no length, it only points to the first element
+float64 declArrSlcPtr[*] = declArrSlcFixed;
+float64 declArrSlcFromPtr[] = declArrSlcPtr[1 ... 3];
+assertEq(declArrSlcFixed[2], declArrSlcFromPtr[1]);

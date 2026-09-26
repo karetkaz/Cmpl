@@ -1,0 +1,62 @@
+#!/usr/bin/env -S cmpl -debug/P
+
+void noError(pointer ptr) {
+}
+
+void stackOverflow(pointer ptr) {
+	// speed up the overflow allocating 8 kb memory in each call
+	uint8 data[8 << 10] = {...?};
+	stackOverflow(ptr);
+}
+
+void divisionByZero(pointer args) {
+	int value = 3 / 0;
+}
+
+void abortExecution(pointer args) {
+	struct NotEquals {
+		char message![*];
+		int expected;
+		int returned;
+	}
+	NotEquals details = {
+		message: "assertion failed",
+		expected: 97,
+		returned: 77,
+	};
+	abort("fatal error", details);
+}
+
+void invalidMemoryAccess(pointer args) {
+	int32 i32Ref& = null;
+	int i32Val = i32Ref;
+}
+
+void invalidInstruction(pointer args) {
+	inline(int(0), ret);
+}
+
+void invalidArrayAccess(pointer args) {
+	int32 values[3] = {...0};
+	int32 index = 5;
+	int32 value = values[index];
+}
+
+int recoverErr0 = recover(null, noError);
+int recoverErr1 = recover(null, null);
+int recoverErr2 = recover(null, stackOverflow);
+int recoverErr3 = recover(null, divisionByZero);
+int recoverErr4 = recover(null, invalidInstruction);
+int recoverErr5 = recover(null, invalidMemoryAccess);
+int recoverErr6 = recover(null, abortExecution);
+int recoverErr7 = recover(null, invalidArrayAccess);
+
+// the error codes are exposed as constants of the `recover` function
+assert(recoverErr0 == recover.noError);
+assert(recoverErr1 == recover.illegalState);
+assert(recoverErr2 == recover.stackOverflow);
+assert(recoverErr3 == recover.divisionByZero);
+assert(recoverErr4 == recover.illegalInstruction);
+assert(recoverErr5 == recover.illegalMemoryAccess);
+assert(recoverErr6 == recover.nativeCallError);
+assert(recoverErr7 == recover.illegalArrayAccess);

@@ -1,0 +1,31 @@
+/** ### Reflection functions
+`pointer`, `variant` and `struct` can be used as functions for reflection:
+- `pointer(x)` returns the address of the variable `x`.
+- `variant(x)` constructs a variant carrying both the type and the address of `x`.
+- `struct(x)` returns the type of `x`, or `null` if `x` is not a defined symbol — commonly used inside
+  `static if` to conditionally define a missing alias.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// pointer, struct (typename) and variant, used as functions for reflection
+
+int32 declFunReflValue = 42;
+
+pointer declFunReflPtr = pointer(declFunReflValue);   // the address of the variable
+assert(declFunReflPtr != null);
+
+variant declFunReflVar = variant(declFunReflValue);
+assert(variant.type(declFunReflVar) == int32);
+assert(variant.data(declFunReflVar) == declFunReflPtr);
+
+typename declFunReflTyp = struct(declFunReflValue);   // the type of the variable
+assert(declFunReflTyp == int32);
+
+// `struct(x)` returns `null` when `x` is not a defined symbol —
+// commonly used to conditionally define a missing alias
+static if (struct(declFunReflNotDefined) == null) {
+	inline declFunReflNotDefined = float64;
+}
+assert(struct(declFunReflNotDefined) == typename);

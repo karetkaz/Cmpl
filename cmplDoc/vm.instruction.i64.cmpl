@@ -1,0 +1,247 @@
+/** ### Instruction `neg.i64`
+
+Negates the 64-bit signed integer on top of the stack.
+
+```
+i64 a = pop()
+push(-a)
+```
+*/
+inline "*opcode:neg.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, -a]`
+
+Notes:
+* negating the minimum value (`-9223372036854775808`) overflows; the overflow is not detected.
+*/
+
+/** ### Instruction `add.i64`
+
+Adds the two 64-bit integers on top of the stack.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a + b)
+```
+*/
+inline "*opcode:add.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a + b]`
+
+Notes:
+* overflow is not detected; the result for out-of-range values is undefined in C (it typically wraps around).
+*/
+
+/** ### Instruction `sub.i64`
+
+Subtracts the 64-bit integer on top of the stack from the one below it.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a - b)
+```
+*/
+inline "*opcode:sub.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a - b]`
+
+Notes:
+* overflow is not detected; the result for out-of-range values is undefined in C (it typically wraps around).
+*/
+
+/** ### Instruction `mul.i64`
+
+Multiplies the two 64-bit signed integers on top of the stack.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a * b)
+```
+*/
+inline "*opcode:mul.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a * b]`
+
+Notes:
+* only the low 64 bits of the product are kept; overflow is not detected; the result for out-of-range values is undefined in C (it typically wraps around).
+*/
+
+/** ### Instruction `div.i64`
+
+Divides the 64-bit signed integer below the top of the stack by the one on top.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a / b)
+```
+*/
+inline "*opcode:div.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a / b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero, or the division overflows (`-9223372036854775808 / -1`).
+
+Notes:
+* the quotient is truncated toward zero.
+*/
+
+/** ### Instruction `rem.i64`
+
+Computes the remainder of the signed division of the two 64-bit integers on top of the stack.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a % b)
+```
+*/
+inline "*opcode:rem.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a % b]`
+
+Traps:
+* `divisionByZero`: the divisor `b` is zero, or the dividend is `-9223372036854775808` and the divisor is `-1` (the result would be `0`, but the division overflows).
+
+Notes:
+* the result has the sign of the dividend `a` (C semantics: `a == (a / b) * b + a % b`).
+*/
+
+/** ### Instruction `ceq.i64`
+
+Compares the two 64-bit integers on top of the stack for equality.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a == b)
+```
+*/
+inline "*opcode:ceq.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a == b]`
+
+Notes:
+* the result is a 32-bit integer: `1` if the condition holds, `0` otherwise.
+*/
+
+/** ### Instruction `clt.i64`
+
+Checks if the 64-bit signed integer below the top of the stack is less than the one on top.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a < b)
+```
+*/
+inline "*opcode:clt.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a < b]`
+
+Notes:
+* the result is a 32-bit integer: `1` if the condition holds, `0` otherwise.
+*/
+
+/** ### Instruction `cgt.i64`
+
+Checks if the 64-bit signed integer below the top of the stack is greater than the one on top.
+
+```
+i64 b = pop()
+i64 a = pop()
+push(a > b)
+```
+*/
+inline "*opcode:cgt.i64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a, b] → […, a > b]`
+
+Notes:
+* the result is a 32-bit integer: `1` if the condition holds, `0` otherwise.
+*/
+
+/** ### Instruction `i64.2i32`
+
+Converts the 64-bit integer on top of the stack to a 32-bit integer, keeping only the low 32 bits.
+
+```
+i64 a = pop()
+push(i32(a))
+```
+*/
+inline "*opcode:i64.2i32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, i32(a)]`
+
+Notes:
+* the high 32 bits are discarded; no range check is made.
+*/
+
+/** ### Instruction `i64.2bool`
+
+Converts the 64-bit integer on top of the stack to a boolean.
+
+```
+i64 a = pop()
+push(a != 0)
+```
+*/
+inline "*opcode:i64.2bool";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, a != 0]`
+
+Notes:
+* the result is a 32-bit integer: `1` if `a` is non-zero, `0` otherwise.
+*/
+
+/** ### Instruction `i64.2f32`
+
+Converts the 64-bit signed integer on top of the stack to a 32-bit floating point value.
+
+```
+i64 a = pop()
+push(f32(a))
+```
+*/
+inline "*opcode:i64.2f32";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, f32(a)]`
+
+Notes:
+* values with a magnitude above 2^24 may be rounded, as `f32` has a 24-bit significand.
+*/
+
+/** ### Instruction `i64.2f64`
+
+Converts the 64-bit signed integer on top of the stack to a 64-bit floating point value.
+
+```
+i64 a = pop()
+push(f64(a))
+```
+*/
+inline "*opcode:i64.2f64";
+/**
+* Immediate operand: none
+* Stack effect: `[…, a] → […, f64(a)]`
+
+Notes:
+* values with a magnitude above 2^53 may be rounded, as `f64` has a 53-bit significand.
+*/

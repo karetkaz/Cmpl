@@ -14,7 +14,7 @@ struct Uint16: 2 {
 	/// Test if the value is zero or not, also the signum of the input (`0` if zero, `1` if positive)
 	static int32 test(Uint16 x) { return int32(u32(x) > 0); }
 
-	/// Negates an 16-bit unsigned value
+	/// Negates a 16-bit unsigned value
 	static Uint16 neg(Uint16 x) { return { value: inline(u32(x), i32.neg) }; }
 
 	/// Adds two 16-bit unsigned integers
@@ -32,7 +32,7 @@ struct Uint16: 2 {
 	/// Divide x by y, returning remainder
 	static Uint16 rem(Uint16 x, Uint16 y) { return { value: inline(u32(x), u32(y), u32.rem) }; }
 
-	/// Negates an 16-bit unsigned value
+	/// Negates a 16-bit unsigned value
 	static Uint16 neg(Uint16 x, Uint16 overflow&) {
 		overflow.value = 1; // always overflows
 		return { value: inline(u32(x), i32.neg) };
@@ -45,7 +45,7 @@ struct Uint16: 2 {
 		return { value: result };
 	}
 
-	/// Adds two 16-bit unsigned integers with carry out
+	/// Adds two 16-bit unsigned integers with carry in and out
 	static Uint16 add(Uint16 x, Uint16 y, Uint16 c, Uint16 overflow&) {
 		uint32 result = inline(u32(x), u32(y), i32.add, u32(c), i32.add);
 		overflow.value = result >> bits;
@@ -59,7 +59,7 @@ struct Uint16: 2 {
 		return { value: result };
 	}
 
-	/// Subtracts two 16-bit unsigned integers with borrow out
+	/// Subtracts two 16-bit unsigned integers with borrow in and out
 	static Uint16 sub(Uint16 x, Uint16 y, Uint16 c, Uint16 overflow&) {
 		uint32 result = inline(u32(x), u32(y), i32.sub, u32(c), i32.sub);
 		overflow.value = -(result >> bits);
@@ -73,7 +73,7 @@ struct Uint16: 2 {
 		return { value: result };
 	}
 
-	/// Computes the bitwise NOT of an 16-bit unsigned value
+	/// Computes the bitwise NOT of a 16-bit unsigned value
 	static Uint16 cmt(Uint16 x) { return { value: inline(u32(x), u32.cmt) }; }
 
 	/// Computes the bitwise OR of two 16-bit unsigned integers
@@ -85,13 +85,13 @@ struct Uint16: 2 {
 	/// Computes the bitwise AND of two 16-bit unsigned integers
 	static Uint16 and(Uint16 x, Uint16 y) { return { value: inline(u32(x), u32(y), u32.and) }; }
 
-	/// Performs a logical left shift of x by n bits for an 16-bit unsigned integer
+	/// Performs a logical left shift of x by n bits for a 16-bit unsigned integer
 	static Uint16 shl(Uint16 x, uint32 n) { return { value: inline(u32(x), uint32(n % bits), u32.shl) }; }
 
-	/// Performs a logical right shift of x by n bits for an 16-bit unsigned integer
+	/// Performs a logical right shift of x by n bits for a 16-bit unsigned integer
 	static Uint16 shr(Uint16 x, uint32 n) { return { value: inline(u32(x), uint32(n % bits), u32.shr) }; }
 
-	/// Performs an arithmetic right shift of x by n bits for an 16-bit unsigned integer
+	/// Performs an arithmetic right shift of x by n bits for a 16-bit unsigned integer
 	static Uint16 sar(Uint16 x, uint32 n) { return { value: inline(i32(x), uint32(n % bits), u32.sar) }; }
 
 	/// Returns the value of x rotated left by (n mod size) bits
@@ -113,7 +113,7 @@ struct Uint16: 2 {
 			return uint32.len(u32(x));
 		}
 
-		uint32 bits = u32(x);	// speed up by by avoiding load and store indirect memory
+		uint32 bits = u32(x);	// speed up by avoiding load and store indirect memory
 		int32 result = 0;
 
 		if ((bits >> 8) != 0) {
@@ -177,7 +177,7 @@ struct Uint16: 2 {
 		return { value: (x >> 8) | (x << 8) };
 	}
 
-	/// Reverses the byte order of an 16-bit unsigned integer
+	/// Reverses the byte order of a 16-bit unsigned integer
 	static Uint16 reverseBytes(Uint16 y) {
 		uint32 x = u32(y);
 		return { value: (x & 0x00ff) << 8 | (x & 0xff00) >> 8 };
@@ -192,7 +192,7 @@ struct Uint16: 2 {
 	/// Returns the greater of two values
 	static Uint16 max(Uint16 a, Uint16 b) { return u32(a) > u32(b) ? a : b; }
 
-	/// Returns the `value` clamped between the provided `min` and `max`
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Uint16 clamp(Uint16 value, Uint16 lo, Uint16 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -213,7 +213,7 @@ struct Int16: 2 {
 
 	inline i32(Int16 x) = int32(x.value);
 
-	/// Computes the arithmetic negation of an 16-bit signed integer
+	/// Computes the arithmetic negation of a 16-bit signed integer
 	static Int16 neg(Int16 x) { return { value: inline(i32(x), i32.neg) }; }
 
 	/// Add two values
@@ -222,7 +222,7 @@ struct Int16: 2 {
 	/// Subtract two values
 	static Int16 sub(Int16 x, Int16 y) { return { value: inline(i32(x), i32(y), i32.sub) }; }
 
-	/// Multiply two values with overflow-out
+	/// Multiply two values
 	static Int16 mul(Int16 x, Int16 y) { return { value: inline(i32(x), i32(y), i32.mul) }; }
 
 	/// Divide x by y, returning quotient
@@ -231,7 +231,7 @@ struct Int16: 2 {
 	/// Divide x by y, returning remainder
 	static Int16 rem(Int16 x, Int16 y) { return { value: inline(i32(x), i32(y), i32.rem) }; }
 
-	/// Computes the arithmetic negation of an 16-bit signed integer
+	/// Computes the arithmetic negation of a 16-bit signed integer
 	static Int16 neg(Int16 x, Int16 overflow&) {
 		overflow.value = int32(i32(x) == min);
 		return { value: inline(i32(x), i32.neg) };
@@ -258,12 +258,12 @@ struct Int16: 2 {
 		return { value: result };
 	}
 
-	/// Returns 1 if nonzero, 0 if zero
+	/// Returns the sign of the value: `-1` if negative, `0` if zero, `1` if positive
 	static int32 sign(Int16 x) {
 		return int32(i32(x) > 0) - int32(i32(x) < 0);
 	}
 
-	/// Returns the absolute value (identity for unsigned)
+	/// Returns the absolute value
 	static Int16 abs(Int16 x) { return i32(x) < 0 ? x.neg() : x; }
 
 	/// Returns the smaller of two values
@@ -272,7 +272,7 @@ struct Int16: 2 {
 	/// Returns the greater of two values
 	static Int16 max(Int16 a, Int16 b) { return i32(a) > i32(b) ? a : b; }
 
-	/// Clamps value between min and max
+	/// Returns the `value` clamped between the provided `lo` and `hi`
 	static Int16 clamp(Int16 value, Int16 lo, Int16 hi) { return min(max(value, lo), hi); }
 
 	/// Compare: returns 0 if equal, positive if x > y, negative if x < y
@@ -281,14 +281,14 @@ struct Int16: 2 {
 	}
 }
 
-/// Construct a Uint16 from a packed byte value
+/// Construct a Uint16 from a 16-bit unsigned value
 Uint16 Uint16(uint16 value) { return { value: value }; }
 
 /// Convert a Uint16 value to a uint32
 uint32 uint32(Uint16 value) { return value.value; }
 
-/// Construct an Int16 from a signed byte value
+/// Construct an Int16 from a 16-bit signed value
 Int16 Int16(int16 value) { return { value: value }; }
 
-/// Convert an Int16 value to a int32
+/// Convert an Int16 value to an int32
 int32 int32(Int16 value) { return value.value; }

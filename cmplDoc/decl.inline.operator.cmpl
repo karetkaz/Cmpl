@@ -1,0 +1,29 @@
+/** ## Operator overloading
+Operators can be overloaded using the `inline` keyword.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// unary and binary operator overloads
+
+struct DeclOpComplex {
+	float64 re;
+	float64 im = 0;
+}
+DeclOpComplex DeclOpComplex(float64 re) {
+	return { re: re };
+}
+DeclOpComplex DeclOpComplex(float64 re, float64 im) {
+	return { re: re, im: im };
+}
+
+inline -(DeclOpComplex a) = DeclOpComplex(-a.re, -a.im);
+inline +(DeclOpComplex a, DeclOpComplex b) = DeclOpComplex(a.re + b.re, a.im + b.im);
+
+DeclOpComplex declOpA = DeclOpComplex(3);     //  3 + 0i
+DeclOpComplex declOpB = -declOpA;             // -3 + 0i
+assertEq(-3, declOpB.re);
+
+DeclOpComplex declOpC = declOpA + declOpA;    //  6 + 0i
+assertEq(6, declOpC.re);

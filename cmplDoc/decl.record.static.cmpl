@@ -1,0 +1,21 @@
+/** ### Static records
+A record declared `static` has all its members implicitly static (effectively a namespace).
+Static records have no size and cannot be instantiated.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// static records: all members are implicitly static, acting as a namespace
+
+static struct DeclRecStaticNamespace {
+	float64 linear(float64 t) {
+		return t;
+	}
+	float64 square(float64 t) {
+		return t * t;
+	}
+}
+
+assertEq(0.5, DeclRecStaticNamespace.linear(0.5));
+assertEq(0.25, DeclRecStaticNamespace.square(0.5));

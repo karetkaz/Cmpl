@@ -1,14 +1,14 @@
-///@public
+/// Switch is a button cycling through a list of states on each click
 struct Switch: Button {
 	static char onOff[][] = {
 		"off",
 		"on"
 	};
 
-	///@public
+	/// The text of each state, an empty list makes a graphical on/off switch
 	char states[][] = onOff;
 
-	///@public
+	/// The index of the selected state
 	int selected = 0;
 	int resetValue = 0;
 
@@ -60,6 +60,7 @@ struct Switch: Button {
 		// clamp to initial value and force update with a reset
 		Switch.onUpdate(this, this.selected);
 		this.resetValue = this.selected;
+		this.selected = Int32.min;
 		this.onUpdate(this, this.resetValue);
 	}
 

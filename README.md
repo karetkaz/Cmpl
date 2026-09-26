@@ -12,6 +12,9 @@ A very "simple" C like toy language.
 
 [Live Demo](https://karetkaz.github.io/Cmpl/extras/web/editor.html)
 
+[Inspect dump file](https://karetkaz.github.io/Cmpl/extras/web/editor.html#content&inspect=/Cmpl/build/cmpl.json)
+
+Other demos:
 * [Hello World](https://karetkaz.github.io/Cmpl/extras/web/editor.html#libFile&path=HelloWold.cmpl&content=File.out.write("hello%20world");)
 
 * [Flood It](https://karetkaz.github.io/Cmpl/extras/web/editor.html#libGfx&path=FloodIt.cmpl&project=/Cmpl/cmplGfx/test/games/FloodIt.cmpl)
@@ -25,5 +28,3 @@ A very "simple" C like toy language.
 * [Spam Terminal](https://karetkaz.github.io/Cmpl/extras/web/editor.html#path=SpamTerminal.cmpl&content=Zm9yIChpbnQgaSA9IDA7IGkgPCAxMDAwMDsgaSArPSAxKSB7Cglmb3IgKGludCBqID0gMDsgaiA8IDEwMDAwOyBqICs9IDEpIHt9CglkZWJ1ZygibWVzc2FnZSIsIGkpOwp9Cg)
 
 * [bitwise arithmetic](https://karetkaz.github.io/Cmpl/extras/web/editor.html#path=BitwiseArithmetic.cmpl&project=/Cmpl/cmplStd/test/demo/BitwiseArithmetic.cmpl)
-
-[Inspect dump file](/Cmpl/extras/web/inspector.html#/Cmpl/build/macos.test.json)

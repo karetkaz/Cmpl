@@ -28,7 +28,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		return x != x;
 	}
 
-	/// Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
+	/// Determines whether the given floating point value is finite: `!isUndefined(x) && !isInfinity(x)`
 	static bool isFinite(float64 x) {
 		return x - x == 0;
 	}
@@ -93,7 +93,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		return x < 0 ? -x : x;
 	}
 
-	/// Compute least significant bit (Unit in Last Position) for a number.
+	/// Compute least significant bit (Unit in the Last Place) for a number.
 	static float64 ulp(float64 x) {
 		if (isInfinity(x)) {
 			return inf;
@@ -208,15 +208,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 // pow
 
-	/** Frexp breaks f into a normalized fraction and an integral power of two.
-	 * It returns frac and exp satisfying f == frac × 2**exp,
-	 * with the absolute value of frac in the interval [½, 1).
-	 *
-	 * Special cases are:
-	 *   * Frexp(±0) = ±0, 0
-	 *   * Frexp(±Inf) = ±Inf, 0
-	 *   * Frexp(NaN) = NaN, 0
-	 */
+	/// Frexp breaks f into a normalized fraction and an integral power of two, satisfying $ f == frac \times 2 ^ {exp} $
 	// adapted from: https://github.com/golang/go/blob/master/src/math/frexp.go
 	static float64 frexp(float64 f, int32 exp&) {
 		static if (System.Platform.preferNativeCalls && struct(float64.frexp) != null) {
@@ -229,7 +221,11 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		inline signMask = 1U << 63;
 		inline fracMask = 1U << shift - 1;
 
-		// special cases
+		/* Special cases are:
+		 *   * Frexp(±0) = ±0, 0
+		 *   * Frexp(±Inf) = ±Inf, 0
+		 *   * Frexp(NaN) = NaN, 0
+		 */
 		if (f == 0) {
 			exp = 0;
 			return f;
@@ -254,14 +250,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		return fromBits(x);
 	}
 
-	/** Ldexp is the inverse of Frexp.
-	 * It returns frac × 2**exp.
-	 *
-	 * Special cases are:
-	 *	 * Ldexp(±0, exp) = ±0
-	 *	 * Ldexp(±Inf, exp) = ±Inf
-	 *	 * Ldexp(NaN, exp) = NaN
-	 */
+	/// Ldexp is the inverse of Frexp, it returns $ frac \times 2 ^ {exp} $.
 	// adapted from: https://github.com/golang/go/blob/master/src/math/ldexp.go
 	static float64 ldexp(float64 f, int32 exp) {
 		static if (System.Platform.preferNativeCalls && struct(float64.ldexp) != null) {
@@ -274,7 +263,11 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		inline signMask = 1U << 63;
 		inline fracMask = 1U << shift - 1;
 
-		// special cases
+		/* Special cases are:
+		 *	 * Ldexp(±0, exp) = ±0
+		 *	 * Ldexp(±Inf, exp) = ±Inf
+		 *	 * Ldexp(NaN, exp) = NaN
+		 */
 		if (f == 0) {
 			// correctly return -0
 			return f;
@@ -372,7 +365,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 			return float64.exp(x);
 		}
 
-		// exp1 returns e**r × 2**k where r = hi - lo and |r| ≤ ln(2)/2.
+		// expmulti returns e**r × 2**k where r = hi - lo and |r| ≤ ln(2)/2.
 		float64 expmulti(float64 hi, float64 lo, int32 k) {
 			enum: float64 {
 				P1:  1.66666666666666657415e-01,  // 0x3FC55555; 0x55555555
@@ -394,8 +387,8 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 			Ln2Lo: 1.90821492927058770002e-10,
 			Log2e: 1.44269504088896338700e+00,
 
-			Overflow : 7.09782712893383973096e+02,
-			Underflow: -7.45133219101941108420e+02,
+			Overflow : 7.09782712893383973096e+02, // 1024 * ln2
+			Underflow: -7.45133219101941108420e+02, // -1075 * ln2
 			NearZero : 1.0 / (1 << 28), // 2**-28
 		}
 
@@ -762,7 +755,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 		/* strip high bits of integer part */
 		float64 z = ldexp(y, -3);
 		z = floor(z);        /* integer part of y/8 */
-		z = y - ldexp(z, 3);  /* y - 16 * (y/16) */
+		z = y - ldexp(z, 3);  /* y - 8 * (y/8) */
 
 		/* integer and fractional part modulo one octant */
 		int32 j = z;

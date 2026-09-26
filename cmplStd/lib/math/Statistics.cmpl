@@ -58,7 +58,7 @@ struct RunningStat {
 		}
 	}
 
-	/// Returns the number of values added stats
+	/// Returns the number of values added to the stats
 	static float64 count(RunningStat this!) {
 		return this.count;
 	}

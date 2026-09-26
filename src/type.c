@@ -198,6 +198,7 @@ symn newSymn(ccContext ctx, ccKind kind) {
 	rt->_beg += sizeof(struct symNode);
 	memset(result, 0, sizeof(struct symNode));
 	result->kind = kind;
+	result->unit = ctx->unit;
 
 	return result;
 }
@@ -213,6 +214,59 @@ void enter(ccContext ctx, astn node, symn owner) {
 		owner->owner = ctx->owner;
 		ctx->owner = owner;
 	}
+}
+
+/// Largest power of 2 dividing the size, limited to the memory alignment.
+static size_t sizeAlign(size_t size) {
+	size_t result = size & -size;
+	if (result == 0 || result > vm_mem_align) {
+		return vm_mem_align;
+	}
+	return result;
+}
+
+/// Natural alignment of a type, like in C: the largest alignment of its members.
+static size_t typeAlign(symn type) {
+	if (type == NULL) {
+		return 1;
+	}
+	if (isFixedSizeArray(type)) {
+		// the alignment of the elements
+		return typeAlign(type->type);
+	}
+
+	switch (castOf(type)) {
+		default:
+			break;
+
+		case CAST_ptr:
+		case CAST_obj:
+		case CAST_var:
+		case CAST_arr:
+			// references, slices, unknown-size arrays and variants
+			return vm_ref_size;
+
+		case CAST_val: {
+			size_t result = 0;
+			for (symn field = type->fields; field != NULL; field = field->next) {
+				if (isStatic(field)) {
+					continue;
+				}
+				size_t fieldAlign = isIndirect(field) ? vm_ref_size : typeAlign(field->type);
+				if (result < fieldAlign) {
+					result = fieldAlign;
+				}
+			}
+			if (result == 0) {
+				// builtin value types without members
+				break;
+			}
+			// the packing of the record is not known: a packed record may be aligned less
+			size_t packed = sizeAlign(type->size);
+			return result < packed ? result : packed;
+		}
+	}
+	return sizeAlign(type->size);
 }
 
 symn leave(ccContext ctx, ccKind mode, size_t align, size_t baseSize, size_t *outSize, symn result) {
@@ -272,8 +326,10 @@ symn leave(ccContext ctx, ccKind mode, size_t align, size_t baseSize, size_t *ou
 			fatal(ERR_INTERNAL_ERROR);
 			break;
 
-		case KIND_typ:
-			// update offsets
+		case KIND_typ: {
+			// like in C: members are aligned to their natural alignment (limited by the packing),
+			// the size is padded to the largest alignment of the members.
+			size_t maxAlign = 1;
 			for (sym = result; sym != NULL; sym = sym->next) {
 				if (isStatic(sym)) {
 					continue;
@@ -281,23 +337,36 @@ symn leave(ccContext ctx, ccKind mode, size_t align, size_t baseSize, size_t *ou
 				if (sym->owner != owner) {
 					break;
 				}
-				sym->offs = padOffset(offs, align < sym->size ? align : sym->size);
-				if (offs < sym->offs) {
-					debug(ctx->rt, sym->file, sym->line, WARN_PADDING_ALIGNMENT, sym, sym->offs - offs, offs, sym->offs);
+				size_t fieldAlign = isIndirect(sym) ? vm_ref_size : typeAlign(sym->type);
+				if (align != 0 && fieldAlign > align) {
+					fieldAlign = align;
 				}
-				offs = sym->offs + sym->size;
-				if (size < offs) {
-					size = offs;
+				if (maxAlign < fieldAlign) {
+					maxAlign = fieldAlign;
+				}
+				if (align == 0) {
+					// union: every member starts at the same location
+					sym->offs = baseSize;
+				} else {
+					sym->offs = padOffset(offs, fieldAlign);
+					if (offs < sym->offs) {
+						debug(ctx->rt, sym->file, sym->line, WARN_PADDING_ALIGNMENT, sym, sym->offs - offs, offs, sym->offs);
+					}
+					offs = sym->offs + sym->size;
+				}
+				if (size < sym->offs + sym->size) {
+					size = sym->offs + sym->size;
 				}
 			}
-			size_t padded = padOffset(size, align);
-			if (align && size != padded) {
+			size_t padded = padOffset(size, maxAlign);
+			if (size != padded) {
 				const char *file = owner ? owner->file : NULL;
 				int line = owner ? owner->line : 0;
 				debug(ctx->rt, file, line, WARN_PADDING_ALIGNMENT, owner, padded - size, size, padded);
 				size = padded;
 			}
 			break;
+		}
 
 		case KIND_fun:
 			// update offsets
@@ -474,7 +543,7 @@ symn lookup(ccContext ctx, symn sym, astn ref, astn arguments, ccKind filter, in
 				continue;
 			}
 			else if (parameter != NULL) {
-				// more parameter than arguments
+				// more parameters than arguments
 				if ((parameter->kind & ARGS_varg) == 0) {
 					continue;
 				}

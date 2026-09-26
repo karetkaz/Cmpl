@@ -148,10 +148,10 @@ struct Fixed32: 4 { // todo: packing should be automatically set to 4
 		return { bits: result };
 	}
 
-	/// Determines whether the given fixed point is less than the other one
+	/// Compares two fixed point numbers: returns `-1` if `x` is less than `y`, `1` if greater, `0` if equal
 	static int32 cmp(Fixed32 x, Fixed32 y) {
 		// todo: overflow check
-		return int32(x.bits < y.bits) - int32(x.bits > y.bits);
+		return int32(x.bits > y.bits) - int32(x.bits < y.bits);
 	}
 
 	static Fixed32 add(Fixed32 x, int32 y) {

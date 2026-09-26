@@ -1,12 +1,12 @@
-///@public
+/// Histogram is a view displaying the red, green, blue and luminosity distribution of an image
 struct Histogram: View {
 	/// display lines instead of bars
 	bool lines = false;
 
-	///@public
+	/// Draw only the luminosity with the colors of the entries, instead of the separate red, green, blue and luminosity channels
 	bool color = false;
 
-	///@public
+	/// The values of the histogram: red, green, blue, and luminosity in the alpha channel
 	argb data[256];
 
 	/// update the histogram computed from the given image

@@ -1,0 +1,36 @@
+/** ## For statement
+The for statement is a repetition statement that executes a section of code repeatedly, while a condition holds.
+
+The init and step clauses are both optional.
+- `for (init; test; step)` — the classic three-clause form.
+- `for (init; test)` — no step clause.
+- `for (test)` — only the condition, similar to a `while` loop in other languages.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// for statement: classic forms (init; test; step)
+
+int stmtForSum = 0;
+for (int i = 0; i < 5; i += 1) {
+	stmtForSum += i;
+}
+assertEq(10, stmtForSum);
+
+// the step clause is optional
+int stmtForTotal = 0;
+for (int i = 0; i < 4; ) {
+	stmtForTotal += i;
+	i += 1;
+}
+assertEq(6, stmtForTotal);
+
+// both the init and the step clauses are optional
+int stmtForN = 5;
+int stmtForHalved = 0;
+for (stmtForN != 0) {
+	stmtForN = stmtForN / 2;
+	stmtForHalved += 1;
+}
+assertEq(3, stmtForHalved);

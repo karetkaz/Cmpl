@@ -1,4 +1,4 @@
-/// apply a color matrix to each pixel defined by the `roi` on the `image`
+/// apply a color matrix to each pixel defined by the `roi` of the `src` image
 void colorMat(Image image, int32 x, int32 y, Image src, Rect roi?, mat4f mat!) {
 	static if (System.Platform.preferNativeCalls && struct(Image.colorMatrix) != null) {
 		return Image.colorMatrix(image, x, y, src, roi, mat.data);

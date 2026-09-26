@@ -161,7 +161,7 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 		return refCast(varType);
 	}
 
-	// functions can be assigned only if the parameter types matches
+	// functions can be assigned only if the parameter types match
 	if (variable->type == ctx->type_fun) {
 		if (valueRef == NULL || valueRef->type != ctx->type_fun) {
 			// function can be assigned to function
@@ -236,6 +236,10 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 
 	// Assign enum
 	if (castOf(varType) == CAST_enm) {
+		if (valType == ctx->emit_opc) {
+			// explicit conversion with the result of an inline expression: `Enum e = inline(int32(1));`
+			return refCast(varType);
+		}
 		if (valueRef != NULL) {
 			// Enum eVal = Enum.value;
 			// Enum eVar = eVal;
@@ -301,7 +305,7 @@ ccKind canAssign(ccContext ctx, symn variable, astn value, int mode) {
 		return refCast(varType);
 	}
 
-	// one of the type is an static extension over a base type
+	// one of the types is a static extension over a base type
 	if (valType->size == varType->size) {
 		symn valBase = staticBaseType(valType);
 		symn varBase = staticBaseType(varType);
@@ -986,6 +990,12 @@ symn typeCheck(ccContext ctx, symn loc, astn ast, int raise) {
 
 			if (!canAssign(ctx, lType, ast->op.rhso, 0)) {
 				error(ctx->rt, ast->file, ast->line, ERR_INVALID_VALUE_ASSIGN, lType, ast);
+				return NULL;
+			}
+			// the type of an enum variable is replaced with its base type, check against the variable
+			symn lVar = linkOf(ast->op.lhso, 0);
+			if (lVar != NULL && lVar->type != NULL && isEnumType(lVar->type) && !canAssign(ctx, lVar, ast->op.rhso, 0)) {
+				error(ctx->rt, ast->file, ast->line, ERR_INVALID_VALUE_ASSIGN, lVar->type, ast);
 				return NULL;
 			}
 			if (ast->kind != INIT_set && !isMutableVar(ast->op.lhso)) {

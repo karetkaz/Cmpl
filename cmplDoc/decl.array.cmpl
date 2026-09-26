@@ -1,0 +1,53 @@
+/** ## Arrays
+The array type is a collection of zero or more elements of the same type.
+
+### Fixed-size arrays
+Allocates the space required for all the elements.
+- Passed to functions by reference.
+- The compiler knows the type of the elements and also the length.
+
+### Dynamic-size arrays
+A slice: a pair of a pointer to the first element and an integer containing the length.
+- Initialized, assigned and passed to functions by reference, followed by the length.
+- The compiler knows the type of the elements; the length is known at runtime.
+
+### Unknown-size arrays
+Pointers are arrays without a known length; useful to pass data to native functions.
+- Initialized, assigned and passed to functions by reference.
+- The compiler knows the type of the elements; the developer must track the length.
+- No bounds checking is performed on these arrays, so they can be faster, but unsafe.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// the three array kinds, and slicing
+
+// fixed-size: the compiler knows the element type and the length; passed by reference
+int32 declArrFixed[2] = {42, 97};
+assertEq(2, declArrFixed.length);
+
+// dynamic-size (a slice): a pointer + length pair, length known at runtime
+int32 declArrSlice[] = {42, 97, 13};
+assertEq(3, declArrSlice.length);
+
+// if the initializer has no rest-form, the length is inferred and a fixed-size
+// array is created first, then assigned to the slice — so this:
+int32 declArrSliceEquiv[] = {42, 97, 13};
+// is the same as:
+int32 declArrFixedEquiv[3] = {42, 97, 13};
+int32 declArrFixedAsSlice[] = declArrFixedEquiv;
+assertEq(declArrSliceEquiv.length, declArrFixedAsSlice.length);
+
+// unknown-size: no known length, useful for native/C interop; the developer must track the length
+int32 declArrUnknown[*] = declArrFixed;
+assertEq(42, declArrUnknown[0]);
+
+// slicing: `a[...end]` (0-based prefix), `a[start ... end]` (start inclusive, end exclusive)
+int32 declArrSource[10] = {...0};
+int32 declArrPrefix[] = declArrSource[...4];       // the first 4 elements
+assertEq(4, declArrPrefix.length);
+int32 declArrMiddle[] = declArrSource[2 ... 5];    // elements 2, 3 and 4
+assertEq(3, declArrMiddle.length);
+int32 declArrEmpty[] = declArrSource[3 ... 3];     // empty slice
+assertEq(0, declArrEmpty.length);

@@ -13,7 +13,7 @@
 static Image back = Image("../asset/image/forest.jpg", 32);
 static Image offs = Image("../asset/image/texture_nature_01.png", back.width(), back.height(), 32);
 
-/// compute the the transformation matrix to center/crop/fit an image to a new size.
+/// compute the transformation matrix to center/crop/fit an image to a new size.
 static mat4f fitMatrix(Image src, int newWidth, int newHeight, bool fitWidth, bool fitHeight, float64 maxScale, float64 maxAspect) {
 	float64 scale = 1;
 	float64 widthScale = newWidth / float64(src.width());
@@ -69,7 +69,7 @@ static mat4f skewMatrix(float64 sx, float64 sy) {
 static char filtering[][] = {
 	"nearest",
 	"linear",
-	// TODO: Hermite, Gaussian, Bell, BSpline, Mitchel, Lanczos, Hanning
+	// TODO: Hermite, Gaussian, Bell, BSpline, Mitchell, Lanczos, Hanning
 };
 static Switch quality = {
 	text: "filtering",

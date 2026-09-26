@@ -130,8 +130,8 @@ typedef struct list {
 struct arrBuffer {
 	char *ptr;         // data
 	size_t esz;        // element size
-	size_t cap;        // capacity
-	size_t cnt;        // allocated size
+	size_t cap;        // capacity in bytes
+	size_t cnt;        // number of elements
 };
 
 void initBuff(struct arrBuffer *buff, size_t initCount, size_t elemSize);

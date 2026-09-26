@@ -1,0 +1,26 @@
+/** ### Static if statement
+The static if construct can be used as a compile-time check.
+- if the condition evaluates to `true`:
+  - the declarations contained by the block will be exposed to the outer scope.
+- if the condition evaluates to `false`:
+  - declarations contained by the block will be exposed only to the inner scope.
+  - statements inside the scope will be type-checked.
+  - compilation errors will be reported as warnings.
+  - inlined files will not be processed.
+  - code generation will be skipped.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+static if (struct(double) == null) {
+	debug("type `double` is not defined, define it as float64");
+	inline double = float64;
+} else {
+	debug("type `double` was already defined");
+}
+
+{
+	debug("double is ready for use as", double);
+	double x = Float64.pi;
+}

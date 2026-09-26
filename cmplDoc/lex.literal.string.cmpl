@@ -1,0 +1,44 @@
+/** ### Character and string literals
+
+#### Escape sequences
+Escape sequences are used to define certain special characters within string literals.
+The following escape sequences are available:
+- `\'`: single quote
+- `\"`: double quote
+- `\?`: question mark
+- `\\`: backslash
+- `\a`: audible bell
+- `\b`: backspace
+- `\f`: form feed - new page
+- `\n`: line feed - new line
+- `\r`: carriage return
+- `\t`: horizontal tab
+- `\v`: vertical tab
+- `\xnn`: arbitrary hexadecimal value, always 2 characters.
+- `\<new line>`: continues the string on the next line.
+
+#### Multi-line strings
+A string literal is multi-line if it starts with a backslash followed by a newline.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// character and string literal escape sequences
+
+char lexStringsQuote = '\'';
+assertEq(39, lexStringsQuote);
+
+char lexStringsNewline = '\n';
+assertEq(10, lexStringsNewline);
+
+char lexStringsHex = '\x41';
+assertEq('A', lexStringsHex);
+
+// a string literal starting with `\` immediately followed by a newline is multi-line
+char lexStringsMultiline[] = "\
+<p>
+	Hello
+</p>
+";
+assert(lexStringsMultiline.length > 0);

@@ -1,0 +1,33 @@
+/** ## Aliasing
+Aliasing is analogous to a C preprocessor `#define`, except it is not preprocessed as text.
+When an alias is used, the referenced expression or typename is expanded inline.
+Arguments of an inline macro may be cached and evaluated only once.
+*/
+
+/// **Example**
+inline "*example:tail";
+
+// aliasing: type, constant, and macro
+
+inline declInlineByte = uint8;
+assert(declInlineByte == uint8);
+
+inline declInlinePi = 3.14159265359;
+assert(declInlinePi > 3.14 && declInlinePi < 3.15);
+
+inline declInlineHalf(int32 value) = value / 2;
+assertEq(21, declInlineHalf(42));
+
+inline declInlineMin(int32 a, int32 b) = a < b ? a : b;
+assertEq(3, declInlineMin(3, 7));
+
+// arguments of an inline macro may be cached and evaluated only once
+static int declInlineCalls = 0;
+int32 declInlineSideEffect() {
+	declInlineCalls += 1;
+	return 5;
+}
+inline declInlineSquare(int32 v) = v * v;
+int32 declInlineResult = declInlineSquare(declInlineSideEffect());
+assertEq(25, declInlineResult);
+assertEq(1, declInlineCalls);

@@ -1,4 +1,4 @@
-/// Number formater
+/// Number formatter
 struct NumberFormat {
 	/// number digits to be used for formatting
 	static char digits![] = "0123456789abcdefghijklmnopqrstuv";
@@ -7,8 +7,11 @@ struct NumberFormat {
 	// static char oct_digits[] = hex[...8];  // octal
 	// static char bin_digits[] = hex[...2];  // binary
 
-	/// specify the digit symbols and the radix to be used for formatting
-	/// binary: "01", decimal: "0123456789", hexadecimal: "0123456789abcdef"
+	/** specify the digit symbols and the radix to be used for formatting:
+	 * * binary: "01",
+	 * * decimal: "0123456789",
+	 * * hexadecimal: "0123456789abcdef"
+	 */
 	char digitSymbols![] = digits[...10];
 
 	/// the prefix symbol to be used for positive values
