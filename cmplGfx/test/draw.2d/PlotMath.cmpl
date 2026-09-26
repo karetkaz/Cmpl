@@ -136,7 +136,7 @@ static Switch chkCenterY = {
 	clickToFocus: false,
 };
 static Switch chkDisplay = {
-	static char statesDisplay[][4] = {
+	static char statesDisplay[][] = {
 		"diff",
 		"error",
 		"native",

@@ -24,10 +24,10 @@ struct User {
 	int id;
 	char firstName[*];
 	char lastName[*];
-	char pets[*][];
+	char pets[][*];
 }
 
-char pets[*][] = {
+char pets[][*] = {
 	"Rocco",
 	"Milo",
 };

@@ -8,29 +8,33 @@ inline displaySize = 400;
 static Image font = Window.font(fontSize);
 static Image image = Image(displaySize, displaySize, 32);
 static argb colors[gridSize * gridSize + 1] = {argb(0)};
-static int grid[gridSize * gridSize] = {};
+static int grid[gridSize][gridSize] = {};
 
 void nextTurn() {
 	static Random random = Random();
 	int free = 0;
-	for (int i = 0; i < grid.length; i += 1) {
-		free += int(grid[i] == 0);
+	for (int i = 0; i < gridSize; i += 1) {
+		for (int j = 0; j < gridSize; j += 1) {
+			free += int(grid[i][j] == 0);
+		}
 	}
 	if (free == 0) {
 		return;
 	}
 	int x = random.nextInt32(1, 3);
 	int pos = random.nextInt32(0, free);
-	for (int i = free = 0; i < grid.length; i += 1) {
-		if (grid[i] != 0) {
-			// ignore non empty cells
-			continue;
+	for (int i = free = 0; i < gridSize; i += 1) {
+		for (int j = 0; j < gridSize; j += 1) {
+			if (grid[i][j] != 0) {
+				// ignore non empty cells
+				continue;
+			}
+			if (free == pos) {
+				grid[i][j] = x;
+				return;
+			}
+			free += 1;
 		}
-		if (free == pos) {
-			grid[i] = x;
-			return;
-		}
-		free += 1;
 	}
 }
 
@@ -41,8 +45,8 @@ bool mergeGrid() {
 		int k = 0;
 		// merge: sum each cell with its neighbour of the same value
 		for (int i = 1; i < gridSize; i += 1) {
-			int old& = grid[k + j * gridSize];
-			int new& = grid[i + j * gridSize];
+			int old& = grid[k][j];
+			int new& = grid[i][j];
 			if (old != 0 && old == new) {
 				merged = true;
 				old += 1; // add to previous
@@ -55,8 +59,8 @@ bool mergeGrid() {
 		}
 		// compress: put each value next to each other
 		for (int i = k = 0; i < gridSize; i += 1) {
-			int old& = grid[k + j * gridSize];
-			int new = grid[i + j * gridSize];
+			int old& = grid[k][j];
+			int new = grid[i][j];
 			if (new != 0) {
 				moved |= old != new;
 				old = new;
@@ -65,7 +69,7 @@ bool mergeGrid() {
 		}
 		// cleanup empty cells
 		for (int i = k; i < gridSize; i += 1) {
-			grid[i + j * gridSize] = 0;
+			grid[i][j] = 0;
 		}
 	}
 	return merged | moved | true;
@@ -74,11 +78,9 @@ bool mergeGrid() {
 void rotateGrid() {
 	for (int j = 0; j < gridSize; j += 1) {
 		for (int i = j + 1; i < gridSize; i += 1) {
-			int r = i + j * gridSize;
-			int c = j + i * gridSize;
-			int x = grid[r];
-			grid[r] = grid[c];
-			grid[c] = x;
+			int x = grid[i][j];
+			grid[i][j] = grid[j][i];
+			grid[j][i] = x;
 		}
 	}
 }
@@ -86,11 +88,11 @@ void rotateGrid() {
 void mirrorGrid() {
 	for (int j = 0; j < gridSize; j += 1) {
 		for (int i = 0; i < gridSize / 2; i += 1) {
-			int r = i + j * gridSize;
-			int c = (gridSize - 1) - i + j * gridSize;
-			int x = grid[r];
-			grid[r] = grid[c];
-			grid[c] = x;
+//			int r = i + j * gridSize;
+			int k = (gridSize - 1) - i;
+			int x = grid[i][j];
+			grid[i][j] = grid[k][j];
+			grid[k][j] = x;
 		}
 	}
 }
@@ -106,8 +108,10 @@ int onEvent(int action, int button, int x, int y) {
 		action = Window.WINDOW_INIT;
 	}
 	if (action == Window.WINDOW_INIT) {
-		for (int i = 0; i < grid.length; i += 1) {
-			grid[i] = 0;
+		for (int i = 0; i < gridSize; i += 1) {
+			for (int j = 0; j < gridSize; j += 1) {
+				grid[i][j] = 0;
+			}
 		}
 		nextTurn();
 		nextTurn();
@@ -149,7 +153,7 @@ int onEvent(int action, int button, int x, int y) {
 				y1: (j + 1) * displaySize / gridSize - 1,
 			};
 
-			int v = grid[i + j * gridSize];
+			int v = grid[i][j];
 			int c = Int.min(colors.length - 1, v);
 			image.fillRect(rect, colors[c].v);
 

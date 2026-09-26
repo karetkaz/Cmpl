@@ -148,7 +148,7 @@ struct TabPage: Layout {
 struct Select: Layout {
 	///@public
 	char text[];
-	char states[][2]; // fixme: initialize: = {"<", "^"};
+	char states[2][]; // fixme: initialize: = {"<", "^"};
 
 	Button selected&? = null;
 	Switch header&? = null;

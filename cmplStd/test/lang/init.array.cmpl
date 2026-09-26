@@ -160,7 +160,7 @@ int a[100] = {1, 2, 3, *: 64};
 }*/
 
 /* TODO: Initialize all elements of an array with a default value, then override some of them
-char xmlEscape[*][255] = {
+char xmlEscape[255][*] = {
 	*: null;
 	'"': "&quot;";
 	'\'': "&apos;";

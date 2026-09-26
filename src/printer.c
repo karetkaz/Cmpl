@@ -758,11 +758,15 @@ static void printQualified(FILE *out, const char **esc, symn sym) {
 	}
 }
 
-/// print array type
+/// print array type, dimensions in C order: `int[2][3]` is an array of 2 elements of type `int[3]`
 static void printArray(FILE *out, const char **esc, symn sym, dmpMode mode) {
-	if (sym != NULL && isArrayType(sym)) {
+	symn base = sym;
+	while (base != NULL && isArrayType(base)) {
+		base = base->type;
+	}
+	printSym(out, esc, base, mode, 0);
+	for (; sym != NULL && isArrayType(sym); sym = sym->type) {
 		symn length = sym->fields;
-		printArray(out, esc, sym->type, mode);
 		if (length != NULL && isStatic(length)) {
 			printFmt(out, esc, "[%d]", sym->size / sym->type->size);
 		}
@@ -772,9 +776,7 @@ static void printArray(FILE *out, const char **esc, symn sym, dmpMode mode) {
 		else {
 			printFmt(out, esc, "[*]");
 		}
-		return;
 	}
-	printSym(out, esc, sym, mode, 0);
 }
 
 void printSym(FILE *out, const char **esc, symn sym, dmpMode mode, int indent) {

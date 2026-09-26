@@ -2,11 +2,9 @@
 static Image back = Image("../asset/image/forest.jpg", 32);
 static Image offs = Image(800, 600, 32);
 
-//vec2d mag[magRadius][magRadius]; todo: multi dimensional arrays
-
 static float64 magFactor = 3.4;
 inline magSize = 512;
-static vec2d mag[magSize * magSize] = {...?};
+static vec2d mag[magSize][magSize] = {...?};
 
 void init() {
 	int32 r = magSize / 2;
@@ -29,7 +27,7 @@ void init() {
 					}
 				}
 			}
-			mag[(y + r) * magSize + x + r] = vec2d(a + r, b + r);
+			mag[y + r][x + r] = vec2d(a + r, b + r);
 		}
 	}
 }
@@ -73,14 +71,12 @@ int onEvent(int action, int button, int x, int y) {
 	if (draw) {
 		offs.fill(0);
 		offs.copy(scrollX, scrollY, back, null);
-		int n = 0;
 		int nx = mx - scrollX;
 		int ny = my - scrollY;
 		for (int y = 0; y < magSize; y += 1) {
 			for (int x = 0 ;x < magSize; x += 1) {
-				vec2d p = mag[n];
+				vec2d p = mag[y][x];
 				offs.set(x + mx, y + my, back.get(nx + p.x, ny + p.y));
-				n += 1;
 			}
 		}
 	}
