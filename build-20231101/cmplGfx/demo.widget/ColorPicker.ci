@@ -1,0 +1,144 @@
+// Color picker demo.
+
+struct ColorPicker: View {
+	float hue = 0;
+	float lum = 0;
+
+	static argb get(ColorPicker this, float x, float y) {
+		// todo: use integer based color space conversions
+		return argb(hsl2rgb(vec4f(x, 1, y)));
+	}
+
+	static argb value(ColorPicker this) {
+		return this.get(this.hue, 1 - this.lum);
+	}
+
+	bool onUpdate(ColorPicker this, argb value) {
+		return true;
+	}
+
+	bool onTouchEvent(ColorPicker this, const Rect rect&, const TouchEvent event&) {
+		if (event.release || !event.button) {
+			return View.onTouchEvent(this, rect, event);
+		}
+
+		this.hue = Math.clamp(float32(event.x - rect.x0), 0f, rect.width() - 1f) / rect.width();
+		this.lum = Math.clamp(float32(event.y - rect.y0), 0f, rect.height() - 1f) / rect.height();
+		return this.onUpdate(this, this.value());
+	}
+
+	bool onMeasure(Histogram this, Rect rect&) {
+		if (this.height == 0) {
+			rect.height(128);
+		} else {
+			rect.height(this.height);
+		}
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(ColorPicker this, Image offs, const Rect rect) {
+		int width = rect.width();
+		int height = rect.height();
+		for (int y = rect.y0; y < rect.y1; y += 1) {
+			float32 py = 1 - float32(y - rect.y0) / height;
+			for (int x = rect.x0; x < rect.x1; x += 1) {
+				float32 px = float32(x - rect.x0) / width;
+				offs.set(x, y, this.get(px, py));
+			}
+		}
+
+		int x = rect.x0 + Math.clamp(float32(this.hue * width), 0f, width - 1f);
+		int y = rect.y0 + Math.clamp(float32(this.lum * height), 0f, height - 1f);
+		offs.drawOval(x - 4, y - 4, x + 4, y + 4, 0x000000);
+		offs.drawOval(x - 2, y - 2, x + 2, y + 2, 0xffffff);
+		offs.drawOval(x - 1, y - 1, x + 1, y + 1, 0x000000);
+	}
+}
+
+static bool printStyle(Button button) {
+	Style style& = button.style;
+	debug("style", style);
+}
+static bool updateColor(ColorPicker this, argb value);
+static bool updateTheme(Switch this, int value);
+
+ColorPicker colorPicker = {
+	width: 360;
+	height: 256/2;
+	focusable: false;
+	onUpdate: updateColor;
+};
+
+char themes[*][] = {
+	"Light",
+	"Dark"
+};
+Switch theme = {
+	text: "Theme";
+	states: themes;
+	selected: 1;
+	onUpdate: updateTheme;
+};
+Switch switch = {
+	text: "Switch";
+	states: null;
+};
+
+Button button = {
+	text: "Button";
+	onClick: printStyle;
+};
+
+Slider slider = {
+	text: "Slider";
+};
+
+DebugView debug = {
+	focusable: false;
+};
+
+Style style = {format: {}};
+Window.show(Widget(0, 0, style).addItems(
+	colorPicker,
+
+	null,
+	theme,
+
+	button,
+	switch,
+	slider,
+
+	null,
+	debug
+));
+
+static void updateTheme() {
+	if (theme.selected != 0) {
+		style.setColor(Style.dark, colorPicker.value());
+	} else {
+		style.setColor(Style.light, colorPicker.value());
+	}
+}
+static bool updateColor(ColorPicker this, argb value) {
+	if (!ColorPicker.onUpdate(this, value)) {
+		return false;
+	}
+	updateTheme();
+	return true;
+}
+static bool updateTheme(Switch this, int value) {
+	if (!Switch.onUpdate(this, value)) {
+		return false;
+	}
+	if (theme.selected != 0) {
+		if (colorPicker.lum > .75) {
+			colorPicker.lum = 1 - colorPicker.lum;
+		}
+	} else {
+		if (colorPicker.lum < .25) {
+			colorPicker.lum = 1 - colorPicker.lum;
+		}
+	}
+	updateTheme();
+	return true;
+}

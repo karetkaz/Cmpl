@@ -1,0 +1,76 @@
+// Polar Plot of Prime Numbers
+// https://youtu.be/EK32jo7i5LQ
+
+Image offs = Image(1440, 900, 32);
+bool primes[500000] = {false, false, true};
+
+Slider sldScale = {
+	text: "scale";
+	minimum: 10;
+	maximum: 1000;
+	value: 100;
+};
+Slider sldPrimes = {
+	text: "primes";
+	minimum: 100;
+	maximum: primes.length;
+	value: primes.length;
+	stepSize: 1;
+};
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+	width: 200;
+};
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	if (action < Window.EVENT_PROCESSED) {
+		// action was not processed by the widget, do not redraw
+		return Window.timeoutMax;
+	}
+
+	debug.startTimer();
+	Complex scale = {
+		re: 1. / sldScale.value;
+		im: 1. / sldScale.value;
+	};
+	Complex center = {
+		re: offs.width() / 2;
+		im: offs.height() / 2;
+	};
+
+	offs.fill(0);
+	int64 max = sldPrimes.value;
+	for (int64 i = 3; i < max; i += 1) {
+		Complex z = Complex(i, i)
+			.toCartesian()
+			.mul(scale)
+			.add(center);
+
+		if (primes[i]) {
+			offs.set(z.re, z.im, 0xffffff);
+		} else {
+			offs.set(z.re, z.im, 0x303030);
+		}
+	}
+	return Window.timeoutMax;
+}
+
+for (int64 i = 2; i < primes.length; i += 1) {
+	primes[i] = true;
+	for (int64 j = 2; j * j < i; j += 1) {
+		if (i % j == 0) {
+			primes[i] = false;
+			break;
+		}
+	}
+}
+Window.show(offs, onEvent, FxWidget(
+	sldScale, sldPrimes,
+	null, debug
+));
+offs.destroy();

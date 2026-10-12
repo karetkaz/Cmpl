@@ -1,0 +1,23 @@
+// Recursive tree drawer demo.
+void drawTree(Image surf, int x1, int y1, float64 angle, float64 length, int depth) {
+	inline Angle = 20;
+
+	if (depth <= 0) {
+		return;
+	}
+
+	int x2 = x1 + int(Math.cos(Math.radians(angle)) * depth * length);
+	int y2 = y1 + int(Math.sin(Math.radians(angle)) * depth * length);
+
+	surf.drawLine(x1, y1, x2, y2, 0);
+	surf.drawTree(x2, y2, angle - Angle, length, depth - 1);
+	surf.drawTree(x2, y2, angle + Angle, length, depth - 1);
+}
+
+Image image = Image(1440, 900, 32);
+
+image.fill(0xffffff);
+drawTree(image, image.width() / 2, image.height() - 22, -90, 11, 12);
+
+Window.show(image);
+image.destroy();

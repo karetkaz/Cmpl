@@ -28,3 +28,8 @@ Other demos:
 * [Spam Terminal](https://karetkaz.github.io/Cmpl/extras/web/editor.html#path=SpamTerminal.cmpl&content=Zm9yIChpbnQgaSA9IDA7IGkgPCAxMDAwMDsgaSArPSAxKSB7Cglmb3IgKGludCBqID0gMDsgaiA8IDEwMDAwOyBqICs9IDEpIHt9CglkZWJ1ZygibWVzc2FnZSIsIGkpOwp9Cg)
 
 * [bitwise arithmetic](https://karetkaz.github.io/Cmpl/extras/web/editor.html#path=BitwiseArithmetic.cmpl&project=/Cmpl/cmplStd/test/demo/BitwiseArithmetic.cmpl)
+
+Older versions:
+* [2026.01.12](https://karetkaz.github.io/Cmpl/extras/web/editor.html#version=build-20260112)
+* [2023.11.01](https://karetkaz.github.io/Cmpl/extras/web/editor.html#version=build-20231101)
+

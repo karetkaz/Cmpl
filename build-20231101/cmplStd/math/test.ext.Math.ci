@@ -1,0 +1,132 @@
+#!cmpl -mem1G -run/g
+// test the emulated math trigonometry functions
+
+static struct Emu {
+	inline preferNativeCalls = false;
+	inline "/cmplStd/lib/math/Math.ci";
+}
+
+void assertEq(float64 expected, float64 returned, float64 maxErr&, const char func[*], float64 args...) {
+	if (returned == expected) {
+		return;
+	}
+
+	if (Math.isNan(returned) && Math.isNan(expected)) {
+		// nan === nan in this case
+		return;
+	}
+
+	float64 diff = Math.abs(returned - expected);
+	if (diff == diff && diff < maxErr) {
+		return;
+	}
+	maxErr = diff;
+}
+
+struct Domain {
+	const float64 lo = 0;	// min: from
+	const float64 hi = 1;	// max: to
+
+	float64 logMaxErr = 0;
+	float64 expMaxErr = 0;
+	float64 sqrtMaxErr = 0;
+	float64 powMaxErr = 0;
+	float64 sinMaxErr = 0;
+	float64 cosMaxErr = 0;
+	float64 tanMaxErr = 0;
+	float64 atan2MaxErr = 0;
+
+	static void normalize(Domain domain&) {
+		inline log(float64 x) = Math.log10(x);
+		domain.logMaxErr = log(domain.logMaxErr);
+		domain.expMaxErr = log(domain.expMaxErr);
+		domain.sqrtMaxErr = log(domain.sqrtMaxErr);
+		domain.powMaxErr = log(domain.powMaxErr);
+		domain.sinMaxErr = log(domain.sinMaxErr);
+		domain.cosMaxErr = log(domain.cosMaxErr);
+		domain.tanMaxErr = log(domain.tanMaxErr);
+		domain.atan2MaxErr = log(domain.atan2MaxErr);
+	}
+}
+
+int64 N = 10000;//00;
+Domain domains[] = {
+//	{lo: 0, hi: 1},
+	{lo: -1, hi: 1},
+	{lo: -2 * Math.pi, hi: 2 * Math.pi},
+	{lo: -N, hi: N},
+};
+
+for (int n = 0; n < domains.length; n += 1) {
+	Domain domain& = domains[n];
+	float64 scale = Math.abs(domain.hi - domain.lo) / N;
+	float64 translate = domain.lo;
+	for (float64 Y = 0; Y < N; Y += 1) {
+		float64 x = Y * scale + translate;
+		float64 y = (N + Y) / N;
+		assertEq(float64.log(x), Emu.Math.log(x), &domain.logMaxErr, "log(x)", x);
+		assertEq(float64.exp(x), Emu.Math.exp(x), &domain.expMaxErr, "exp(x)", x);
+		assertEq(float64.sqrt(x), Emu.Math.sqrt(x), &domain.sqrtMaxErr, "sqrt(x)", x);
+		assertEq(float64.pow(x, y), Emu.Math.pow(x, y), &domain.powMaxErr, "pow(x, y)", x, y);
+		assertEq(float64.pow(y, x), Emu.Math.pow(y, x), &domain.powMaxErr, "pow(y, x)", y, x);
+		assertEq(float64.sin(x), Emu.Math.sin(x), &domain.sinMaxErr, "sin(x)", x);
+		assertEq(float64.cos(x), Emu.Math.cos(x), &domain.cosMaxErr, "cos(x)", x);
+		assertEq(float64.tan(x), Emu.Math.tan(x), &domain.tanMaxErr, "tan(x)", x);
+		assertEq(float64.atan2(x, y), Emu.Math.atan2(x, y), &domain.atan2MaxErr, "atan2(x, y)", x, y);
+		assertEq(float64.atan2(y, x), Emu.Math.atan2(y, x), &domain.atan2MaxErr, "atan2(y, x)", y, x);
+	}
+	Domain.normalize(&domain);
+}
+
+/* References:
+https://www.mathworks.com/help/matlab/trigonometry.html
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math
+https://thebookofshaders.com/glossary/?search=smoothstep
+https://thebookofshaders.com/glossary/
+https://registry.khronos.org/OpenGL-Refpages/es3/
+https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__DOUBLE.html
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-intrinsic-functions
+https://developer.download.nvidia.com/cg/index_stdlib.html
+
+
+https://elixir.bootlin.com/glibc/glibc-2.36.9000/source/sysdeps/ieee754/dbl-64
+
+https://netlib.org/fdlibm/
+https://netlib.org/cephes/
+
+https://github.com/golang/go/tree/master/src/math
+	https://github.com/akavel/gostdc/
+
+https://git.musl-libc.org/cgit/musl/tree/src/math
+	https://elixir.bootlin.com/musl/v1.2.3/source/src/math
+
+https://github.com/llvm/llvm-project/blob/main/libc/src/math/generic
+https://github.com/gcc-mirror/gcc/tree/master/libgo/go/math
+https://github.com/open-watcom/open-watcom-v2/tree/master/bld/mathlib/c
+https://opensource.apple.com/source/Libm/Libm-315/Source/Intel/
+https://github.com/JuliaLang/julia/blob/master/base/math.jl
+https://android.googlesource.com/platform/bionic/+/master/libm/upstream-freebsd/lib/msun/src/
+
+https://mazzo.li/posts/vectorized-atan2.html
+https://docwiki.embarcadero.com/Libraries/en/System.Math
+
+
+https://gist.github.com/Witiko/6462162
+https://github.com/alexhuntley/Plots/blob/main/plots/shaders/fragment.glsl
+
+http://www.retro11.de/ouxr/29bsd/usr/src/lib/m/
+http://git.9front.org/plan9front/purgatorio/a8083462e62459b2ae8a243dc4ba88416eba03b1/libkern/f.html
+
+
+https://github.com/JuliaMath/openlibm/blob/master/src/e_pow.c
+https://9p.io/sources/plan9/sys/src/libc/port/
+https://cs.opensource.google/search?q=atan2&start=201
+
+https://github.com/aantthony/graph.tk/blob/master/math.js
+https://github.com/MikeMcl/decimal.js/blob/master/decimal.js
+
+
+
+https://github.com/kchapelier/node-mathp/tree/master/functions
+https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Functions
+*/

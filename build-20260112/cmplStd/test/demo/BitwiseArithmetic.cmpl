@@ -1,0 +1,82 @@
+/// Add two numbers without using arithmetic operators
+// adapted from: https://www.geeksforgeeks.org/add-two-numbers-without-using-arithmetic-operators
+int add(int x, int y) {
+	for (; y != 0;) {
+		int carry = x & y;
+		x = x ^ y;
+		y = carry << 1;
+	}
+
+	return x;
+}
+
+/// Subtract two numbers without using arithmetic operators
+// adapted from: https://www.geeksforgeeks.org/subtract-two-numbers-without-using-arithmetic-operators
+int sub(int x, int y) {
+	for (; y != 0;) {
+		int borrow = (~x) & y;
+		x = x ^ y;
+		y = borrow << 1;
+	}
+
+	return x;
+}
+
+/// Multiply two numbers using bitwise operators
+// adapted from: https://www.geeksforgeeks.org/dsa/russian-peasant-multiply-two-numbers-using-bitwise-operators
+int mul(int x, int y) {
+	assert(x > 0 && y > 0);
+
+	int result = 0;
+	for (; y != 0;) {
+		if ((y & 1) != 0) {
+			result = add(result, x);
+		}
+		x <<= 1;
+		y >>= 1;
+	}
+
+	return result;
+}
+
+/// Divide two numbers using bitwise operators
+// adapted from: https://medium.com/@youngjun_kim/building-a-calculator-using-bitwise-operators-9e84328d5aac
+int div(int x , int y) {
+	assert(x > 0 && y > 0);
+	assert(y != 0, "Division by zero");
+	int divisor = y;
+	int quotient = 1;
+
+	for (; divisor <= x;) {
+		divisor <<= 1;
+		quotient <<= 1;
+	}
+
+	int result = 0;
+	int remainder = x;
+	for (; quotient != 0;) {
+		if (remainder >= divisor) {
+			remainder = sub(remainder, divisor);
+			result |= quotient;
+		}
+		divisor >>= 1;
+		quotient >>= 1;
+	}
+
+	return result;
+}
+
+int a = 1553;
+int b = 37551;
+
+int add0 = a + b;
+int add1 = add(a, b);
+
+int sub0 = a - b;
+int sub1 = sub(a, b);
+
+int mul0 = a * b;
+int mul1 = mul(a, b);
+
+int div0 = b / a;
+int div1 = div(b, a);

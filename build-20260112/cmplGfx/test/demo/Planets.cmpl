@@ -1,0 +1,166 @@
+// Planets demo.
+// Based on: https://youtu.be/WTLPmUHTPqo
+// https://github.com/techwithtim/Python-Planet-Simulation
+
+struct Body {
+	static float64 G = 6.67428e-11;
+	static float64 AU = 149.6e9;
+	static float64 TIME_STEP = 3600*24;  // 1 day
+
+	// metadata
+	char name[];
+	int32 color;
+	float64 mass;
+	float64 radius;
+
+	// position
+	float64 x = 0;
+	float64 y = 0;
+
+	// velocity
+	float64 vx = 0;
+	float64 vy = 0;
+
+	static void update(Body self&, Body planets[]) {
+		float64 total_fx = 0;
+		float64 total_fy = 0;
+		for (int i = 0; i < planets.length; i += 1) {
+			Body other& = planets[i];
+			if (self == pointer(other)) {
+				continue;
+			}
+
+			float64 dx = other.x - self.x;
+			float64 dy = other.y - self.y;
+			float64 dsq = dx * dx + dy * dy;
+			float64 force = G * self.mass * other.mass / dsq;
+			float64 theta = Float64.atan2(dy, dx);
+			total_fx += Float64.cos(theta) * force;
+			total_fy += Float64.sin(theta) * force;
+		}
+
+		self.vx += total_fx / self.mass * TIME_STEP;
+		self.vy += total_fy / self.mass * TIME_STEP;
+		self.x += self.vx * TIME_STEP;
+		self.y += self.vy * TIME_STEP;
+	}
+}
+
+Body planets[] = {
+	{name: "Sun",     color: 0xffff00, mass: 1.98892e30,  radius: 696340e3};
+	{name: "Mercury", color: 0x504e51, mass: 0.330e24,    radius: 4879e3/2,   x: 57.9e9,   vy: -47.4e3};
+	{name: "Venus",   color: 0xffffff, mass: 4.87e24,     radius: 12104e3/2,  x: 108.2e9,  vy: -35.0e3};
+	{name: "Earth",   color: 0x6495ed, mass: 5.97e24,     radius: 12756e3/2,  x: 149.6e9,  vy: -29.8e3};
+//	{name: "Moon",    color: 0xdadada, mass: 0.073e24,    radius: 3475e3/2,   x: 0.384e9,  vy: -1.0e3};
+	{name: "Mars",    color: 0xbc2731, mass: 0.642e24,    radius: 6792e3/2,   x: 228.0e9,  vy: -24.1e3};
+
+	{name: "Jupiter", color: 0xff00ff, mass: 1898e24,     radius: 142984e3/2, x: 778.5e9,  vy: -13.1e3};
+	{name: "Saturn",  color: 0xff00ff, mass: 568e24,      radius: 120536e3/2, x: 1432.0e9, vy: -9.7e3};
+	{name: "Uranus",  color: 0xff00ff, mass: 86.8e24,     radius: 51118e3/2,  x: 2867.0e9, vy: -6.8e3};
+	{name: "Neptune", color: 0xff00ff, mass: 102e24,      radius: 49528e3/2,  x: 4515.0e9, vy: -5.4e3};
+	{name: "Pluto",   color: 0xff00ff, mass: 0.0130e24,   radius: 2376e3/2,   x: 5906.4e9, vy: -4.7e3};
+};
+
+Image offs = Image(1600, 900, 32);
+Switch chkShowAll = {
+	text: "Show all";
+	states: null;
+	clickToFocus: false;
+};
+Slider sldSpeed = {
+	text: "Idle fps";
+	minimum: 1e-10;
+	maximum: 60;
+	value: 60;
+};
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+	width: 200;
+};
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+
+	debug.startTimer();
+	// update positions
+	for (int i = 1; i < planets.length; i += 1) {
+		planets[i].update(planets);
+	}
+
+	float64 scale = (chkShowAll.selected ? 20 : 200) / Body.AU;
+
+	// draw planets
+	offs.fill(0);
+	for (int i = 0; i < planets.length; i += 1) {
+		Body planet& = planets[i];
+		int x = planet.x * scale + offs.width() / 2;
+		int y = planet.y * scale + offs.height() / 2;
+		int r = 10e9 * scale;
+		offs.fillOval(x - r, y - r, x + r, y + r, planet.color);
+		offs.drawText(x, y - r - Window.font.height(), Window.font, planet.name, planet.color);
+	}
+
+	// maximum 60 fps
+	return Window.timeoutFps(sldSpeed.value);
+}
+
+//Window.show(offs, onEvent);
+Window.show(offs, onEvent, FxWidget(
+	chkShowAll, sldSpeed,
+	null, debug
+));
+offs.destroy();
+
+/* todo: add moons
+Sun
+Mercury
+Venus
+Earth
+Mars
+Jupiter
+Saturn
+Uranus
+Neptune
+Moon
+Phobos
+Deimos
+Callisto
+Ganymede
+Europa
+Io
+Hyperion
+Iapetus
+Titan
+Rhea
+Dione
+Tethys
+Enceladus
+Mimas
+Oberon
+Titania
+Umbriel
+Ariel
+Miranda
+Triton
+Larissa
+Proteus
+Nereid
+Pluto
+Charon
+*/
+
+/* References:
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
+http://astroa.physics.metu.edu.tr/nineplanets/
+https://www.space.com/16080-solar-system-planets.html
+https://theskylive.com/3dsolarsystem
+https://www.solarsystemscope.com/
+https://solarsystem.nasa.gov/resources/2862/lunar-phases-lab/
+https://evgenii.com/blog/earth-orbit-simulation/
+https://www.google.com/search?q=tutorial+planets+simulator+earth+sun+moon&client=opera&hs=tLs&sca_esv=556502029&sxsrf=AB5stBh7XvMrBzpwsdiWx8GwDp_RooXKyA:1691924100531&ei=hLbYZLrkH6KU9u8P_KSGiAc&start=10&sa=N&ved=2ahUKEwi6tv63vNmAAxUiiv0HHXySAXEQ8NMDegQIBBAW&biw=1860&bih=965&dpr=1
+*/

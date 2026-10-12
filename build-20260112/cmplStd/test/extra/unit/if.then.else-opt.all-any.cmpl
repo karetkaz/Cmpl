@@ -1,0 +1,59 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 38
+
+void test(int a, int b, int c) {
+	void debug(char message[*]) {
+		static if (struct(raise) == function) {
+			raise(raise.info, raise.noTrace, message);
+		}
+	}
+
+	if (a == 42 && b == 42 && c == 42) {
+		debug("All Pass");
+	}
+	if (a == 42 || b == 42 || c == 42) {
+		debug("Any Pass");
+	}
+}
+
+test(42, 42, 42);
+
+/* - expected output:
+test(a: int32, b: int32, c: int32): void: function {
+.instructions: (103 bytes)
+	dup.x32 sp(3)
+	load.c32 42
+	ceq.i32
+	jz +43
+	dup.x32 sp(2)
+	load.c32 42
+	ceq.i32
+	jz +31
+	dup.x32 sp(1)
+	load.c32 42
+	ceq.i32
+	jz +19
+	load.ref <?> ;"All Pass"
+	load.ref <?> ;test.debug(message: char[*]): void
+	call
+	inc.sp(-4)
+	dup.x32 sp(3)
+	load.c32 42
+	ceq.i32
+	jnz +28
+	dup.x32 sp(2)
+	load.c32 42
+	ceq.i32
+	jnz +16
+	dup.x32 sp(1)
+	load.c32 42
+	ceq.i32
+	jz +19
+	load.ref <?> ;"Any Pass"
+	load.ref <?> ;test.debug(message: char[*]): void
+	call
+	inc.sp(-4)
+	ret
+}
+if.then.else-opt.all-any.cmpl:6: info: All Pass
+if.then.else-opt.all-any.cmpl:6: info: Any Pass
+*/

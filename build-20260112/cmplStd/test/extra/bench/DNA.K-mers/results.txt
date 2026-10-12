@@ -1,0 +1,36 @@
+https://towardsdatascience.com/how-fast-is-c-compared-to-python-978f18f474c7
+
+>./k-mers
+Start
+Number of generated k-mers: 67108864
+Finish!
+>Exit code: 0    Time: 0.505
+
+
+>python -u "k-mers.py"
+Start
+Number of generated k-mers: 67108864
+Finish!
+>Exit code: 0    Time: 34.509
+
+
+>cmpl -X-stdin -run/g  "k-mers.cmpl"
+---------- Globals:
+k-mers.cmpl:17: opt: char[4]([4] {'A', 'C', 'G', 'T'})
+k-mers.cmpl:20: s: char[14]([14] {'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', ''})
+k-mers.cmpl:21: s_last: char[14]([14] {'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', ''})
+k-mers.cmpl:30: counter: int32(67108864)
+>Exit code: 0    Time: 11.576
+
+
+https://karetkaz.github.io/Cmpl/demo.html#X=+steps&path=k-mers.cmpl&content=Y2hhciBjb252ZXJ0KGNoYXIgYykgewoJaWYgKGMgPT0gJ0EnKSB7CgkJcmV0dXJuICdDJzsKCX0KCWlmIChjID09ICdDJykgewoJCXJldHVybiAnRyc7Cgl9CglpZiAoYyA9PSAnRycpIHsKCQlyZXR1cm4gJ1QnOwoJfQoJaWYgKGMgPT0gJ1QnKSB7CgkJcmV0dXJuICdBJzsKCX0KCXJldHVybiAnICc7Cn0KCmNoYXIgb3B0WzRdID0geydBJywgJ0MnLCAnRycsICdUJ307CgppbmxpbmUgbGVuX3N0ciA9IDEzOwpjaGFyIHNbbGVuX3N0ciArIDFdID0ge307CmNoYXIgc19sYXN0W2xlbl9zdHIgKyAxXSA9IHt9OwoKZm9yIChpbnQgaSA9IDA7IGkgPCBsZW5fc3RyOyBpICs9IDEpIHsKCXNfbGFzdFtpXSA9IG9wdFtvcHQubGVuZ3RoIC0gMV07CglzW2ldID0gb3B0WzBdOwp9CnNfbGFzdFtsZW5fc3RyXSA9IDA7CnNbbGVuX3N0cl0gPSAwOwoKaW50IGNvdW50ZXIgPSAxOwpmb3IgKDshZXF1YWxzKHNfbGFzdCwgcyk7KSB7Cgljb3VudGVyICs9IDE7CgkvLyBZb3UgY2FuIHVuY29tbWVudCB0aGUgbmV4dCBsaW5lIHRvIHNlZSBhbGwgay1tZXJzLgoJLy8gZGVidWcocyk7Cglib29sIGNoYW5nZV9uZXh0ID0gdHJ1ZTsKCWZvciAoaW50IGkgPSAwOyBpIDwgbGVuX3N0cjsgaSArPSAxKSB7CgkJaWYgKGNoYW5nZV9uZXh0KSB7CgkJCWlmIChzW2ldID09IG9wdFtvcHQubGVuZ3RoIC0gMV0pIHsKCQkJCXNbaV0gPSBjb252ZXJ0KHNbaV0pOwoJCQkJY2hhbmdlX25leHQgPSB0cnVlOwoJCQl9IGVsc2UgewoJCQkJc1tpXSA9IGNvbnZlcnQoc1tpXSk7CgkJCQlicmVhazsKCQkJfQoJCX0KCX0KfQoK
+---------- Compile: `/cmplStd/stdlib.cmpl`
+---------- Compile: `k-mers.cmpl`
+---------- Generate: byte-code
+---------- Execute: byte-code
+---------- Globals:
+k-mers.cmpl:17: opt: char[4]([4] {'A', 'C', 'G', 'T'})
+k-mers.cmpl:20: s: char[14]([14] {'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', ''})
+k-mers.cmpl:21: s_last: char[14]([14] {'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'T', ''})
+k-mers.cmpl:30: counter: int32(67108864)
+---------- Exitcode: 0, time: 20307.000 ms

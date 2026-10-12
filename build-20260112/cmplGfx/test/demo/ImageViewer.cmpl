@@ -1,0 +1,85 @@
+Image image = Image("../asset/image/texture_nature_01.png", 32);
+Image offs = Image(800, 600, 32);
+inline scrollSpeed = 1.1;
+inline scrollPad = 50.;
+
+int onEvent(int action, int button, int x, int y);
+Window.show(offs, onEvent);
+image.destroy();
+
+int onEvent(int action, int button, int x, int y) {
+	inline scrollStop = .25;
+	static float64 scrollSpeedX = 0;
+	static float64 scrollSpeedY = 0;
+	static float64 scrollX = 0;
+	static float64 scrollY = 0;
+	static int mouseX = 0;
+	static int mouseY = 0;
+
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	else if (action == Window.KEY_RELEASE && button == ' ') {
+		scrollSpeedX = scrollStop;
+		scrollSpeedY = scrollStop;
+		scrollX = 0;
+		scrollY = 0;
+	}
+	else if (action == Window.MOUSE_PRESS && button == 1) {
+		scrollSpeedX = scrollStop;
+		scrollSpeedY = scrollStop;
+		mouseX = x;
+		mouseY = y;
+	}
+	else if (action == Window.MOUSE_MOTION && button == 1) {
+		static if (struct(scrollSpeed) != null) {
+			scrollX += scrollSpeedX = mouseX - x;
+			scrollY += scrollSpeedY = mouseY - y;
+		} else {
+			scrollX += mouseX - x;
+			scrollY += mouseY - y;
+		}
+		mouseX = x;
+		mouseY = y;
+	}
+	else if (action == Window.WINDOW_INIT) {
+		scrollSpeedX = scrollStop;
+		scrollSpeedY = scrollStop;
+	}
+
+	static if (scrollPad < 0) {
+		scrollX = Float64.clamp(scrollX, -scrollPad - offs.width(), image.width() + scrollPad);
+		scrollY = Float64.clamp(scrollY, -scrollPad - offs.height(), image.height() + scrollPad);
+	} else {
+		float64 dx = image.width() - offs.width();
+		float64 dy = image.height() - offs.height();
+		if (dx < 0) {
+			scrollX = Float64.clamp(scrollX, scrollPad + dx, -scrollPad);
+		} else {
+			scrollX = Float64.clamp(scrollX, -scrollPad, dx + scrollPad);
+		}
+		if (dy < 0) {
+			scrollY = Float64.clamp(scrollY, scrollPad + dy, -scrollPad);
+		} else {
+			scrollY = Float64.clamp(scrollY, -scrollPad, dy + scrollPad);
+		}
+	}
+
+	if (Float64.abs(scrollSpeedX) >= scrollStop || Float64.abs(scrollSpeedY) >= scrollStop) {
+		Rect roi = {
+			x0: scrollX;
+			y0: scrollY;
+			x1: scrollX + offs.width();
+			y1: scrollY + offs.height();
+		};
+		offs.resize(null, image, roi, 0);
+		static if (struct(scrollSpeed) != null) {
+			scrollX += scrollSpeedX /= scrollSpeed;
+			scrollY += scrollSpeedY /= scrollSpeed;
+			// delay next scroll animation
+			return Window.timeoutFps(60);
+		}
+	}
+	return Window.timeoutMax;
+}

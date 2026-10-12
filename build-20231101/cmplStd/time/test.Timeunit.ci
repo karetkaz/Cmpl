@@ -1,0 +1,33 @@
+uint64 s = Timeunit.Days;
+Timeunit x1 = Timeunit.Days;
+Timeunit x2 = x1;
+//Timeunit x3 = s;      // ok. error: can not assign uint64 to enum
+
+inline number = float64;
+Timeunit from = Timeunit.Days;
+Timeunit to = Timeunit.Millis;	// fixme: inline to = Timeunit.Millis;
+number s0 = 584000000;
+number s1 = convert(s0, from, to);
+number s2 = convert(s1, to, from);
+
+/* other special time units
+	// special, not so accurate
+	Weeks: 7 * Days;
+	Months: 2629746000 * Millis;   // 1. / 12 Gregorian year
+	Years: 31556952000 * Millis;   // 1 Year (Gregorian) contains 365.2425 days, in SI units it is equal to 31,556,952 seconds.
+	// https://www.unitconverters.net/time-converter.html
+	//YearsJulian: 31557600000 * Millis;
+	//YearsLeap: 31622400000 * Millis;
+
+	// https://www.unitconverters.net/time-converter.html
+	//YearsTropical: 31556930000 * Millis;
+	//YearsSidereal: 31558149540 * Millis;
+
+	// https://www.convertunits.com/from/years/to/millisecond
+	//YearsTropical: 31556925445 * Millis;
+	//YearsSidereal: 31558149504 * Millis;
+	//YearsAnomalistic: 31558432550.4 * Millis;
+	//YearsDraconic: 29947974556.291 * Millis;
+	//YearsLunar: 30617568000 * Millis;
+	//YearsGaussian: 31558196013.12 * Millis;
+// */

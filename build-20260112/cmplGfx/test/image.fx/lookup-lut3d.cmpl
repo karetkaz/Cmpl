@@ -1,0 +1,408 @@
+/* Demo using 3d lookup table
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse left or right in the window to adjust selected slider value
+ *
+ * obs-guide-lut.png downloaded from: https://streamshark.io/obs-guide/color-grading-lut
+ */
+struct Blender: object {
+	argb blend(Blender this!, argb base, argb with);
+}
+
+struct ColorLut: Blender {
+	argb data[256 * 256 * 256];
+	inline at(int x, int y, int z) = x + 256 * (y + 256 * z);
+
+	argb blend(ColorLut this!, argb base, argb with) {
+		return this.data[ColorLut.at(with.r, with.g, with.b)];
+	}
+
+	static void set(ColorLut this&, int x, int y, int z, argb value) {
+//		assert(x >= 0 && x < 256);
+//		assert(y >= 0 && y < 256);
+//		assert(z >= 0 && z < 256);
+		this.data[at(x, y, z)] = value;
+	}
+
+	// inexact at lengths: 7, 8, 10, 11, 12, 13 14
+	static void lerpPoints(ColorLut this&, int points[]) {
+		inline mix2(int32 f, uint32 a, uint32 b) = (a + (f * (b - a + 0x00010001) >> 8)) & 0x00ff00ff;
+		inline mix(int32 f, argb a, argb b) = argb(mix2(f, a.v & 0x00ff00ff, b.v & 0x00ff00ff) | (mix2(f, a.v >> 8 & 0x00ff00ff, b.v >> 8 & 0x00ff00ff) << 8));
+
+		int offs_0[256] = {...};
+		int offs_1[256] = {...};
+		int offs_f[256] = {...};
+		int p = 1;
+		for (int z = 0; z < 256; z += 1) {
+			if (z >= points[p] && p < points.length - 1) {
+				p += 1;
+			}
+			int p0 = points[p - 1];
+			int p1 = points[p];
+
+			offs_0[z] = p0;
+			offs_1[z] = p1;
+			int dz = p1 - p0 + int(p1 == p0);
+			int f = Int32.min(255, (z - p0) * 256 / dz);
+			offs_f[z] = f;
+
+			static if (false) {
+				// test
+				int Z = mix2(f, p0, p1);
+				if (z != Z) {
+					//assert(Z == z, "error", z, Z, p0, p1, f, dz);
+					error("error", z, Z, p0, p1, f, dz);
+				}
+			}
+		}
+
+		argb lut[*] = this.data;
+		for (int z = 0; z < 256; z += 1) {
+			int32 z0 = offs_0[z];
+			int32 z1 = offs_1[z];
+			int32 zf = offs_f[z];
+			for (int y = 0; y < 256; y += 1) {
+				int32 y0 = offs_0[y];
+				int32 y1 = offs_1[y];
+				int32 yf = offs_f[y];
+				for (int x = 0; x < 256; x += 1) {
+					int32 x0 = offs_0[x];
+					int32 x1 = offs_1[x];
+					int32 xf = offs_f[x];
+					static if (false) {
+						argb color = lut[ColorLut.at(x1, y1, z1)];
+						lut[ColorLut.at(x, y, z)] = color;
+						continue;
+					}
+
+					argb c000 = lut[ColorLut.at(x0, y0, z0)];
+					argb c100 = lut[ColorLut.at(x1, y0, z0)];
+					argb c010 = lut[ColorLut.at(x0, y1, z0)];
+					argb c110 = lut[ColorLut.at(x1, y1, z0)];
+					argb c001 = lut[ColorLut.at(x0, y0, z1)];
+					argb c101 = lut[ColorLut.at(x1, y0, z1)];
+					argb c011 = lut[ColorLut.at(x0, y1, z1)];
+					argb c111 = lut[ColorLut.at(x1, y1, z1)];
+
+					argb c00 = mix(xf, c000, c100);
+					argb c10 = mix(xf, c010, c110);
+					argb c01 = mix(xf, c001, c101);
+					argb c11 = mix(xf, c011, c111);
+					argb c0 = mix(yf, c00, c10);
+					argb c1 = mix(yf, c01, c11);
+					argb c = mix(zf, c0, c1);
+					lut[ColorLut.at(x, y, z)] = c;
+				}
+			}
+		}
+	}
+
+	static void readCube(ColorLut this&, char filename[]) {
+		vec4f parseVec4(char buff&[], int p0) {
+			int p1 = buff.indexOf(' ', p0 + 1);
+			int p2 = buff.indexOf(' ', p1 + 1);
+			// if (p0 < 0 || p1 < 0 || p2 < 0) {
+			if (p1 <= p0 || p2 <= p1) {
+				// invalid line
+				error(buff);
+				return vec4f(0, 0, 0, 0);
+			}
+
+			buff[p1] = 0;
+			buff[p2] = 0; // replace spaces with nulls
+			char value0[*] = inc(buff, p0);
+			char value1[*] = inc(buff, p1 + 1);
+			char value2[*] = inc(buff, p2 + 1);
+			float64 r = float64(value0[...length(value0)]);
+			float64 g = float64(value1[...length(value1)]);
+			float64 b = float64(value2[...length(value2)]);
+			return vec4f(r, g, b, 0);
+		}
+
+		DebugTimer timer = DebugTimer.start();
+		File file = File.open(filename);
+		assert(file != null);
+		timer.lap("File opened");
+
+		int xyz = 0;
+		int size = 1;
+		int points[256] = {0};
+		for (char buff[1024] = {...}; readLine(file, buff); ) {
+			int pos = 0;
+			if (buff[pos] == 0) {
+				// empty line
+				// debug(buff);
+				continue;
+			}
+			if (buff[pos] == '#') {
+				// comment line
+				// debug(buff);
+				continue;
+			}
+			if (buff.startsWith("TITLE")) {
+				debug("title", buff);
+				continue;
+			}
+			if (buff.startsWith("LUT_3D_SIZE")) {
+				pos = buff.indexOf(' ', 11) + 1;
+				assert(pos > 0);
+				char value[*] = inc(buff, pos);
+				size = float64(value[...length(value)]);
+				assert(size > 1 && size < 256, "LUT_3D_SIZE expected to be between 2 and 255", size);
+				for (int z = 0; z < size; z += 1) {
+					points[z] = z * 255 / (size - 1);
+				}
+				debug("size", size, buff);
+				continue;
+			}
+			if (buff.startsWith("DOMAIN_MIN")) {
+				vec4f min = parseVec4(buff, 10);
+				assert(min.x == 0 && min.y == 0 && min.z == 0, "DOMAIN_MIN expected to be 0", min);
+				continue;
+			}
+			if (buff.startsWith("DOMAIN_MAX")) {
+				vec4f max = parseVec4(buff, 10);
+				assert(max.x == 1 && max.y == 1 && max.z == 1, "DOMAIN_MAX expected to be 1", max);
+				continue;
+			}
+
+			if (buff[pos] < '0' || buff[pos] > '9') {
+				// if (buff[pos] != '.') {...}
+				error(buff);
+				continue;
+			}
+
+			int p = xyz;
+			int x = points[p % size];
+			int y = points[(p /= size) % size];
+			int z = points[(p /= size) % size];
+
+			vec4f rgb = parseVec4(buff, pos);
+			this.set(x, y, z, argb(rgb));
+
+			xyz += 1;
+			assert(xyz <= size * size * size, xyz);
+		}
+		timer.lap("File read");
+
+		this.lerpPoints(points[...size]);
+		timer.end("Lut3d done");
+
+		file.close();
+	}
+
+	static void readImage(ColorLut this&, char filename[]) {
+		DebugTimer timer = DebugTimer.start();
+		Image image = Image(filename, 32);
+		timer.lap("Image opened");
+		if (image.width() == 4096 && image.height() == 4096) {
+			for (int z = 0; z < 256; z += 1) {
+				for (int y = 0; y < 256; y += 1) {
+					int32 iy = y + 256 * (z / 16);
+					for (int x = 0; x < 256; x += 1) {
+						int32 ix = x + 256 * (z % 16);
+						this.set(x, y, z, argb(image.get(ix, iy)));
+					}
+				}
+			}
+		}
+		else if (image.width() == 512 && image.height() == 512) {
+			// adapted from: https://streamshark.io/obs-guide/color-grading-lut
+			// input: 64 x 64 x 64
+			int points[64] = {...};
+			int mod = 512 / points.length;
+			for (int z = 0; z < points.length; z += 1) {
+				int b = z * 255 / (points.length - 1);
+				for (int y = 0; y < points.length; y += 1) {
+					int g = y * 255 / (points.length - 1);
+					int32 iy = y + points.length * (z / mod);
+					for (int x = 0; x < points.length; x += 1) {
+						int r = x * 255 / (points.length - 1);
+						int32 ix = x + points.length * (z % mod);
+						this.set(r, g, b, argb(image.get(ix, iy)));
+					}
+				}
+				points[z] = b;
+			}
+			timer.lap("Lut3d read");
+			this.lerpPoints(points);
+		}
+		else if (image.width() == 32 && image.height() == 1024) {
+			// adapted from: https://github.com/androidx/media/blob/release/libraries/test_data/src/test/assets/test-generated-goldens/lut/identity.png
+			// input: 32 x 32 x 32
+			int points[32] = {...};
+			int mod = 1024 / points.length;
+			for (int z = 0; z < points.length; z += 1) {
+				int r = z * 255 / (points.length - 1);
+				for (int y = 0; y < points.length; y += 1) {
+					int g = y * 255 / (points.length - 1);
+					int32 iy = y + points.length * (z % mod);
+					for (int x = 0; x < points.length; x += 1) {
+						int b = x * 255 / (points.length - 1);
+						int32 ix = x + points.length * (z / mod);
+						this.set(r, g, b, argb(image.get(ix, iy)));
+					}
+				}
+				points[z] = r;
+			}
+			timer.lap("Lut3d read");
+			this.lerpPoints(points);
+		}
+		else {
+			abort("invalid input format", image);
+		}
+		timer.end("Lut3d done");
+		image.destroy();
+	}
+
+	static void saveBmp(ColorLut this!, char filename[], int flags) {
+		argb lut[*] = this.data;
+		if (flags == 0 || flags == 64 || flags == 512) {
+			// output: 64 x 64 x 64
+			Image lutImage = Image(512, 512, 32);
+			for (int32 yi = 0; yi < 512; yi += 1) {
+				for (int32 xi = 0; xi < 512; xi += 1) {
+					int x = xi % 64;
+					int y = yi % 64;
+					int z = (xi / 64) + 8 * (yi / 64);
+					// todo: average 4*4*4 = 64 pixels
+					// currently use the one in the middle
+					lutImage.set(xi, yi, lut[at(x * 4 + 2, y * 4 + 2, z * 4 + 2)]);
+				}
+			}
+			lutImage.saveBmp(filename, 0);
+			lutImage.destroy();
+			return;
+		}
+
+		if (flags == 256 || flags == 4096) {
+			// output: 256 x 256 x 256
+			Image lutImage = Image(4096, 4096, 32);
+			for (int32 yi = 0; yi < 4096; yi += 1) {
+				for (int32 xi = 0; xi < 4096; xi += 1) {
+					int32 x = xi % 256;
+					int32 y = yi % 256;
+					int32 z = (xi / 256) + 16 * (yi / 256);
+					lutImage.set(xi, yi, lut[at(x, y, z)]);
+				}
+			}
+			lutImage.saveBmp(filename, 0);
+			lutImage.destroy();
+			return;
+		}
+
+		error("invalid output format", flags);
+	}
+}
+
+ColorLut ColorLut(char filename[]) {
+	ColorLut result = {data: {}};
+	if (filename.endsWith(".cube", ignCaseCmp)) {
+		result.readCube(filename);
+	} else {
+		result.readImage(filename);
+	}
+	return result;
+}
+
+//ColorLut lut3d = ColorLut("../../tmp/asset/lut3d/35 Free LUTs/Arabica 12.CUBE");
+//ColorLut lut3d = ColorLut("../asset/lut3d/exo-identity.png");
+ColorLut lut3d = ColorLut("../asset/lut3d/obs-guide-lut.png");
+Image back = Image("../asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+bool exportLut(Button this);
+Histogram histogram = {
+	enabled: false;
+};
+
+Button export64 = {
+	text: "export 64";
+	focusable: false;
+	onClick: exportLut;
+};
+Button export256 = {
+	text: "export 256";
+	focusable: false;
+	onClick: exportLut;
+};
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	if (action < Window.EVENT_PROCESSED) {
+		// action was not processed by the widget, do not redraw
+		return Window.timeoutMax;
+	}
+
+	debug.startTimer();
+	if (FxWidget.showOriginal(debug.getWidget())) {
+		offs.copy(0, 0, back, null);
+		histogram.update(offs);
+		return Window.timeoutMax;
+	}
+
+	offs.colorMap3d(0, 0, back, null, lut3d.data);
+	histogram.update(offs);
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent, FxWidget(
+	histogram,
+	null, export64, export256,
+	null, debug
+));
+offs.destroy();
+back.destroy();
+lut3d.destroy();
+
+bool exportLut(Button this) {
+	if (this == export64) {
+		debug.startTimer();
+		lut3d.saveBmp("../asset/lut3d/lut3d.64.bmp", 64);
+		return true;
+	}
+	if (this == export256) {
+		debug.startTimer();
+		lut3d.saveBmp("../asset/lut3d/lut3d.256.bmp", 256);
+		return true;
+	}
+	return false;
+}
+
+/* test linear interpolation of color cube values
+void testLutLerp() {
+	ColorLut lookup = {data: {}};
+	int pointsTmp[256] = {...};
+	for (int i = 2; i < 256; i += 1) {
+		int points[] = pointsTmp[... i];
+		debug("points.length", points.length);
+
+		for (int z = 0; z < points.length; z += 1) {
+			int b = z * 255 / (points.length - 1);
+			for (int y = 0; y < points.length; y += 1) {
+				int g = y * 255 / (points.length - 1);
+				for (int x = 0; x < points.length; x += 1) {
+					int r = x * 255 / (points.length - 1);
+					lookup.set(r, g, b, argb(r, g, b));
+				}
+			}
+			points[z] = b;
+		}
+		lookup.lerpPoints(points);
+	}
+	lookup.destroy();
+}// */

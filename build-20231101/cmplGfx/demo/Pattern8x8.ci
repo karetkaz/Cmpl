@@ -1,0 +1,171 @@
+// Tab / Shift+Tab to show the next/prev pattern
+// '[', ']', '\' to flip and rotate
+// Enter to edit
+
+uint64 patterns[] = {
+	0xffff0000ffff0000; // ====	line
+	0xcccccccccccccccc; // ||||	line
+	0x0102040810204080; //  / /	liteslash
+	0x070e1c3870e0c183; // ////	slash
+	0xb469d2a54b962d5a; // *\*\	liteslash 2
+	0x8040201008040201; //  \ \	litebkslash
+	0x0783c1e070381c0e; // \\\\	bkslash
+	0x5a2d964ba5d269b4; // *\*/	litebkslash 2
+	0xff888888ff888888; // ####	hatch
+	0x1924428991422498; // ???
+	0x1824428181422418; // xxxx	xhatch
+	0x8000080080000800; // widedot
+	0x8800220088002200; // closedot
+	0xcc33cc33cc33cc33; // interleave
+
+	0xbb5fae5dba75eaf5; // Win9x - Bricks
+	0xaa7dc647c67fbe55; // Win9x - Buttons
+	0x78311387e1c88c1e; // Win9x - Cargo Net
+	0x5229844294294284; // Win9x - Circuits
+	0x284492abd66c3810; // Win9x - Cobblestones
+	0x82010101ab55aa55; // Win9x - Colosseum
+	0x1e8cd8fdbf1b3178; // Win9x - Daisies
+	0x3e07e1073e70c370; // Win9x - Dizzy
+	0x5659a69a65956aa9; // Win9x - Field Effect
+	0xfe02fa8abaa2be80; // Win9x - Key
+	0xefef0efefefee0ef; // Win9x - Live Wire
+	0xf0f0f0f0aa55aa55; // Win9x - Plaid
+	0xd79328d72893d5d7; // Win9x - Rounder
+	0xe12a259255983ef7; // Win9x - Scales
+	0xae4defff084dae4d; // Win9x - Stone
+	0xf87422478f172271; // Win9x - Thatches
+	0x45820100018245aa; // Win9x - Tile
+	0x8707060400f7e7c7; // Win9x - Triangles
+	0x4d9a0855ef9a4d9a; // Win9x - Waffl's Revenge
+
+	0xaa55aa55aa55aa55; // Win2k - 50% Gray
+	0x7f41414141417f00; // Win2k - Boxes
+	0x0050722000052702; // Win2k - Critters
+	0x2050885020000000; // Win2k - Diamonds
+	0x0207070220505020; // Win2k - Paisley
+	0xe0808e88ea0a0e00; // Win2k - Pattern
+	0x8244281128448201; // Win2k - Quilt
+	0x40c0c87878480000; // Win2k - Scottie
+	0x140cc8799e133028; // Win2k - Spinner
+	0xf87422478f172271; // Win2k - Thatches
+	0x0000547c7c38927c; // Win2k - Tulip
+	0x00000000808080f0; // Win2k - Waffle
+	0x8854224588152251; // Win2k - Weave
+};
+
+Image img = Image(1024, 1024, 32);
+int onEvent(int action, int button, int x, int y) {
+	static int selected = 0;
+	static bool edit = false;
+	static bool clear = false;
+
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+
+	if (action == Window.MOUSE_PRESS || action == Window.MOUSE_MOTION) {
+		if (!edit || button == 0) {
+			return Window.timeoutMax;
+		}
+
+		int i = x * 8 / img.width();;
+		int j = y * 8 / img.height();
+		uint64 mask = 1U << (~i & 7) + 8 * (~j & 7);
+
+		if (action == Window.MOUSE_PRESS) {
+			clear = bool(patterns[selected] & mask);
+		}
+
+		if (clear) {
+			patterns[selected] &= ~mask;
+		} else {
+			patterns[selected] |= mask;
+		}
+	}
+	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ENTER) {
+		edit = !edit;
+
+		FormatFlags flags = {};
+		char output[1024] = {0};
+		int p = append(output, 0, "edit pattern[");
+		p = append(output, p, 10, int64(selected), flags);
+		p = append(output, p, "]: 0x");
+		p = append(output, p, 16, patterns[selected], flags);
+		debug(output);
+	}
+	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_TAB) {
+		selected += bool(y & Window.KEY_MASK_SHIFT) ? -1 : 1;
+		if (selected >= patterns.length) {
+			selected = 0;
+		}
+		if (selected < 0) {
+			selected = 0;
+		}
+		debug("selected pattern", selected);
+	}
+	else if (action == Window.KEY_RELEASE && button == '\\') {
+		// rotate
+		uint64 rotated = 0;
+		for (int y = 0; y < 8; y += 1) {
+			for (int x = 0; x < 8; x += 1) {
+				uint64 mask = 1U << (x & 7) + 8 * (y & 7);
+				if (bool(patterns[selected] & mask)) {
+					rotated |= 1U << (y & 7) + 8 * (x & 7);
+				}
+			}
+		}
+		patterns[selected] = rotated;
+	}
+	else if (action == Window.KEY_RELEASE && button == ']') {
+		// flip vertical
+		patterns[selected] = Bits.swapBytes(patterns[selected]);
+	}
+	else if (action == Window.KEY_RELEASE && button == '[') {
+		// flip horizontal
+		uint8 bytes[*] = pointer(patterns[selected]);
+		for (int n = 0; n < 8; n += 1) {
+			bytes[n] = Bits.swapBits(bytes[n]);
+		}
+	}
+	else if (action != Window.WINDOW_INIT) {
+		return Window.timeoutMax;
+	}
+
+//	 img.fill(0x008080);// Win9x
+	img.fill(0x3a6ea5);// Win2k
+	if (edit) {
+		int width = img.width() / 8;
+		int height = img.height() / 8;
+		uint64 pattern = patterns[selected];
+
+		for (int y = 0; y < 8; y += 1) {
+			for (int x = 0; x < 8; x += 1) {
+				uint64 mask = 1U << (~x & 7) + 8 * (~y & 7);
+				if ((pattern & mask) != 0) {
+					int x0 = x * width;
+					int y0 = y * height;
+					int x1 = x0 + width;
+					int y1 = y0 + height;
+					img.fillRect(x0, y0, x1, y1, 0);
+				}
+			}
+		}
+	} else {
+		int width = img.width();
+		int height = img.height();
+		uint64 pattern = patterns[selected];
+
+		for (int y = 0; y < height; y += 1) {
+			for (int x = 0; x < width; x+= 1) {
+				uint64 mask = 1U << (~x & 7) + 8 * (~y & 7);
+				if ((pattern & mask) != 0) {
+					img.set(x, y, 0);
+				}
+			}
+		}
+	}
+	return Window.timeoutMax;
+}
+
+Window.show(img, onEvent);

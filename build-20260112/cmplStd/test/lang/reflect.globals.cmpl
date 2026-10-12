@@ -1,0 +1,17 @@
+// test basic reflection: list global symbols
+
+for (typename it& = typename.fields(null); it != null; it = it.next()) {
+	struct Info {
+		typename base = typename.base(it);
+		char name[*] = typename.name(it);
+		char file[*] = typename.file(it);
+		int32 line = typename.line(it);
+	}
+	Info info = {};
+	debug("Global symbol", it, info);
+}
+
+// test basic reflection: list fields of Float64
+for (typename it& = typename.fields(Float64); it != null; it = it.next()) {
+	debug("Float64 field", it);
+}

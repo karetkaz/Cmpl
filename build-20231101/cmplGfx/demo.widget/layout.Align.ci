@@ -1,0 +1,47 @@
+// layout test: alignment and padding
+
+struct Rectangle: View {
+	argb background = argb(0xff00ff);
+	void onDraw(Rectangle this, Image offs, Rect rect) {
+		offs.fillRect(rect, this.background.v);
+	}
+}
+Rectangle Rectangle(int rgb) {
+	inline size = 20;
+	return {
+		background: argb(rgb);
+		width: size;
+		height: size;
+		enabled: false;
+	};
+}
+
+Window.show(Widget(300, 400)
+	.addItems(Layout.Custom(0, Style.fill)
+		.addItems(Style.fill, Rectangle(0xffa1a1))
+
+		.addItems(Style.topLeft, Rectangle(0xff0000))
+		.addItems(Style.top, Rectangle(0x7f7f00))
+		.addItems(Style.topRight, Rectangle(0x00ff00))
+
+		.addItems(Style.left, Rectangle(0x7f007f))
+		.addItems(Style.center, Rectangle(0xff7f7f))
+		.addItems(Style.right, Rectangle(0x7fff7f))
+
+		.addItems(Style.bottomLeft, Rectangle(0x0000ff))
+		.addItems(Style.bottom, Rectangle(0x7f7fff))
+		.addItems(Style.bottomRight, Rectangle(0xffffff))
+	)
+	.addItems(Layout.Custom(0, Style.fill)
+		.addItems(Style.fill, Rectangle(0xa1ffa1))
+		.addItems(Style.right | Style.left | Style.top, Rectangle(0xff0000))
+		.addItems(Style.right | Style.left | Style.center, Rectangle(0x00ff00))
+		.addItems(Style.right | Style.left | Style.bottom, Rectangle(0x0000ff))
+	)
+	.addItems(Layout.Custom(0, Style.fill)
+		.addItems(Style.fill, Rectangle(0xa1a1ff))
+		.addItems(Style.top | Style.bottom | Style.left, Rectangle(0xff0000))
+		.addItems(Style.top | Style.bottom | Style.center, Rectangle(0x00ff00))
+		.addItems(Style.top | Style.bottom | Style.right, Rectangle(0x0000ff))
+	)
+);

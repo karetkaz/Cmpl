@@ -1,0 +1,31 @@
+// value type
+struct rgbF32 {
+	float32 r;  // red
+	float32 g;  // green
+	float32 b;  // blue
+}
+
+// packed type (size = 3)
+struct rgbU8: 1 {
+	uint8 b;  // blue
+	uint8 g;  // green
+	uint8 r;  // red
+}
+
+// union type
+struct color: 0 {
+	uint32 col;
+	rgbU8 rgb;
+}
+
+// TODO: reference counted type
+struct Color: object {
+	rgbF32 value;
+}
+
+rgbU8 black = {r: 0, g: 0, b: 0};
+rgbU8 green = {r: 0, g: 255, b: 0};
+rgbU8 white = {r: 255, g: 255, b: 255};
+
+color cyan = {col: 0x00ffff};
+color blue = {rgb: {r: 0, g: 0, b: 255}};

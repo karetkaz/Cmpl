@@ -1,0 +1,24 @@
+// procedural draw demo ~ YinYang
+// based on: https://www.shadertoy.com/view/4dG3DV
+
+vec4f yinyang(vec4f in) {
+	float32 time = in.w;
+	float32 nx = 1 - 2 * in.x;
+	float32 ny = 1 - 2 * in.y;
+	float32 x = nx * Float32.sin(time) - ny * Float32.cos(time);
+	float32 y = nx * Float32.cos(time) + ny * Float32.sin(time);
+	float32 h = x * x + y * y;
+	if (h < 1) {
+		float32 d = Float32.abs(y) - h;
+		float32 a = d - 0.23;
+		float32 b = h - 1.00;
+		float32 c = Float32.sign(a * b * (y + x + (y - x) * Float32.sign(d)));
+
+		c = Float32.mix(c, 0f, Float32.smoothstep(1f, h, 0.98f));
+		c = Float32.mix(c, 1f, Float32.smoothstep(1.02f, h, 1f));
+		return vec4f(c);
+	}
+	return vec4f(1f);
+}
+
+Window.show(512, 512, 2, yinyang);
