@@ -135,6 +135,21 @@ Module.initWorkspace = function(name, callback) {
 };
 
 Module.openProjectFile = function(data, callBack) {
+	function getMimeType(path) {
+		let ext = path.substring(path.lastIndexOf('.') ).toLowerCase();
+		switch (ext) {
+			case '.png': return 'image/png';
+			case '.jpg':
+			case '.jpeg': return 'image/jpeg';
+			case '.gif': return 'image/gif';
+			case '.bmp': return 'image/bmp';
+			case '.webp': return 'image/webp';
+			case '.ico': return 'image/x-icon';
+			case '.svg': return 'image/svg+xml';
+		}
+		return null;
+	}
+
 	if (!Module.initialized) {
 		throw "Module not initialized";
 	}
@@ -164,7 +179,9 @@ Module.openProjectFile = function(data, callBack) {
 	let list = false;
 	let sync = false;
 
-	let result = {};
+	let result = {
+		op: data.op // send back thee id / operation
+	};
 	// download and store project files
 	if (data.project != null) {
 		sync = !Module.wgetFiles(data.project);
@@ -219,8 +236,9 @@ Module.openProjectFile = function(data, callBack) {
 				// read file content
 				operation = 'read';
 				result.content = Module.readFile(path);
+				result.contentType = getMimeType(path);
 				result.path = data.path;
-				if (data.link === true) {
+				if (result.contentType != null || data.link === true) {
 					let data = FS.readFile(path, {encoding: 'binary'});
 					const blob = new Blob([data], {type: 'application/octet-stream'});
 					result.link = URL.createObjectURL(blob);
@@ -241,8 +259,7 @@ Module.openProjectFile = function(data, callBack) {
 
 	// list the whole file tree, starting at the root folder
 	if (list) {
-		result.root = Module.rootPrefix();
-		result.list = Module.listFiles(Module.rootDir(), true);
+		Module.listFileTree(result);
 	}
 	if (sync) {
 		FS.syncfs(function(error) {
@@ -324,8 +341,13 @@ Module.wgetFiles = function(files) {
 	return isAsync && files.length > 0;
 };
 
+/// add the content of the file tree to the result, without changing its root
+Module.listFileTree = function(result) {
+	result.root = Module.rootPrefix();
+	result.list = Module.listFiles(Module.rootDir(), true);
+	return result;
+};
+
 Module.onFileDownloaded = function(progress, total) {
-	let root = Module.rootPrefix();
-	let list = Module.listFiles(Module.rootDir(), true);
-	Module.process({ progress, total, root, list });
+	Module.process(Module.listFileTree({ progress, total }));
 };

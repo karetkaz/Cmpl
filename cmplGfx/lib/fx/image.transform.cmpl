@@ -1,6 +1,6 @@
 /// Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
 void transform(Image image, Rect rect?, Image src, mat4f mat!, int32 interpolate) {
-	static if (System.Platform.preferNativeCalls && struct(Image.transform) != null) {
+	static if (System.Compiler.preferNativeCalls && struct(Image.transform) != null) {
 		return Image.transform(image, rect, src, null, interpolate, pointer(mat.data));
 	}
 

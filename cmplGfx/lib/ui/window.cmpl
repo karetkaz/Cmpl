@@ -5,7 +5,7 @@ static struct Window {
 	/// calculate the timeout based on the given fps
 	inline timeoutFps(float64 fps) = int64(1000 / fps);
 
-	static if (System.Platform.runsInTestMode) {
+	static if (System.Compiler.runsInTestMode) {
 		void showAndQuit(Image surf, pointer data, int32 onEvent(pointer data, int32 action, int32 button, int32 x, int32 y)) {
 			struct Data {
 				pointer data;

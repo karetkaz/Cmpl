@@ -211,7 +211,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	/// Frexp breaks f into a normalized fraction and an integral power of two, satisfying $ f == frac \times 2 ^ {exp} $
 	// adapted from: https://github.com/golang/go/blob/master/src/math/frexp.go
 	static float64 frexp(float64 f, int32 exp&) {
-		static if (System.Platform.preferNativeCalls && struct(float64.frexp) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.frexp) != null) {
 			// use the native method if available
 			return float64.frexp(f, &exp);
 		}
@@ -253,7 +253,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	/// Ldexp is the inverse of Frexp, it returns $ frac \times 2 ^ {exp} $.
 	// adapted from: https://github.com/golang/go/blob/master/src/math/ldexp.go
 	static float64 ldexp(float64 f, int32 exp) {
-		static if (System.Platform.preferNativeCalls && struct(float64.ldexp) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.ldexp) != null) {
 			// use the native method if available
 			return float64.ldexp(f, exp);
 		}
@@ -308,7 +308,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	/// Returns the natural logarithm of the argument `x`.
 	// adapted from: https://github.com/golang/go/blob/master/src/math/log.go
 	static float64 ln(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.ln) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.ln) != null) {
 			// use the native method if available
 			return float64.ln(x);
 		}
@@ -360,7 +360,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	/// Returns the base-e exponential: $ e^x $.
 	// adapted from: https://github.com/golang/go/blob/master/src/math/exp.go
 	static float64 exp(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.exp) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.exp) != null) {
 			// use the native method if available
 			return float64.exp(x);
 		}
@@ -426,7 +426,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the base-2 logarithm of the argument `x`.
 	static float64 log2(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.log2) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.log2) != null) {
 			// use the native method if available
 			return float64.log2(x);
 		}
@@ -435,7 +435,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	///	Returns the base-2 exponential of the argument `x`.
 	static float64 exp2(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.exp2) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.exp2) != null) {
 			// use the native method if available
 			return float64.exp2(x);
 		}
@@ -455,7 +455,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
 	// adapted from: https://github.com/golang/go/blob/master/src/math/sqrt.go
 	static float64 sqrt(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.sqrt) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.sqrt) != null) {
 			// use the native method if available
 			return float64.sqrt(x);
 		}
@@ -521,7 +521,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	/// Returns `x` raised to the power of `y`: $ x^y $.
 	// adapted from: https://github.com/golang/go/blob/master/src/math/pow.go
 	static float64 pow(float64 x, float64 y) {
-		static if (System.Platform.preferNativeCalls && struct(float64.pow) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.pow) != null) {
 			// use the native method if available
 			return float64.pow(x, y);
 		}
@@ -794,7 +794,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/atan.c
 	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/atan2.c
 	static float64 atan2(float64 y, float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.atan2) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.atan2) != null) {
 			// use the native method if available
 			return float64.atan2(y, x);
 		}
@@ -861,7 +861,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the sine of the radian argument `x`.
 	static float64 sin(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.sin) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.sin) != null) {
 			// use the native method if available
 			return float64.sin(x);
 		}
@@ -871,7 +871,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the inverse sine of the radian argument `x`.
 	static float64 asin(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.asin) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.asin) != null) {
 			// use the native method if available
 			return float64.asin(x);
 		}
@@ -880,7 +880,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the hyperbolic sine of the radian argument `x`.
 	static float64 sinh(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.sinh) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.sinh) != null) {
 			// use the native method if available
 			return float64.sinh(x);
 		}
@@ -899,7 +899,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the cosine of the radian argument `x`.
 	static float64 cos(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.cos) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.cos) != null) {
 			// use the native method if available
 			return float64.cos(x);
 		}
@@ -912,7 +912,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the inverse cosine of the radian argument `x`.
 	static float64 acos(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.acos) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.acos) != null) {
 			// use the native method if available
 			return float64.acos(x);
 		}
@@ -921,7 +921,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the hyperbolic cosine of the radian argument `x`.
 	static float64 cosh(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.cosh) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.cosh) != null) {
 			// use the native method if available
 			return float64.cosh(x);
 		}
@@ -941,7 +941,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the tangent of the radian argument `x`.
 	static float64 tan(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.tan) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.tan) != null) {
 			// use the native method if available
 			return float64.tan(x);
 		}
@@ -963,7 +963,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the inverse tangent of the radian argument `x`.
 	static float64 atan(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.atan) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.atan) != null) {
 			// use the native method if available
 			return float64.atan(x);
 		}
@@ -972,7 +972,7 @@ static struct Float64 { // todo:  : static Arithmetic, static Comparable
 
 	/// Returns the hyperbolic tangent of the radian argument `x`.
 	static float64 tanh(float64 x) {
-		static if (System.Platform.preferNativeCalls && struct(float64.tanh) != null) {
+		static if (System.Compiler.preferNativeCalls && struct(float64.tanh) != null) {
 			// use the native method if available
 			return float64.tanh(x);
 		}

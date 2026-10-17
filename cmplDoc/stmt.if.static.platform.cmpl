@@ -1,6 +1,23 @@
 /** ### Platform specific code
 A `static if` can select code for the target platform at compile time:
 the branches of the other platforms are type-checked, but no code is generated for them.
+
+The `System.Platform` constants describe the build target of the compiler and virtual machine
+(the platform `cmpl` was compiled for), not the machine it actually runs on:
+- `System.Platform.WebAssembly`, `Windows`, `MacOS`, `Linux`, `Unix`: the pointer size in bits
+  (32 or 64) of the `cmpl` process when it was built for the given platform, `0` otherwise.
+- `System.Platform.X86`, `Arm`: the pointer size in bits (32 or 64) of the `cmpl` process
+  when it was built for the given architecture, `0` otherwise (`X86 == 64` is x86_64, `Arm == 64` is aarch64).
+- `System.Platform.pointerSize`: the size of a native pointer of the `cmpl` process in bytes (4 or 8),
+  also the default packing of records, see [Memory layout](#memory-layout).
+- `System.Platform.littleEndian`: `1` if the least significant byte is stored first in memory, `0` otherwise.
+
+The `System.Compiler` constants describe the compiler itself:
+- `System.Compiler.version`: the build date of the compiler as `yyyymmdd`.
+- `System.Compiler.runsInTestMode`: `1` when compiling in test mode, `0` otherwise, enabled with the `-X+test` flag
+  (ex: windows are closed right after they are shown).
+- `System.Compiler.preferNativeCalls`: `1` if native functions should be used when available, `0` otherwise,
+  instead of their implementation in Cmpl (disabled with the `-X-native` flag).
 */
 
 /// **Example**
@@ -17,4 +34,10 @@ static if (System.Platform.MacOS != 0) {
 }
 static if (System.Platform.Linux != 0) {
 	debug("Linux platform");
+}
+static if (System.Platform.X86 != 0) {
+	debug("x86 architecture");
+}
+static if (System.Platform.Arm != 0) {
+	debug("arm architecture");
 }

@@ -216,10 +216,10 @@ void enter(ccContext ctx, astn node, symn owner) {
 	}
 }
 
-/// Largest power of 2 dividing the size, limited to the memory alignment.
+/// Largest power of 2 dividing the size, the packing of the record limits it.
 static size_t sizeAlign(size_t size) {
 	size_t result = size & -size;
-	if (result == 0 || result > vm_mem_align) {
+	if (result == 0) {
 		return vm_mem_align;
 	}
 	return result;

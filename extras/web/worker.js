@@ -73,37 +73,43 @@ onmessage = function(event) {
 		return;
 	}
 	try {
-		Module.openProjectFile(data, function(result) {
-			// execute
-			if (data.execute !== undefined) {
-				let currentPath = FS.currentPath;
-				try {
-					FS.chdir(data.path || Module.workspace);
-					result.exitCode = callMain(data.execute);
-					if (result.exitCode === 0 && data.dump != null) {
-						if (data.dump.constructor === String) {
-							const content = Module.readFile(data.dump);
-							const blob = new Blob([content], {type: 'application/octet-stream'});
-							result.dump = URL.createObjectURL(blob);
-							result.path = data.dump;
-						}
+		// execute: `data.path` is the working directory, it must not change the root of the file tree
+		if (data.execute !== undefined) {
+			if (!Module.initialized) {
+				throw "Module not initialized";
+			}
+			let result = {};
+			let currentPath = FS.currentPath;
+			try {
+				FS.chdir(data.path || Module.workspace);
+				result.exitCode = callMain(data.execute);
+				if (result.exitCode === 0 && data.dump != null) {
+					if (data.dump.constructor === String) {
+						const content = Module.readFile(data.dump);
+						const blob = new Blob([content], {type: 'application/octet-stream'});
+						result.dump = URL.createObjectURL(blob);
+						result.path = data.dump;
 					}
-				} catch (error) {
-					result.error = '' + error;
-					result.exitCode = -1;
-					console.error(error);
-				} finally {
-					FS.chdir(currentPath);
-					// persist files written by the executed program
-					FS.syncfs(function(error) {
-						if (error != null) {
-							Module.printErr('error: ' + error);
-						}
-					});
 				}
+			} catch (error) {
+				result.error = '' + error;
+				result.exitCode = -1;
+				console.error(error);
+			} finally {
+				FS.chdir(currentPath);
+				// show files and folders created by the executed program
+				Module.listFileTree(result);
+				// persist files written by the executed program
+				FS.syncfs(function(error) {
+					if (error != null) {
+						Module.printErr('error: ' + error);
+					}
+				});
 			}
 			postMessage(result);
-		});
+			return;
+		}
+		Module.openProjectFile(data, postMessage);
 	} catch (err) {
 		Module.printErr('operation failed: ' + err);
 	}

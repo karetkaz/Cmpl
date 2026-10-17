@@ -169,6 +169,9 @@ char *absolutePath(const char *path, char *buff, size_t size);
 
 char *relativeToCWD(const char *path);
 
+/// Version of the compiler: the build date as yyyymmdd.
+int cmplVersion(void);
+
 /// Get the current UTC time in milliseconds
 uint64_t timeMillis();
 

@@ -262,8 +262,14 @@ System.Platform.Windows # @builtin
 System.Platform.MacOS # @builtin
 System.Platform.Linux # @builtin
 System.Platform.Unix # @builtin
-System.Platform.runsInTestMode # @builtin
-System.Platform.preferNativeCalls # @builtin
+System.Platform.X86 # @builtin
+System.Platform.Arm # @builtin
+System.Platform.pointerSize # @builtin
+System.Platform.littleEndian # @builtin
+System.Compiler # @builtin
+System.Compiler.version # @builtin
+System.Compiler.runsInTestMode # @builtin
+System.Compiler.preferNativeCalls # @builtin
 true
 false
 int32(value: int32): int32 # Explicit cast of base types

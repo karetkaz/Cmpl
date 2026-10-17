@@ -571,7 +571,7 @@ function showFiles(list, root) {
 				params.update({ path, content: null });
 			};
 			li.ondblclick = function() {
-				openProjectFile({ path, link: true });
+				openProjectFile({ path, link: true, op: 'download' });
 			};
 			parent.appendChild(li);
 			continue;
@@ -912,7 +912,7 @@ function process(data) {
 	if (data.print !== undefined) {
 		terminal.append(data.print);
 	}
-	if (data.link !== undefined) {
+	if (data.link !== undefined && data.op === 'download') {
 		const link = document.createElement('a');
 		link.innerText = data.path || 'Download file';
 		link.download = data.path || 'file.bin';
@@ -965,6 +965,16 @@ function process(data) {
 		let line = params.getLine();
 		if (!isNaN(line)) {
 			path += ':' + line;
+		}
+		let imageMime = data.contentType;
+		if (imageMime != null && imageMime.startsWith('image/')) {
+			const image = document.createElement('img');
+			image.src = data.link;
+			image.title = data.path;
+			image.alt = data.path;
+			terminal.clear();
+			terminal.append(image);
+			setStyle(document.body, 'output');
 		}
 		if (setContent(data.content, data.path, params.getLine(1))) {
 			params.update({ path, content: params.content ? data.content : null });

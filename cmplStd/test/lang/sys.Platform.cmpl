@@ -19,3 +19,39 @@ static if (System.Platform.Unix != 0) {
 int Unix = System.Platform.Unix;
 debug("Unix platform", Unix);
 }
+static if (System.Platform.X86 != 0) {
+int X86 = System.Platform.X86;
+debug("x86 architecture", X86);
+}
+static if (System.Platform.Arm != 0) {
+int Arm = System.Platform.Arm;
+debug("arm architecture", Arm);
+}
+
+struct Platform {
+	int isWebAssembly = System.Platform.WebAssembly;
+	int isWindows = System.Platform.Windows;
+	int isMacOS = System.Platform.MacOS;
+	int isLinux = System.Platform.Linux;
+	int isUnix = System.Platform.Unix;
+	int isX86 = System.Platform.X86;
+	int isArm = System.Platform.Arm;
+
+	int pointerSize = System.Platform.pointerSize;
+	int littleEndian = System.Platform.littleEndian;
+
+	int compilerVersion = System.Compiler.version;
+	int runsInTestMode = System.Compiler.runsInTestMode;
+	int preferNativeCalls = System.Compiler.preferNativeCalls;
+}
+
+Platform platform = {};
+
+// the byte order reported by the compiler is the one used by the virtual machine
+struct PlatformByteOrder: 0 { uint8 bytes[4]; uint32 value; }
+PlatformByteOrder byteOrder = { value: 1 };
+
+assert(platform.compilerVersion > 20070720);
+assert((platform.littleEndian != 0) == (byteOrder.bytes[0] == 1));
+
+debug("platform", platform);

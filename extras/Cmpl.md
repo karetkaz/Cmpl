@@ -581,6 +581,23 @@ static if (struct(double) == null) {
 A `static if` can select code for the target platform at compile time:
 the branches of the other platforms are type-checked, but no code is generated for them.
 
+The `System.Platform` constants describe the build target of the compiler and virtual machine
+(the platform `cmpl` was compiled for), not the machine it actually runs on:
+- `System.Platform.WebAssembly`, `Windows`, `MacOS`, `Linux`, `Unix`: the pointer size in bits
+  (32 or 64) of the `cmpl` process when it was built for the given platform, `0` otherwise.
+- `System.Platform.X86`, `Arm`: the pointer size in bits (32 or 64) of the `cmpl` process
+  when it was built for the given architecture, `0` otherwise (`X86 == 64` is x86_64, `Arm == 64` is aarch64).
+- `System.Platform.pointerSize`: the size of a native pointer of the `cmpl` process in bytes (4 or 8),
+  also the default packing of records, see [Memory layout](#memory-layout).
+- `System.Platform.littleEndian`: `1` if the least significant byte is stored first in memory, `0` otherwise.
+
+The `System.Compiler` constants describe the compiler itself:
+- `System.Compiler.version`: the build date of the compiler as `yyyymmdd`.
+- `System.Compiler.runsInTestMode`: `1` when compiling in test mode, `0` otherwise, enabled with the `-X+test` flag
+  (ex: windows are closed right after they are shown).
+- `System.Compiler.preferNativeCalls`: `1` if native functions should be used when available, `0` otherwise,
+  instead of their implementation in Cmpl (disabled with the `-X-native` flag).
+
 **Example**
 
 ```cmpl
@@ -595,6 +612,12 @@ static if (System.Platform.MacOS != 0) {
 }
 static if (System.Platform.Linux != 0) {
 	debug("Linux platform");
+}
+static if (System.Platform.X86 != 0) {
+	debug("x86 architecture");
+}
+static if (System.Platform.Arm != 0) {
+	debug("arm architecture");
 }
 ```
 
@@ -1466,20 +1489,25 @@ The members of a record are laid out in memory in declaration order, using the s
 - The size of the record is padded to the largest alignment of its members,
   so the members of every element of an array of records stay aligned.
 - A record with a single member has the size of that member.
-- Alignments are limited to the size of a pointer on the host platform,
-  and for records extending `object` to the size of a reference.
+- Records are packed by default with the native pointer size of the `cmpl` process
+  (`System.Platform.pointerSize`: 4 or 8 bytes, depending on how `cmpl` was built),
+  and records extending `object` with the size of a reference.
+  So every member is aligned to the smaller of its natural alignment and the packing:
+  `struct { int8 a; int64 b; }` has 16 bytes in 64-bit builds, but 12 in 32-bit ones (like WebAssembly).
 
 This makes it possible to declare records with the same memory layout as the structures
 of native (C) code, without any annotation.
 
 ### Packed records
 A record can be packed with a small power-of-2 integer (`0, 1, 2, 4, 8, 16, 32`):
-the alignment of every member is limited to the given value, reducing the gaps between the members
-(same as `#pragma pack(n)` in C).
+the alignment of every member is limited to the given value instead of the default packing,
+so the members are aligned to the smaller of their natural alignment and the given value
+(same as `#pragma pack(n)` in C). The resulting layout is the same in every build.
 - Packed with `0`: a C-like union — every member starts at the same memory location,
   the size is the size of the largest member, padded to the largest alignment of the members.
 - Packed with `1`: tightly packed, no gap between members (may make member access expensive).
-- Packed with a value larger than the alignment of the members: same as not packed.
+- Packed with a value not smaller than the natural alignment of the members: every member is aligned
+  to its natural alignment, in 64-bit builds this is the same as not packed.
 
 **Example**
 
@@ -1532,6 +1560,20 @@ struct DeclRecPacked2: 2 {
 	int32 arg;   // offset 2
 }
 assertEq(6, sizeof(DeclRecPacked2));
+
+// default packing: the alignment of `b` is limited to the native pointer size
+struct DeclRecDefault {
+	int8 a;      // offset 0, followed by 3 or 7 bytes of padding
+	int64 b;     // offset 4 in 32-bit, 8 in 64-bit builds
+}
+assertEq(8 + System.Platform.pointerSize, sizeof(DeclRecDefault));
+
+// packed with 8: `b` is aligned to its natural alignment in every build
+struct DeclRecPacked8: 8 {
+	int8 a;      // offset 0, followed by 7 bytes of padding
+	int64 b;     // offset 8
+}
+assertEq(16, sizeof(DeclRecPacked8));
 ```
 
 ### Extended records

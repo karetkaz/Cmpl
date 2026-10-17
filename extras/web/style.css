@@ -186,7 +186,7 @@ select {
 #output-toolbar > .icon {
 	min-width: var(--output-toolbar-size);
 }
-body.output #output-toolbar {
+body.output #output-toolbar>#output-pan-sidebar {
 	cursor: row-resize;
 }
 
@@ -233,6 +233,9 @@ body.edited #fileList .active:after {
 }
 #output>p {
 	min-height: 1em;
+}
+#output>img {
+	max-width: 100%;
 }
 body.wrap-output #output {
 	white-space: pre-wrap;

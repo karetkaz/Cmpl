@@ -20,5 +20,5 @@ debug("not reached", value);
 
 /* - expected output:
 test.debug.errors.cmpl:13: debug: caught error: int32(3)
-test.debug.errors.cmpl:18: Division by Zero at .0de108 in function: <.main+8602> executing instruction: div.i32
+test.debug.errors.cmpl:18: Division by Zero at .0de510 in function: <.main+8602> executing instruction: div.i32
 */

@@ -377,7 +377,7 @@ static vmError sysMemCmp(nfcContext ctx) {
 	return noError;
 }
 
-
+/// Install the `System.Platform` constants, describing the build target of `cmpl`.
 static int installPlatform(rtContext rt, ccContext cc) {
 	int err = 0;
 	symn nsp = NULL;		// namespace
@@ -388,6 +388,8 @@ static int installPlatform(rtContext rt, ccContext cc) {
 		int isMacOs = 0;
 		int isLinux = 0;
 		int isUnix = 0;
+		int isX86 = 0;
+		int isArm = 0;
 #if defined(__EMSCRIPTEN__)
 		isWebAssembly = 8 * sizeof(void*);
 #endif
@@ -411,6 +413,12 @@ static int installPlatform(rtContext rt, ccContext cc) {
 || defined(__CYGWIN__)
 		isUnix = 8 * sizeof(void*);
 #endif
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+		isX86 = 8 * sizeof(void*);
+#endif
+#if defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || defined(_M_ARM64)
+		isArm = 8 * sizeof(void*);
+#endif
 		err = err || !rt->api.ccDefInt(cc, "WebAssembly", isWebAssembly);
 		err = err || !rt->api.ccDefInt(cc, "Windows", isWindows);
 		err = err || !rt->api.ccDefInt(cc, "MacOS", isMacOs);
@@ -420,6 +428,29 @@ static int installPlatform(rtContext rt, ccContext cc) {
 		//err = err || !rt->api.ccDefInt(cc, "iOS", 0);
 		//err = err || !rt->api.ccDefInt(cc, "Dos", 0);
 
+		err = err || !rt->api.ccDefInt(cc, "X86", isX86);
+		err = err || !rt->api.ccDefInt(cc, "Arm", isArm);
+		//err = err || !rt->api.ccDefInt(cc, "RiscV", 0);	// __riscv, not tested
+
+		// size of a native pointer of the process in bytes, the default packing of records: same as `vm_mem_align`
+		err = err || !rt->api.ccDefInt(cc, "pointerSize", sizeof(void*));
+
+		// byte order of the process: least significant byte first
+		union { uint32_t value; uint8_t bytes[4]; } order = { .value = 1 };
+		err = err || !rt->api.ccDefInt(cc, "littleEndian", order.bytes[0] == 1);
+		rt->api.ccEnd(cc, nsp);
+	}
+	return err;
+}
+
+/// Install the `System.Compiler` constants: the version and the options of the compiler.
+static int installCompiler(rtContext rt, ccContext cc) {
+	int err = 0;
+	symn nsp = NULL;		// namespace
+
+	if ((nsp = rt->api.ccBegin(cc, "Compiler"))) {
+		// build date of the compiler as yyyymmdd
+		err = err || !rt->api.ccDefInt(cc, "version", cmplVersion());
 		err = err || !rt->api.ccDefInt(cc, "runsInTestMode", cc->runsInTestMode);
 		err = err || !rt->api.ccDefInt(cc, "preferNativeCalls", cc->preferNativeCalls);
 		rt->api.ccEnd(cc, nsp);
@@ -495,6 +526,7 @@ static int ccLibSys(rtContext rt, ccContext cc) {
 		}
 
 		installPlatform(rt, cc);
+		installCompiler(rt, cc);
 		//~ install(cc, "Arguments", CAST_arr, 0, 0);	// string Args[];
 		//~ install(cc, "Environment", KIND_def, 0, 0);	// string Env[string];
 		rt->api.ccEnd(cc, nsp);

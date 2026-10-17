@@ -58,13 +58,17 @@ struct record_packDef {
 	uint16 c;
 }
 
+// default packing is the memory alignment of the host platform: 4 or 8 bytes
+inline memAlign = System.Platform.pointerSize;
+assert(memAlign == 4 || memAlign == 8);
+
 // the sizes are the same as in C, using `#pragma pack(n)`
 assert(sizeof(record_pack0) == 8);
 assert(sizeof(record_pack1) == 17);
 assert(sizeof(record_pack2) == 20);
 assert(sizeof(record_pack4) == 24);
 assert(sizeof(record_pack8) == 32);
-assert(sizeof(record_packDef) == 32);
+assert(sizeof(record_packDef) == (memAlign == 4 ? sizeof(record_pack4) : sizeof(record_pack8)));
 
 // like in C, the size is padded only to the largest alignment of the members
 struct record_int8 { int8 a; }
@@ -74,7 +78,7 @@ struct record_int64int8 { int64 a; int8 b; }
 assert(sizeof(record_int8) == 1);
 assert(sizeof(record_int32) == 4);
 assert(sizeof(record_int32x3) == 12);
-assert(sizeof(record_int64int8) == 16);
+assert(sizeof(record_int64int8) == 8 + memAlign);
 
 // nested records are aligned to the largest alignment of their members
 struct record_nested { int8 a; record_int32x3 b; }

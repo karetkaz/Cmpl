@@ -146,7 +146,7 @@ inline >(char lhs[], char rhs[]) = compare(lhs, rhs, caseCmp) > 0;
 /// Convert a string to a 64 bit floating point value
 float64 float64(char value[]) {
 	float64 result = 0;
-	static if (System.Platform.preferNativeCalls && struct(float64.parse) != null) {
+	static if (System.Compiler.preferNativeCalls && struct(float64.parse) != null) {
 		// use the native method if available
 		int len = float64.parse(value, &result);
 		if (len > 0 && len == value.length) {

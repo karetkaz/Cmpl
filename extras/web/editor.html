@@ -72,7 +72,7 @@
 	</div>
 	<div class="collapsed submenu">
 		<li onclick="setStyle(parentElement, '~collapsed');">Execute
-			<button class="right" onclick="execute(title, {file: false}); event.stopPropagation();" title="-api/A">ƒ</button>
+			<button class="right" onclick="execute(title); event.stopPropagation();" title="-run">►</button>
 		</li>
 		<ul>
 			<div class="collapsed submenu">
@@ -97,7 +97,9 @@
 		</ul>
 		<ul>
 			<li onclick="execute('');">⚙ Compile only</li>
-			<li onclick="execute(title);" title="-run/g"><span class="right">Ctrl+Shift+Enter</span>⚡ Run</li>
+			<li onclick="execute(title);" title="-run/g">⚡ Run
+				<span class="right">Ctrl+Shift+Enter</span>
+			</li>
 			<li onclick="execute(title);" title="-debug/g">🐞 Debug
 				<button class="right" onclick="execute(title); event.stopPropagation();" title="-debug/G/M/T/P">T</button>
 				<button class="right" onclick="execute(title); event.stopPropagation();" title="-debug/g/m/t/p">t</button>
@@ -108,6 +110,7 @@
 			</li>
 			<li onclick="execute(title);" title="-api -doc -use">Symbols
 				<button class="right" onclick="execute(title); event.stopPropagation();" title="-api/A/d/p -doc -use">All</button>
+				<button class="right" onclick="execute(title, {file: false}); event.stopPropagation();" title="-api/A">ƒ</button>
 			</li>
 			<li onclick="execute(title);" title="-asm/n/s">Instructions
 				<button class="right" onclick="execute(title); event.stopPropagation();" title="-asm/A/d/p/n/s">All</button>
@@ -499,6 +502,8 @@ else {
 				console.error(error);
 			} finally {
 				FS.chdir(currentPath);
+				// show files and folders created by the executed program
+				Module.listFileTree(result);
 				process(result);
 				if (canvas.width === 0) {
 					setStyle(document.body, '-canvas');
