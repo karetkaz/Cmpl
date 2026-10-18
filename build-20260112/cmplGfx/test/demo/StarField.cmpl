@@ -1,0 +1,84 @@
+// star field
+struct Star {
+	static float64 speed = 1;
+	float64 xpos;
+	float64 ypos;
+	float64 zpos;
+	uint32 color;
+}
+
+static Star stars[1024] = {...};
+
+int32 resolutionx = 1440;
+int32 resolutiony = 900;
+int32 centerx = resolutionx / 2;
+int32 centery = resolutiony / 2;
+
+void initStar(Star star&) {
+	static Random random = Random();
+	// randomly init stars, generate them around the center of the screen
+	star.xpos = random.nextFloat64() * 2 * resolutionx - resolutionx;
+	star.ypos = random.nextFloat64() * 2 * resolutiony - resolutiony;
+	star.zpos = 300;
+	star.color = random.nextInt32() & 0x00ffffff;
+}
+
+void drawStars(Image offScreen) {
+	// clear the screen
+	offScreen.fill(0);
+
+	// move and draw stars
+	for (int i = 0; i < stars.length; i += 1) {
+
+		stars[i].zpos -= Star.speed;
+
+		if (stars[i].zpos <= 0) {
+			initStar(&stars[i]);
+		}
+
+		// compute 3D positions
+		float64 tempx = centerx + resolutionx * stars[i].xpos / stars[i].zpos;
+		float64 tempy = centery + resolutiony * stars[i].ypos / stars[i].zpos;
+
+		// check if a star leaves the screen
+		if (tempx < 0 || tempx >= resolutionx || tempy < 0 || tempy >= resolutiony) {
+			initStar(&stars[i]);
+			continue;
+		}
+
+		int32 ps = Int32.max(int32(0x200 / stars[i].zpos), 1);
+		offScreen.fillOval(tempx, tempy, tempx + ps, tempy + ps, stars[i].color);
+	}
+
+}
+
+Image image = Image(resolutionx, resolutiony, 32);
+int32 onEvent(int32 action, int32 btn, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && btn == Window.KEY_CODE_ESC) {
+		return Window.quit();
+	}
+	if (action == Window.KEY_PRESS) {
+		if (btn == '[') {
+			Star.speed -= 1;
+		}
+		if (btn == ']') {
+			Star.speed += 1;
+		}
+	}
+
+	if (action == Window.MOUSE_PRESS) {
+		if (btn == 1) {
+			centerx = x;
+			centery = y;
+		}
+	}
+
+	drawStars(image);
+	return Window.timeoutFps(30);
+}
+for (int i = 0; i < stars.length; i += 1) {
+	initStar(&stars[i]);
+}
+
+Window.show(image, onEvent);
+image.destroy();

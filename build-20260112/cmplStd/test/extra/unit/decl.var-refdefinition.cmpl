@@ -1,0 +1,9 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 2
+
+float64 a = 3.1415;
+uint64 a = 130;
+
+/* - expected output:
+decl.var-refdefinition.cmpl:4: error: redefinition of `a`
+decl.var-refdefinition.cmpl:3: error: previously defined here as `a`
+*/

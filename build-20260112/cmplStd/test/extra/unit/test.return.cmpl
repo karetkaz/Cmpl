@@ -1,0 +1,15 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 6
+
+int test() {
+	int x = 9;
+	return x;
+}
+
+/* - expected output:
+test(): int32: function {
+.instructions: (8 bytes)
+	load.c32 9
+	set.x32 sp(2)
+	ret
+}
+*/

@@ -1,0 +1,116 @@
+// Luminance, hue and rgb histogram demo.
+
+Image back = Image("asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+Histogram histogram = {
+	enabled: false;
+};
+
+Button btnLum = {
+	text: "luminosity";
+};
+Button btnHue = {
+	text: "colors";
+};
+Button btnRgb = {
+	text: "rgb";
+};
+Switch chkRed = {
+	text: "red";
+	selected: 1;
+	states: null;
+	focusable: false;
+};
+Switch chkGreen = {
+	text: "green";
+	selected: 1;
+	states: null;
+	focusable: false;
+};
+Switch chkBlue = {
+	text: "blue";
+	selected: 1;
+	states: null;
+	focusable: false;
+};
+Panel panRGB = {
+	visible: false;
+};
+
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+void onProcess(FxWidget ui) {
+
+	debug.startTimer();
+	uint32 hist[histogram.data.length] = {};
+
+	offs.copy(0, 0, back, null);
+	if (btnHue.isFocused()) {
+		offs.calcHueHist(null, &hist);
+		uint32 max = 1;  // avoid division by zero
+		for (int i = 0; i < hist.length; i += 1) {
+			if (max < hist[i]) {
+				max = hist[i];
+			}
+		}
+		for (int i = 0; i < hist.length; i += 1) {
+			float hue = float32(i) / hist.length;
+			argb rgb = argb(hsl2rgb(vec4f(hue, 1f, .5f)));
+			rgb.a = sat_s8(hist[i] * 255 / max);
+			histogram.data[i] = rgb;
+		}
+		histogram.color = true;
+		panRGB.visible(false);
+	}
+	if (btnLum.isFocused()) {
+		offs.calcLumHist(null, &hist);
+		uint32 max = 1;  // avoid division by zero
+		for (int i = 0; i < hist.length; i += 1) {
+			if (max < hist[i]) {
+				max = hist[i];
+			}
+		}
+		for (int i = 0; i < hist.length; i += 1) {
+			argb rgb = argb(0xdadada);
+			rgb.a = sat_s8(hist[i] * 255 / max);
+			histogram.data[i] = rgb;
+		}
+		histogram.color = true;
+		panRGB.visible(false);
+	}
+	if (btnRgb.isFocused()) {
+		offs.calcRgbHist(null, &hist);
+		for (int i = 0; i < hist.length; i += 1) {
+			argb data = argb(hist[i]);
+			if (!chkRed.selected) {
+				data.r = 0;
+			}
+			if (!chkGreen.selected) {
+				data.g = 0;
+			}
+			if (!chkBlue.selected) {
+				data.b = 0;
+			}
+			histogram.data[i] = data;
+		}
+		histogram.color = false;
+		panRGB.visible(true);
+	}
+}
+
+Window.show(offs, FxWidget(onProcess,
+	histogram,
+
+	null,
+	btnLum, btnHue, btnRgb,
+	panRGB.addItems(Style.fill, chkRed, chkGreen, chkBlue),
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

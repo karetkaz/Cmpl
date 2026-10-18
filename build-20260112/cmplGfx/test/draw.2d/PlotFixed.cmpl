@@ -1,0 +1,441 @@
+inline dark = !false;
+inline cBack = dark ? 0x1d1e21 : 0xffffff;
+inline cGrid = dark ? 0x3d3e41 : 0xdadada;
+inline cThis = dark ? 0x00ffff : 0x0000ff;  // color of function approximated here
+inline cMath = dark ? 0x00ff00 : 0x00ff00;  // color of function plotted using Math
+inline cErr = 0xb0ff0000;
+inline cText = cBack ^ 0xffffff;
+
+inline grid = 5;
+inline zoom = 1;
+
+inline h = 960;
+inline w = h * 16 / 9;
+Image offs = Image(w, h, 32);
+Image gr = zoom <= 1 ? offs : Image(w / zoom, h / zoom, 32);
+
+static if (struct(Functions) == null) {
+// Functions is not defined, compare Float64 vs Fixed32
+struct Functions {
+	char text[];
+	float64 base(float64 x);
+	Fixed32 test(Fixed32 x);
+
+	static float64 test(Functions fn, float64 x) {
+		// return float32(fn.base(float32(x)));
+		return float64(fn.test(Fixed32(x)));
+	}
+
+	static Fixed32 floor(Fixed32 x) = Fixed32.floor;
+	static Fixed32 ceil(Fixed32 x) = Fixed32.ceil;
+	static Fixed32 round(Fixed32 x) = Fixed32.round;
+	static Fixed32 sqrt(Fixed32 x) = Fixed32.sqrt;
+
+	static Fixed32 exp(Fixed32 x) = Fixed32.exp;
+	static Fixed32 ln(Fixed32 x) = Fixed32.ln;
+	static Fixed32 exp2(Fixed32 x) = Fixed32.exp2;
+	static Fixed32 log2(Fixed32 x) = Fixed32.log2;
+
+	static Fixed32 sin(Fixed32 x) = Fixed32.sin;
+	static Fixed32 asin(Fixed32 x) = Fixed32.asin;
+	static Fixed32 sinh(Fixed32 x) = Fixed32.sinh;
+	static Fixed32 asinh(Fixed32 x) = Fixed32.asinh;
+
+	static Fixed32 cos(Fixed32 x) = Fixed32.cos;
+	static Fixed32 acos(Fixed32 x) = Fixed32.acos;
+	static Fixed32 cosh(Fixed32 x) = Fixed32.cosh;
+	static Fixed32 acosh(Fixed32 x) = Fixed32.acosh;
+
+	static Fixed32 tan(Fixed32 x) = Fixed32.tan;
+	static Fixed32 atan(Fixed32 x) = Fixed32.atan;
+	static Fixed32 tanh(Fixed32 x) = Fixed32.tanh;
+	static Fixed32 atanh(Fixed32 x) = Fixed32.atanh;
+
+	static Fixed32 sec(Fixed32 x) = Fixed32.sec;
+	static Fixed32 asec(Fixed32 x) = Fixed32.asec;
+	static Fixed32 sech(Fixed32 x) = Fixed32.sech;
+	static Fixed32 asech(Fixed32 x) = Fixed32.asech;
+
+	static Fixed32 csc(Fixed32 x) = Fixed32.csc;
+	static Fixed32 acsc(Fixed32 x) = Fixed32.acsc;
+	static Fixed32 csch(Fixed32 x) = Fixed32.csch;
+	static Fixed32 acsch(Fixed32 x) = Fixed32.acsch;
+
+	static Fixed32 cot(Fixed32 x) = Fixed32.cot;
+	static Fixed32 acot(Fixed32 x) = Fixed32.acot;
+	static Fixed32 coth(Fixed32 x) = Fixed32.coth;
+	static Fixed32 acoth(Fixed32 x) = Fixed32.acoth;
+}
+}
+Functions functions[] = {
+	{base: Float64.floor, test: Functions.floor, text: "floor" },
+	{base: Float64.round, test: Functions.round, text: "round" },
+	{base: Float64.ceil, test: Functions.ceil, text: "ceil" },
+	{base: Float64.sqrt, test: Functions.sqrt, text: "sqrt" },
+
+	{base: Float64.ln, test: Functions.ln, text: "ln" },
+	{base: Float64.log2, test: Functions.log2, text: "log2" },
+	{base: Float64.exp, test: Functions.exp, text: "exp" },
+	{base: Float64.exp2, test: Functions.exp2, text: "exp2" },
+
+	{base: Float64.sin, test: Functions.sin, text: "sin" },
+	{base: Float64.asin, test: Functions.asin, text: "asin" },
+	{base: Float64.sinh, test: Functions.sinh, text: "sinh" },
+	{base: Float64.asinh, test: Functions.asinh, text: "asinh" },
+
+	{base: Float64.cos, test: Functions.cos, text: "cos" },
+	{base: Float64.acos, test: Functions.acos, text: "acos" },
+	{base: Float64.cosh, test: Functions.cosh, text: "cosh" },
+	{base: Float64.acosh, test: Functions.acosh, text: "acosh" },
+
+	{base: Float64.tan, test: Functions.tan, text: "tan" },
+	{base: Float64.atan, test: Functions.atan, text: "atan" },
+	{base: Float64.tanh, test: Functions.tanh, text: "tanh" },
+	{base: Float64.atanh, test: Functions.atanh, text: "atanh" },
+
+	{base: Float64.sec, test: Functions.sec, text: "sec" },
+	{base: Float64.asec, test: Functions.asec, text: "asec" },
+	{base: Float64.sech, test: Functions.sech, text: "sech" },
+	{base: Float64.asech, test: Functions.asech, text: "asech" },
+
+	{base: Float64.csc, test: Functions.csc, text: "csc" },
+	{base: Float64.acsc, test: Functions.acsc, text: "acsc" },
+	{base: Float64.csch, test: Functions.csch, text: "csch" },
+	{base: Float64.acsch, test: Functions.acsch, text: "acsch" },
+
+	{base: Float64.cot, test: Functions.cot, text: "cot" },
+	{base: Float64.acot, test: Functions.acot, text: "acot" },
+	{base: Float64.coth, test: Functions.coth, text: "coth" },
+	{base: Float64.acoth, test: Functions.acoth, text: "acoth" },
+};
+
+Select chkFunctions = {
+	text: "function";
+	focusable: true;
+	orientation: 4;
+};
+Slider sldScale = {
+	text: "scale (2 ** x)";
+	minimum: 0.5 - Fixed32.precision;
+	maximum: 31.5 - Fixed32.precision;
+	value: 2;
+};
+Slider sldXOffset = {
+	text: "offset.x";
+	minimum: -Float64.inf;
+	maximum: +Float64.inf;
+};
+Slider sldYOffset = {
+	text: "offset.y";
+	minimum: -Float64.inf;
+	maximum: +Float64.inf;
+};
+Switch chkCenterY = {
+	text: "center y";
+	states: null;
+	clickToFocus: false;
+};
+Switch chkDisplay = {
+	static char statesDisplay[][4] = {
+		"diff",
+		"error",
+		"native",
+		"computed",
+	};
+	text: "display";
+	states: statesDisplay;
+	clickToFocus: false;
+};
+Switch chkSmooth = {
+	static char statesSmooth[][3] = {
+		"none",
+		"full",
+		"partial",
+	};
+	text: "smoothing";
+	states: statesSmooth;
+	clickToFocus: false;
+};
+
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+	width: 200;
+};
+
+void aaBar(Image img, int32 x, float64 y0, float64 y1, uint32 color) {
+	if (chkSmooth.selected == 0) {
+		// return img.fillRect(x, y0, x, y1, 1, color);
+		if (y0 > y1) { float64 y = y0; y0 = y1; y1 = y; }
+		return img.fillRect(x, y0, x+1, Float64.max(y1, y0 + 1), 0, color);
+	}
+
+	int32 sign = 1;
+	if (y0 > y1) {
+		float64 y = y0;
+		y0 = y1;
+		y1 = y;
+		sign = -1;
+	}
+
+	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
+	if (y0 < 0) { y0 = 0; }
+	if (y1 > img.height()) { y1 = img.height(); }
+	if (y1 < 0 || y0 > img.height()) {
+		return;
+	}
+
+	if (y1 - y0 < 1) {
+		int a0 = int32(y0 * 256) & 0xff;
+		int a1 = int32(y1 * 256) & 0xff;
+		img.mix(x, y0, 255 - a0, color);
+		img.mix(x, y0 + 1, a0, color);
+		return;
+	}
+
+	if (chkSmooth.selected != 1) {
+		return;
+	}
+
+	float64 dx = 1 / (y1 - y0);
+	float64 xx = 0;
+	for (float64 y = y0; y < y1; y += 1) {
+		int32 a = int32(xx * 256) & 255;
+		img.mix(x + sign, y, a, color);
+		img.mix(x, y, 255 - a, color);
+		xx += dx;
+	}
+}
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	if (action < Window.EVENT_PROCESSED) {
+		// action was not processed by the widget, do not redraw
+		return Window.timeoutMax;
+	}
+
+	Functions fn? = chkFunctions.selectedData().as(Functions);
+	if (fn == null) {
+		return Window.timeoutMax;
+	}
+
+	debug.startTimer();
+
+	float64 width = gr.width();
+	float64 xScale = Float64.exp2(sldScale.value);
+	float64 xStart = -sldXOffset.value;
+
+	if (chkCenterY.selected) {
+		float64 y = fn.base(xStart);
+		if (Float64.isFinite(y)) {
+			sldYOffset.onUpdate(-y);
+		}
+	}
+
+	float64 height = gr.height();
+	float64 yScale = xScale / width * height;
+	float64 yStart = -sldYOffset.value;
+
+	float64 yGood[w / zoom + 1] = {0};
+	float64 yComp[w / zoom + 1] = {0};
+
+	sldXOffset.shiftFactor = offs.width() / xScale / 2;
+	sldYOffset.shiftFactor = offs.height() / yScale / 2;
+	for (int64 i = 0; i < yGood.length; i += 1) {
+		float64 x = xStart + xScale * (i - width / 2) / width * 2;
+		yGood[i] = fn.base(x);
+		yComp[i] = fn.test(x);
+	}
+
+	if (chkDisplay.selected == 1) {
+		float64 yMin = +Float64.inf;
+		float64 yMax = -Float64.inf;
+		for (int64 i = 0; i < yGood.length; i += 1) {
+			float64 y = yGood[i] - yComp[i];
+			yGood[i] = 0;
+			yComp[i] = y;
+			if (Float64.isFinite(y)) {
+				if (yMin > y) {
+					yMin = y;
+				}
+				if (yMax < y) {
+					yMax = y;
+				}
+			}
+		}
+
+		static if (!false) {
+			// center error on screen
+			if (yMax < -yMin) {
+				yMax = -yMin;
+			} else {
+				yMin = -yMax;
+			}
+		}
+
+		if (yMax == 0 && yMin == 0) {
+			yMin = -(yMax = 1e-300);
+		}
+
+		yScale = (yMax - yMin) / 2;
+		yStart = yMin + yScale;
+
+		// add some pixel padding
+//		yScale += 5. / height;
+
+		// restrict y scaling only to grow, but not to shrink
+		yScale = Float64.min(yScale, xScale / width * height);
+	}
+
+	gr.fill(cBack);
+	static if (zoom <= 1 && grid > 1) {
+		float64 logStep = Float64.floor(Float64.log(xScale, grid));
+		float64 step = Float64.pow(float64(grid), logStep);
+		float64 alpha = (xScale - step) / (Float64.pow(float64(grid), logStep + 1) - step);
+		uint32 cBar1 = uint32(mix_rgb8(128, argb(cGrid), argb(cBack)));
+		uint32 cBar2 = uint32(mix_rgb8(int32(255 * alpha), argb(cBar1), argb(cBack)));
+
+		float64 cx = w / 2 - xStart * w / 2 / xScale * step;
+		float64 cy = h / 2 + yStart * h / 2 / yScale * step;
+		for (float64 i = 0; i < grid; i += 1) {
+			float64 x = i * w / 2 / xScale * (step / grid);
+			float64 y = i * h / 2 / yScale * (step / grid);
+			offs.fillRect(cx + x, 0, cx + x, w, 1, cBar2);
+			offs.fillRect(cx - x, 0, cx - x, w, 1, cBar2);
+			offs.fillRect(0, cy + y, w, cy + y, 1, cBar2);
+			offs.fillRect(0, cy - y, w, cy - y, 1, cBar2);
+		}
+		// cx = w / 2 - (xStart % step) * w / 2 / xScale * step;
+		// cy = h / 2 + (yStart % step) * h / 2 / yScale * step;
+		for (float64 i = 0; i < grid; i += 1) {
+			float64 x = i * w / 2 / xScale * step;
+			float64 y = i * h / 2 / yScale * step;
+			offs.fillRect(cx + x, 0, cx + x, w, 1, cBar1);
+			offs.fillRect(cx - x, 0, cx - x, w, 1, cBar1);
+			offs.fillRect(0, cy + y, w, cy + y, 1, cBar1);
+			offs.fillRect(0, cy - y, w, cy - y, 1, cBar1);
+		}
+		offs.fillRect(w / 2 - 1, 0, w / 2 - 1, h, 1, cGrid);
+		offs.fillRect(0, h / 2 - 1, w, h / 2 - 1, 1, cGrid);
+
+		NumberFormat fmt = {
+			positiveSymbol: '+';	// force sign symbol
+			trailingZeros: true;
+			groupingSymbol: ' ';
+			precision: 9;
+		};
+		char text[1024] = {...};
+		Rect rect = {};
+		int p = 0;
+
+		p = text.append(0, "Center: (");
+		p = fmt.format(text, p, xStart);
+		p = text.append(p, ", ");
+		p = fmt.format(text, p, yStart);
+		p = text.append(p, ")");
+		Window.font.clipText(&rect, text);
+		rect.position(10, offs.height() - rect.height() - 10);
+		offs.fillRect(rect, cBar1);
+		offs.drawText(rect, Window.font, text, cText);
+
+		p = text.append(0, "y: (");
+		p = fmt.format(text, p, yStart - yScale);
+		p = text.append(p, ", ");
+		p = fmt.format(text, p, yStart + yScale);
+		p = text.append(p, "): 2 ** ");
+		p = fmt.format(text, p, Float64.log2(2 * yScale));
+		Window.font.clipText(&rect, text);
+		rect.position(10,  10);
+		offs.fillRect(rect, cBar1);
+		offs.drawText(rect, Window.font, text, cText);
+
+		p = text.append(0, "x: (");
+		p = fmt.format(text, p, xStart - xScale);
+		p = text.append(p, ", ");
+		p = fmt.format(text, p, xStart + xScale);
+		p = text.append(p, "): 2 ** ");
+		p = fmt.format(text, p, Float64.log2(2 * xScale));
+
+		Window.font.clipText(&rect, text);
+		rect.position(offs.width() - rect.width() - 10, offs.height() - rect.height() - 10);
+		offs.fillRect(rect, cBar1);
+		offs.drawText(rect, Window.font, text, cText);
+	}
+
+	if (chkDisplay.selected < 2) {
+		float64 oldThis = height / 2 - (yComp[0] - yStart) * height / 2 / yScale;
+		float64 oldGood = height / 2 - (yGood[0] - yStart) * height / 2 / yScale;
+		for (int64 i = 0; i < yGood.length - 1; i += 1) {
+			float64 newThis = height / 2 - (yComp[i + 1] - yStart) * height / 2 / yScale;
+			float64 newGood = height / 2 - (yGood[i + 1] - yStart) * height / 2 / yScale;
+			if (Float64.isFinite(newThis) && Float64.isFinite(newGood)) {
+				if (Float64.isFinite(oldThis)) {
+					gr.aaBar(i, oldThis, newThis, cThis);
+				}
+				if (Float64.isFinite(oldGood)) {
+					gr.aaBar(i, oldGood, newGood, cMath);
+				}
+			} else {
+				gr.copy(Rect(i, 0, i + 1, height), argb(cErr));
+				if (Float64.isFinite(oldGood) && Float64.isFinite(newGood)) {
+					gr.aaBar(i, oldGood, newGood, cMath);
+				}
+			}
+			oldGood = newGood;
+			oldThis = newThis;
+		}
+	}
+	else if (chkDisplay.selected == 2) {
+		float64 oldThis = height / 2 - (yGood[0] - yStart) * height / 2 / yScale;
+		for (int64 i = 0; i < yGood.length - 1; i += 1) {
+			float64 newThis = height / 2 - (yGood[i + 1] - yStart) * height / 2 / yScale;
+			if (Float64.isFinite(newThis)) {
+				if (Float64.isFinite(oldThis)) {
+					gr.aaBar(i, oldThis, newThis, cMath);
+				}
+			} else {
+				gr.copy(Rect(i, 0, i + 1, height), argb(cErr));
+			}
+			oldThis = newThis;
+		}
+	}
+	else if (chkDisplay.selected == 3) {
+		float64 oldThis = height / 2 - (yComp[0] - yStart) * height / 2 / yScale;
+		for (int64 i = 0; i < yGood.length - 1; i += 1) {
+			float64 newThis = height / 2 - (yComp[i + 1] - yStart) * height / 2 / yScale;
+			if (Float64.isFinite(newThis)) {
+				if (Float64.isFinite(oldThis)) {
+					gr.aaBar(i, oldThis, newThis, cMath);
+				}
+			} else {
+				gr.copy(Rect(i, 0, i + 1, height), argb(cErr));
+			}
+			oldThis = newThis;
+		}
+	}
+
+	static if (zoom > 1) {
+		offs.transform(null, gr, null, 0);
+	}
+
+	return Window.timeoutMax;
+}
+
+for (int i = 0; i < functions.length; i += 1) {
+	Functions fn! = functions[i];
+	chkFunctions.addItem(fn.text, fn);
+}
+Window.show(offs, onEvent, FxWidget(
+	chkFunctions.setSelectedIndex(8),
+	sldScale,
+	sldXOffset,
+	chkCenterY,
+	sldYOffset,
+	chkDisplay,
+	chkSmooth,
+	null, debug
+).focus(sldScale));

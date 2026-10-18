@@ -1,0 +1,38 @@
+// Number format test using format string
+
+float64 val = .1;
+char buff[1024] = {...};
+
+(3).format(buff, "%d");
+debug(buff);
+
+int64(0x20928374).format(buff, "value%%: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+assert(equals(buff[...buff.length()], "value%: 546472820 = 0x20928374 = 0b00100000100100101000001101110100 = [2104344112240]5"));
+
+int64(-1).format(buff, "int64: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+uint64(-1).format(buff, "uint64: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+int64(1D << 63).format(buff, "int64: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+uint64(1D << 63).format(buff, "uint64: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+
+int32(-1).format(buff, "int32: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+uint32(-1).format(buff, "uint32: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+int32(1 << 31).format(buff, "int32: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+uint32(1 << 31).format(buff, "uint32: %d = 0x%08x = 0b%032b = [%.5i]5");
+debug(buff);
+
+float64(val).format(buff, "float64: %.60f = 0x%019.4x = %071.8b");
+debug(buff);
+
+float32(val).format(buff, "float32: %.60f = 0x%09.4x = %035.8b");
+debug(buff);
+
+Fixed32(val).format(buff, "Fixed32: %.60f = 0x%09.4x = %035.8b");
+debug(buff);

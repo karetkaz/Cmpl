@@ -1,0 +1,41 @@
+// test floating point comparisons
+inline assertEq(bool expected, bool returned, variant details...) = expected == returned ? void(0) : NotEquals.abort("assertion failed!", NotEquals(expected, returned, details));
+
+static float64 x[] = {-1./0, -900/7., -1, -1/5., 0, 1/5., 1, 900/7., 1./0};
+for (int i = 0; i < x.length; i += 1) {
+	float64 x64 = x[i];
+	float32 x32 = x64;
+	for (int j = 0; j < x.length; j += 1) {
+		float64 y64 = x[j];
+ 		assertEq(x64 == y64, i == j, i, j, x64, y64);
+		assertEq(x64 != y64, i != j, i, j, x64, y64);
+		assertEq(x64 <  y64, i <  j, i, j, x64, y64);
+		assertEq(x64 <= y64, i <= j, i, j, x64, y64);
+		assertEq(x64 >  y64, i >  j, i, j, x64, y64);
+		assertEq(x64 >= y64, i >= j, i, j, x64, y64);
+
+		float32 y32 = y64;
+ 		assertEq(x32 == y32, i == j, i, j, x32, y32);
+		assertEq(x32 != y32, i != j, i, j, x32, y32);
+		assertEq(x32 <  y32, i <  j, i, j, x32, y32);
+		assertEq(x32 <= y32, i <= j, i, j, x32, y32);
+		assertEq(x32 >  y32, i >  j, i, j, x32, y32);
+		assertEq(x32 >= y32, i >= j, i, j, x32, y32);
+	}
+
+	static float64 nan64 = 0. / 0;
+	assertEq(x64 == nan64, false, i, x64, nan64);
+	assertEq(x64 != nan64,  true, i, x64, nan64);
+	assertEq(x64 <  nan64, false, i, x64, nan64);
+	assertEq(x64 <= nan64, false, i, x64, nan64);
+	assertEq(x64 >  nan64, false, i, x64, nan64);
+	assertEq(x64 >= nan64, false, i, x64, nan64);
+
+	static float32 nan32 = nan64;
+	assertEq(x32 == nan32, false, i, x32, nan32);
+	assertEq(x32 != nan32,  true, i, x32, nan32);
+	assertEq(x32 <  nan32, false, i, x32, nan32);
+	assertEq(x32 <= nan32, false, i, x32, nan32);
+	assertEq(x32 >  nan32, false, i, x32, nan32);
+	assertEq(x32 >= nan32, false, i, x32, nan32);
+}

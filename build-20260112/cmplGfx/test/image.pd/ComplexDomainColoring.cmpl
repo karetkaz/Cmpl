@@ -1,0 +1,35 @@
+// complex plane domain coloring demo.
+
+vec4f domain(Complex z, float64 mod) {
+inline "cmplGfx/lib/color/color.hsv.cmpl";
+	vec4f result = {
+		x: Float64.absMod(z.arg() / (Float64.pi * 2) + Float64.pi / 4, mod);
+		y: 4 * Float64.absMod(z.abs(), 1.) * (1 - Float64.absMod(z.abs(), 1.));
+		z: 1;//- absMod(Float64.abs(z.im), 1);
+	};
+	return hsv2rgb(result);
+}
+
+vec4f rgbOp(vec4f in) {
+	inline N = Float64.pi;
+	Complex z = {
+		re: Float64.mix(-N, N, float64(in.x));
+		im: Float64.mix(-N, N, float64(in.y));
+	};
+
+//	z = sin(z);
+//	z = sin(toPolar(z));
+//	z = sin(sech(toPolar(z)));
+	z = z.toPolar().cosh();
+//	z = toCartesian(cos(toPolar(z)));
+//	z = toCartesian(sin(toPolar(z)));
+//	z = sin(toCartesian(sin(toPolar(z))));
+//	z = sin(toCartesian(sin(toCartesian(sin(z)))));
+//	z = sin(sin(sin(toCartesian(z))));
+//	z = mul(z, .5); z = div(pow(z, 3), sub(sin(pow(z, 7)), 1));
+
+	// z = toCartesian(pow(toPolar(sin(z)), -2));
+	return domain(z, 1);
+}
+
+Window.show(512, 512, rgbOp);

@@ -1,0 +1,90 @@
+/* Brightness contrast demo using non linear functions
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse left or right in the window to adjust selected slider value
+ */
+
+Image back = Image("asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+void brightnessContrast(argb lut[256], int brightness, int contrast) {
+	float64 cVal = (256 + contrast) / 256.;
+
+	float64 easing(float64 ratio) = Easing.expo;
+	for (int idx = 0; idx < lut.length; idx += 1) {
+		float64 value = idx / 256.;
+		if (contrast < 0) {
+			value = Math.mix(value, easing.outIn(value), -contrast / 256.);
+		} else {
+			value = Math.mix(value, easing.inOut(value), contrast / 256.);
+		}
+		if (brightness < 0) {
+			value = Math.mix(value, easing.in(value), -brightness / 256.);
+		} else {
+			value = Math.mix(value, easing.out(value), brightness / 256.);
+		}
+
+		int rgb = sat_s8(256 * value);
+		lut[idx].r = rgb;
+		lut[idx].g = rgb;
+		lut[idx].b = rgb;
+		lut[idx].a = idx;
+	}
+}
+
+Slider brightness = {
+	text: "brightness";
+	minimum: -256;
+	maximum: 256;
+	stepSize: 1;
+};
+Slider contrast = {
+	text: "contrast";
+	minimum: -256;
+	maximum: 256;
+	stepSize: 1;
+};
+Histogram histogram = {
+	enabled: false;
+};
+Histogram curves = {
+	lines: true;
+	enabled: false;
+};
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+void onProcess(FxWidget widget) {
+	debug.startTimer();
+
+	offs.copy(0, 0, back, null);
+	if (widget.showOriginal) {
+		histogram.update(offs);
+		return;
+	}
+
+	brightnessContrast(&curves.data, brightness.value, contrast.value);
+	offs.colorMap(null, curves.data);
+	histogram.update(offs);
+}
+
+Window.show(offs, FxWidget(onProcess,
+	histogram,
+	curves,
+
+	null,
+	brightness, contrast,
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

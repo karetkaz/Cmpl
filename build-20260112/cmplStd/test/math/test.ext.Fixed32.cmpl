@@ -1,0 +1,1130 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh -run 328
+// test the Fixed32 point public functions
+static struct FixedExt {
+	enum {
+		precision: Fixed32.precision;
+		mask: Fixed32.mask;
+		half: Fixed32.half;
+		nan: Fixed32.nan;
+		inf: Fixed32.nan;
+		one: Fixed32.one;
+		pi: Fixed32.pi;
+	}
+
+	static uint32 overflow_exp2 = Fixed32.mul_30u(31 - precision, 1 << 30);
+	static uint32 underflow_exp2 = -Fixed32.mul_30u(precision, 1 << 30);
+	static uint32 underflow_exp = -Fixed32.mul_30u(precision, Fixed32.ln2_30u);
+
+	/// Determines whether the given fixed point value is finite
+	static bool isFinite(Fixed32 x) {
+		/*static if (inf != nan) {
+			return x.bits < inf & x.bits > -inf;
+		}*/
+		return x.bits() != nan;
+	}
+
+	static Fixed32 log2Old(Fixed32 x) {
+		/**	Returns the binary logarithm of the argument `x`.
+		 * 	log2(x) = log2((2 ** n) * ((x / 2) ** n)) =
+		 * 	= log2(2 ** n) + log2((x / 2) ** n) = n + log2(q)
+		 * 	n = most significant bit of x (BSR (bit scan reverse))
+		 * 	q = (x / 2) ** n = (x > 1) ? (x >> n) : (x << -n)
+		 * 	x > 1 <=> n - precision > 0
+		 * 	log2(q) = look up from table
+		**/
+		static uint32 tbl_log2![257] = {
+			// log2(x + 1), x : [0, 1), x = Float64.log2(index / 256. + 1) << 30
+			0x00000000, 0x005c2711, 0x00b7f285, 0x01136311, 0x016e7968, 0x01c9363b, 0x02239a3a, 0x027da612,
+			0x02d75a6e, 0x0330b7f8, 0x0389bf57, 0x03e27130, 0x043ace27, 0x0492d6df, 0x04ea8bf7, 0x0541ee0d,
+			0x0598fdbe, 0x05efbba5, 0x0646285b, 0x069c4477, 0x06f21090, 0x07478d38, 0x079cbb04, 0x07f19a83,
+			0x08462c46, 0x089a70da, 0x08ee68cb, 0x094214a5, 0x099574f1, 0x09e88a36, 0x0a3b54fc, 0x0a8dd5c8,
+			0x0ae00d1c, 0x0b31fb7d, 0x0b83a16a, 0x0bd4ff63, 0x0c2615e8, 0x0c76e574, 0x0cc76e83, 0x0d17b191,
+			0x0d67af16, 0x0db7678b, 0x0e06db66, 0x0e560b1e, 0x0ea4f726, 0x0ef39ff1, 0x0f4205f3, 0x0f90299c,
+			0x0fde0b5c, 0x102baba2, 0x10790adb, 0x10c62975, 0x111307da, 0x115fa676, 0x11ac05b2, 0x11f825f6,
+			0x124407ab, 0x128fab35, 0x12db10fc, 0x13263963, 0x137124ce, 0x13bbd3a0, 0x1406463b, 0x14507cfe,
+			0x149a784b, 0x14e43880, 0x152dbdfc, 0x1577091b, 0x15c01a39, 0x1608f1b4, 0x16518fe4, 0x1699f524,
+			0x16e221cd, 0x172a1637, 0x1771d2ba, 0x17b957ac, 0x1800a563, 0x1847bc33, 0x188e9c72, 0x18d54673,
+			0x191bba89, 0x1961f905, 0x19a80239, 0x19edd675, 0x1a33760a, 0x1a78e146, 0x1abe1879, 0x1b031bef,
+			0x1b47ebf7, 0x1b8c88db, 0x1bd0f2e9, 0x1c152a6c, 0x1c592fad, 0x1c9d02f6, 0x1ce0a492, 0x1d2414c8,
+			0x1d6753e0, 0x1daa6222, 0x1ded3fd4, 0x1e2fed3d, 0x1e726aa1, 0x1eb4b847, 0x1ef6d673, 0x1f38c567,
+			0x1f7a8568, 0x1fbc16b9, 0x1ffd799a, 0x203eae4e, 0x207fb517, 0x20c08e33, 0x210139e4, 0x2141b869,
+			0x21820a01, 0x21c22eea, 0x22022762, 0x2241f3a7, 0x228193f5, 0x22c10889, 0x2300519e, 0x233f6f71,
+			0x237e623d, 0x23bd2a3b, 0x23fbc7a6, 0x243a3ab7, 0x247883a8, 0x24b6a2b1, 0x24f4980b, 0x253263ec,
+			0x2570068e, 0x25ad8026, 0x25ead0eb, 0x2627f914, 0x2664f8d5, 0x26a1d064, 0x26de7ff6, 0x271b07c0,
+			0x275767f5, 0x2793a0c9, 0x27cfb26f, 0x280b9d1a, 0x284760fd, 0x2882fe49, 0x28be7531, 0x28f9c5e5,
+			0x2934f097, 0x296ff577, 0x29aad4b6, 0x29e58e83, 0x2a20230e, 0x2a5a9285, 0x2a94dd19, 0x2acf02f7,
+			0x2b09044d, 0x2b42e149, 0x2b7c9a19, 0x2bb62eea, 0x2bef9fe8, 0x2c28ed40, 0x2c62171e, 0x2c9b1dae,
+			0x2cd4011c, 0x2d0cc192, 0x2d455f3c, 0x2d7dda44, 0x2db632d4, 0x2dee6917, 0x2e267d36, 0x2e5e6f5a,
+			0x2e963fac, 0x2ecdee56, 0x2f057b7f, 0x2f3ce751, 0x2f7431f2, 0x2fab5b8b, 0x2fe26443, 0x30194c40,
+			0x305013ab, 0x3086baa9, 0x30bd4161, 0x30f3a7f8, 0x3129ee96, 0x3160155e, 0x31961c76, 0x31cc0404,
+			0x3201cc2c, 0x32377512, 0x326cfedb, 0x32a269ab, 0x32d7b5a5, 0x330ce2ed, 0x3341f1a7, 0x3376e1f5,
+			0x33abb3fa, 0x33e067d9, 0x3414fdb4, 0x344975ad, 0x347dcfe7, 0x34b20c82, 0x34e62ba0, 0x351a2d62,
+			0x354e11eb, 0x3581d959, 0x35b583ce, 0x35e9116a, 0x361c824d, 0x364fd697, 0x36830e69, 0x36b629e1,
+			0x36e9291e, 0x371c0c41, 0x374ed367, 0x37817eaf, 0x37b40e39, 0x37e68222, 0x3818da88, 0x384b178a,
+			0x387d3945, 0x38af3fd7, 0x38e12b5d, 0x3912fbf4, 0x3944b1b9, 0x39764cc9, 0x39a7cd41, 0x39d9333d,
+			0x3a0a7eda, 0x3a3bb033, 0x3a6cc764, 0x3a9dc48a, 0x3acea7c0, 0x3aff7121, 0x3b3020c8, 0x3b60b6d1,
+			0x3b913356, 0x3bc19672, 0x3bf1e041, 0x3c2210db, 0x3c52285c, 0x3c8226dd, 0x3cb20c79, 0x3ce1d948,
+			0x3d118d66, 0x3d4128eb, 0x3d70abf1, 0x3da01691, 0x3dcf68e3, 0x3dfea301, 0x3e2dc503, 0x3e5ccf02,
+			0x3e8bc117, 0x3eba9b59, 0x3ee95de1, 0x3f1808c7, 0x3f469c22, 0x3f75180b, 0x3fa37c98, 0x3fd1c9e2,
+			0x40000000
+		};
+		int32 x_value = x.bits();
+		if (x_value <= 0) {
+			if (x_value == 0) {
+				return Fixed32.bits(-inf);
+			}
+			return Fixed32.bits(nan);
+		}
+
+		int32 n = Uint32.scanReverse(x_value);
+		assert(precision >= 8, "Not implemented yet");
+		uint32 idx = (n > 8 ? x_value >> n - 8 : x_value << 8 - n) & 0xff;
+		int32 value = tbl_log2[idx];
+		static if (precision > 8) {
+			uint32 mix = (n > 16
+				? x_value >> n - 16
+				: x_value << 16 - n
+			) & 0xff;
+			value += mix * (tbl_log2[idx + 1] - value) >> 8;
+		}
+		return Fixed32.bits((n - precision << precision) + (value >> 30 - precision));
+	}
+	static Fixed32 exp2Old(Fixed32 x) {
+		/**	pow2(x) <=> 2 ** x
+		 *	pow2(x) = pow2(n + q) = pow2(n) * pow2(q)
+		 *	let n = floor(x);
+		 *  let q = fract(x);
+		 *  pow2(n) = 2 ** n = 1 << n
+		 *	pow2(q) = 1 + look up from table
+		 *	pow2(x) = (x >= 0) ? (pow2(q) << n) : (pow2(q) >> -n)
+		 *	---------------------------------------------------
+		**/
+		static uint32 tbl_pow2![257] = {
+			// (2 ** x), x : [0, 1), x = (Float64.exp2(i / 256.)) << 30
+			0x40000000, 0x402c6be9, 0x4058f6a7, 0x4085a050, 0x40b268f9, 0x40df50b8, 0x410c57a1, 0x41397dcb,
+			0x4166c34c, 0x41942838, 0x41c1aca7, 0x41ef50ad, 0x421d1461, 0x424af7d9, 0x4278fb2b, 0x42a71e6c,
+			0x42d561b3, 0x4303c517, 0x433248ad, 0x4360ec8c, 0x438fb0cb, 0x43be957f, 0x43ed9abf, 0x441cc0a3,
+			0x444c0740, 0x447b6ead, 0x44aaf701, 0x44daa053, 0x450a6aba, 0x453a564d, 0x456a6322, 0x459a9151,
+			0x45cae0f1, 0x45fb521a, 0x462be4e2, 0x465c9960, 0x468d6fad, 0x46be67e0, 0x46ef8210, 0x4720be54,
+			0x47521cc5, 0x47839d7a, 0x47b5408b, 0x47e70610, 0x4818ee21, 0x484af8d5, 0x487d2645, 0x48af7689,
+			0x48e1e9b9, 0x49147fee, 0x4947393e, 0x497a15c4, 0x49ad1597, 0x49e038d0, 0x4a137f87, 0x4a46e9d6,
+			0x4a7a77d4, 0x4aae299b, 0x4ae1ff43, 0x4b15f8e5, 0x4b4a169b, 0x4b7e587d, 0x4bb2bea4, 0x4be7492a,
+			0x4c1bf828, 0x4c50cbb7, 0x4c85c3f1, 0x4cbae0ee, 0x4cf022c9, 0x4d25899b, 0x4d5b157e, 0x4d90c68b,
+			0x4dc69cdc, 0x4dfc988c, 0x4e32b9b4, 0x4e69006d, 0x4e9f6cd3, 0x4ed5feff, 0x4f0cb70c, 0x4f439513,
+			0x4f7a9930, 0x4fb1c37c, 0x4fe91412, 0x50208b0d, 0x50582887, 0x508fec9c, 0x50c7d765, 0x50ffe8fe,
+			0x51382181, 0x5170810a, 0x51a907b4, 0x51e1b59a, 0x521a8ad7, 0x52538786, 0x528cabc3, 0x52c5f7a9,
+			0x52ff6b54, 0x533906e0, 0x5372ca67, 0x53acb607, 0x53e6c9da, 0x542105fd, 0x545b6a8b, 0x5495f7a0,
+			0x54d0ad5a, 0x550b8bd3, 0x55469329, 0x5581c377, 0x55bd1cda, 0x55f89f6f, 0x56344b52, 0x5670209f,
+			0x56ac1f75, 0x56e847ee, 0x57249a29, 0x57611642, 0x579dbc56, 0x57da8c83, 0x581786e5, 0x5854ab9b,
+			0x5891fac0, 0x58cf7474, 0x590d18d3, 0x594ae7fa, 0x5988e209, 0x59c7071c, 0x5a055751, 0x5a43d2c6,
+			0x5a827999, 0x5ac14be9, 0x5b0049d4, 0x5b3f7377, 0x5b7ec8f1, 0x5bbe4a61, 0x5bfdf7e5, 0x5c3dd19b,
+			0x5c7dd7a3, 0x5cbe0a1b, 0x5cfe6922, 0x5d3ef4d7, 0x5d7fad59, 0x5dc092c6, 0x5e01a53f, 0x5e42e4e2,
+			0x5e8451cf, 0x5ec5ec25, 0x5f07b404, 0x5f49a98b, 0x5f8bccdb, 0x5fce1e12, 0x60109d50, 0x60534ab7,
+			0x60962665, 0x60d9307a, 0x611c6918, 0x615fd05e, 0x61a3666d, 0x61e72b64, 0x622b1f66, 0x626f4291,
+			0x62b39508, 0x62f816eb, 0x633cc85a, 0x6381a978, 0x63c6ba64, 0x640bfb40, 0x64516c2e, 0x64970d4e,
+			0x64dcdec3, 0x6522e0ad, 0x6569132f, 0x65af7669, 0x65f60a7f, 0x663ccf91, 0x6683c5c3, 0x66caed35,
+			0x6712460a, 0x6759d065, 0x67a18c67, 0x67e97a34, 0x683199ed, 0x6879ebb6, 0x68c26fb1, 0x690b2601,
+			0x69540ec8, 0x699d2a2b, 0x69e6784c, 0x6a2ff94f, 0x6a79ad55, 0x6ac39484, 0x6b0daeff, 0x6b57fce8,
+			0x6ba27e65, 0x6bed3398, 0x6c381ca6, 0x6c8339b2, 0x6cce8ae1, 0x6d1a1056, 0x6d65ca37, 0x6db1b8a7,
+			0x6dfddbcb, 0x6e4a33c8, 0x6e96c0c2, 0x6ee382de, 0x6f307a41, 0x6f7da70f, 0x6fcb096f, 0x7018a185,
+			0x70666f76, 0x70b47367, 0x7102ad7f, 0x71511de3, 0x719fc4b9, 0x71eea226, 0x723db650, 0x728d015d,
+			0x72dc8373, 0x732c3cb9, 0x737c2d55, 0x73cc556d, 0x741cb528, 0x746d4cac, 0x74be1c20, 0x750f23ab,
+			0x75606373, 0x75b1dba1, 0x76038c5b, 0x765575c7, 0x76a7980f, 0x76f9f358, 0x774c87cc, 0x779f5590,
+			0x77f25ccd, 0x78459dac, 0x78991853, 0x78ecccec, 0x7940bb9e, 0x7994e491, 0x79e947ef, 0x7a3de5df,
+			0x7a92be8a, 0x7ae7d219, 0x7b3d20b6, 0x7b92aa88, 0x7be86fb9, 0x7c3e7072, 0x7c94acdd, 0x7ceb2523,
+			0x7d41d96d, 0x7d98c9e6, 0x7deff6b6, 0x7e476008, 0x7e9f0606, 0x7ef6e8da, 0x7f4f08ae, 0x7fa765ac,
+			0x80000000
+		};
+
+		// Special cases:
+		//  * exp(+Inf) = +Inf
+		//  * exp(NaN) = NaN
+		//  * exp(-Inf) = 0
+		int32 x_value = x.bits();
+		if (x_value > overflow_exp2) {
+			return Fixed32.bits(inf);
+		}
+		if (x_value <= underflow_exp2) {
+			if (x.isUndefined()) {
+				return x;
+			}
+			return Fixed32.bits(0);
+		}
+
+		uint32 idx = (x_value >> (precision - 8)) & 0xff;
+		assert(precision >= 8, "Not implemented yet");
+		uint32 q = tbl_pow2[idx];
+		static if (precision > 8) {
+			uint32 mix = (precision > 16
+				? x_value >> (precision - 16)
+				: x_value << (16 - precision)
+			) & 0xff;
+			q += mix * (tbl_pow2[idx + 1] - q) >> 8;
+		}
+
+		int32 n = (x_value >> precision) - (30 - precision);
+		return Fixed32.bits(n < 0 ? q >> -n : q << n);
+	}
+
+	static Fixed32 log2Poly(Fixed32 x) {
+		int32 x_value = x.bits();
+		if (x_value <= 0) {
+			static if (struct(Fixed32.overflow) == function) {
+				return Fixed32.overflow(0, "log2", x);
+			}
+			return Fixed32.bits(nan);
+		}
+
+		int32 n = Uint32.scanReverse(x_value);
+		if (n > precision) {
+			x_value >>= (n - precision);
+		} else {
+			x_value <<= (precision - n);
+		}
+
+		enum: int32 {
+			p: 28;
+			a0: (1<<p) * -2.8003640347009253;
+			a1: (1<<p) *  5.0917108110420042;
+			a2: (1<<p) * -3.5507929249026341;
+			a3: (1<<p) *  1.6311487636297217;
+			a4: (1<<p) * -4.1656368651734915e-1;
+			a5: (1<<p) *  4.4873610194131727e-2;
+		}
+		inline horner(int64 x) = (x + (x & (1 << p - 1))) >> p;
+		inline horner(int64 x, int32 a0, int32 a1) = a0 + horner(a1 * x);
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2) = horner(x, a0, horner(x, a1, a2));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3) = horner(x, a0, horner(x, a1, a2, a3));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4) = horner(x, a0, horner(x, a1, a2, a3, a4));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5) = horner(x, a0, horner(x, a1, a2, a3, a4, a5));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6) = horner(x, a0, horner(x, a1, a2, a3, a4, a5, a6));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6, int32 a7) = horner(x, a0, horner(x, a1, a2, a3, a4, a5, a6, a7));
+
+
+		assert(x_value >= one && x_value < 2 * one);
+		int64 res = horner(x_value << (p-precision), a0, a1, a2, a3, a4, a5) >> (p-precision);
+		return Fixed32.bits((n - precision << precision) + res);
+	}
+	static Fixed32 exp2Poly(Fixed32 x) {
+		enum: int32 {
+			p: 30;
+			a0: (1<<p) * 9.9999989311082668e-1;
+			a1: (1<<p) * 6.9315475247516736e-1;
+			a2: (1<<p) * 2.4013971109076949e-1;
+			a3: (1<<p) * 5.5866246304520701e-2;
+			a4: (1<<p) * 8.9428289841091295e-3;
+			a5: (1<<p) * 1.8964611454333148e-3;
+		}
+
+		inline horner(int64 x) = (x + (x & (1 << p - 1))) >> p;
+		inline horner(int64 x, int32 a0, int32 a1) = a0 + horner(a1 * x);
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2) = horner(x, a0, horner(x, a1, a2));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3) = horner(x, a0, horner(x, a1, a2, a3));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4) = horner(x, a0, horner(x, a1, a2, a3, a4));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5) = horner(x, a0, horner(x, a1, a2, a3, a4, a5));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6) = horner(x, a0, horner(x, a1, a2, a3, a4, a5, a6));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6, int32 a7) = horner(x, a0, horner(x, a1, a2, a3, a4, a5, a6, a7));
+
+		int32 x_value = x.bits();
+		if (x_value == nan) {
+			static if (struct(Fixed32.overflow) == function) {
+				return Fixed32.overflow(0, "exp2.args", x);
+			}
+			return x;
+		}
+
+		int32 n = (x_value >> precision) - (p - precision);
+		if (n < 0) {
+			if (n < -31) {
+				return Fixed32.bits(0);
+			}
+			int64 q = int64(x_value & mask) << (p - precision);
+			int64 result = horner(q, a0, a1, a2, a3, a4, a5);
+			return Fixed32.bits(result >> -n);
+		}
+
+		if (n >= p - precision) {
+			return Fixed32.bits(nan);
+		}
+
+		int64 q = int64(x_value & mask) << (p - precision);
+		int64 result = horner(q, a0, a1, a2, a3, a4, a5) << n;
+		if ((result >> 63) != (result >> 31)) {
+			static if (struct(Fixed32.overflow) == function) {
+				return Fixed32.overflow(result, "exp2.result", x);
+			}
+			return Fixed32.bits(nan);
+		}
+		return Fixed32.bits(result);
+	}
+
+	// This implementation is based on Clay. S. Turner's fast binary logarithm algorithm.
+	// https://github.com/dmoulding/log2fix/blob/master/log2fix.c
+	// http://www.claysturner.com/dsp/binarylogarithm.pdf
+	static Fixed32 log2Clay(Fixed32 x) {
+		int32 x_value = x.bits();
+		if (x_value <= 0) {
+			// Special cases:
+			//  * log2(Inf) = +Inf
+			//  * log2(0) = -Inf
+			//  * log2(x<0) = NaN
+			//  * log2(NaN) = NaN
+			static if (struct(Fixed32.overflow) == function) {
+				return Fixed32.overflow(0, "log2.args", x);
+			}
+			return Fixed32.bits(nan);
+		}
+
+		int32 highest = Uint32.scanReverse(x_value);
+		if (highest < precision) {
+			int exp = precision - highest;
+			if (exp > (1 << 31 - precision)) {
+				static if (struct(Fixed32.overflow) == function) {
+					return Fixed32.overflow(0, "log2", x);
+				}
+				return Fixed32.bits(nan);
+			}
+			x_value <<= exp;
+		} else {
+			x_value >>= highest - precision;
+		}
+
+		// assert(x_value >= one && x_value < 2 * one);
+		int32 y = highest - precision << precision;
+		uint64 z = uint64(x_value) << 31 - precision;
+		for (int32 b = half; b > 0; b >>= 1) {
+			z = z * z >> 31;
+			if (z >= 2U << 31) {
+				z >>= 1;
+				y += b;
+			}
+		}
+
+		return Fixed32.bits(y);
+	}
+
+	// todo: no need to use int64 to calc `add` and `sub`
+	static Fixed32 add(Fixed32 a, Fixed32 b) {
+		int32 result = a.bits() + b.bits();
+		static if (struct(Fixed32.overflow) == function) {
+			if (((a.bits() ^ result) & (b.bits() ^ result)) < 0) {
+				return Fixed32.overflow(0, "add", a, b);
+			}
+		}
+		return Fixed32.bits(result);
+	}
+
+	static Fixed32 tan(Fixed32 x) {
+		int32 x_value = x.bits();
+		if (x_value == -x_value) {
+			// x.value == 0 || x.value == nan
+			return x;
+		}
+
+		enum: int32 {
+			// values adapted from: https://www.geometrictools.com/GTE/Mathematics/TanEstimate.h
+			p0: (1 << 30) * 1.0;
+			p1: (1 << 30) * 3.3332916426394554e-1;
+			p2: (1 << 30) * 1.3343404625112498e-1;
+			p3: (1 << 30) * 5.3104565343119248e-2;
+			p4: (1 << 30) * 2.5355038312682154e-2;
+			p5: (1 << 30) * 1.8253255966556026e-3;
+			p6: (1 << 30) * 1.0069407176615641e-2;
+		}
+		inline horner(int64 x) = (x + (x & (1 << 29))) >> 30;
+		inline horner(int64 x, int32 a0, int32 a1) = a0 + horner(a1 * x);
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2) = horner(x, a0, horner(x, a1, a2));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3) = horner(x, a0, horner(x, a1, a2, a3));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4) = horner(x, a0, horner(x, a1, a2, a3, a4));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5) = horner(x, a0, horner(x, a1, a2, a3, a4, a5));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6) = horner(x, a0, horner(x, a1, a2, a3, a4, a5, a6));
+		inline horner(int64 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6, int32 a7) = horner(x, a0, horner(x, a1, a2, a3, a4, a5, a6, a7));
+
+		x_value %= pi;
+		if (x_value > pi / 2) {
+			x_value -= pi;
+		}
+		else if (x_value < -pi / 2) {
+			x_value += pi;
+		}
+
+		// x in [-pi / 2, pi / 2]
+		int32 quad = 0;
+		if (x_value > pi / 4) {
+			x_value -= pi / 4;
+			quad = 1;
+		}
+		else if (x_value < -pi / 4) {
+			x_value += pi / 4;
+			quad = -1;
+		}
+
+		// x in [-pi / 4, pi / 4)
+		int64 xsq = x_value * int64(x_value);
+		static if (precision >= 15) {
+			xsq >>= 2 * precision - 30;
+		} else {
+			xsq <<= 30 - 2 * precision;
+		}
+		int64 result = horner(xsq, p0, p1, p2, p3, p4, p5, p6);
+		result = result * x_value >> 30;
+		if (quad > 0 && result != one) {
+			result = (result + one << precision) / (one - result);
+		}
+		else if (quad < 0 && result != -one) {
+			result = (result - one << precision) / (one + result);
+		}
+		static if (struct(Fixed32.overflow) == function) {
+			if ((result >> 63) != (result >> 31)) {
+				return Fixed32.overflow(result, "tan.result", x);
+			}
+		}
+		return Fixed32.bits(result);
+	}
+
+	static Fixed32 atan2(Fixed32 x, Fixed32 y) {
+		return Fixed32.bits(nan);/*
+		static long polyatan[4] = {			// eps < 0.000195 in [-9, +9] R
+			-TOFIXED(0.0410220),
+			+TOFIXED(0.1493840),
+			-TOFIXED(0.3224560),
+			+TOFIXED(0.9993370),
+		};
+
+		long mx, my, tmp, res;
+		//~ if (!x || !y) return 0;
+		mx = (x < 0 ? -x : x);
+		my = (y < 0 ? -y : y);
+		tmp = fxpdiv(mx < my ? mx : my, mx > my ? mx : my);
+		res = fxvevalp(polyatan, fxpmul(tmp, tmp));
+		res = fxpmul(res, tmp);
+		res = (mx > my) ? FXP_PI2 - res : res;
+		res = (y < 0) ? FXP_MPI - res : res;
+		res = (x < 0) ? -res : res;
+		return res;
+	*/}
+
+	static void test_underflow_exp() {
+		char val[1024] = {...};
+
+		float64 underflow_exp2 = -Fixed32.precision;
+		float64 underflow_exp = underflow_exp2 * Float64.ln2;
+
+		int n = float64(Fixed32.bits(Fixed32.nan-1)).format(val, "max fixed=%.20d");
+		n = float64(Fixed32.bits(1)).format(val, n, ", eps fixed=%.20d");
+
+		n = Float64.exp2(underflow_exp2).format(val, n, "\nexp2 = %.20d");
+		n = Float64.exp2(underflow_exp).format(val, n, ", exp = %.20d");
+
+		n = underflow_exp2.format(val, n, "\nmin.x exp2.x = %d");
+		n = underflow_exp.format(val, n, ", exp = %d");
+
+		n = FixedExt.underflow_exp2.format(val, n, "\nmin.! exp2 = %08x");
+		n = FixedExt.underflow_exp.format(val, n, ", exp = %08x");
+
+		n = uint32(Fixed32(underflow_exp2).bits()).format(val, n, "\nmin.0 exp2 = %08x");
+		n = uint32(Fixed32(underflow_exp).bits()).format(val, n, ", exp = %08x");
+
+		abort(val);
+	}
+
+/* References:
+https://www.desmos.com/calculator/edqbrbfz3j
+
+https://hackaday.com/2023/02/07/count-leading-zeros-for-efficient-logarithms/
+https://www.musicdsp.org/en/latest/Other/106-fast-exp2-approximation.html
+
+https://github.com/juj/MathGeoLib/blob/master/src/Math/FixedPoint.h
+https://en.wikipedia.org/wiki/Approximation_theory
+https://www.codeproject.com/Questions/876894/Eigenvectors-eigenvalues-fixed-point-calculation-i
+https://en.wikibooks.org/wiki/Embedded_Systems/Floating_Point_Unit
+https://blog.mbedded.ninja/programming/general/fixed-point-mathematics/
+https://www.nullhardware.com/blog/fixed-point-sine-and-cosine-for-embedded-systems/
+https://github.com/johnmcfarlane/fixed_point
+https://github.com/gbmhunter/MFixedPoint/blob/master/old/Fp32f.cpp
+https://github.com/PetteriAimonen/libfixmath
+https://www.coranac.com/tonc/text/fixed.htm
+// */
+}
+
+struct Test {
+	static float64 initErr! = Float64.exp2(-32);
+	static float64 values![] = {
+		+Float64.nan;
+		+Float64.inf;
+//todo	float64(Fixed32.bits(Fixed32.nan - 1));
+		float64(Fixed32.bits(Fixed32.nan - 1 >> 4));
+		float64(Fixed32.bits(Fixed32.nan - 1 >> 8));
+		Float64.pi;
+		Float64.e;
+		+1;
+		float64(Fixed32.bits(Fixed32.one >> 1));
+		float64(Fixed32.bits(Fixed32.one >> Fixed32.precision / 2));
+		float64(Fixed32.bits(1));
+		+0;
+		-0;
+		-float64(Fixed32.bits(1));
+		-float64(Fixed32.bits(Fixed32.one >> Fixed32.precision / 2));
+		-float64(Fixed32.bits(Fixed32.one >> 1));
+		-1;
+		-Float64.e;
+		-Float64.pi;
+		-float64(Fixed32.bits(Fixed32.nan - 1 >> 8));
+		-float64(Fixed32.bits(Fixed32.nan - 1 >> 4));
+//todo	-float64(Fixed32.bits(Fixed32.nan - 1));
+		-Float64.inf;
+	};
+
+	int32 steps = Int32.min(1 << 13, Fixed32.one);
+	float64 lo = 0;	// min: from
+	float64 hi = 1;	// max: to
+
+	float64 castErr = initErr;
+	float64 calcErr = initErr;	// x + y, x - y, x * y, x / y
+	float64 roundErr = initErr;	// fract, floor, ceil, round
+
+	float64 log2Err = initErr;	// log2(x)
+	float64 logErr = initErr;	// ln(x), log10(x)
+	float64 lgxyErr = initErr;	// log(x, y)
+
+	float64 exp2Err = initErr;	// 2 ** x
+	float64 expErr = initErr;	// e ** x, 10 ** x
+	float64 sqrtErr = initErr;	// x ** 0.5
+	float64 powErr = initErr;	// x ** y
+
+	float64 radErr = initErr;
+	float64 degErr = initErr;
+
+	float64 sinErr = initErr;
+	float64 cosErr = initErr;
+	float64 tanErr = initErr;
+
+	float64 asinErr = initErr;
+	float64 acosErr = initErr;
+	float64 atanErr = initErr;
+
+	float64 sinhErr = initErr;
+	float64 coshErr = initErr;
+	float64 tanhErr = initErr;
+
+	float64 asinhErr = initErr;
+	float64 acoshErr = initErr;
+	float64 atanhErr = initErr;
+
+	float64 secErr = initErr;
+	float64 cscErr = initErr;
+	float64 cotErr = initErr;
+
+	float64 asecErr = initErr;
+	float64 acscErr = initErr;
+	float64 cothErr = initErr;
+
+	float64 sechErr = initErr;
+	float64 cschErr = initErr;
+	float64 acotErr = initErr;
+
+	float64 asechErr = initErr;
+	float64 acschErr = initErr;
+	float64 acothErr = initErr;
+
+	static variant normalize(Test test&) {
+		inline log(float64 x) = -Float64.log2(x);
+		static if (struct(test.castErr) != null) { test.castErr = log(test.castErr); }
+		static if (struct(test.calcErr) != null) { test.calcErr = log(test.calcErr); }
+		static if (struct(test.roundErr) != null) { test.roundErr = log(test.roundErr); }
+
+		static if (struct(test.log2Err) != null) { test.log2Err = log(test.log2Err); }
+		static if (struct(test.exp2Err) != null) { test.exp2Err = log(test.exp2Err); }
+		static if (struct(test.expErr) != null) { test.expErr = log(test.expErr); }
+		static if (struct(test.logErr) != null) { test.logErr = log(test.logErr); }
+		static if (struct(test.sqrtErr) != null) { test.sqrtErr = log(test.sqrtErr); }
+		static if (struct(test.lgxyErr) != null) { test.lgxyErr = log(test.lgxyErr); }
+		static if (struct(test.powErr) != null) { test.powErr = log(test.powErr); }
+
+		static if (struct(test.radErr) != null) { test.radErr = log(test.radErr); }
+		static if (struct(test.degErr) != null) { test.degErr = log(test.degErr); }
+
+		static if (struct(test.sinErr) != null) { test.sinErr = log(test.sinErr); }
+		static if (struct(test.cosErr) != null) { test.cosErr = log(test.cosErr); }
+		static if (struct(test.tanErr) != null) { test.tanErr = log(test.tanErr); }
+		static if (struct(test.sinhErr) != null) { test.sinhErr = log(test.sinhErr); }
+		static if (struct(test.coshErr) != null) { test.coshErr = log(test.coshErr); }
+		static if (struct(test.tanhErr) != null) { test.tanhErr = log(test.tanhErr); }
+		static if (struct(test.asinErr) != null) { test.asinErr = log(test.asinErr); }
+		static if (struct(test.acosErr) != null) { test.acosErr = log(test.acosErr); }
+		static if (struct(test.atanErr) != null) { test.atanErr = log(test.atanErr); }
+		static if (struct(test.asinhErr) != null) { test.asinhErr = log(test.asinhErr); }
+		static if (struct(test.acoshErr) != null) { test.acoshErr = log(test.acoshErr); }
+		static if (struct(test.atanhErr) != null) { test.atanhErr = log(test.atanhErr); }
+
+		static if (struct(test.secErr) != null) { test.secErr = log(test.secErr); }
+		static if (struct(test.cscErr) != null) { test.cscErr = log(test.cscErr); }
+		static if (struct(test.cotErr) != null) { test.cotErr = log(test.cotErr); }
+		static if (struct(test.sechErr) != null) { test.sechErr = log(test.sechErr); }
+		static if (struct(test.cschErr) != null) { test.cschErr = log(test.cschErr); }
+		static if (struct(test.cothErr) != null) { test.cothErr = log(test.cothErr); }
+		static if (struct(test.asecErr) != null) { test.asecErr = log(test.asecErr); }
+		static if (struct(test.acscErr) != null) { test.acscErr = log(test.acscErr); }
+		static if (struct(test.acotErr) != null) { test.acotErr = log(test.acotErr); }
+		static if (struct(test.asechErr) != null) { test.asechErr = log(test.asechErr); }
+		static if (struct(test.acschErr) != null) { test.acschErr = log(test.acschErr); }
+		static if (struct(test.acothErr) != null) { test.acothErr = log(test.acothErr); }
+		return test;
+	}
+
+	static void assertEq(float64 expected, Fixed32 retFixed, float64 maxErr&, char func[*], variant details...) {
+		static float64 maxVal = float64(Fixed32.nan - 1) / Fixed32.one;
+		static float64 failError = Float64.exp2(1);
+
+		if (retFixed.isUndefined()) {
+			// expected is too big to represent or undefined
+			if (Fixed32(expected).isUndefined()) {
+				return;
+			}
+		}
+		if (expected > maxVal && retFixed.bits() == Fixed32.nan - 1) {
+			// abort("value overflow, but saturated", maxVal, expected, retFixed);
+			return;
+		}
+		if (expected < -maxVal && retFixed.bits() == Fixed32.nan + 1) {
+			// abort("value overflow, but saturated", maxVal, expected, retFixed);
+			return;
+		}
+
+		float64 returned = float64(retFixed);
+		float64 diff = Float64.abs(returned - expected);
+		if (pointer(maxErr) != null) {
+			if (Float64.isUndefined(maxErr)) {
+				// error is already undefined
+				return;
+			}
+			if (diff <= maxErr) {
+				// error is in range
+				return;
+			}
+			maxErr = diff;
+		} else {
+			if (diff < 1. / Fixed32.one) {
+				return;
+			}
+		}
+		static if (false) {
+			struct Info {
+				float64 expected;
+				float64 returned;
+				float64 errorDigits;
+				float64 errorBits;
+				float64 error;
+				char func[*];
+				Fixed32 retFixed;
+				Fixed32 expFixed;
+				variant details[];
+			}
+			Info info = {
+				expected: expected;
+				returned: returned;
+				expFixed: Fixed32(expected);
+				retFixed: retFixed;
+				errorDigits: Float64.log10(diff);
+				errorBits: Float64.log2(diff);
+				error: diff;
+				func: func;
+				details: details;
+			};
+			if (diff != diff || diff > failError) {
+				abort("assertion failed", info);
+			}
+		}
+	}
+}
+Test tests[] = {
+	{lo: 0, hi: 1},
+	{lo: 10, hi: 11},
+	{lo: 100, hi: 101},
+	{lo: -1, hi: 1},
+	{lo: -10, hi: 10},
+	{lo: -100, hi: 100},
+	{lo: -1000, hi: 1000},
+	{lo: -10000, hi: 10000},
+//	{lo: -Float64.pi, hi: Float64.pi, steps: 1 << 17},
+};
+for (int n = 0; n < tests.length; n += 1) {
+	Test test& = tests[n];
+	float64 scale = (test.hi - test.lo) / test.steps;
+	float64 translate = test.lo;
+	int32 steps = test.steps;
+
+	for (int i = 0; i < steps; i += 1) {
+		Fixed32 f = Fixed32(i * scale + translate);
+		float64 x = float64(f);
+
+		for (int j = 0; j < Test.values.length; j += 1) {
+			Fixed32 g = Fixed32(Test.values[j]);
+			float64 y = float64(g);
+
+			static if (struct(test.calcErr) != null) {
+				Test.assertEq(x + y, Fixed32.add(f, g), &test.calcErr, "add(x, y)", x, y, f, g);
+				Test.assertEq(x - y, Fixed32.sub(f, g), &test.calcErr, "sub(x, y)", x, y, f, g);
+				Test.assertEq(y - x, Fixed32.sub(g, f), &test.calcErr, "sub(y, x)", x, y, f, g);
+				Test.assertEq(x * y, Fixed32.mul(f, g), &test.calcErr, "mul(x, y)", x, y, f, g);
+				Test.assertEq(x / y, Fixed32.div(f, g), &test.calcErr, "div(x, y)", x, y, f, g);
+				Test.assertEq(y / x, Fixed32.div(g, f), &test.calcErr, "div(y, x)", x, y, f, g);
+			}
+			static if (struct(test.lgxyErr) != null) {
+				Test.assertEq(Float64.log(x, y), Fixed32.log(f, g), &test.lgxyErr, "log(x, y)", x, y, f, g);
+				Test.assertEq(Float64.log(y, x), Fixed32.log(g, f), &test.lgxyErr, "log(y, x)", x, y, f, g);
+			}
+			static if (struct(test.powErr) != null) {
+				Test.assertEq(Float64.pow(x, y), Fixed32.pow(f, g), &test.powErr, "pow(x, y)", x, y, f, g);
+				Test.assertEq(Float64.pow(y, x), Fixed32.pow(g, f), &test.powErr, "pow(y, x)", x, y, f, g);
+			}
+		}
+
+		static if (struct(test.castErr) != null) {
+			Test.assertEq(i * scale + translate, f, &test.castErr, "cast(x)", x, f);
+		}
+		static if (struct(test.roundErr) != null) {
+			Test.assertEq(x % 1, Fixed32.fract(f), &test.roundErr, "fract(x)", x, f);
+			Test.assertEq(Float64.floor(x), Fixed32.floor(f), &test.roundErr, "floor(x)", x, f);
+			Test.assertEq(Float64.ceil(x), Fixed32.ceil(f), &test.roundErr, "ceil(x)", x, f);
+			Test.assertEq(Float64.round(x), Fixed32.round(f), &test.roundErr, "round(x)", x, f);
+		}
+		static if (struct(test.calcErr) != null) {
+			Test.assertEq(x + x, Fixed32.add(f, f), &test.calcErr, "add(x, x)", x, f);
+			Test.assertEq(x - x, Fixed32.sub(f, f), &test.calcErr, "sub(x, x)", x, f);
+			Test.assertEq(x * x, Fixed32.mul(f, f), &test.calcErr, "mul(x, x)", x, f);
+			Test.assertEq(x / x, Fixed32.div(f, f), &test.calcErr, "div(x, x)", x, f);
+			Test.assertEq(-x, Fixed32.neg(f), &test.calcErr, "neg(x)", x, f);
+			Test.assertEq(1 / x, Fixed32.inv(f), &test.calcErr, "inv(x)", x, f);
+		}
+
+		static if (struct(test.logErr) != null) {
+			Test.assertEq(Float64.ln(x), Fixed32.ln(f), &test.logErr, "ln(x)", x, f);
+			Test.assertEq(Float64.log10(x), Fixed32.log10(f), &test.logErr, "log10(x)", x, f);
+		}
+		static if (struct(test.expErr) != null) {
+			Test.assertEq(Float64.exp(x), Fixed32.exp(f), &test.expErr, "exp(x)", x, f);
+			Test.assertEq(Float64.pow(10, x), Fixed32.exp10(f), &test.expErr, "exp10(x)", x, f);
+		}
+		static if (struct(test.log2Err) != null) {
+			Test.assertEq(Float64.log2(x), Fixed32.log2(f), &test.log2Err, "log2(x)", x, f);
+		}
+		static if (struct(test.exp2Err) != null) {
+			Test.assertEq(Float64.exp2(x), Fixed32.exp2(f), &test.exp2Err, "exp2(x)", x, f);
+		}
+		static if (struct(test.sqrtErr) != null) {
+			Test.assertEq(Float64.sqrt(x), Fixed32.sqrt(f), &test.sqrtErr, "sqrt(x)", x, f);
+		}
+
+		static if (struct(test.degErr) != null) {
+			Test.assertEq(Float64.degrees(x), Fixed32.degrees(f), &test.degErr, "degrees(x)", x, f);
+		}
+		static if (struct(test.radErr) != null) {
+			Test.assertEq(Float64.radians(x), Fixed32.radians(f), &test.radErr, "radians(x)", x, f);
+		}
+		static if (struct(test.sinErr) != null) {
+			Test.assertEq(Float64.sin(x), Fixed32.sin(f), &test.sinErr, "sin(x)", x, f);
+		}
+		static if (struct(test.cosErr) != null) {
+			Test.assertEq(Float64.cos(x), Fixed32.cos(f), &test.cosErr, "cos(x)", x, f);
+		}
+		static if (struct(test.tanErr) != null) {
+			Test.assertEq(Float64.tan(x), Fixed32.tan(f), &test.tanErr, "tan(x)", x, f);
+		}
+		static if (struct(test.sinhErr) != null) {
+			Test.assertEq(Float64.sinh(x), Fixed32.sinh(f), &test.sinhErr, "sinh(x)", x, f);
+		}
+		static if (struct(test.coshErr) != null) {
+			Test.assertEq(Float64.cosh(x), Fixed32.cosh(f), &test.coshErr, "cosh(x)", x, f);
+		}
+		static if (struct(test.tanhErr) != null) {
+			Test.assertEq(Float64.tanh(x), Fixed32.tanh(f), &test.tanhErr, "tanh(x)", x, f);
+		}
+		static if (struct(test.asinErr) != null) {
+			Test.assertEq(Float64.asin(x), Fixed32.asin(f), &test.asinErr, "asin(x)", x, f);
+		}
+		static if (struct(test.acosErr) != null) {
+			Test.assertEq(Float64.acos(x), Fixed32.acos(f), &test.acosErr, "acos(x)", x, f);
+		}
+		static if (struct(test.atanErr) != null) {
+			Test.assertEq(Float64.atan(x), Fixed32.atan(f), &test.atanErr, "atan(x)", x, f);
+		}
+		static if (struct(test.asinhErr) != null) {
+			Test.assertEq(Float64.asinh(x), Fixed32.asinh(f), &test.asinhErr, "asinh(x)", x, f);
+		}
+		static if (struct(test.acoshErr) != null) {
+			Test.assertEq(Float64.acosh(x), Fixed32.acosh(f), &test.acoshErr, "acosh(x)", x, f);
+		}
+		static if (struct(test.atanhErr) != null) {
+			Test.assertEq(Float64.atanh(x), Fixed32.atanh(f), &test.atanhErr, "atanh(x)", x, f);
+		}
+		static if (struct(test.secErr) != null) {
+			Test.assertEq(Float64.sec(x), Fixed32.sec(f), &test.secErr, "sec(x)", x, f);
+		}
+		static if (struct(test.cscErr) != null) {
+			Test.assertEq(Float64.csc(x), Fixed32.csc(f), &test.cscErr, "csc(x)", x, f);
+		}
+		static if (struct(test.cotErr) != null) {
+			Test.assertEq(Float64.cot(x), Fixed32.cot(f), &test.cotErr, "cot(x)", x, f);
+		}
+		static if (struct(test.sechErr) != null) {
+			Test.assertEq(Float64.sech(x), Fixed32.sech(f), &test.sechErr, "sech(x)", x, f);
+		}
+		static if (struct(test.cschErr) != null) {
+			Test.assertEq(Float64.csch(x), Fixed32.csch(f), &test.cschErr, "csch(x)", x, f);
+		}
+		static if (struct(test.cothErr) != null) {
+			Test.assertEq(Float64.coth(x), Fixed32.coth(f), &test.cothErr, "coth(x)", x, f);
+		}
+		static if (struct(test.asecErr) != null) {
+			Test.assertEq(Float64.asec(x), Fixed32.asec(f), &test.asecErr, "asec(x)", x, f);
+		}
+		static if (struct(test.acscErr) != null) {
+			Test.assertEq(Float64.acsc(x), Fixed32.acsc(f), &test.acscErr, "acsc(x)", x, f);
+		}
+		static if (struct(test.acotErr) != null) {
+			Test.assertEq(Float64.acot(x), Fixed32.acot(f), &test.acotErr, "acot(x)", x, f);
+		}
+		static if (struct(test.asechErr) != null) {
+			Test.assertEq(Float64.asech(x), Fixed32.asech(f), &test.asechErr, "asech(x)", x, f);
+		}
+		static if (struct(test.acschErr) != null) {
+			Test.assertEq(Float64.acsch(x), Fixed32.acsch(f), &test.acschErr, "acsch(x)", x, f);
+		}
+		static if (struct(test.acothErr) != null) {
+			Test.assertEq(Float64.acoth(x), Fixed32.acoth(f), &test.acothErr, "acoth(x)", x, f);
+		}
+	}
+	debug("test", Test.normalize(&test));
+}
+
+/* - expected output:
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(0.000000),
+	hi: float64(1.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000199),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.036388),
+	logErr: float64(19.788987),
+	lgxyErr: float64(-1.623483),
+	exp2Err: float64(20.994243),
+	expErr: float64(18.045086),
+	sqrtErr: float64(20.000560),
+	powErr: float64(2.780556),
+	radErr: float64(21.000040),
+	degErr: float64(20.000361),
+	sinErr: float64(20.997657),
+	cosErr: float64(20.997151),
+	tanErr: float64(20.001602),
+	asinErr: float64(18.821642),
+	acosErr: float64(18.625737),
+	atanErr: float64(19.544682),
+	sinhErr: float64(19.438266),
+	coshErr: float64(19.723739),
+	tanhErr: float64(19.216337),
+	asinhErr: float64(19.000305),
+	acoshErr: float64(32.000000),
+	atanhErr: float64(11.093237),
+	secErr: float64(18.675036),
+	cscErr: float64(8.726787),
+	cotErr: float64(7.727043),
+	asecErr: float64(32.000000),
+	acscErr: float64(32.000000),
+	cothErr: float64(-1.358285),
+	sechErr: float64(19.507153),
+	cschErr: float64(nan),
+	acotErr: float64(nan),
+	asechErr: float64(nan),
+	acschErr: float64(nan),
+	acothErr: float64(32.000000)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(10.000000),
+	hi: float64(11.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000032),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.038116),
+	logErr: float64(19.771330),
+	lgxyErr: float64(19.238703),
+	exp2Err: float64(18.195441),
+	expErr: float64(32.000000),
+	sqrtErr: float64(20.000343),
+	powErr: float64(7.897678),
+	radErr: float64(21.000200),
+	degErr: float64(20.035074),
+	sinErr: float64(20.745902),
+	cosErr: float64(20.873286),
+	tanErr: float64(3.655912),
+	asinErr: float64(32.000000),
+	acosErr: float64(32.000000),
+	atanErr: float64(19.533822),
+	sinhErr: float64(32.000000),
+	coshErr: float64(32.000000),
+	tanhErr: float64(27.853901),
+	asinhErr: float64(19.745705),
+	acoshErr: float64(19.734065),
+	atanhErr: float64(32.000000),
+	secErr: float64(-0.103585),
+	cscErr: float64(18.740009),
+	cotErr: float64(10.046816),
+	asecErr: float64(18.718160),
+	acscErr: float64(18.928016),
+	cothErr: float64(27.853901),
+	sechErr: float64(nan),
+	cschErr: float64(nan),
+	acotErr: float64(19.064130),
+	asechErr: float64(32.000000),
+	acschErr: float64(18.951817),
+	acothErr: float64(19.481214)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(100.000000),
+	hi: float64(101.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000003),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.041709),
+	logErr: float64(19.778294),
+	lgxyErr: float64(19.826726),
+	exp2Err: float64(32.000000),
+	expErr: float64(32.000000),
+	sqrtErr: float64(20.000070),
+	powErr: float64(6.643856),
+	radErr: float64(21.000110),
+	degErr: float64(32.000000),
+	sinErr: float64(20.978306),
+	cosErr: float64(20.994143),
+	tanErr: float64(19.987890),
+	asinErr: float64(32.000000),
+	acosErr: float64(32.000000),
+	atanErr: float64(20.561425),
+	sinhErr: float64(32.000000),
+	coshErr: float64(32.000000),
+	tanhErr: float64(32.000000),
+	asinhErr: float64(1.630656),
+	acoshErr: float64(1.630875),
+	atanhErr: float64(32.000000),
+	secErr: float64(19.308478),
+	cscErr: float64(2.140758),
+	cotErr: float64(-1.670768),
+	asecErr: float64(18.891366),
+	acscErr: float64(19.130327),
+	cothErr: float64(32.000000),
+	sechErr: float64(nan),
+	cschErr: float64(nan),
+	acotErr: float64(19.268734),
+	asechErr: float64(32.000000),
+	acschErr: float64(0.338515),
+	acothErr: float64(19.353262)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(-1.000000),
+	hi: float64(1.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000296),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.041650),
+	logErr: float64(19.793974),
+	lgxyErr: float64(0.231750),
+	exp2Err: float64(20.994479),
+	expErr: float64(18.045086),
+	sqrtErr: float64(20.000860),
+	powErr: float64(2.780556),
+	radErr: float64(21.000517),
+	degErr: float64(20.000722),
+	sinErr: float64(20.989050),
+	cosErr: float64(20.998467),
+	tanErr: float64(19.994661),
+	asinErr: float64(18.821642),
+	acosErr: float64(18.625737),
+	atanErr: float64(19.541413),
+	sinhErr: float64(19.438266),
+	coshErr: float64(19.738017),
+	tanhErr: float64(19.216337),
+	asinhErr: float64(18.352013),
+	acoshErr: float64(32.000000),
+	atanhErr: float64(11.193306),
+	secErr: float64(18.675036),
+	cscErr: float64(8.705379),
+	cotErr: float64(-0.832152),
+	asecErr: float64(20.603116),
+	acscErr: float64(21.603116),
+	cothErr: float64(-0.000940),
+	sechErr: float64(19.507153),
+	cschErr: float64(nan),
+	acotErr: float64(nan),
+	asechErr: float64(nan),
+	acschErr: float64(nan),
+	acothErr: float64(32.000000)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(-10.000000),
+	hi: float64(10.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000018),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.034536),
+	logErr: float64(19.813071),
+	lgxyErr: float64(1.072261),
+	exp2Err: float64(19.041602),
+	expErr: float64(10.590097),
+	sqrtErr: float64(20.000453),
+	powErr: float64(nan),
+	radErr: float64(21.000120),
+	degErr: float64(20.006564),
+	sinErr: float64(20.747134),
+	cosErr: float64(20.916169),
+	tanErr: float64(6.107017),
+	asinErr: float64(18.884716),
+	acosErr: float64(18.680647),
+	atanErr: float64(19.123836),
+	sinhErr: float64(nan),
+	coshErr: float64(nan),
+	tanhErr: float64(19.006124),
+	asinhErr: float64(15.637957),
+	acoshErr: float64(18.795701),
+	atanhErr: float64(11.413564),
+	secErr: float64(1.590165),
+	cscErr: float64(-0.399357),
+	cotErr: float64(-0.399629),
+	asecErr: float64(15.504776),
+	acscErr: float64(15.525988),
+	cothErr: float64(4.703495),
+	sechErr: float64(nan),
+	cschErr: float64(nan),
+	acotErr: float64(18.885863),
+	asechErr: float64(19.154083),
+	acschErr: float64(18.986405),
+	acothErr: float64(10.413491)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(-100.000000),
+	hi: float64(100.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000023),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.034536),
+	logErr: float64(19.806836),
+	lgxyErr: float64(1.072261),
+	exp2Err: float64(18.409579),
+	expErr: float64(10.590097),
+	sqrtErr: float64(20.001133),
+	powErr: float64(5.500282),
+	radErr: float64(21.000428),
+	degErr: float64(20.033122),
+	sinErr: float64(20.694076),
+	cosErr: float64(20.853102),
+	tanErr: float64(4.850032),
+	asinErr: float64(19.097451),
+	acosErr: float64(18.863460),
+	atanErr: float64(19.298255),
+	sinhErr: float64(nan),
+	coshErr: float64(nan),
+	tanhErr: float64(19.006124),
+	asinhErr: float64(nan),
+	acoshErr: float64(1.645087),
+	atanhErr: float64(15.115825),
+	secErr: float64(0.117200),
+	cscErr: float64(0.355047),
+	cotErr: float64(-0.045385),
+	asecErr: float64(15.504776),
+	acscErr: float64(15.525988),
+	cothErr: float64(9.415934),
+	sechErr: float64(nan),
+	cschErr: float64(nan),
+	acotErr: float64(19.032362),
+	asechErr: float64(19.572519),
+	acschErr: float64(0.356597),
+	acothErr: float64(10.413491)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(-1000.000000),
+	hi: float64(1000.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000043),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.031101),
+	logErr: float64(19.764443),
+	lgxyErr: float64(8.110392),
+	exp2Err: float64(18.409579),
+	expErr: float64(11.728185),
+	sqrtErr: float64(20.000309),
+	powErr: float64(nan),
+	radErr: float64(21.001460),
+	degErr: float64(20.172273),
+	sinErr: float64(20.730760),
+	cosErr: float64(20.844825),
+	tanErr: float64(6.090203),
+	asinErr: float64(19.490246),
+	acosErr: float64(19.190197),
+	atanErr: float64(19.260748),
+	sinhErr: float64(nan),
+	coshErr: float64(nan),
+	tanhErr: float64(19.428788),
+	asinhErr: float64(nan),
+	acoshErr: float64(0.623986),
+	atanhErr: float64(15.115825),
+	secErr: float64(0.831273),
+	cscErr: float64(1.298156),
+	cotErr: float64(-1.743189),
+	asecErr: float64(18.785545),
+	acscErr: float64(19.006242),
+	cothErr: float64(18.654367),
+	sechErr: float64(nan),
+	cschErr: float64(nan),
+	acotErr: float64(19.001100),
+	asechErr: float64(19.586224),
+	acschErr: float64(-1.620401),
+	acothErr: float64(19.384507)
+})
+test.ext.Fixed32.cmpl:798: debug: test: Test({
+	steps: int32(8192),
+	lo: float64(-10000.000000),
+	hi: float64(10000.000000),
+	castErr: float64(32.000000),
+	calcErr: float64(20.000086),
+	roundErr: float64(32.000000),
+	log2Err: float64(20.043032),
+	logErr: float64(19.797028),
+	lgxyErr: float64(18.316223),
+	exp2Err: float64(21.049893),
+	expErr: float64(13.520196),
+	sqrtErr: float64(20.007820),
+	powErr: float64(nan),
+	radErr: float64(21.000265),
+	degErr: float64(20.193577),
+	sinErr: float64(20.787195),
+	cosErr: float64(20.770428),
+	tanErr: float64(3.938564),
+	asinErr: float64(32.000000),
+	acosErr: float64(21.603116),
+	atanErr: float64(19.261141),
+	sinhErr: float64(14.529856),
+	coshErr: float64(14.543078),
+	tanhErr: float64(nan),
+	asinhErr: float64(nan),
+	acoshErr: float64(nan),
+	atanhErr: float64(32.000000),
+	secErr: float64(1.618449),
+	cscErr: float64(3.873963),
+	cotErr: float64(nan),
+	asecErr: float64(18.785545),
+	acscErr: float64(19.006242),
+	cothErr: float64(nan),
+	sechErr: float64(nan),
+	cschErr: float64(nan),
+	acotErr: float64(19.001428),
+	asechErr: float64(32.000000),
+	acschErr: float64(-1.922179),
+	acothErr: float64(19.384507)
+})
+*/

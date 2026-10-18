@@ -1,0 +1,301 @@
+/* Brightness contrast gamma demo using a lookup table
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse left or right in the window to adjust selected slider value
+ */
+
+Image back = Image("../asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+void brightnessContrastGamma(argb lut&[256], float64 brightness, float64 contrast, float64 gamma, float64 highlights, float64 shadows, float64 whites, float64 blacks) {
+	// adapted from: https://gitlab.bestminr.com/bestminr/FrontShaders/blob/master/shaders/whites_blacks.glsl
+	float64 WhitesBlacks(float64 base, float64 whites, float64 blacks) {
+		enum: float64 {
+			wb: 5.336778471840789E-03;
+			wc: 6.664243592410049E-01;
+			wd: 3.023761372137289E+00;
+			we: -6.994413182098681E+00;
+			wf: 3.293987131616894E+00;
+			wb2: -1.881032803339283E-01;
+			wc2: 2.812945435181010E+00;
+			wd2: -1.495096839176419E+01;
+			we2: 3.349416467551858E+01;
+			wf2: -3.433024909629221E+01;
+			wg2: 1.314308200442166E+01;
+
+			bb: 8.376727344831676E-01;
+			bc: -3.418495999327269E+00;
+			bd: 8.078054837335609E+00;
+			be: -1.209938703324099E+01;
+			bf: 9.520315785756406E+00;
+			bg: -2.919340722745241E+00;
+			ba2: 5.088652898054800E-01;
+			bb2: -9.767371127415029E+00;
+			bc2: 4.910705739925203E+01;
+			bd2: -1.212150899746360E+02;
+			be2: 1.606205314047741E+02;
+			bf2: -1.085660871669277E+02;
+			bg2: 2.931582214601388E+01;
+		}
+		inline min(float64 a, float64 b) = Float64.min(a, b);
+		inline max(float64 a, float64 b) = Float64.max(a, b);
+		inline clamp(float64 val, float64 min, float64 max) = Float64.clamp(val, min, max);
+
+		if (base == 0) {
+			// HACK: `res * (lum_pos * blacks + lum) / lum` is inf or nan
+			return 0;
+		}
+
+		float64 lum = base;
+		float64 x = lum;
+		float64 x2 = x*x;
+		float64 x3 = x2*x;
+
+		// whites
+		if (whites >= 0) {
+			float64 lum_pos = min(1 - lum, wb * x + wc * x2 + wd * x3 + we * x2 * x2 + wf * x2 * x3);
+			whites = lum_pos * whites + lum;
+		} else {
+			float64 lum_neg = max(-lum, wb2 * x + wc2 * x2 + wd2 * x3 + we2 * x2 * x2 + wf2 * x2 * x3 + wg2 * x3 * x3);
+			whites = lum - lum_neg * whites;
+		}
+		// whites = clamp(whites, 0., 1.);
+
+		// blacks
+		if (blacks >= 0) {
+			float64 lum_pos = min(1 - lum, bb * x + bc * x2 + bd * x3 + be * x2 * x2 + bf * x2 * x3 + bg * x3 * x3);
+			blacks = (lum_pos * blacks + lum) / lum;
+		} else {
+			float64 lum_neg = max(-lum, lum <= 0.23 ? -lum : ba2 + bb2 * x + bc2 * x2 + bd2 * x3 + be2 * x2 * x2 + bf2 * x2 * x3 + bg2 * x3 * x3);
+			blacks = (lum - lum_neg * blacks) / lum;
+		}
+
+		return clamp(whites * blacks, 0., 1.);
+	}
+
+	// adapted from: https://stackoverflow.com/questions/29073174/algorithm-behind-the-shadow-highlight-filter-in-photoshop
+	// "It is not accurate but imitates well."
+	float64 ShadowsHighlights(float64 color, float64 shadows, float64 highlights) {
+		float64 h = highlights * 0.05 * (Float64.pow(8, color) - 1);
+		float64 s = shadows * 0.05 * (Float64.pow(8, 1 - color) - 1);
+		return color + h + s;
+	}
+
+	for (int idx = 0; idx < lut.length; idx += 1) {
+		float64 val = idx / 255f;
+
+		// use luminosity channel for: highlights, shadows, whites, blacks
+		float64 lum = WhitesBlacks(val, whites, blacks);
+		lum = ShadowsHighlights(lum, shadows, highlights);
+
+		// use rgb channel for: brightness, contrast, gamma
+		val = Float64.pow(val, 1 / gamma);
+		val = contrast * (val - .5) + .5;
+		val = brightness + val;
+
+		lut[idx] = argb(lum, val, val, val);
+	}
+}
+void presetOriginal(argb lut&[256]) {
+	for (int i = 0; i < lut.length; i += 1) {
+		lut[i] = argb(i, i, i, i);
+	}
+}
+void presetMatrix(argb lut&[256]) {
+	// adapted from: https://www.youtube.com/shorts/r9tQu77XoGY
+	for (int i = 0; i < lut.length; i += 1) {
+		lut[i] = argb(i / 255.,
+			Float64.pow(i / 255., 7 / 5.),
+			i / 255.,
+			Float64.pow(i / 255., 8 / 5.)
+		);
+	}
+}
+void presetAutoEqualize(argb lut&[256]) {
+	uint32 hist[256] = {...};
+	back.calcLumHist(null, &hist);
+	uint32 sum = 0;
+	for (int i = 0; i < hist.length; i += 1) {
+		hist[i] = sum += hist[i];
+	}
+	for (int i = 0; i < lut.length; i += 1) {
+		lut[i] = argb(hist[i] / float64(sum),
+			i / 255., i / 255., i / 255.
+		);
+	}
+}
+void presetAutoRgb(argb lut&[256]) {
+	uint32 sumR = 0;
+	uint32 sumG = 0;
+	uint32 sumB = 0;
+	uint32 hist[256] = {...};
+	uint32 histR[hist.length] = {...};
+	uint32 histG[hist.length] = {...};
+	uint32 histB[hist.length] = {...};
+	back.calcRgbHist(null, &hist);
+	for (int i = 0; i < hist.length; i += 1) {
+		histR[i] = sumR += rch(argb(hist[i]));
+		histG[i] = sumG += gch(argb(hist[i]));
+		histB[i] = sumB += bch(argb(hist[i]));
+	}
+	float64 sumRgb = (sumR + sumG + sumB) / 3.;
+	for (int i = 0; i < lut.length; i += 1) {
+		lut[i] = argb(i / 255.,
+			histR[i] / sumRgb,
+			histG[i] / sumRgb,
+			histB[i] / sumRgb
+		);
+	}
+}
+
+Histogram histogram = {
+	enabled: false;
+};
+Histogram curves = {
+	lines: true;
+	enabled: false;
+};
+
+Slider brightness = {
+	text: "brightness";
+	minimum: -1;
+	maximum: +1;
+};
+Slider contrast = {
+	text: "contrast";
+	value: 1;
+	minimum: -1;
+	maximum: +3;
+};
+Slider gamma = {
+	text: "gamma";
+	value: 1;
+	minimum: .01;
+	maximum: 10;
+};
+Slider highlights = {
+	text: "highlights";
+	minimum: -1;
+	maximum: +1;
+};
+Slider shadows = {
+	text: "shadows";
+	minimum: -1;
+	maximum: +1;
+};
+Slider whites = {
+	text: "whites";
+	minimum: -1;
+	maximum: +1;
+};
+Slider blacks = {
+	text: "blacks";
+	minimum: -1;
+	maximum: +1;
+};
+
+char options[][] = {
+	"luminosity";
+	"rgb stretch";
+};
+Switch auto = {
+	text: "auto";
+	states: options;
+	focusable: true;
+	clickToFocus: true;
+};
+
+Select preset = {
+	text: "preset";
+};
+
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+int32 onEvent(int32 action, int32 button, int32 x, int32 y) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return Window.quit();
+	}
+	if (action < Window.EVENT_PROCESSED) {
+		// action was not processed by the widget, do not redraw
+		return Window.timeoutMax;
+	}
+
+	offs.copy(0, 0, back, null);
+	if (FxWidget.showOriginal(debug.getWidget())) {
+		histogram.update(offs);
+		return Window.timeoutMax;
+	}
+
+	debug.startTimer();
+	bool useLuminosity = highlights.value != 0 | shadows.value != 0 | whites.value != 0 | blacks.value != 0;
+	brightnessContrastGamma(&curves.data,
+		brightness.value,
+		contrast.value,
+		gamma.value,
+		highlights.value,
+		shadows.value,
+		whites.value,
+		blacks.value
+	);
+
+	void presetFun(argb lut&[256]) = preset.selectedData().as(function);
+	if (presetFun != null) {
+		argb temp[256] = {...};
+		// apply preset
+		presetFun(&temp);
+		useLuminosity |= presetFun == presetAutoEqualize;
+		// merge the two lookup tables
+		for (int i = 0; i < 256; i += 1) {
+			argb c = curves.data[i];
+			curves.data[i] = argb(
+				uint32(temp[c.a].a),
+				uint32(temp[c.r].r),
+				uint32(temp[c.g].g),
+				uint32(temp[c.b].b)
+			);
+		}
+	}
+
+	if (useLuminosity) {
+		offs.colorMap(0, 0, offs, null, curves.data);
+	} else {
+		offs.colorMapRgb(0, 0, offs, null, curves.data);
+	}
+	histogram.update(offs);
+	return Window.timeoutMax;
+}
+
+Window.show(offs, onEvent, FxWidget(
+	histogram, curves,
+	null, preset
+		.addItem("original", presetOriginal)
+		.addItem("auto.lum", presetAutoEqualize)
+		.addItem("auto.rgb", presetAutoRgb)
+		.addItem("Matrix", presetMatrix),
+
+	null, brightness, contrast, gamma,
+	highlights, shadows, whites, blacks,
+	null, debug
+));
+offs.destroy();
+back.destroy();
+
+/* References:
+https://docs.gimp.org/2.10/en/gimp-filter-shadows-highlights.html
+https://github.com/MetalPetal/HighlightShadow/blob/master/Sources/MTIHighlightShadowFilter.metal
+https://www.photoshopessentials.com/photo-editing/applying-shadow-shighlights-as-a-smart-filter-in-photoshop/
+https://github.com/AHDCreative/ffxivitashader/blob/master/v1/dx11/reshade-shaders/Shaders/qUINT_lightroom.fx
+https://github.com/TelegramMessenger/Telegram-iOS/blob/26e5e9bfd94b2ae3eb5a552d16195310aed021e4/submodules/LegacyComponents/LegacyComponents/PGHighlightsTool.m
+https://github.com/ginozh/my_wmm/blob/master/testolive/effects/colorcorrection.frag
+*/

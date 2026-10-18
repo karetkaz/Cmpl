@@ -1,0 +1,293 @@
+// test functions related to bit manipulations
+
+// TODO: other utility functions manipulating binary representations
+static struct Bits {
+	/// branch-less clamp
+	// adapted from: androidx.constraintlayout.widget.ConstraintAttribute#clamp
+	static int32 clamp(int32 value, int32 max) {
+		value &= ~(value >> 31);
+		value -= max;
+		value &= (value >> 31);
+		value += max;
+		return value;
+	}
+
+	/// branch-less clamp
+	static int32 clamp(int32 value, int32 min, int32 max) {
+		return clamp(value - min, max - min) + min;
+	}
+
+	int32 midpoint(int32 x, int32 y) {
+		// https://en.cppreference.com/w/cpp/numeric/midpoint
+		// https://lemire.me/blog/2022/12/06/fast-midpoint-between-two-integers-without-overflow/
+		// They follow from the following identities: x + y = (x ^ y) + 2 * (x & y) and x + y = 2 * (x | y) - (x ^ y).
+		// return (x | y) - (uint32(x ^ y) >> 1);
+		return ((x ^ y) >> 1) + (x & y);
+	}
+
+	// https://groups.google.com/a/isocpp.org/g/std-proposals/c/8WB2Z9d7A0w
+	// gcd using bit tricks
+	uint64 gcd_ctz(uint64 x, uint64 y) {
+		if (x == 0) {
+			return y;
+		}
+		if (y == 0) {
+			return x;
+		}
+
+//		inline ctz(uint64 x) = Uint64.trailingZeros(x);
+		inline ctz(uint64 x) = uint64.len(x & -x) - 1;
+		int32 cf2 = ctz(x | y);
+		x >>= ctz(x);
+		for ( ; ; ) {
+			y >>= ctz(y);
+			if (x == y) {
+				break;
+			}
+			if (x > y) {
+				int64 t = x;
+				x = y;
+				y = t;
+			}
+			if (x == 1) {
+				break;
+			}
+			y -= x;
+		}
+		return x << cf2;
+	}
+
+	uint64 gcd_sub(uint64 x, uint64 y) {
+		if (x == 0) {
+			return y;
+		}
+		if (y == 0) {
+			return x;
+		}
+		for (;x != y;) {
+			if (x > y) {
+				x -= y;
+			} else {
+				y -= x;
+			}
+		}
+		return x;
+	}
+
+	uint64 gcd_mod(uint64 a, uint64 b) {
+		for (;b != 0;) {
+			uint64 r = a % b;
+			a = b;
+			b = r;
+		}
+		return a;
+	}
+
+	uint64 gcd_rec(uint64 a, uint64 b) {
+		if (b == 0) {
+			return a;
+		}
+
+		return gcd_rec(b, a % b);
+	}
+}
+
+/*---------- Profile functions: 8/590, coverage: 1.36%, failures: 0
+//test.ext.Integer.cmpl:30:[.0c0c60, .0c0d16): hits(16641), time(11278.944-405.101 ms): Bits.gcd_ctz(x: uint64, y: uint64): uint64
+//test.ext.Integer.cmpl:60:[.0c0d18, .0c0d5c): hits(16641), time(19035.693 ms): Bits.gcd_sub(x: uint64, y: uint64): uint64
+//test.ext.Integer.cmpl:77:[.0c0d60, .0c0d7a): hits(16641), time(2521.031 ms): Bits.gcd_mod(a: uint64, b: uint64): uint64
+//test.ext.Integer.cmpl:86:[.0c0d80, .0c0da1): hits(154889), time(5134.189 ms): Bits.gcd_rec(a: uint64, b: uint64): uint64
+
+enum {step: 510}
+for (int32 i = 0; i < 65536; i += step) {
+	uint64 x = i * 250;
+	for (int32 j = 0; j < 65536; j += step) {
+		uint64 y = j * 387;
+		uint64 gcd1 = Bits.gcd_sub(x, y);
+		uint64 gcd2 = Bits.gcd_ctz(x, y);
+		uint64 gcd3 = Bits.gcd_mod(x, y);
+		uint64 gcd4 = Bits.gcd_rec(x, y);
+		assertEq(gcd1, gcd2, "GCD", x, y);
+		assertEq(gcd1, gcd3, "GCD", x, y);
+		assertEq(gcd1, gcd4, "GCD", x, y);
+	}
+}
+// */
+
+for (int32 i = 0; i < 65536; i += 1) {
+	uint8 bytes[8] = {};
+	uint64 x& = pointer(bytes);
+	x = i * 250;
+
+	// test swap bytes
+	for (int j = 0; j < bytes.length; j += 1) {
+		inline uint8(uint64 value, int i) = uint8((value >> 8 * i) & 255);
+
+		assertEq(bytes[j], uint8(Uint64.reverseBytes(x), 7 - j), "reverseBytes", i, j);
+		if (j < 4) {
+			assertEq(bytes[j], uint8(Uint32.reverseBytes(x), 3 - j), "reverseBytes", i, j);
+			if (j < 2) {
+				assertEq(bytes[j], uint8(Uint16.reverseBytes(uint16(x)), 1 - j), "reverseBytes", i, j);
+			}
+		}
+	}
+
+	if (i < 64) {
+		x = 1U << i;
+		assertEq(i, Uint64.scanForward(x), "scanForward", i);
+		assertEq(i, Uint64.scanForward(x), "scanForward", i);
+		assertEq(1, Uint64.countOnes(x), "countBits", i, x);
+		assertEq(2, Uint64.countOnes(x | Uint64.reverseBits(x)), "countBits", i, x);
+		assertEq(2, Uint64.countOnes(x | Uint64.reverseBytes(x)), "countBits", i);
+
+		// test 32 bit functions
+		if (i < 32) {
+			assertEq(i, Uint32.scanReverse(x), "scanReverse", i);
+			assertEq(i, Uint32.scanForward(x), "scanForward", i);
+			assertEq(1, Uint32.countOnes(x), "countBits", i, x);
+			if (i < 16) {
+				assertEq(i, Uint16.scanReverse(uint16(x)), "scanReverse", i);
+				assertEq(i, Uint16.scanForward(uint16(x)), "scanForward", i);
+			}
+			for (int j = 0; j < 32 - i; j += 1) {
+				x = ((1U << i) - 1) << j;
+				assertEq(i, Uint32.countOnes(x), "countBits", i, j, x);
+				if (i + j < 16) {
+					assertEq(2 * i, Uint32.countOnes(x | Uint32.reverseBits(x)), "countBits", i, j, x);
+					assertEq(2 * i, Uint32.countOnes(x | Uint32.reverseBytes(x)), "countBits", i, j, x);
+				}
+			}
+		}
+
+		for (int j = 0; j < 64 - i; j += 1) {
+			x = ((1U << i) - 1) << j;
+			assertEq(i, Uint64.countOnes(x), "countBits", i, j, x);
+			if (i + j < 32) {
+				assertEq(2 * i, Uint64.countOnes(x | Uint64.reverseBits(x)), "countBits", i, j, x);
+				assertEq(2 * i, Uint64.countOnes(x | Uint64.reverseBytes(x)), "countBits", i, j, x);
+			}
+		}
+	}
+
+	inline min = 10;
+	inline max = 300;
+	// both clamps are undefined if min > max, same result as: min(max(value, min), max)
+	assert(Int32.clamp(i, min, max) == Bits.clamp(i, min, max), "assertion failed", i);
+	assert(Int32.clamp(-i, min, max) == Bits.clamp(-i, min, max), "assertion failed", i);
+	assert(Int32.clamp(i, -min, max) == Bits.clamp(i, -min, max), "assertion failed", i);
+	assert(Int32.clamp(-i, -min, max) == Bits.clamp(-i, -min, max), "assertion failed", i);
+	assert(Int32.clamp(i, min, -max) == Bits.clamp(i, min, -max), "assertion failed", i);
+	assert(Int32.clamp(-i, min, -max) == Bits.clamp(-i, min, -max), "assertion failed", i);
+	assert(Int32.clamp(i, -max, min) == Bits.clamp(i, -max, min), "assertion failed", i);
+	assert(Int32.clamp(-i, -max, min) == Bits.clamp(-i, -max, min), "assertion failed", i);
+	assert(Int32.clamp(i, -min, -max) == Bits.clamp(i, -min, -max), "assertion failed", i);
+	assert(Int32.clamp(-i, -min, -max) == Bits.clamp(-i, -min, -max), "assertion failed", i);
+	assert(Int32.clamp(i, -max, -min) == Bits.clamp(i, -max, -min), "assertion failed", i);
+	assert(Int32.clamp(-i, -max, -min) == Bits.clamp(-i, -max, -min), "assertion failed", i);
+
+	for (int64 j = 60; j < (1U << 32) - 1; j += 1 << 30) {
+		int32 expected = i + int32(j - i) / 2;
+		int32 returned = Bits.midpoint(i, j);
+		if (Int32.abs(returned - expected) < 2) {
+			continue;
+		}
+		assertEq(expected, returned, "midpoint", i, j);
+	}
+}
+
+struct BitMinMax {
+	int bitSize;
+	int64 signedMin;
+	int64 signedMax;
+	uint64 unsignedMax;
+
+	static BitMinMax get(int bitSize) {
+		int64 mask = ~(int64(-1) << bitSize);
+		if (bitSize >= 64) {
+			bitSize = 64;
+			mask = -1U;
+		}
+
+		uint64 min = -1U << (bitSize - 1);
+		if (bitSize <= 0) {
+			bitSize = 0;
+			min = 0;
+		}
+
+		return {
+			bitSize: bitSize;
+			signedMin: min;
+			signedMax: (min - 1) & mask;
+			unsignedMax: mask;
+		};
+	}
+}
+
+for (int i = 1; i <= 64; i += 1) {
+	BitMinMax bitMinMax = BitMinMax.get(i);
+	debug("bits", bitMinMax);
+	assert(bitMinMax.signedMin < 0, "error", bitMinMax);
+	assert(bitMinMax.signedMax >= 0, "error", bitMinMax);
+	assert(bitMinMax.unsignedMax != bitMinMax.signedMax, "error", bitMinMax);
+}
+// */
+/* TODO: leftovers
+define Lo32(int64 a) = int32(a);					// Lo32 part
+define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
+define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
+define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
+define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
+define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
+
+// implement all native methods
+int32 zxt(int32 value, int32 offs, int32 count)
+int32 sxt(int32 value, int32 offs, int32 count)
+✓ int32 pop(int32 value)
+✓ int32 swap(int32 value)
+✓ int32 bsr(int32 value)
+✓ int32 bsf(int32 value)
+✓ int32 hib(int32 value)
+? int32 lob(int32 value)
+
+others
+//	is_power_of_two == x & (x-1) == 0
+//	bitfield_extract
+//	bitfield_insert
+
+	/// keep the highest bit set
+	uint32 keepMsb(uint32 x) {
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		return x - (x >> 1);
+	}
+
+	/// keep the lowest bit set
+	inline keepLsb(uint32 x) = x & -x;
+
+	// branch-less min max
+	inline min(a,b) = (a + b - abs(a-b)) / 2;
+	inline max(a,b) = (a + b + abs(a-b)) / 2;
+
+	static int lessThanBranchFree(int x, int y) {
+		return (((x - y) ^ (-1)) ^ (-1)) >>> 31;
+	}
+
+static int32 sign(int64 i) {
+	return (i >> 63) | (uint64(-i) >> 63);
+}
+
+assert(sign(0) == 0);
+assert(sign(0) == Int64.sign(0));
+for (int64 i = 1; i > 0; i <<= 1) {
+	assert(sign(i) == 1);
+	assert(sign(-i) == -1);
+	assert(sign(i) == Int64.sign(i));
+	assert(sign(-i) == Int64.sign(-i));
+}
+
+//https://github.com/mateofio/stdcxx-bitops/blob/master/include/bitops.hh
+//https://fgiesen.wordpress.com/2013/10/18/bit-scanning-equivalencies/
+*/

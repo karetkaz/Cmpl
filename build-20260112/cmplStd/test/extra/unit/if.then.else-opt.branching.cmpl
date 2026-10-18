@@ -1,0 +1,55 @@
+#!/usr/bin/env -S ${CMPL_HOME}/extras/CmplDiffTest.sh 33
+
+int test(uint64 x) {
+	if (x == 0) {
+		return -1;
+	}
+
+	if (x == 0) else {
+		return -2;
+	}
+
+	if (x == 0) {
+		return -3;
+	} else {
+		return -4;
+	}
+
+	return x;
+}
+
+/* - expected output:
+warn: empty statement `;`
+test(x: uint64): int32: function {
+.instructions: (66 bytes)
+	dup.x64 sp(1)
+	load.z64
+	ceq.i64
+	jz +12
+	load.c32 -1
+	set.x32 sp(4)
+	ret
+	dup.x64 sp(1)
+	load.z64
+	ceq.i64
+	jnz +12
+	load.c32 -2
+	set.x32 sp(4)
+	ret
+	dup.x64 sp(1)
+	load.z64
+	ceq.i64
+	jz +16
+	load.c32 -3
+	set.x32 sp(4)
+	ret
+	jmp +12
+	load.c32 -4
+	set.x32 sp(4)
+	ret
+	dup.x64 sp(1)
+	i64.2i32
+	set.x32 sp(4)
+	ret
+}
+*/

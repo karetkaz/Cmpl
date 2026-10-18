@@ -1,0 +1,43 @@
+static TextWriter out = AsciiWriter {
+	writer: FileWriter {
+		file: File.log;
+		close: null;
+	};
+	format: {};
+};
+
+Datetime now = Datetime(Timestamp.now());
+Datetime year = Datetime(Timestamp(Datetime(now.year, 1, 1)));
+Timestamp start = Timestamp(year)
+	.add(int(Weekday.Monday - year.dayOfWeek), Timeunit.Days);
+
+Timestamp end = Timestamp(Datetime(now.year + 1, 1, 1))
+	.add(6, Timeunit.Days);
+
+int lastWeek = -1;
+static const FormatFlags flagsDate = {
+	padChr: '0';
+	width: 2;
+};
+
+for (Timestamp day = start; day.compare(end) < 0; day = day.add(1, Timeunit.Days)) {
+	Datetime date = Datetime(day);
+	if (lastWeek != date.weekOfYear) {
+		lastWeek = date.weekOfYear;
+		out.write("Week ")
+			.write(lastWeek, flagsDate)
+			.write(", starting on: ")
+			.write(date.year, flagsDate)
+			.write("/")
+			.write(int32(date.month), flagsDate)
+			.write("/")
+			.write(int32(date.day), flagsDate)
+			.writeln();
+	}
+}
+
+/* References:
+https://github.com/nodatime/nodatime
+
+todo: add some assertions
+*/
